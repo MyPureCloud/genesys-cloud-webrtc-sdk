@@ -1,0 +1,9 @@
+image: node:8.0.0
+
+pipelines:
+  default:
+    - step:
+        script: # Modify the commands below to build your repository.
+          - bash scripts/create-npmrc.sh
+          - npm install
+          - npm test

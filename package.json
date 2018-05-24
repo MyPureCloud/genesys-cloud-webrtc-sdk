@@ -1,0 +1,61 @@
+{
+  "name": "@purecloud/webrtc-sdk",
+  "version": "0.1.0",
+  "description": "client for the interfacing with PureCloud WebRTC",
+  "repository": "",
+  "main": "src/client.js",
+  "browser": "web/pc-webrtc-sdk.js",
+  "files": [
+    "src",
+    "web/pc-webrtc-sdk.js"
+  ],
+  "pre-push": [
+    "test"
+  ],
+  "scripts": {
+    "unit-test": "nyc ava test/unit/*.js",
+    "test": "npm run semistandard && npm run unit-test",
+    "semistandard": "semistandard",
+    "semistandard:fix": "semistandard --fix"
+  },
+  "semistandard": {
+    "ignore": [
+      "/.nyc_output",
+      "/coverage",
+      "/scripts"
+    ]
+  },
+  "babel": {
+    "presets": [
+      "env"
+    ]
+  },
+  "ava": {
+    "files": [],
+    "concurrency": 5,
+    "failFast": true,
+    "failWithoutAssertions": false,
+    "tap": true,
+    "powerAssert": true,
+    "require": [
+      "babel-register"
+    ]
+  },
+  "author": "",
+  "dependencies": {
+    "wildemitter": "^1.2.0"
+  },
+  "devDependencies": {
+    "ava": "^0.20.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.0",
+    "mock-socket": "^6.0.4",
+    "nyc": "^11.1.0",
+    "semistandard": "^9.2.1",
+    "sinon": "^2.4.1",
+    "snazzy": "^6.0.0",
+    "webpack": "^4.8.3",
+    "webpack-cli": "^2.1.4"
+  },
+  "false": {}
+}

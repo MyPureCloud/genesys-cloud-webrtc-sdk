@@ -1,0 +1,15 @@
+# Node Specific Files
+/node_modules
+/npm-debug.log
+.npmrc
+
+web
+
+## vscode specific files
+/.vscode
+
+# tap specific files
+/.nyc_output
+/coverage
+
+/.npmrc
