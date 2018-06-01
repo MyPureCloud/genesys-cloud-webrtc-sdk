@@ -122,11 +122,22 @@ when the event is triggered
         mypurecloud.jp || mypurecloud.de || mypurecloud.com.au`
     - `String orgId`: Required; guid for your organization - found in Admin >
         Organization Settings
+
+    Advanced options:
     - `Boolean sessionSurvivability`: Optional, default true; see Behavior Notes
         above
     - `Boolean autoAnswerOutboundCalls`: Optional, default true; See Behavior Notes
+    - `Boolean autoConnectSessions`: Optional, default true; whether or not
+        the SDK should auto connect the sessions after answering or outbound.
+    - `Array[IceServerConfiguration] iceServers`: Custom ICE server configuration.
+        See https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
+    - `RTCConfiguration iceTransportPolicy`: Set the ICE transport policy
+        See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
 
 #### Methods
+
+`sdk.intialize() : Promise<void>` - Initialize the WebSocket connection for streaming
+connectivity with PureCloud. Initialize must be called before any events will trigger.
 
 `sdk.acceptPendingSession(id, opts) : void` - Accept an incoming RTC session proposal.
 Should be called automatically for outbound calls.
@@ -134,8 +145,6 @@ Should be called automatically for outbound calls.
 - parameters
   - `String id`: the id from the `pendingSession` event
   - `Object opts`: with properties:
-    - `Boolean autoConnectSession`: Optional, default true; whether or not
-        the SDK should auto connect the session
     - `MediaStream mediaStream`: Optional; stream to use for input audio. If not
         provided, the SDK will start media capture for a default stream.
     - `HTMLAudioElement audioElement`: Optional; the audio tag to use for attaching

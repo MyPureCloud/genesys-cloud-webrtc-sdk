@@ -5,8 +5,8 @@ module.exports = {
   mode: 'production',
   output: {
     path: path.resolve(__dirname, 'web'),
-    filename: 'pc-streaming-client.js',
-    library: 'pc-streaming',
+    filename: 'purecloud-webrtc-sdk.js',
+    library: 'PureCloudWebrtcSdk',
     libraryTarget: 'umd'
   },
   module: {
