@@ -43,17 +43,15 @@
   },
   "author": "",
   "dependencies": {
+    "superagent": "^3.8.3",
     "wildemitter": "^1.2.0"
   },
   "devDependencies": {
     "ava": "^0.20.0",
-    "babel-loader": "^7.1.2",
-    "babel-preset-env": "^1.6.0",
-    "mock-socket": "^6.0.4",
+    "babel-loader": "^7.1.4",
+    "babel-preset-env": "^1.7.0",
     "nyc": "^11.1.0",
-    "semistandard": "^9.2.1",
-    "sinon": "^2.4.1",
-    "snazzy": "^6.0.0",
+    "semistandard": "^12.0.1",
     "webpack": "^4.8.3",
     "webpack-cli": "^2.1.4"
   },
