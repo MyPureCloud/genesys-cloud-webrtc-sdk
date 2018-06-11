@@ -17,8 +17,7 @@ function buildAssetUri (path) {
 }
 
 function requestApi (path, { method, data, version, contentType } = {}) {
-  let response = request
-    .get(buildUri.call(this, path, version))
+  let response = request[method || 'get'](buildUri.call(this, path, version))
     .set('Authorization', `Bearer ${this._accessToken}`)
     .type(contentType || 'json');
 
@@ -110,6 +109,13 @@ function attachMedia (stream) {
 function onSession (session) {
   this.logger.log('session', session);
 
+  session.id = session.sid;
+  const pendingSessionInfo = this._pendingSessions[session.id];
+  if (pendingSessionInfo) {
+    session.conversationId = pendingSessionInfo.conversationId;
+  }
+  this._pendingSessions[session.id] = null;
+
   startMedia.call(this).then(stream => {
     this.logger.log('got media', stream);
     session.addStream(stream);
@@ -133,12 +139,15 @@ function onSession (session) {
 
 function onPendingSession (sessionInfo) {
   this.logger.log('pending session', sessionInfo);
-  this.emit('pendingSession', {
+  const sessionEvent = {
     id: sessionInfo.sessionId,
     autoAnswer: sessionInfo.autoAnswer,
     address: sessionInfo.fromJid.split('@')[0],
     conversationId: sessionInfo.conversationId
-  });
+  };
+  this.emit('pendingSession', sessionEvent);
+
+  this._pendingSessions[sessionEvent.id] = sessionEvent;
 
   if (sessionInfo.autoAnswer) {
     this.acceptPendingSession(sessionInfo.sessionId);
