@@ -1,8 +1,66 @@
 <html>
 <head>
 <title>Test Page</title>
-<script src="/web/pc-webrtc-sdk.js"></script>
+<script src="../../web/purecloud-webrtc-sdk.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
-  Not implemented
+  <div>
+    <label for="environment">Select Environment:</label>
+    <select id="environment" name="environment">
+      <option value="dca">dca</option>
+      <option value="pca-us">pca-us</option>
+    </select>
+    <button id="auth-button" type="button">Authenticate</button>
+  </div>
+  <div id="auth-text" class="auth-text">Authenticated</div>
+  <hr />
+
+  <div id="app-content" class="app-content">
+    <div id="app-controls" class="app-controls">
+        <div class="control-title">
+          <div><a id="get-active-conversations" href="#">Get Active Conversations</a></div>
+          <div><a href="#" id="disconnect-sdk">Disconnect</a></div>
+        </div>
+
+        <!-- outbound call -->
+        <div class="control-title">Outbound phone call</div>
+        <div class="control-section">
+          <label>Enter phone number:</label>
+          <input id="outbound-phone-number" type="text" class="text-input">
+          <div>
+            <button id="outbound-call-start">Start Call</button>
+            <button id="outbound-call-end">End Call</button>
+          </div>
+        </div>
+
+        <!-- inbound call -->
+        <div class="control-title">Inbound phone call</div>
+        <div class="control-section">
+          <button id="answer-inbound-call">Answer</button>
+          <button id="inbound-call-end">End Call</button>
+          <button id="reject-inbound-call">Reject</button>
+        </div>
+    </div>
+
+    <div class="output-container">
+      <div class="log-header">
+        <span>Log:</span>
+        <span>
+          <input name="log-traces-check" type="checkbox" id="log-traces-check"/>
+          <label for="log-traces-check">Log trace events</label>
+        </span>
+      </div>
+      <textarea id="log-data" class="log-data" readonly="true"></textarea>
+      <div>
+        <button type="button" id="clear-log">Clear Log</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="sdk-handlers.js"></script>
+  <script src="controls.js"></script>
+  <script src="main.js"></script>
 </body>

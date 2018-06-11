@@ -1,0 +1,47 @@
+body {
+  font-family: 'arial';
+}
+
+a {
+  text-decoration: none;
+}
+
+.auth-text {
+  color: green;
+  visibility: hidden;
+  margin: 10px 0;
+}
+
+.app-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.app-controls {
+  visibility: hidden;
+}
+
+.log-data {
+  font-family: monospace;
+  font-size: 14px;
+  min-width: 600px;
+  min-height: 400px;
+  white-space: pre;
+}
+
+.control-section {
+  margin-left: 35px;
+}
+
+.control-title {
+  margin: 25px 0 0 0;
+  font-weight: bold;
+}
+
+.log-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}

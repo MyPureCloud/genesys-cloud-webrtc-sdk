@@ -16,6 +16,7 @@
     "build": "npx webpack",
     "unit-test": "NODE_ENV=test nyc ava test/unit/*.js",
     "pretest": "npm run build",
+    "start": "stupid-server -s -p 4300",
     "test": "npm run semistandard && npm run unit-test",
     "watch-tests": "watch 'npm test' src test",
     "semistandard": "semistandard",
@@ -60,6 +61,7 @@
   },
   "author": "",
   "dependencies": {
+    "stupid-server": "^0.2.2",
     "superagent": "^3.8.3",
     "wildemitter": "^1.2.0"
   },
