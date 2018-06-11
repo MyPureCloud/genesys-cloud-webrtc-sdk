@@ -4,10 +4,10 @@
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "",
   "main": "src/client.js",
-  "browser": "web/pc-webrtc-sdk.js",
+  "browser": "web/purecloud-webrtc-sdk.js",
   "files": [
     "src",
-    "web/pc-webrtc-sdk.js"
+    "web/purecloud-webrtc-sdk.js"
   ],
   "pre-push": [
     "test"

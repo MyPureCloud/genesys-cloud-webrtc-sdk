@@ -7,16 +7,38 @@ const WildEmitter = require('wildemitter');
 
 const PureCloudWebrtcSdk = require('../../src/client');
 
+function random () {
+  return `${Math.random()}`.split('.')[1];
+}
+
 test.beforeEach(() => {
 
 });
 
+const USER_ID = random();
+const PARTICIPANT_ID = random();
+
 const MOCK_USER = {
+  id: USER_ID,
   chat: { jabberId: 'hubert.j.farnsworth@planetexpress.mypurecloud.com' }
 };
 
 const MOCK_ORG = {
   thirdPartyOrgId: '3000'
+};
+
+const MOCK_CONVERSATION = {
+  participants: [
+    {
+      id: PARTICIPANT_ID,
+      user: {
+        id: USER_ID
+      }
+    },
+    {
+      id: random()
+    }
+  ]
 };
 
 test('constructor | throws if options are not provided', t => {
@@ -72,7 +94,7 @@ test('constructor | sets up options when provided', t => {
   t.is(sdk._iceTransportPolicy, 'relay');
 });
 
-function mockApis ({ failOrg, failUser, failStreaming, withMedia } = {}) {
+function mockApis ({ failOrg, failUser, failStreaming, withMedia, conversationId, participantId } = {}) {
   const api = nock('https://api.mypurecloud.com');
 
   let getOrg;
@@ -87,6 +109,21 @@ function mockApis ({ failOrg, failUser, failStreaming, withMedia } = {}) {
     getUser = api.get('/api/v2/users/me').reply(401);
   } else {
     getUser = api.get('/api/v2/users/me').reply(200, MOCK_USER);
+  }
+
+  const conversationsApi = nock('https://api.mypurecloud.com');
+  let getConversation;
+  if (conversationId) {
+    getConversation = conversationsApi
+      .get(`/api/v2/conversations/calls/${conversationId}`)
+      .reply(200, MOCK_CONVERSATION);
+  }
+
+  let patchConversation;
+  if (conversationId && participantId) {
+    patchConversation = conversationsApi
+      .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
+      .reply(202, {});
   }
 
   if (withMedia) {
@@ -113,6 +150,16 @@ function mockApis ({ failOrg, failUser, failStreaming, withMedia } = {}) {
             this.emit('connected');
             this.emit('rtcIceServers');
           }
+          constructor () {
+            super();
+            this._controllers = {
+              webrtcController: {
+                sessionManager: {
+                  sessions: []
+                }
+              }
+            };
+          }
         };
         if (failStreaming) {
           console.log('Failing the streaming connection');
@@ -124,7 +171,7 @@ function mockApis ({ failOrg, failUser, failStreaming, withMedia } = {}) {
 
   const sdk = new PureCloudWebrtcSdk({ accessToken: '1234', logger: { log () {}, error () {}, warn () {}, debug () {} } });
 
-  return { getOrg, getUser, sdk };
+  return { getOrg, getUser, getConversation, patchConversation, sdk };
 }
 
 test('initialize | fetches org and person details, sets up the streaming connection', async t => {
@@ -164,13 +211,13 @@ test('initialize sets up event proxies', async t => {
     {
       name: 'handledPendingSession',
       trigger: 'handledIncomingRtcSession',
-      args: [{ sessionId: 1 }],
+      args: [{ id: 1 }],
       transformedArgs: [ 1 ]
     },
     {
       name: 'cancelPendingSession',
       trigger: 'cancelIncomingRtcSession',
-      args: [{ sessionId: 1 }],
+      args: [{ id: 1 }],
       transformedArgs: [ 1 ]
     },
     // { name: 'error', trigger: 'rtcSessionError' },
@@ -224,16 +271,121 @@ test('acceptPendingSession | proxies the call to the streaming connection', asyn
   t.plan(0);
 });
 
-test('rejectPendingSession | proxies the call to the streaming connection', async t => {
-  const { sdk } = mockApis();
+test('endSession | requests the conversation then patches the participant to disconnected', async t => {
+  const sessionId = random();
+  const conversationId = random();
+  const participantId = PARTICIPANT_ID;
+  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
   await sdk.initialize();
 
-  sdk._streamingConnection.rejectRtcSession = sinon.stub();
+  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
 
-  sdk.rejectPendingSession('4321');
-  sinon.assert.calledOnce(sdk._streamingConnection.rejectRtcSession);
-  sinon.assert.calledWithExactly(sdk._streamingConnection.rejectRtcSession, '4321');
-  t.plan(0);
+  await sdk.endSession({ id: sessionId });
+  getConversation.done();
+  patchConversation.done();
+  sinon.assert.notCalled(mockSession.end);
+});
+
+test('endSession | requests the conversation then patches the participant to disconnected', async t => {
+  const sessionId = random();
+  const conversationId = random();
+  const participantId = PARTICIPANT_ID;
+  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
+  await sdk.initialize();
+
+  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
+
+  await sdk.endSession({ conversationId });
+  getConversation.done();
+  patchConversation.done();
+  sinon.assert.notCalled(mockSession.end);
+});
+
+test('endSession | rejects if not provided either an id or a conversationId', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  await sdk.endSession({})
+    .then(() => {
+      t.fail();
+    })
+    .catch(err => {
+      t.truthy(err);
+      t.pass();
+    });
+});
+
+test('endSession | rejects if not provided anything', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  await sdk.endSession()
+    .then(() => {
+      t.fail();
+    })
+    .catch(err => {
+      t.truthy(err);
+      t.pass();
+    });
+});
+
+test('endSession | rejects if the session is not found', async t => {
+  const sessionId = random();
+  const conversationId = random();
+  const participantId = PARTICIPANT_ID;
+  const { sdk } = mockApis({ conversationId, participantId });
+  await sdk.initialize();
+
+  const mockSession = { id: random(), conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[mockSession.id] = mockSession;
+
+  await sdk.endSession({ id: sessionId })
+    .then(() => {
+      t.fail();
+    })
+    .catch(err => {
+      t.truthy(err);
+      t.pass();
+    });
+});
+
+test('endSession | ends the session and rejects if there is an error fetching the conversation', async t => {
+  const sessionId = random();
+  const conversationId = random();
+  const participantId = random();
+  const { sdk } = mockApis({ conversationId, participantId });
+  await sdk.initialize();
+
+  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
+
+  await sdk.endSession({ id: sessionId })
+    .then(() => {
+      t.fail();
+    })
+    .catch(err => {
+      t.truthy(err);
+      sinon.assert.calledOnce(mockSession.end);
+    });
+});
+
+test('endSession | terminates the session of the existing session has no conversationId', async t => {
+  const sessionId = random();
+  const conversationId = random();
+  const participantId = random();
+  const { sdk, getConversation } = mockApis({ conversationId, participantId });
+  await sdk.initialize();
+
+  const mockSession = { id: sessionId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
+  await sdk.endSession({ id: sessionId });
+  t.throws(() => getConversation.done());
+  sinon.assert.calledOnce(mockSession.end);
 });
 
 test('disconnect | proxies the call to the streaming connection', async t => {
@@ -314,9 +466,11 @@ class MockSession extends WildEmitter {
   constructor () {
     super();
     this.streams = [];
+    this.sid = random();
   }
   accept () { }
   addStream () { }
+  end () { }
 }
 
 test.serial('onSession | starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async t => {
@@ -333,6 +487,8 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
   const mockSession = new MockSession();
+  mockSession.sid = random();
+  sdk._pendingSessions[mockSession.sid] = mockSession;
   mockSession.streams = [{
     getTracks: () => [{}]
   }];
