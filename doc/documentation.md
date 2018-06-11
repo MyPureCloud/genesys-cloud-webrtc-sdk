@@ -163,10 +163,12 @@ Should be called automatically for outbound calls.
     - SDK will start media, attach it to the session, but not connect
 
 
-`sdk.rejectPendingSession(id) : void` - Reject an incoming RTC session proposal.
+`sdk.endSession(opts) : Promise<void>` - Disconnect an active session
 
 - parameters
-    - `String id`: the id from the `pendingSession` event
+    - `Object opts`: object with one of the following properties set:
+      - `String id`: the id of the session to disconnect
+      - `String conversationId`: the conversationId of the session to disconnect
 
 `sdk.disconnect() : void` - Tear down the WebSocket connection to PureCloud.
 This does not hangup or disconnect active WebRTC Session calls.
