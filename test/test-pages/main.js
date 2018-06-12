@@ -1,4 +1,5 @@
-const platformClient = require('platformClient');
+const platformClient = require('purecloud-platform-client-v2');
+const controller = require('./controls');
 const client = platformClient.ApiClient.instance;
 const ORG_ID = 'e0c78f37-cab9-4985-9fea-74da8a3170a1';
 

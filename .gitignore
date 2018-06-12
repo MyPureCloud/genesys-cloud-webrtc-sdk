@@ -4,6 +4,7 @@
 .npmrc
 
 web
+test/test-pages/dist
 
 ## vscode specific files
 /.vscode
