@@ -1,5 +1,5 @@
-(function() {
-  function getActiveConversations() {
+(function () {
+  function getActiveConversations () {
     let outputHeader = 'activeConversations\n---------------------\n\n';
 
     conversationsApi.getConversations()
@@ -7,11 +7,11 @@
         writeToLog(`${outputHeader}${JSON.stringify(data)}`);
       })
       .catch((err) => {
-        writeToLog(`${outputHeader}${JSON.stringify(data)}`);
+        writeToLog(`${outputHeader}${JSON.stringify(err)}`);
       });
   }
 
-  function makeOutboundCall() {
+  function makeOutboundCall () {
     const numberToCall = document.getElementById('outbound-phone-number').value;
     if (!numberToCall) {
       document.getElementById('output-data').value += 'Phone Number is required to place an outbound call\n';
@@ -24,49 +24,48 @@
         currentConversationId = data.id;
       })
       .catch(err => console.log(err));
-
   }
 
-  function endCall() {
+  function endCall () {
     conversationsApi.postConversationDisconnect(currentConversationId)
-    .then((response) => {
-      writeToLog('Call ended');
-      currentConversationId = null;
-    })
-    .catch(err => console.log(err));
+      .then((response) => {
+        writeToLog('Call ended');
+        currentConversationId = null;
+      })
+      .catch(err => console.log(err));
   }
 
-  function answerCall() {
+  function answerCall () {
     if (!currentSessionId) {
       writeToLog('There is no session to connect to');
       return;
     }
 
-    webrtc_sdk.acceptPendingSession(currentSessionId);
+    webRtcSdk.acceptPendingSession(currentSessionId);
   }
 
-  function disconnectSdk() {
-    const reallyDisconnect = confirm('Are you sure you want to disconnect?')
+  function disconnectSdk () {
+    const reallyDisconnect = confirm('Are you sure you want to disconnect?');
     if (!reallyDisconnect) {
       return;
     }
 
-    webrtc_sdk.disconnect();
+    webRtcSdk.disconnect();
     writeToLog('Disconnected -- Reauthenticate to reconnect');
     document.getElementById('app-controls').style.visibility = 'hidden';
     document.getElementById('auth-text').style.visibility = 'hidden';
   }
 
-  function rejectCall() {
+  function rejectCall () {
     writeToLog(`rejecting sessionId: ${currentSessionId}`);
-    webrtc_sdk.rejectPendingSession(currentSessionId);
+    webRtcSdk.rejectPendingSession(currentSessionId);
   }
 
-  function clearLog() {
+  function clearLog () {
     document.getElementById('log-data').value = '';
   }
 
-  function initControls() {
+  function initControls () {
     document.getElementById('get-active-conversations').addEventListener('click', getActiveConversations);
     document.getElementById('outbound-call-start').addEventListener('click', makeOutboundCall);
     document.getElementById('outbound-call-end').addEventListener('click', endCall);

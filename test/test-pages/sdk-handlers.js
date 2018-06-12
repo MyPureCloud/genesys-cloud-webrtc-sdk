@@ -1,9 +1,9 @@
-function _getLogHeader(functionName) {
+function _getLogHeader (functionName) {
   return `${functionName}\n---------------------`;
 }
 
-//pendingSession - {id, address, conversationId, autoAnswer}
-function pendingSession(options) {
+// pendingSession - {id, address, conversationId, autoAnswer}
+function pendingSession (options) {
   let output = `${_getLogHeader('pendingSession')}
     id: ${JSON.stringify(options.id)}
     address: ${JSON.stringify(options.address)}
@@ -15,8 +15,8 @@ function pendingSession(options) {
   writeToLog(output);
 }
 
-//cancelPendingSession
-function cancelPendingSession(id) {
+// cancelPendingSession
+function cancelPendingSession (id) {
   let output = `${_getLogHeader('cancelPendingSession')}
     id: ${id}`;
 
@@ -25,8 +25,8 @@ function cancelPendingSession(id) {
   writeToLog(output);
 }
 
-//handledPendingSession
-function handledPendingSession(id) {
+// handledPendingSession
+function handledPendingSession (id) {
   let output = `${_getLogHeader('handledPendingSession')}
     id: ${id}`;
 
@@ -34,8 +34,8 @@ function handledPendingSession(id) {
   writeToLog(output);
 }
 
-//sessionStarted
-function sessionStarted(session) {
+// sessionStarted
+function sessionStarted (session) {
   let output = `${_getLogHeader('sessionStarted')}
     sessionId: ${session.sid}`;
 
@@ -43,8 +43,8 @@ function sessionStarted(session) {
   writeToLog(output);
 }
 
-//sessionEnded
-function sessionEnded(session, reason) {
+// sessionEnded
+function sessionEnded (session, reason) {
   let output = `${_getLogHeader('sessionEnded')}
     sessionId: ${session.sid}
     reason: ${JSON.stringify(reason)}`;
@@ -53,8 +53,8 @@ function sessionEnded(session, reason) {
   writeToLog(output);
 }
 
-//trace
-function trace(level, message, details) {
+// trace
+function trace (level, message, details) {
   let output = `${_getLogHeader('trace')}\n`;
   output += `  level: ${level}\n  message: ${message}\n  details: ${details}`;
 
@@ -64,50 +64,51 @@ function trace(level, message, details) {
   }
 }
 
-//error
-function error(error, details) {
-  let output = `${_getLogHeader('error')}`;
-  output += `  error: ${error}\n  details: ${details}`;
+// error
+function error (error, details) {
+  let output = `${_getLogHeader('error')}
+    error: ${error}\n  details: ${details}`;
+
   writeToLog(output);
 }
 
-//terminated
-function terminated(session, reason) {
-  let output = `${_getLogHeader('terminated')}`;
-  output += `  reason: ${reason}
+// terminated
+function terminated (session, reason) {
+  let output = `${_getLogHeader('terminated')}
+    reason: ${reason}
     sessionId: ${session.sid}`;
+
   writeToLog(output);
 }
 
-//change:connectionState
-function changeConnectionState(session, connectionState) {
-  let output = `${_getLogHeader('changeConnectionState')}`;
-  output += `  connectionState: ${JSON.stringify(connectionState)}
-    sessionId: ${sessionId}`;
+// change:connectionState
+function changeConnectionState (session, connectionState) {
+  let output = `${_getLogHeader('changeConnectionState')}
+    connectionState: ${JSON.stringify(connectionState)}
+    sessionId: ${session.sid}`;
 
-    writeToLog(output);
+  writeToLog(output);
 }
 
-//change:interrupted
-function changeInterrupted(session, interrupted) {
+// change:interrupted
+function changeInterrupted (session, interrupted) {
   let output = `${_getLogHeader('changeInterrupted')}
-   sessionId: ${sessionId}`;
+    sessionId: ${session.sid}
+    interrupted: ${interrupted}`;
 
-   output += `  interrupted: ${interrupted}`;
+  writeToLog(output);
 }
 
-//change:active
-function changeActive(session, active) {
+// change:active
+function changeActive (session, active) {
   let output = `${_getLogHeader('changeActive')}
-   sessionId: ${sessionId}`;
+    sessionId: ${session.sid}
+    active: ${active}`;
 
-   output += `  active: ${active}`;
+  writeToLog(output);
 }
 
-//endOfCandidates
-function endOfCandidates() {
-  let output = `${_getLogHeader('endOfCandidates')}
-   sessionId: ${sessionId}`;
-
-   output += `endOfCandidates event triggered`;
+// endOfCandidates
+function endOfCandidates () {
+  writeToLog('endOfCandidates event');
 }
