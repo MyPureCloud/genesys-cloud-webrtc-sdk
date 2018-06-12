@@ -41,7 +41,7 @@
       return;
     }
 
-    webRtcSdk.acceptPendingSession(currentSessionId);
+    webrtcSdk.acceptPendingSession(currentSessionId);
   }
 
   function disconnectSdk () {
@@ -50,7 +50,7 @@
       return;
     }
 
-    webRtcSdk.disconnect();
+    webrtcSdk.disconnect();
     writeToLog('Disconnected -- Reauthenticate to reconnect');
     document.getElementById('app-controls').style.visibility = 'hidden';
     document.getElementById('auth-text').style.visibility = 'hidden';
@@ -58,7 +58,7 @@
 
   function rejectCall () {
     writeToLog(`rejecting sessionId: ${currentSessionId}`);
-    webRtcSdk.rejectPendingSession(currentSessionId);
+    webrtcSdk.rejectPendingSession(currentSessionId);
   }
 
   function clearLog () {

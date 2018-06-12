@@ -2,7 +2,7 @@ const platformClient = require('platformClient');
 const client = platformClient.ApiClient.instance;
 const ORG_ID = 'e0c78f37-cab9-4985-9fea-74da8a3170a1';
 
-let webRtcSdk;
+let webrtcSdk;
 let currentConversationId;
 let currentSessionId;
 
@@ -54,20 +54,20 @@ function writeToLog (output) {
     const orgId = ORG_ID;
     const options = {accessToken, environment, orgId};
 
-    webRtcSdk = new PureCloudWebrtcSdk(options);
-    webRtcSdk.initialize();
-    webRtcSdk.on('pendingSession', pendingSession);
-    webRtcSdk.on('cancelPendingSession', cancelPendingSession);
-    webRtcSdk.on('handledPendingSession', handledPendingSession);
-    webRtcSdk.on('sessionStarted', sessionStarted);
-    webRtcSdk.on('sessionEnded', sessionEnded);
-    webRtcSdk.on('trace', trace);
-    webRtcSdk.on('error', error);
-    webRtcSdk.on('terminated', terminated);
-    webRtcSdk.on('changeConnectionState', changeConnectionState);
-    webRtcSdk.on('changeInterrupted', changeInterrupted);
-    webRtcSdk.on('changeActive', changeActive);
-    webRtcSdk.on('endOfCandidates', endOfCandidates);
+    webrtcSdk = new PureCloudWebrtcSdk(options);
+    webrtcSdk.initialize();
+    webrtcSdk.on('pendingSession', pendingSession);
+    webrtcSdk.on('cancelPendingSession', cancelPendingSession);
+    webrtcSdk.on('handledPendingSession', handledPendingSession);
+    webrtcSdk.on('sessionStarted', sessionStarted);
+    webrtcSdk.on('sessionEnded', sessionEnded);
+    webrtcSdk.on('trace', trace);
+    webrtcSdk.on('error', error);
+    webrtcSdk.on('terminated', terminated);
+    webrtcSdk.on('changeConnectionState', changeConnectionState);
+    webrtcSdk.on('changeInterrupted', changeInterrupted);
+    webrtcSdk.on('changeActive', changeActive);
+    webrtcSdk.on('endOfCandidates', endOfCandidates);
 
     writeToLog('SDK initialized');
   }
