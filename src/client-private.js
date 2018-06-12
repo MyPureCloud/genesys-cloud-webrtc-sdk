@@ -110,7 +110,10 @@ function onSession (session) {
   this.logger.log('session', session);
 
   session.id = session.sid;
-  session.conversationId = this._pendingSessions[session.id];
+  const pendingSessionInfo = this._pendingSessions[session.id];
+  if (pendingSessionInfo) {
+    session.conversationId = pendingSessionInfo.conversationId;
+  }
   this._pendingSessions[session.id] = null;
 
   startMedia.call(this).then(stream => {

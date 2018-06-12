@@ -99,8 +99,13 @@ class PureCloudWebrtcSdk extends WildEmitter {
     if (!opts.id && !opts.conversationId) {
       return Promise.reject(new Error('Unable to end session: must provide session id or conversationId.'));
     }
-    const session = this._sessionManager.sessions
-      .find(s => s.id === opts.id || s.conversationId === opts.conversationId);
+    let session;
+    if (opts.id) {
+      session = this._sessionManager.sessions[opts.id];
+    } else {
+      const sessions = Object.keys(this._sessionManager.sessions).map(k => this._sessionManager.sessions[k]);
+      session = sessions.find(s => s.conversationId === opts.conversationId);
+    }
 
     if (!session) {
       return Promise.reject(new Error('Unable to end session: session not connected.'));

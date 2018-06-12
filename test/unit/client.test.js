@@ -279,9 +279,27 @@ test('endSession | requests the conversation then patches the participant to dis
   await sdk.initialize();
 
   const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
-  sdk._sessionManager.sessions = [mockSession];
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
 
   await sdk.endSession({ id: sessionId });
+  getConversation.done();
+  patchConversation.done();
+  sinon.assert.notCalled(mockSession.end);
+});
+
+test('endSession | requests the conversation then patches the participant to disconnected', async t => {
+  const sessionId = random();
+  const conversationId = random();
+  const participantId = PARTICIPANT_ID;
+  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
+  await sdk.initialize();
+
+  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
+
+  await sdk.endSession({ conversationId });
   getConversation.done();
   patchConversation.done();
   sinon.assert.notCalled(mockSession.end);
@@ -321,7 +339,8 @@ test('endSession | rejects if the session is not found', async t => {
   await sdk.initialize();
 
   const mockSession = { id: random(), conversationId, end: sinon.stub() };
-  sdk._sessionManager.sessions = [mockSession];
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[mockSession.id] = mockSession;
 
   await sdk.endSession({ id: sessionId })
     .then(() => {
@@ -341,7 +360,8 @@ test('endSession | ends the session and rejects if there is an error fetching th
   await sdk.initialize();
 
   const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
-  sdk._sessionManager.sessions = [mockSession];
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
 
   await sdk.endSession({ id: sessionId })
     .then(() => {
@@ -361,7 +381,8 @@ test('endSession | terminates the session of the existing session has no convers
   await sdk.initialize();
 
   const mockSession = { id: sessionId, end: sinon.stub() };
-  sdk._sessionManager.sessions = [mockSession];
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
   await sdk.endSession({ id: sessionId });
   t.throws(() => getConversation.done());
   sinon.assert.calledOnce(mockSession.end);
@@ -466,6 +487,8 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
   const mockSession = new MockSession();
+  mockSession.sid = random();
+  sdk._pendingSessions[mockSession.sid] = mockSession;
   mockSession.streams = [{
     getTracks: () => [{}]
   }];
