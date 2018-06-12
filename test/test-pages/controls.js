@@ -4,10 +4,10 @@
 
     conversationsApi.getConversations()
       .then((data) => {
-        writeToLog(`${outputHeader}${JSON.stringify(data)}`);
+        writeToLog(`${outputHeader}${JSON.stringify(data, null, 2)}`);
       })
       .catch((err) => {
-        writeToLog(`${outputHeader}${JSON.stringify(err)}`);
+        writeToLog(`${outputHeader}${JSON.stringify(err, null, 2)}`);
       });
   }
 
