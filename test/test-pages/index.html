@@ -1,10 +1,21 @@
 <html>
 <head>
-<title>Test Page</title>
-<script src="../../web/purecloud-webrtc-sdk.js"></script>
-<script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
-
-<link rel="stylesheet" type="text/css" href="main.css">
+  <title>Test Page</title>
+  <script src="../../web/purecloud-webrtc-sdk.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script>
+    const environments = {
+      'dca': {
+        clientId: '08d54b47-966c-4f4f-9811-f443a69a259f',
+        uri: 'inindca.com'
+      },
+      'pca-us': {
+        clientId: '21a1fa66-c7ea-4f06-8f29-cb2c99184101',
+        uri: 'mypurecloud.com'
+      }
+    };
+  </script>
+  <link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
   <div>
@@ -14,16 +25,14 @@
       <option value="pca-us">pca-us</option>
     </select>
     <button id="auth-button" type="button">Authenticate</button>
+    <button id="start-app-button" type="button">Start App</button>
   </div>
   <div id="auth-text" class="auth-text">Authenticated</div>
+  <div id="init-text" class="init-text">Initializing SDK...</div>
   <hr />
 
   <div id="app-content" class="app-content">
     <div id="app-controls" class="app-controls">
-        <div class="control-title">
-          <div><a id="get-active-conversations" href="#">Get Active Conversations</a></div>
-          <div><a href="#" id="disconnect-sdk">Disconnect</a></div>
-        </div>
 
         <!-- outbound call -->
         <div class="control-title">Outbound phone call</div>
@@ -42,6 +51,11 @@
           <button id="answer-inbound-call">Answer</button>
           <button id="inbound-call-end">End Call</button>
           <button id="reject-inbound-call">Reject</button>
+        </div>
+
+        <!-- Disconnect -->
+        <div class="control-title">
+          <div><a href="#" id="disconnect-sdk">Disconnect</a></div>
         </div>
     </div>
 
@@ -63,5 +77,6 @@
   <!-- <script src="sdk-handlers.js"></script>
   <script src="controls.js"></script>
   <script src="main.js"></script> -->
+  <script src="platformClientInit.js"></script>
   <script src="dist/sdk-sample.js"></script>
 </body>

@@ -12,6 +12,11 @@ a {
   margin: 10px 0;
 }
 
+.init-text {
+  display: none;
+  margin: 10px 0;
+}
+
 .app-content {
   display: flex;
   flex-direction: row;
