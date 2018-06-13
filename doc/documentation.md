@@ -121,8 +121,6 @@ when the event is triggered
     - `String accessToken`: Required; access token for the user
     - `String environment`: Required; `mypurecloud.com || mypurecloud.ie ||
         mypurecloud.jp || mypurecloud.de || mypurecloud.com.au`
-    - `String orgId`: Required; guid for your organization - found in Admin >
-        Organization Settings
 
     Advanced options:
     - `Boolean sessionSurvivability`: Optional, default true; see Behavior Notes
