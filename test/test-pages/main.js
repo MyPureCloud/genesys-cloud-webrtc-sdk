@@ -2,8 +2,8 @@ const controller = require('./app-controller');
 
 function initApp () {
   const envInput = document.getElementById('environment').value;
-  const environmentInfo = environments[envInput];
-  controller.initialize(environmentInfo);
+  const environmentInfo = window.environments[envInput];
+  controller.initialize(environmentInfo, window.conversationsAPI);
 }
 
 document.getElementById('start-app-button').addEventListener('click', initApp);

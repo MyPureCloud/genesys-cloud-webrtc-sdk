@@ -1,9 +1,23 @@
 body {
   font-family: 'arial';
+  font-size: 14px;
 }
 
-a {
+.control-link {
   text-decoration: none;
+}
+
+.app-header {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: 16px;
 }
 
 .auth-text {
@@ -38,10 +52,10 @@ a {
 
 .control-section {
   margin-left: 35px;
+  margin-bottom: 25px;
 }
 
 .control-title {
-  margin: 25px 0 0 0;
   font-weight: bold;
 }
 
@@ -49,4 +63,10 @@ a {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+}
+
+.footer {
+  position: absolute;
+  bottom: 10px;
+  font-size: 12px;
 }

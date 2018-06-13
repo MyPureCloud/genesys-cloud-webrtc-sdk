@@ -4,9 +4,28 @@ const ORG_ID = 'e0c78f37-cab9-4985-9fea-74da8a3170a1';
 let currentConversationId;
 let currentSessionId;
 let webrtcSdk;
+let conversationsApi;
 
-function getInputValue (inputId) {
-  return document.getElementById(inputId).value;
+function initWebrtcSDK (environmentData, _conversationsApi) {
+  conversationsApi = _conversationsApi;
+
+  const authInfo = JSON.parse(window.localStorage.getItem('sdk_test_auth_data'));
+  if (!authInfo) {
+    throw new Error('Not authenticated');
+  }
+
+  const accessToken = authInfo.accessToken;
+  const environment = environmentData.uri;
+  const orgId = ORG_ID;
+  const options = {accessToken, environment, orgId};
+
+  webrtcSdk = new window.PureCloudWebrtcSdk(options);
+
+  return webrtcSdk.initialize()
+    .then(() => {
+      connectEventHandlers();
+      utils.writeToLog('SDK initialized and event handlers initialized');
+    });
 }
 
 function connectEventHandlers () {
@@ -67,7 +86,7 @@ function answerCall () {
 }
 
 function disconnectSdk () {
-  const reallyDisconnect = confirm('Are you sure you want to disconnect?');
+  const reallyDisconnect = window.confirm('Are you sure you want to disconnect?');
   if (!reallyDisconnect) {
     return;
   }
@@ -81,24 +100,8 @@ function rejectCall () {
   webrtcSdk.rejectPendingSession(currentSessionId);
 }
 
-function initWebrtcSDK (environmentData) {
-  const authInfo = JSON.parse(localStorage.getItem('sdk_test_auth_data'));
-  if (!authInfo) {
-    throw new Error('Not authenticated');
-  }
-
-  const accessToken = authInfo.accessToken;
-  const environment = environmentData.uri;
-  const orgId = ORG_ID;
-  const options = {accessToken, environment, orgId};
-
-  webrtcSdk = new PureCloudWebrtcSdk(options);
-
-  return webrtcSdk.initialize()
-    .then(() => {
-      connectEventHandlers();
-      utils.writeToLog('SDK initialized and event handlers initialized');
-    });
+function getInputValue (inputId) {
+  return document.getElementById(inputId).value;
 }
 
 /* --------------------------- */

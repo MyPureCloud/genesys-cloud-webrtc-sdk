@@ -25,13 +25,13 @@ function setInitTextVisibility (visible) {
   document.getElementById('init-text').style.display = display;
 }
 
-function initialize (environmentData) {
+function initialize (environmentData, conversationsApi) {
   setAppControlVisiblity(false);
   setInitTextVisibility(true);
 
   initControls();
 
-  sdkHandler.initWebrtcSDK(environmentData)
+  sdkHandler.initWebrtcSDK(environmentData, conversationsApi)
     .then(() => {
       setAppControlVisiblity(true);
       setInitTextVisibility(false);
