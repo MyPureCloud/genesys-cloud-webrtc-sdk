@@ -134,7 +134,6 @@ class PureCloudWebrtcSdk extends WildEmitter {
   disconnect (id) {
     this._streamingConnection.disconnect();
   }
-  // internal methods
 }
 
 module.exports = PureCloudWebrtcSdk;

@@ -30,7 +30,7 @@ sdk.initialize();
 Or via global module
 
 ```html
-<script src="https://apps.mypurecloud.com/webrtc-sdk/purecloud-webrtc-sdk.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js"></script>
 <script>
   const sdk = new window.PureCloudWebrtcSdk({
     accessToken: 'your access token'
