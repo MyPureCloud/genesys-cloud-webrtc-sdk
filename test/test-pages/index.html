@@ -1,8 +1,90 @@
 <html>
 <head>
-<title>Test Page</title>
-<script src="/web/pc-webrtc-sdk.js"></script>
+  <title>Test Page</title>
+  <script src="../../web/purecloud-webrtc-sdk.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script>
+    window.environments = {
+      'dca': {
+        clientId: '08d54b47-966c-4f4f-9811-f443a69a259f',
+        uri: 'inindca.com'
+      },
+      'pca-us': {
+        clientId: '21a1fa66-c7ea-4f06-8f29-cb2c99184101',
+        uri: 'mypurecloud.com'
+      }
+    };
+
+    // This needs to be a global since it is initialized by platformClientInit.js and utilized in app-controller.js
+    window.conversationsAPI;
+  </script>
+  <link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
-  Not implemented
+  <div class="app-header">
+    <div class="title">PureCoud WebRTC SDK Sample</div>
+    <div class="subtitle">Choose and environment to authenticate with, then click 'Start App' to initialize the SDK</div>
+  </div>
+
+  <div>
+    <label for="environment">Select Environment:</label>
+    <select id="environment" name="environment">
+      <option value="dca">dca</option>
+      <option value="pca-us">pca-us</option>
+    </select>
+    <button id="auth-button" type="button">Authenticate</button>
+    <button id="start-app-button" type="button">Start App</button>
+  </div>
+  <div id="auth-text" class="auth-text">Authenticated</div>
+  <div id="init-text" class="init-text">Initializing SDK...</div>
+  <hr />
+
+  <div id="app-content" class="app-content">
+    <div id="app-controls" class="app-controls">
+
+        <!-- outbound call -->
+        <div class="control-title">Outbound phone call</div>
+        <div class="control-section">
+          <label>Enter phone number:</label>
+          <input id="outbound-phone-number" type="text" class="text-input">
+          <div>
+            <button id="outbound-call-start">Start Call</button>
+            <button id="outbound-call-end">End Call</button>
+          </div>
+        </div>
+
+        <!-- inbound call -->
+        <div class="control-title">Inbound phone call</div>
+        <div class="control-section">
+          <button id="answer-inbound-call">Answer</button>
+          <button id="inbound-call-end">End Call</button>
+          <button id="reject-inbound-call">Reject</button>
+        </div>
+
+        <!-- Disconnect -->
+        <div class="control-title">
+          <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
+        </div>
+    </div>
+
+    <div class="output-container">
+      <div class="log-header">
+        <span>Log:</span>
+        <span>
+          <input name="log-traces-check" type="checkbox" id="log-traces-check"/>
+          <label for="log-traces-check">Log trace events</label>
+        </span>
+      </div>
+      <textarea id="log-data" class="log-data" readonly="true"></textarea>
+      <div>
+        <button type="button" id="clear-log">Clear Log</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://help.mypurecloud.com/articles/purecloud-privacy-policy/">Genesys Privacy Policy</a>
+  </div>
+  <script src="platformClientInit.js"></script>
+  <script src="dist/sdk-sample.js"></script>
 </body>
