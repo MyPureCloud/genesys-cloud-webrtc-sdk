@@ -21,7 +21,7 @@ const client = platformClient.ApiClient.instance;
     const clientId = window.environments[environment].clientId;
     initClientEnvironment(environment);
 
-    client.loginImplicitGrant(clientId, 'https://localhost:4300/test/test-pages')
+    client.loginImplicitGrant(clientId, window.location.href)
       .then(() => {
         setAuthTextVisible(true);
 

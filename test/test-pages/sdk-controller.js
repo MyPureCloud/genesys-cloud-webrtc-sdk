@@ -1,5 +1,4 @@
 const utils = require('./utils');
-const ORG_ID = 'e0c78f37-cab9-4985-9fea-74da8a3170a1';
 
 let currentConversationId;
 let currentSessionId;
@@ -16,8 +15,7 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
 
   const accessToken = authInfo.accessToken;
   const environment = environmentData.uri;
-  const orgId = ORG_ID;
-  const options = {accessToken, environment, orgId};
+  const options = { accessToken, environment };
 
   webrtcSdk = new window.PureCloudWebrtcSdk(options);
 
