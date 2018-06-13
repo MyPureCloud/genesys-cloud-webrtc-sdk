@@ -34,7 +34,8 @@
     "ignore": [
       "/.nyc_output",
       "/coverage",
-      "/scripts"
+      "/scripts",
+      "/test/test-pages/sdk-sample.js"
     ]
   },
   "babel": {
