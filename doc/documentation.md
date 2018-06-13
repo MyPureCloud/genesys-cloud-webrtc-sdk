@@ -67,6 +67,7 @@ Alice                     Push Notifications    WebRTC SDK
    |                            |                  |
 ```
 \* denotes asynchronous events/responses and order is not guaranteed.
+
 \^ denotes optional API usage outside of the SDK to get complete conversation details
 
 ## Usage
@@ -122,11 +123,22 @@ when the event is triggered
         mypurecloud.jp || mypurecloud.de || mypurecloud.com.au`
     - `String orgId`: Required; guid for your organization - found in Admin >
         Organization Settings
+
+    Advanced options:
     - `Boolean sessionSurvivability`: Optional, default true; see Behavior Notes
         above
     - `Boolean autoAnswerOutboundCalls`: Optional, default true; See Behavior Notes
+    - `Boolean autoConnectSessions`: Optional, default true; whether or not
+        the SDK should auto connect the sessions after answering or outbound.
+    - `Array[IceServerConfiguration] iceServers`: Custom ICE server configuration.
+        See https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
+    - `RTCConfiguration iceTransportPolicy`: Set the ICE transport policy
+        See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
 
 #### Methods
+
+`sdk.intialize() : Promise<void>` - Initialize the WebSocket connection for streaming
+connectivity with PureCloud. Initialize must be called before any events will trigger.
 
 `sdk.acceptPendingSession(id, opts) : void` - Accept an incoming RTC session proposal.
 Should be called automatically for outbound calls.
@@ -134,8 +146,6 @@ Should be called automatically for outbound calls.
 - parameters
   - `String id`: the id from the `pendingSession` event
   - `Object opts`: with properties:
-    - `Boolean autoConnectSession`: Optional, default true; whether or not
-        the SDK should auto connect the session
     - `MediaStream mediaStream`: Optional; stream to use for input audio. If not
         provided, the SDK will start media capture for a default stream.
     - `HTMLAudioElement audioElement`: Optional; the audio tag to use for attaching
@@ -154,10 +164,12 @@ Should be called automatically for outbound calls.
     - SDK will start media, attach it to the session, but not connect
 
 
-`sdk.rejectPendingSession(id) : void` - Reject an incoming RTC session proposal.
+`sdk.endSession(opts) : Promise<void>` - Disconnect an active session
 
 - parameters
-    - `String id`: the id from the `pendingSession` event
+    - `Object opts`: object with one of the following properties set:
+      - `String id`: the id of the session to disconnect
+      - `String conversationId`: the conversationId of the session to disconnect
 
 `sdk.disconnect() : void` - Tear down the WebSocket connection to PureCloud.
 This does not hangup or disconnect active WebRTC Session calls.
@@ -172,7 +184,8 @@ call session is being initiated for an outbound or inbound call
        - `String id`: the unique Id for the session proposal; used to accept or
      reject the proposal
        - `String address`: the address of the caller
-       - `String conversationId`: id for the associated conversation to link to the
+       - `String conversationId`: id for the associated conversation object (used in
+            platform API requests)
        - `Boolean autoAnswer`: whether or not the client should auto answer the session
           - `true` for all outbound calls
           - `false` for inbound calls, unless Auto Answer is configured for the user by an admin
