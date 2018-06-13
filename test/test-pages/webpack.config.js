@@ -4,7 +4,7 @@ module.exports = {
   entry: './test/test-pages/main.js',
   mode: 'development',
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname),
     filename: 'sdk-sample.js',
     libraryTarget: 'umd'
   },
