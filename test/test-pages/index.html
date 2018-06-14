@@ -19,6 +19,27 @@
 
     // This needs to be a global since it is initialized by platformClientInit.js and utilized in app-controller.js
     window.conversationsAPI;
+
+    window.getCurrentUrlParams = () => {
+      let params = null;
+      const urlParts = window.location.href.split('#');
+
+      if (urlParts[1]) {
+        const urlParamsArr = urlParts[1].split('&');
+
+        if (urlParamsArr.length) {
+          params = {};
+          for (let i = 0; i < urlParamsArr.length; i++) {
+            const currParam = urlParamsArr[i].split('=');
+            const key = currParam[0];
+            const value = currParam[1];
+            params[key] = value;
+          }
+        }
+      }
+
+      return params;
+    }
   </script>
   <link rel="stylesheet" type="text/css" href="main.css">
 </head>

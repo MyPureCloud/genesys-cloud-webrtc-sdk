@@ -8,12 +8,12 @@ let conversationsApi;
 function initWebrtcSDK (environmentData, _conversationsApi) {
   conversationsApi = _conversationsApi;
 
-  const authInfo = JSON.parse(window.localStorage.getItem('sdk_test_auth_data'));
-  if (!authInfo) {
-    throw new Error('Not authenticated');
+  const accessToken = utils.getAccessToken();
+  if (!accessToken) {
+    window.alert('You have not authenticated yet');
+    throw new Error('Not Authenticated');
   }
 
-  const accessToken = authInfo.accessToken;
   const environment = environmentData.uri;
   const options = { accessToken, environment };
 
@@ -22,7 +22,7 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
   return webrtcSdk.initialize()
     .then(() => {
       connectEventHandlers();
-      utils.writeToLog('SDK initialized and event handlers initialized');
+      utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
     });
 }
 
