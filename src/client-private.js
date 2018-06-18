@@ -132,7 +132,7 @@ function onSession (session) {
       session.accept();
     }
 
-    session.on('terminated', this.emit.bind(this, 'sessionEnded', session));
+    session.on('terminated', this.emit.bind(this, 'sessionEnded'));
     this.emit('sessionStarted', session);
   });
 }
