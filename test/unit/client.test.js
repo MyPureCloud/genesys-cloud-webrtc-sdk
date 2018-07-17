@@ -473,8 +473,21 @@ class MockSession extends WildEmitter {
   end () { }
 }
 
+class MockTrack {
+  stop () {}
+}
+
+class MockStream {
+  constructor () {
+    this._tracks = [ new MockTrack() ];
+  }
+  getTracks () {
+    return this._tracks;
+  }
+}
+
 test.serial('onSession | starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async t => {
-  const mockOutboundStream = {};
+  const mockOutboundStream = new MockStream();
   const { sdk } = mockApis({ withMedia: mockOutboundStream });
   await sdk.initialize();
 
@@ -489,9 +502,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   const mockSession = new MockSession();
   mockSession.sid = random();
   sdk._pendingSessions[mockSession.sid] = mockSession;
-  mockSession.streams = [{
-    getTracks: () => [{}]
-  }];
+  mockSession.streams = [ new MockStream() ];
   sandbox.stub(mockSession, 'addStream');
   sandbox.stub(mockSession, 'accept');
 
@@ -505,11 +516,15 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   const attachedAudioElement = await bodyAppend;
   t.is(attachedAudioElement.srcObject, mockSession.streams[0]);
 
+  const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+  mockSession.emit('terminated');
+  await sessionEnded;
+
   sandbox.restore();
 });
 
 test.serial('onSession | uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async t => {
-  const mockOutboundStream = {};
+  const mockOutboundStream = new MockStream();
   const mockAudioElement = { classList: { add () {} } };
   const { sdk } = mockApis({ withMedia: {} });
   await sdk.initialize();
@@ -540,11 +555,16 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   t.is(mockAudioElement.srcObject, mockInboundStream);
   sinon.assert.notCalled(global.document.body.append);
 
+  const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+  mockSession._outboundStream = null;
+  mockSession.emit('terminated');
+  await sessionEnded;
+
   sandbox.restore();
 });
 
 test.serial('onSession | uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async t => {
-  const mockOutboundStream = {};
+  const mockOutboundStream = new MockStream();
   const mockAudioElement = { classList: { add () {} } };
   const { sdk } = mockApis({ withMedia: {} });
   await sdk.initialize();

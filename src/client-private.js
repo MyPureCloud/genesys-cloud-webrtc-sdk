@@ -119,6 +119,7 @@ function onSession (session) {
   startMedia.call(this).then(stream => {
     this.logger.log('got media', stream);
     session.addStream(stream);
+    session._outboundStream = stream;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
       attachMedia.call(this, session.streams[0]);
@@ -132,7 +133,12 @@ function onSession (session) {
       session.accept();
     }
 
-    session.on('terminated', this.emit.bind(this, 'sessionEnded'));
+    session.on('terminated', reason => {
+      if (session._outboundStream) {
+        session._outboundStream.getTracks().forEach(t => t.stop());
+      }
+      this.emit('sessionEnded', reason);
+    });
     this.emit('sessionStarted', session);
   });
 }
