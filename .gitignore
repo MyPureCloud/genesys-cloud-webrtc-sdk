@@ -5,6 +5,7 @@
 
 web
 test/test-pages/*/sdk-sample.js
+test/test-pages/*/index.html
 
 ## vscode specific files
 /.vscode
