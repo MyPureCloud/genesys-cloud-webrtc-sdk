@@ -22,4 +22,14 @@ npx uglifyjs ./browserify/sdk-sample.js > ./browserify/sdk-sample.min.js
 mv browserify/sdk-sample.min.js browserify/sdk-sample.js
 rm -rf browserify/common
 printf "Browserify sample built successfully\n\n"
+
+echo "Building gulp sample...";
+cp -r common gulp/
+cp index-template.html gulp/index.html
+pushd gulp/
+npx gulp
+popd
+rm -rf gulp/common
+echo "Gulp sample built successfully\n\n"
+
 popd
