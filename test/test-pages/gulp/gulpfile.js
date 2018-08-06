@@ -8,7 +8,7 @@ const uglify = require('gulp-uglify');
 const babelify = require('babelify');
 const gutil = require('gulp-util');
 
-gulp.task('javascript', function () {
+gulp.task('default', function () {
   // set up the browserify instance on a task basis
   const b = browserify({
     entries: './common/main.js',
@@ -23,5 +23,3 @@ gulp.task('javascript', function () {
     .on('error', gutil.log)
     .pipe(gulp.dest('.'));
 });
-
-gulp.task('default', [ 'javascript' ]);
