@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "npx webpack",
-    "build-sample": "npx webpack --config ./test/test-pages/webpack.config.js",
+    "build-sample": "./test/test-pages/build.sh",
     "unit-test": "NODE_ENV=test nyc ava test/unit/*.js",
     "pretest": "npm run build",
     "start": "stupid-server -s -p 4300",

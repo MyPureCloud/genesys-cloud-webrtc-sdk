@@ -1,10 +1,16 @@
 <html>
 <head>
   <title>Test Page</title>
-  <!-- For local development -->
-  <!-- <script src="../../web/purecloud-webrtc-sdk.js"></script> -->
-  <script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js"></script>
   <script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script>
+    if (window.location.href.indexOf('/cdn') > -1) {
+      const script = document.createElement('script');
+      // for local development
+      // script.src = '../../web/purecloud-webrtc-sdk.js';
+      script.src = 'https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js';
+      document.head.prepend(script);
+    }
+  </script>
   <script>
     window.environments = {
       'dca': {
@@ -41,7 +47,7 @@
       return params;
     }
   </script>
-  <link rel="stylesheet" type="text/css" href="main.css">
+  <link rel="stylesheet" type="text/css" href="../common/main.css">
 </head>
 <body>
   <div class="app-header">
@@ -108,6 +114,6 @@
   <div class="footer">
     <a href="https://help.mypurecloud.com/articles/purecloud-privacy-policy/">Genesys Privacy Policy</a>
   </div>
-  <script src="platformClientInit.js"></script>
+  <script src="../common/platform-client.js"></script>
   <script src="sdk-sample.js"></script>
 </body>
