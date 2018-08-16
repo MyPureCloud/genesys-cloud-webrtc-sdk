@@ -124,7 +124,6 @@ function pendingSession (options) {
   utils.writeToLog(output);
 }
 
-// cancelPendingSession
 function cancelPendingSession (id) {
   let output = `${_getLogHeader('cancelPendingSession')}
     id: ${id}`;
@@ -134,7 +133,6 @@ function cancelPendingSession (id) {
   utils.writeToLog(output);
 }
 
-// handledPendingSession
 function handledPendingSession (id) {
   let output = `${_getLogHeader('handledPendingSession')}
     id: ${id}`;
@@ -143,7 +141,6 @@ function handledPendingSession (id) {
   utils.writeToLog(output);
 }
 
-// sessionStarted
 function sessionStarted (session) {
   let output = `${_getLogHeader('sessionStarted')}
     sessionId: ${session.sid}`;
@@ -152,7 +149,6 @@ function sessionStarted (session) {
   utils.writeToLog(output);
 }
 
-// sessionEnded
 function sessionEnded (session, reason) {
   let output = `${_getLogHeader('sessionEnded')}
     sessionId: ${session.sid}
@@ -162,7 +158,6 @@ function sessionEnded (session, reason) {
   utils.writeToLog(output);
 }
 
-// trace
 function trace (level, message, details) {
   let output = `${_getLogHeader('trace')}\n`;
   output += `  level: ${level}\n  message: ${message}\n  details: ${details}`;
@@ -173,7 +168,6 @@ function trace (level, message, details) {
   }
 }
 
-// error
 function error (error, details) {
   let output = `${_getLogHeader('error')}
     error: ${error}\n  details: ${details}`;
@@ -181,7 +175,6 @@ function error (error, details) {
   utils.writeToLog(output);
 }
 
-// terminated
 function terminated (session, reason) {
   let output = `${_getLogHeader('terminated')}
     reason: ${reason}
@@ -190,7 +183,6 @@ function terminated (session, reason) {
   utils.writeToLog(output);
 }
 
-// change:connectionState
 function changeConnectionState (session, connectionState) {
   let output = `${_getLogHeader('changeConnectionState')}
     connectionState: ${JSON.stringify(connectionState)}
@@ -199,7 +191,6 @@ function changeConnectionState (session, connectionState) {
   utils.writeToLog(output);
 }
 
-// change:interrupted
 function changeInterrupted (session, interrupted) {
   let output = `${_getLogHeader('changeInterrupted')}
     sessionId: ${session.sid}
@@ -208,7 +199,6 @@ function changeInterrupted (session, interrupted) {
   utils.writeToLog(output);
 }
 
-// change:active
 function changeActive (session, active) {
   let output = `${_getLogHeader('changeActive')}
     sessionId: ${session.sid}
@@ -217,7 +207,6 @@ function changeActive (session, active) {
   utils.writeToLog(output);
 }
 
-// endOfCandidates
 function endOfCandidates () {
   utils.writeToLog('endOfCandidates event');
 }
