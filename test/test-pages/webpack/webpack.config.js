@@ -1,11 +1,9 @@
 const path = require('path');
 
 module.exports = {
-  entry: './test/test-pages/main.js',
   mode: 'development',
   output: {
     path: path.resolve(__dirname),
-    filename: 'sdk-sample.js',
     libraryTarget: 'umd'
   },
   module: {

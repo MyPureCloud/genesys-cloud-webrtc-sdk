@@ -1,4 +1,5 @@
 const utils = require('./utils');
+let PureCloudWebrtcSdk = require('../sdk-proxy');
 
 let currentConversationId;
 let currentSessionId;
@@ -17,7 +18,10 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
   const environment = environmentData.uri;
   const options = { accessToken, environment };
 
-  webrtcSdk = new window.PureCloudWebrtcSdk(options);
+  if (!PureCloudWebrtcSdk) {
+    PureCloudWebrtcSdk = window.PureCloudWebrtcSdk;
+  }
+  webrtcSdk = new PureCloudWebrtcSdk(options);
 
   return webrtcSdk.initialize()
     .then(() => {
