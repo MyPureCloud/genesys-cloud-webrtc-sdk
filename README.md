@@ -62,5 +62,5 @@ pass 100%, and coverage should remain at 100%.
 ### Testing
 Run the tests using `npm test` in the command line
 
-[1]: https://developer.mypurecloud.com
+[1]: https://developer.mypurecloud.com/api/webrtcsdk/
 [2]: https://github.com/Flet/semistandard
