@@ -18,7 +18,7 @@
     "build-sample": "./test/test-pages/build.sh",
     "unit-test": "NODE_ENV=test nyc ava test/unit/*.js",
     "pretest": "npm run build",
-    "start": "stupid-server -s -p 4300",
+    "start": "stupid-server -s -p 8443",
     "test": "npm run semistandard && npm run unit-test",
     "watch-tests": "watch 'npm test' src test",
     "semistandard": "semistandard",
