@@ -69,6 +69,9 @@ function setupStreamingClient () {
         this.logger.log('PureCloud streaming client ready for WebRTC calls');
         resolve();
       });
+
+      // refresh turn servers every 6 hours
+      this._refreshTurnServersInterval = setInterval(this._refreshTurnServers.bind(this), 6 * 60 * 60 * 1000);
       connection.connect();
     });
 
