@@ -160,6 +160,7 @@ function mockApis ({ failOrg, failUser, failStreaming, withMedia, conversationId
               }
             };
           }
+          requestExternalServices () {}
         };
         if (failStreaming) {
           console.log('Failing the streaming connection');
@@ -596,4 +597,31 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sinon.assert.notCalled(global.document.body.append);
 
   sandbox.restore();
+});
+
+test('_refreshTurnServers | refreshes the turn servers', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._streamingConnection.connected = true;
+  t.true(sdk.connected);
+
+  sinon.stub(sdk._streamingConnection, 'requestExternalServices').yields(null, []);
+  sdk._refreshTurnServers();
+  sinon.assert.calledOnce(sdk._streamingConnection.requestExternalServices);
+  t.truthy(sdk._refreshTurnServersInterval);
+});
+
+test('_refreshTurnServers | emits an error if there is an error refreshing turn servers', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._streamingConnection.connected = true;
+  t.true(sdk.connected);
+
+  const promise = new Promise(resolve => sdk.on('error', resolve));
+  sinon.stub(sdk._streamingConnection, 'requestExternalServices').yields(new Error('fail'));
+  sdk._refreshTurnServers();
+  sinon.assert.calledOnce(sdk._streamingConnection.requestExternalServices);
+  await promise;
 });

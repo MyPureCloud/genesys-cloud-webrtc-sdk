@@ -134,6 +134,18 @@ class PureCloudWebrtcSdk extends WildEmitter {
   disconnect (id) {
     this._streamingConnection.disconnect();
   }
+
+  _refreshTurnServers () {
+    this._streamingConnection.requestExternalServices('turn', (err, services) => {
+      if (err) {
+        const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
+        this.logger.warn(errorMessage, err);
+        this.emit('error', { message: errorMessage, error: err });
+      } else {
+        this.logger.debug('PureCloud SDK refreshed TURN credentials successfully');
+      }
+    });
+  }
 }
 
 module.exports = PureCloudWebrtcSdk;

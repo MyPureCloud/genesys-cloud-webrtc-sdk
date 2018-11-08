@@ -22,6 +22,7 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
     PureCloudWebrtcSdk = window.PureCloudWebrtcSdk;
   }
   webrtcSdk = new PureCloudWebrtcSdk(options);
+  window.webrtcSdk = webrtcSdk;
 
   return webrtcSdk.initialize()
     .then(() => {
