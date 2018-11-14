@@ -1,6 +1,6 @@
 {
   "name": "purecloud-webrtc-sdk",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
   "license": "MIT",
