@@ -183,7 +183,7 @@ function proxyStreamingClientEvents () {
 
   // other events
   on('error', this.emit.bind(this, 'error'));
-  on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
+  on('disconnect', () => this.emit('disconnected', 'Streaming API connection disconnected'));
   on('rtcIceServers', replaceIceServers.bind(this));
 }
 

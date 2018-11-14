@@ -172,6 +172,9 @@ Should be called automatically for outbound calls.
 `sdk.disconnect() : void` - Tear down the WebSocket connection to PureCloud.
 This does not hangup or disconnect active WebRTC Session calls.
 
+`sdk.reconnect() : void` - Tear down the WebSocket connection to PureCloud (if active) and reconnect it.
+This does not hangup or disconnect active WebRTC Session calls.
+
 #### Events
 
 `sdk.on('pendingSession', ({id, address, conversationId, autoAnswer}) => {})` - a
@@ -226,6 +229,10 @@ messages for the session manager
 - arguments
     - `Error error` - the error that occurred
     - `Object details` - the details about the error
+
+`sdk.on('disconnected', () => {})` - the underlying websocket connection has
+  disconnected and is no longer attempting to reconnect automatically. Should usually be followed
+  by `sdk.reconnect()` or reloading the application, as this indicates a critical error
 
 ##### Session level events.
 
