@@ -222,7 +222,7 @@ test('initialize sets up event proxies', async t => {
       transformedArgs: [ 1 ]
     },
     // { name: 'error', trigger: 'rtcSessionError' },
-    { name: 'disconnected', trigger: 'disconnected', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
+    { name: 'disconnected', trigger: 'disconnect', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
   ];
 
   sdk._streamingConnection.emit('rtcIceServers');
@@ -397,6 +397,17 @@ test('disconnect | proxies the call to the streaming connection', async t => {
 
   sdk.disconnect();
   sinon.assert.calledOnce(sdk._streamingConnection.disconnect);
+  t.plan(0);
+});
+
+test('reconnect | proxies the call to the streaming connection', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._streamingConnection.reconnect = sinon.stub();
+
+  sdk.reconnect();
+  sinon.assert.calledOnce(sdk._streamingConnection.reconnect);
   t.plan(0);
 });
 

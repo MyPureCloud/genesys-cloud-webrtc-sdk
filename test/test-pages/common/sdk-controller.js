@@ -24,14 +24,15 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
   webrtcSdk = new PureCloudWebrtcSdk(options);
   window.webrtcSdk = webrtcSdk;
 
+  connectEventHandlers();
   return webrtcSdk.initialize()
     .then(() => {
-      connectEventHandlers();
       utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
     });
 }
 
 function connectEventHandlers () {
+  webrtcSdk.on('ready', ready);
   webrtcSdk.on('pendingSession', pendingSession);
   webrtcSdk.on('cancelPendingSession', cancelPendingSession);
   webrtcSdk.on('handledPendingSession', handledPendingSession);
@@ -44,6 +45,7 @@ function connectEventHandlers () {
   webrtcSdk.on('changeInterrupted', changeInterrupted);
   webrtcSdk.on('changeActive', changeActive);
   webrtcSdk.on('endOfCandidates', endOfCandidates);
+  webrtcSdk.on('disconnected', disconnected);
 }
 
 function _getLogHeader (functionName) {
@@ -110,6 +112,10 @@ function getInputValue (inputId) {
 /* --------------------------- */
 /* SDK EVENT HANDLER FUNCTIONS */
 /* --------------------------- */
+
+function ready () {
+  utils.writeToLog('webrtcSDK ready event emitted');
+}
 
 // pendingSession - {id, address, conversationId, autoAnswer}
 function pendingSession (options) {
@@ -210,6 +216,10 @@ function changeActive (session, active) {
 
 function endOfCandidates () {
   utils.writeToLog('endOfCandidates event');
+}
+
+function disconnected (e) {
+  utils.writeToLog('disconnected event: ' + e);
 }
 
 module.exports = {
