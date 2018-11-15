@@ -177,8 +177,8 @@ function proxyStreamingClientEvents () {
   on('requestIncomingRtcSession', onPendingSession.bind(this));
   on('incomingRtcSession', onSession.bind(this));
   on('rtcSessionError', this.emit.bind(this, 'error'));
-  on('cancelIncomingRtcSession', session => this.emit('cancelPendingSession', session.id));
-  on('handledIncomingRtcSession', session => this.emit('handledPendingSession', session.id));
+  on('cancelIncomingRtcSession', session => this.emit('cancelPendingSession', session));
+  on('handledIncomingRtcSession', session => this.emit('handledPendingSession', session));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
   // other events
