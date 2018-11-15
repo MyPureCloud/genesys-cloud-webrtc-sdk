@@ -88,6 +88,7 @@ function answerCall () {
   }
 
   webrtcSdk.acceptPendingSession(currentSessionId);
+  currentSessionId = null;
 }
 
 function disconnectSdk () {
@@ -144,7 +145,7 @@ function handledPendingSession (id) {
   let output = `${_getLogHeader('handledPendingSession')}
     id: ${id}`;
 
-  currentSessionId = id;
+  currentSessionId = null;
   utils.writeToLog(output);
 }
 

@@ -212,13 +212,13 @@ test('initialize sets up event proxies', async t => {
     {
       name: 'handledPendingSession',
       trigger: 'handledIncomingRtcSession',
-      args: [{ id: 1 }],
+      args: [ 1 ],
       transformedArgs: [ 1 ]
     },
     {
       name: 'cancelPendingSession',
       trigger: 'cancelIncomingRtcSession',
-      args: [{ id: 1 }],
+      args: [ 1 ],
       transformedArgs: [ 1 ]
     },
     // { name: 'error', trigger: 'rtcSessionError' },
