@@ -27,7 +27,7 @@ function requestApi (path, { method, data, version, contentType } = {}) {
 function rejectErr (message, details) {
   const error = new Error(message);
   error.details = details;
-  this.logger.error(message, details);
+  this._log('error', message, details);
   this.emit('error', details);
   throw error;
 }
@@ -48,7 +48,7 @@ function setupStreamingClient () {
     host: `https://realtime.${this._environment}`
   };
 
-  this.logger.debug('Streaming client WebSocket connection options', connectionOptions);
+  this._log('debug', 'Streaming client WebSocket connection options', connectionOptions);
 
   return new Promise((resolve) => {
     const staticAssetUri = buildAssetUri.call(this, '/static-realtime-js/realtime.js');
@@ -64,10 +64,10 @@ function setupStreamingClient () {
 
       this._streamingConnection = connection;
       connection.on('connected', () => {
-        this.logger.log('PureCloud streaming client connected');
+        this._log('log', 'PureCloud streaming client connected');
       });
       connection.on('rtcIceServers', () => {
-        this.logger.log('PureCloud streaming client ready for WebRTC calls');
+        this._log('log', 'PureCloud streaming client ready for WebRTC calls');
         resolve();
       });
 
@@ -112,7 +112,7 @@ function attachMedia (stream) {
 }
 
 function onSession (session) {
-  this.logger.log('session', session);
+  this._log('log', 'onSession', session);
 
   session.id = session.sid;
   const pendingSessionInfo = this._pendingSessions[session.id];
@@ -122,7 +122,7 @@ function onSession (session) {
   this._pendingSessions[session.id] = null;
 
   startMedia.call(this).then(stream => {
-    this.logger.log('got media', stream);
+    this._log('debug', 'onMediaStarted');
     session.addStream(stream);
     session._outboundStream = stream;
 
@@ -139,6 +139,7 @@ function onSession (session) {
     }
 
     session.on('terminated', reason => {
+      this._log('log', 'onSessionTerminated', reason);
       if (session._outboundStream) {
         session._outboundStream.getTracks().forEach(t => t.stop());
       }
@@ -149,7 +150,7 @@ function onSession (session) {
 }
 
 function onPendingSession (sessionInfo) {
-  this.logger.log('pending session', sessionInfo);
+  this._log('log', 'onPendingSession', sessionInfo);
   const sessionEvent = {
     id: sessionInfo.sessionId,
     autoAnswer: sessionInfo.autoAnswer,
