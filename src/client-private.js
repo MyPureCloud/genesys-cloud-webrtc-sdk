@@ -38,6 +38,7 @@ function setupStreamingClient () {
     fetchGroupsOnConnect: false,
     fetchRosterOnConnect: false,
     focusV2: true,
+    roomsV2: true,
     signalIceConnected: true,
     jidResource: 'purecloud-webrtc-sdk',
     rtcSessionSurvivability: true,
