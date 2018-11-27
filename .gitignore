@@ -11,6 +11,9 @@ test/test-pages/*/index.html
 ## vscode specific files
 /.vscode
 
+## webstorm specific files
+/.idea
+
 # tap specific files
 /.nyc_output
 /coverage
