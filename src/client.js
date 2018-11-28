@@ -217,7 +217,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   _sendLogs () {
-    const traces = this._logBuffer.splice(0, this._logBuffer.lenth);
+    const traces = this._logBuffer.splice(0, this._logBuffer.length);
     const payload = {
       app: {
         appId: 'webrtc-sdk',
