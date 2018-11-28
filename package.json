@@ -65,8 +65,11 @@
   "author": "",
   "dependencies": {
     "purecloud-platform-client-v2": "^28.0.0",
+    "safe-json-stringify": "^1.2.0",
     "stupid-server": "^0.2.2",
     "superagent": "^3.8.3",
+    "uuid": "^3.3.2",
+    "webpack-auto-inject-version": "^1.2.2",
     "wildemitter": "^1.2.0"
   },
   "devDependencies": {

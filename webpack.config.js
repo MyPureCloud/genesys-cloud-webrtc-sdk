@@ -1,4 +1,5 @@
 const path = require('path');
+const WebpackAutoInject = require('webpack-auto-inject-version');
 
 module.exports = {
   entry: './src/client.js',
@@ -9,6 +10,17 @@ module.exports = {
     library: 'PureCloudWebrtcSdk',
     libraryTarget: 'umd'
   },
+  plugins: [
+    new WebpackAutoInject({
+      components: {
+        AutoIncreaseVersion: false,
+        InjectByTag: {
+          fileRegex: /\.+/,
+          AIVTagRegexp: /(\[AIV])(([a-zA-Z{} ,:;!()_@\-"'\\\/])+)(\[\/AIV])/g // eslint-disable-line
+        }
+      }
+    })
+  ],
   module: {
     rules: [
       {

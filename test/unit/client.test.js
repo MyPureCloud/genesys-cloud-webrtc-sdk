@@ -53,7 +53,7 @@ test('constructor | throws if accessToken is not provided', t => {
   });
 });
 
-test('constructor | throws if environment is not valid', t => {
+test('constructor | warns if environment is not valid', t => {
   const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' }); // eslint-disable-line
   const sdk2 = new PureCloudWebrtcSdk({  // eslint-disable-line
     accessToken: '1234',
@@ -62,6 +62,26 @@ test('constructor | throws if environment is not valid', t => {
   });
 
   sinon.assert.calledOnce(sdk2.logger.warn);
+});
+
+test('constructor | warns if the logLevel is not valid', t => {
+  const sdk = new PureCloudWebrtcSdk({
+    accessToken: '1234',
+    environment: 'mypurecloud.com',
+    logLevel: 'ERROR',
+    logger: { warn: sinon.stub() }
+  });
+  sinon.assert.calledOnce(sdk.logger.warn);
+});
+
+test('constructor | does not warn if things are fine', t => {
+  const sdk = new PureCloudWebrtcSdk({
+    accessToken: '1234',
+    environment: 'mypurecloud.com',
+    logLevel: 'error',
+    logger: { warn: sinon.stub() }
+  });
+  sinon.assert.notCalled(sdk.logger.warn);
 });
 
 test('constructor | sets up options with defaults', t => {
@@ -94,7 +114,7 @@ test('constructor | sets up options when provided', t => {
   t.is(sdk._iceTransportPolicy, 'relay');
 });
 
-function mockApis ({ failOrg, failUser, failStreaming, withMedia, conversationId, participantId } = {}) {
+function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conversationId, participantId } = {}) {
   const api = nock('https://api.mypurecloud.com');
 
   let getOrg;
@@ -124,6 +144,14 @@ function mockApis ({ failOrg, failUser, failStreaming, withMedia, conversationId
     patchConversation = conversationsApi
       .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
       .reply(202, {});
+  }
+
+  const logsApi = nock('https://api.mypurecloud.com');
+  let sendLogs;
+  if (failLogs) {
+    sendLogs = logsApi.get('/api/v2/diagnostics/trace').reply(429);
+  } else {
+    sendLogs = logsApi.get('api/v2/diagnostics/trace').reply(200, {});
   }
 
   if (withMedia) {
@@ -170,9 +198,12 @@ function mockApis ({ failOrg, failUser, failStreaming, withMedia, conversationId
     }
   };
 
-  const sdk = new PureCloudWebrtcSdk({ accessToken: '1234', logger: { log () {}, error () {}, warn () {}, debug () {} } });
+  const sdk = new PureCloudWebrtcSdk({
+    accessToken: '1234',
+    logger: { log () {}, error () {}, warn () {}, debug () {} }
+  });
 
-  return { getOrg, getUser, getConversation, patchConversation, sdk };
+  return { getOrg, getUser, getConversation, sendLogs, patchConversation, sdk };
 }
 
 test('initialize | fetches org and person details, sets up the streaming connection', async t => {
@@ -635,4 +666,54 @@ test('_refreshTurnServers | emits an error if there is an error refreshing turn 
   sdk._refreshTurnServers();
   sinon.assert.calledOnce(sdk._streamingConnection.requestExternalServices);
   await promise;
+});
+
+test('_log | will not notify logs if the logLevel is lower than configured', async t => {
+  const { sdk } = mockApis();
+  sdk.logLevel = 'warn';
+  await sdk.initialize();
+  sinon.stub(sdk, '_notifyLogs');
+  sdk._log('debug', 'test', { details: 'etc' });
+  sinon.assert.notCalled(sdk._notifyLogs);
+});
+
+test('_log | will not notify logs if opted out', async t => {
+  const { sdk } = mockApis();
+  sdk.logLevel = 'debug';
+  sdk._optOutOfTelemetry = true;
+  await sdk.initialize();
+  sinon.stub(sdk, '_notifyLogs');
+  sdk._log('warn', 'test', { details: 'etc' });
+  sinon.assert.notCalled(sdk._notifyLogs);
+});
+
+test('_log | will buffer a log and notify it if the logLevel is gte configured', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  sinon.stub(sdk, '_notifyLogs');
+  t.is(sdk._logBuffer.length, 0);
+  sdk._log('warn', 'test', { details: 'etc' });
+  sinon.assert.calledOnce(sdk._notifyLogs);
+  t.is(sdk._logBuffer.length, 1);
+});
+
+function timeout (n) {
+  return new Promise(resolve => setTimeout(resolve, n));
+}
+
+test('_notifyLogs | will debounce logs and only send logs once at the end', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  sinon.stub(sdk, '_sendLogs');
+  t.is(sdk._logBuffer.length, 0);
+  sdk._log('warn', 'test', { details: 'etc' });
+  sinon.assert.notCalled(sdk._sendLogs);
+  for (let i = 1; i < 6; i++) {
+    await timeout(100 * i);
+    sdk._log('warn', 'test' + i);
+  }
+  sinon.assert.notCalled(sdk._sendLogs);
+  t.is(sdk._logBuffer.length, 6);
+  await timeout(1100);
+  sinon.assert.calledOnce(sdk._sendLogs);
 });

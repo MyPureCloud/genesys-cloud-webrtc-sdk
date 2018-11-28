@@ -1,6 +1,8 @@
 'use strict';
 
 const WildEmitter = require('wildemitter');
+const uuidv4 = require('uuid/v4');
+const stringify = require('safe-json-stringify');
 
 const {
   requestApi,
@@ -16,6 +18,8 @@ const ENVIRONMENTS = [
   'mypurecloud.de',
   'mypurecloud.ie'
 ];
+
+const LOG_LEVELS = ['debug', 'log', 'info', 'warn', 'error'];
 
 // helper methods
 function validateOptions (options) {
@@ -42,12 +46,36 @@ class PureCloudWebrtcSdk extends WildEmitter {
     super();
     validateOptions(options);
 
-    this.logger = options.logger || console;
     this._accessToken = options.accessToken;
     this._environment = options.environment;
     this._autoConnectSessions = options.autoConnectSessions !== false;
     this._customIceServersConfig = options.iceServers;
     this._iceTransportPolicy = options.iceTransportPolicy || 'all';
+
+    Object.defineProperty(this, '_clientId', {
+      value: uuidv4(),
+      writable: false
+    });
+
+    this.logger = options.logger || console;
+    this._logBuffer = [];
+    this._logTimer = null;
+    if (LOG_LEVELS.indexOf(options.logLevel) === -1) {
+      if (options.logLevel) {
+        this.logger.warn(`Invalid log level: '${options.logLevel}'. Default 'info' will be used instead.`);
+      }
+      this._logLevel = 'info';
+    } else {
+      this._logLevel = options.logLevel;
+    }
+
+    // Telemetry for specific events
+    // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
+    this.on('error', this._log.bind(this, 'error'));
+    this.on('disconnected', this._log.bind(this, 'error'));
+    this.on('cancelPendingSession', this._log.bind(this, 'warn'));
+    this.on('handledPendingSession', this._log.bind(this, 'warn'));
+    this.on('trace', this._log.bind(this, 'debug'));
 
     this._connected = false;
     this._streamingConnection = null;
@@ -58,13 +86,13 @@ class PureCloudWebrtcSdk extends WildEmitter {
     const getOrg = requestApi.call(this, '/organizations/me')
       .then(({ body }) => {
         this._orgDetails = body;
-        this.logger.debug('Organization details', body);
+        this._log('debug', 'Organization details', body);
       });
 
     const getPerson = requestApi.call(this, '/users/me')
       .then(({ body }) => {
         this._personDetails = body;
-        this.logger.debug('Person details', body);
+        this._log('debug', 'Person details', body);
       });
 
     return Promise.all([getOrg, getPerson])
@@ -112,7 +140,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
     }
 
     if (!session.conversationId) {
-      this.logger.warn('Session has no conversationId. Terminating session.');
+      this._log('warn', 'Session has no conversationId. Terminating session.');
       session.end();
       return Promise.resolve();
     }
@@ -148,6 +176,61 @@ class PureCloudWebrtcSdk extends WildEmitter {
       } else {
         this.logger.debug('PureCloud SDK refreshed TURN credentials successfully');
       }
+    });
+  }
+
+  _log (level, message, details) {
+    // immediately log it locally
+    this.logger[level](message, details);
+
+    // ex: if level is debug and config is warn, then debug is less than warn, don't push
+    if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._logLevel)) {
+      return;
+    }
+
+    if (this._optOutOfTelemetry) {
+      return;
+    }
+
+    const log = {
+      clientTime: new Date().toISOString(),
+      clientId: this._clientId,
+      message,
+      details
+    };
+    const logContainer = {
+      topic: `purecloud-webrtc-sdk.${this._clientId}`,
+      level: level.toUpperCase(),
+      message: stringify(log)
+    };
+    this._logBuffer.push(logContainer);
+    this._notifyLogs(); // debounced _sendLogs
+  }
+
+  _notifyLogs () {
+    if (this._logTimer) {
+      clearTimeout(this._logTimer);
+    }
+    this._logTimer = setTimeout(() => {
+      this._sendLogs();
+    }, 1000);
+  }
+
+  _sendLogs () {
+    const traces = this._logBuffer.splice(0, this._logBuffer.lenth);
+    const payload = {
+      app: {
+        appId: 'webrtc-sdk',
+        appVersion: '[AIV]{version}[/AIV]' // injected by webpack auto-inject-version
+      },
+      traces
+    };
+    return requestApi.call(this, '/diagnostics/trace', {
+      method: 'post',
+      contentType: 'application/json; charset=UTF-8',
+      data: JSON.stringify(payload)
+    }).catch(() => {
+      this.logger.error('Failed to post logs to server', traces);
     });
   }
 }
