@@ -200,7 +200,7 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conv
 
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
-    logger: { log () {}, error () {}, warn () {}, debug () {} }
+    logger: { log () {}, info () {}, error () {}, warn () {}, debug () {} }
   });
 
   return { getOrg, getUser, getConversation, sendLogs, patchConversation, sdk };
@@ -670,7 +670,7 @@ test('_refreshTurnServers | emits an error if there is an error refreshing turn 
 
 test('_log | will not notify logs if the logLevel is lower than configured', async t => {
   const { sdk } = mockApis();
-  sdk.logLevel = 'warn';
+  sdk._logLevel = 'warn';
   await sdk.initialize();
   sinon.stub(sdk, '_notifyLogs');
   sdk._log('debug', 'test', { details: 'etc' });
@@ -679,7 +679,7 @@ test('_log | will not notify logs if the logLevel is lower than configured', asy
 
 test('_log | will not notify logs if opted out', async t => {
   const { sdk } = mockApis();
-  sdk.logLevel = 'debug';
+  sdk._logLevel = 'debug';
   sdk._optOutOfTelemetry = true;
   await sdk.initialize();
   sinon.stub(sdk, '_notifyLogs');
@@ -689,8 +689,10 @@ test('_log | will not notify logs if opted out', async t => {
 
 test('_log | will buffer a log and notify it if the logLevel is gte configured', async t => {
   const { sdk } = mockApis();
+  sdk._logLevel = 'warn';
   await sdk.initialize();
   sinon.stub(sdk, '_notifyLogs');
+  console.log(sdk._logBuffer[0]);
   t.is(sdk._logBuffer.length, 0);
   sdk._log('warn', 'test', { details: 'etc' });
   sinon.assert.calledOnce(sdk._notifyLogs);
@@ -703,6 +705,7 @@ function timeout (n) {
 
 test('_notifyLogs | will debounce logs and only send logs once at the end', async t => {
   const { sdk } = mockApis();
+  sdk._logLevel = 'warn';
   await sdk.initialize();
   sinon.stub(sdk, '_sendLogs');
   t.is(sdk._logBuffer.length, 0);

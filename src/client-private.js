@@ -64,10 +64,10 @@ function setupStreamingClient () {
 
       this._streamingConnection = connection;
       connection.on('connected', () => {
-        this._log('log', 'PureCloud streaming client connected');
+        this._log('info', 'PureCloud streaming client connected');
       });
       connection.on('rtcIceServers', () => {
-        this._log('log', 'PureCloud streaming client ready for WebRTC calls');
+        this._log('info', 'PureCloud streaming client ready for WebRTC calls');
         resolve();
       });
 
@@ -112,7 +112,7 @@ function attachMedia (stream) {
 }
 
 function onSession (session) {
-  this._log('log', 'onSession', session);
+  this._log('info', 'onSession', session);
 
   session.id = session.sid;
   const pendingSessionInfo = this._pendingSessions[session.id];
@@ -139,7 +139,7 @@ function onSession (session) {
     }
 
     session.on('terminated', reason => {
-      this._log('log', 'onSessionTerminated', reason);
+      this._log('info', 'onSessionTerminated', reason);
       if (session._outboundStream) {
         session._outboundStream.getTracks().forEach(t => t.stop());
       }
@@ -150,7 +150,7 @@ function onSession (session) {
 }
 
 function onPendingSession (sessionInfo) {
-  this._log('log', 'onPendingSession', sessionInfo);
+  this._log('info', 'onPendingSession', sessionInfo);
   const sessionEvent = {
     id: sessionInfo.sessionId,
     autoAnswer: sessionInfo.autoAnswer,
