@@ -137,12 +137,12 @@ function onSession (session) {
       session.accept();
     }
 
-    session.on('terminated', reason => {
-      this._log('info', 'onSessionTerminated', reason);
+    session.on('terminated', (session, reason) => {
+      this._log('info', 'onSessionTerminated', { peers: session.peers, pc: session.pc, reason });
       if (session._outboundStream) {
         session._outboundStream.getTracks().forEach(t => t.stop());
       }
-      this.emit('sessionEnded', reason);
+      this.emit('sessionEnded', session, reason);
     });
     this.emit('sessionStarted', session);
   });

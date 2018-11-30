@@ -560,7 +560,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   t.is(attachedAudioElement.srcObject, mockSession.streams[0]);
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
-  mockSession.emit('terminated');
+  mockSession.emit('terminated', mockSession);
   await sessionEnded;
 
   sandbox.restore();
@@ -600,7 +600,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
   mockSession._outboundStream = null;
-  mockSession.emit('terminated');
+  mockSession.emit('terminated', mockSession);
   await sessionEnded;
 
   sandbox.restore();
