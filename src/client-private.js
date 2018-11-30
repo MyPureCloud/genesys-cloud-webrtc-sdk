@@ -27,8 +27,7 @@ function requestApi (path, { method, data, version, contentType } = {}) {
 function rejectErr (message, details) {
   const error = new Error(message);
   error.details = details;
-  this._log('error', message, details);
-  this.emit('error', details);
+  this.emit('error', message, details);
   throw error;
 }
 

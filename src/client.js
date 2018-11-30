@@ -72,9 +72,9 @@ class PureCloudWebrtcSdk extends WildEmitter {
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
     this.on('error', this._log.bind(this, 'error'));
-    this.on('disconnected', this._log.bind(this, 'error'));
-    this.on('cancelPendingSession', this._log.bind(this, 'warn'));
-    this.on('handledPendingSession', this._log.bind(this, 'warn'));
+    this.on('disconnected', this._log.bind(this, 'error', 'onDisconnected'));
+    this.on('cancelPendingSession', this._log.bind(this, 'warn', 'cancelPendingSession'));
+    this.on('handledPendingSession', this._log.bind(this, 'warn', 'handledPendingSession'));
     this.on('trace', this._log.bind(this, 'debug'));
 
     this._connected = false;
