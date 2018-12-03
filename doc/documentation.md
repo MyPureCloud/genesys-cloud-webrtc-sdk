@@ -234,6 +234,8 @@ messages for the session manager
   disconnected and is no longer attempting to reconnect automatically. Should usually be followed
   by `sdk.reconnect()` or reloading the application, as this indicates a critical error
 
+`sdk.on('connected', () => {})` - the underlying websocket has (re)connected
+
 ##### Session level events.
 
 Session level events are events emitted from the `session` objects themselves,

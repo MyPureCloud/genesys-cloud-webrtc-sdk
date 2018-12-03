@@ -46,6 +46,7 @@ function connectEventHandlers () {
   webrtcSdk.on('changeActive', changeActive);
   webrtcSdk.on('endOfCandidates', endOfCandidates);
   webrtcSdk.on('disconnected', disconnected);
+  webrtcSdk.on('connected', connected);
 }
 
 function _getLogHeader (functionName) {
@@ -220,7 +221,11 @@ function endOfCandidates () {
 }
 
 function disconnected (e) {
-  utils.writeToLog('disconnected event: ' + e);
+  utils.writeToLog('disconnected event' + e);
+}
+
+function connected (e) {
+  utils.writeToLog('connected event', e);
 }
 
 module.exports = {

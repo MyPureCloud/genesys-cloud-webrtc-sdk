@@ -48,6 +48,7 @@ function setupStreamingClient () {
   };
 
   this._log('debug', 'Streaming client WebSocket connection options', connectionOptions);
+  this._hasConnected = false;
 
   return new Promise((resolve) => {
     const staticAssetUri = buildAssetUri.call(this, '/static-realtime-js/realtime.js');
@@ -62,8 +63,10 @@ function setupStreamingClient () {
       const connection = new window.Realtime(connectionOptions);
 
       this._streamingConnection = connection;
-      connection.on('connected', () => {
-        this._log('info', 'PureCloud streaming client connected');
+      connection.on('connect', () => {
+        this.emit('connected', { reconnect: this._hasConnected });
+        this._log('info', 'PureCloud streaming client connected', { reconnect: this._hasConnected });
+        this._hasConnected = true;
       });
       connection.on('rtcIceServers', () => {
         this._log('info', 'PureCloud streaming client ready for WebRTC calls');

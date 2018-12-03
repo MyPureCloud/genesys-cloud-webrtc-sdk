@@ -175,7 +175,7 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conv
         global.window = global.window || {};
         global.window.Realtime = class extends WildEmitter {
           connect () {
-            this.emit('connected');
+            this.emit('connect');
             this.emit('rtcIceServers');
           }
           constructor () {
