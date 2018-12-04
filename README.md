@@ -6,6 +6,8 @@ services. Supported WebRTC Features:
 
 - WebRTC SoftPhone (Authenticated Business User/Agent Telephony - inbound/outbound, etc)
 
+Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ (requires PureCloud Credentials)
+
 Not yet supported:
 
 - WebRTC Video
