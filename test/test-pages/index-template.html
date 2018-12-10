@@ -6,8 +6,8 @@
     if (window.location.href.indexOf('/cdn') > -1) {
       const script = document.createElement('script');
       // for local development
-      // script.src = '../../web/purecloud-webrtc-sdk.js';
-      script.src = 'https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js';
+      script.src = '../../web/purecloud-webrtc-sdk.js';
+      // script.src = 'https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js';
       document.head.prepend(script);
     }
   </script>

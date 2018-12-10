@@ -7,6 +7,13 @@ const WildEmitter = require('wildemitter');
 
 const PureCloudWebrtcSdk = require('../../src/client');
 
+function fakeHttpError (obj) {
+  const err = new Error();
+  err['status'] = obj.status;
+  err['message'] = obj.message;
+  return err;
+}
+
 function random () {
   return `${Math.random()}`.split('.')[1];
 }
@@ -148,10 +155,11 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conv
 
   const logsApi = nock('https://api.mypurecloud.com');
   let sendLogs;
+
   if (failLogs) {
-    sendLogs = logsApi.get('/api/v2/diagnostics/trace').reply(429);
+    sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 419, message: 'test fail'});
   } else {
-    sendLogs = logsApi.get('api/v2/diagnostics/trace').reply(200, {});
+    sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
   }
 
   if (withMedia) {
@@ -719,4 +727,265 @@ test('_notifyLogs | will debounce logs and only send logs once at the end', asyn
   t.is(sdk._logBuffer.length, 6);
   await timeout(1100);
   sinon.assert.calledOnce(sdk._sendLogs);
+});
+
+test('_sendLogs | resets all flags related to backoff on success', async t => {
+  const { sdk } = mockApis();
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  sdk._backoffActive = true;
+  sdk._failedLogAttempts = 2;
+  sdk._reduceLogPayload = true;
+  sdk._logBuffer.push('log1');
+
+  await sdk._sendLogs();
+  t.is(sdk._backoffActive, false);
+  t.is(sdk._failedLogAttempts, 0);
+  t.is(sdk._reduceLogPayload, false);
+});
+
+test('_sendLogs | resets the backoff on success', async t => {
+  const { sdk } = mockApis();
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log1');
+
+  await sdk._sendLogs();
+  sinon.assert.calledOnce(backoffResetSpy);
+});
+
+test('_sendLogs | should call backoff.backoff() again if there are still items in the _logBuffer after a successful call to api', async t => {
+  const { sdk } = mockApis();
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  const backoffSpy = sinon.spy(sdk._backoff, 'backoff');
+  sdk._reduceLogPayload = true;
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log2');
+  sdk._logBuffer.push('log3');
+  sdk._logBuffer.push('log4');
+
+  await sdk._sendLogs();
+  sinon.assert.calledOnce(backoffSpy);
+});
+
+test('_sendLogs | will add logs back to buffer if request fails', async t => {
+  const expectedFirstLog = 'log1';
+  const expectedSecondLog = 'log2';
+  const expectedThirdLog = 'log3';
+  let { sdk } = mockApis();
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  sdk._requestApi = {
+    call: () => {
+      return Promise.reject(fakeHttpError({status: 419, message: 'error test message'}));
+    }
+  };
+
+  t.is(sdk._logBuffer.length, 0);
+  sdk._logBuffer.push(expectedFirstLog);
+  sdk._logBuffer.push(expectedSecondLog);
+  sdk._logBuffer.push(expectedThirdLog);
+
+  await sdk._sendLogs();
+
+  t.is(sdk._logBuffer.length, 3);
+  t.is(sdk._logBuffer[0], expectedFirstLog, 'Log items should be put back into the buffer the same way they went out');
+  t.is(sdk._logBuffer[1], expectedSecondLog, 'Log items should be put back into the buffer the same way they went out');
+  t.is(sdk._logBuffer[2], expectedThirdLog, 'Log items should be put back into the buffer the same way they went out');
+});
+
+test('_sendLogs | increments _failedLogAttemps on failure', async t => {
+  const { sdk } = mockApis({failLogs: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  t.is(sdk._logBuffer.length, 0);
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log2');
+  t.is(sdk._failedLogAttempts, 0);
+  sdk._requestApi = {
+    call: () => {
+      return Promise.reject(fakeHttpError({status: 419, message: 'error test message'}));
+    }
+  };
+
+  await sdk._sendLogs();
+  t.is(sdk._failedLogAttempts, 1);
+});
+
+test('_sendLogs | sets _reduceLogPayload to true if error status is 413 (payload too large)', async t => {
+  const { sdk } = mockApis({failLogsPayload: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  t.is(sdk._logBuffer.length, 0);
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log2');
+  t.is(sdk._reduceLogPayload, false);
+  sdk._requestApi = {
+    call: () => {
+      return Promise.reject(fakeHttpError({status: 413, message: 'error test message'}));
+    }
+  };
+
+  try {
+    await sdk._sendLogs();
+  } catch (err) {
+    console.log('test err');
+    console.log(err);
+  }
+  t.is(sdk._reduceLogPayload, true);
+});
+
+test('_sendLogs | should reset all backoff flags and reset the backoff if api request returns error and payload was only 1 log', async t => {
+  const { sdk } = mockApis({failLogsPayload: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  sdk._logBuffer.push('log1');
+  const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
+  sdk._requestApi = {
+    call: () => {
+      return Promise.reject(fakeHttpError({status: 413, message: 'error test message'}));
+    }
+  };
+
+  await sdk._sendLogs();
+  t.is(sdk._backoffActive, false);
+  t.is(sdk._failedLogAttempts, 0);
+  t.is(sdk._reduceLogPayload, false);
+  sinon.assert.calledOnce(backoffResetSpy);
+});
+
+test('_sendLogs | set backoffActive to false if the backoff fails', async t => {
+  const { sdk } = mockApis({failLogsPayload: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  sdk._logBuffer.push('log1');
+
+  sdk._backoff.failAfter(1);
+  sdk._requestApi = {
+    call: () => {
+      return Promise.reject(fakeHttpError({status: 413, message: 'error test message'}));
+    }
+  };
+
+  await sdk._sendLogs();
+  await timeout(1000);
+  t.is(sdk._backoffActive, false);
+});
+
+test('_getLogPayload | returns the entire _logBuffer if _reduceLogPayload is false', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  sdk._reduceLogPayload = false;
+  sdk._logBuffer = [0, 1, 2, 3, 4];
+
+  const result = sdk._getLogPayload();
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+  t.is(sdk._logBuffer.length, 0, 'Items should have been removed from _logBuffer');
+});
+
+test('_getLogPayload | returns part of _logBuffer if _reduceLogPayload is true', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  sdk._reduceLogPayload = true;
+  sdk._failedLogAttempts = 1;
+  sdk._logBuffer = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  const result = sdk._getLogPayload();
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+
+  t.is(sdk._logBuffer.length, 5, 'Items should have been removed from _logBuffer');
+  t.is(sdk._logBuffer[0], 5);
+  t.is(sdk._logBuffer[1], 6);
+  t.is(sdk._logBuffer[2], 7);
+  t.is(sdk._logBuffer[3], 8);
+  t.is(sdk._logBuffer[4], 9);
+});
+
+test('_getLogPayload | returns part of _logBuffer if _reduceLogPayload is true and _failedLogAttempts is 0', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  sdk._reduceLogPayload = true;
+  sdk._failedLogAttempts = 0;
+  sdk._logBuffer = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  const result = sdk._getLogPayload();
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+
+  t.is(sdk._logBuffer.length, 5, 'Items should have been removed from _logBuffer');
+  t.is(sdk._logBuffer[0], 5);
+  t.is(sdk._logBuffer[1], 6);
+  t.is(sdk._logBuffer[2], 7);
+  t.is(sdk._logBuffer[3], 8);
+  t.is(sdk._logBuffer[4], 9);
+});
+
+test('_resetBackoffFlags | should reset values of _backoffActive, _failedLogAttempts, and _reduceLogPaylod', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+  sdk._backoffActive = true;
+  sdk._failedLogAttempts = 3;
+  sdk._reduceLogPayload = true;
+
+  sdk._resetBackoffFlags();
+
+  t.is(sdk._backoffActive, false);
+  t.is(sdk._failedLogAttempts, 0);
+  t.is(sdk._reduceLogPayload, false);
+});
+
+test('_getReducedLogPayload | should return at least one log item', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._logBuffer = [1, 2, 3, 4, 5];
+  const result = sdk._getReducedLogPayload(6);
+
+  t.is(result.length, 1);
+});
+
+test('_getReducesLogPayload | should remove items from _logBuffer and return them', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._logBuffer = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const result = sdk._getReducedLogPayload(1);
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+
+  t.is(sdk._logBuffer.length, 5, 'Items should have been removed from the _logBuffer');
+  t.is(sdk._logBuffer[0], 5);
+  t.is(sdk._logBuffer[1], 6);
+  t.is(sdk._logBuffer[2], 7);
+  t.is(sdk._logBuffer[3], 8);
+  t.is(sdk._logBuffer[4], 9);
 });

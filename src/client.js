@@ -3,6 +3,7 @@
 const WildEmitter = require('wildemitter');
 const uuidv4 = require('uuid/v4');
 const stringify = require('safe-json-stringify');
+const backoff = require('backoff-web');
 
 const {
   requestApi,
@@ -20,6 +21,7 @@ const ENVIRONMENTS = [
 ];
 
 const LOG_LEVELS = ['debug', 'log', 'info', 'warn', 'error'];
+const PAYLOAD_TOO_LARGE = 413;
 
 // helper methods
 function validateOptions (options) {
@@ -80,16 +82,30 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._connected = false;
     this._streamingConnection = null;
     this._pendingSessions = [];
+
+    this._requestApi = requestApi;
+
+    this._backoffActive = false;
+    this._failedLogAttempts = 0;
+    this._reduceLogPayload = false;
+
+    this._backoff = backoff.exponential({
+      randomisationFactor: 0.2,
+      initialDelay: 500,
+      maxDelay: 5000,
+      factor: 2
+    });
+    this._initializeBackoff();
   }
 
   initialize () {
-    const getOrg = requestApi.call(this, '/organizations/me')
+    const getOrg = this._requestApi.call(this, '/organizations/me')
       .then(({ body }) => {
         this._orgDetails = body;
         this._log('debug', 'Organization details', body);
       });
 
-    const getPerson = requestApi.call(this, '/users/me')
+    const getPerson = this._requestApi.call(this, '/users/me')
       .then(({ body }) => {
         this._personDetails = body;
         this._log('debug', 'Person details', body);
@@ -108,6 +124,24 @@ class PureCloudWebrtcSdk extends WildEmitter {
       .catch(err => {
         rejectErr.call(this, 'Failed to initialize SDK', err);
       });
+  }
+
+  _initializeBackoff () {
+    this._backoff.failAfter(6);
+
+    this._backoff.on('backoff', (number, delay) => {
+      this._backoffActive = true;
+
+      return this._sendLogs();
+    });
+
+    this._backoff.on('ready', (number, delay) => {
+      this._backoff.backoff();
+    });
+
+    this._backoff.on('fail', (number, delay) => {
+      this._backoffActive = false;
+    });
   }
 
   get connected () {
@@ -144,11 +178,11 @@ class PureCloudWebrtcSdk extends WildEmitter {
       session.end();
       return Promise.resolve();
     }
-    return requestApi.call(this, `/conversations/calls/${session.conversationId}`)
+    return this._requestApi.call(this, `/conversations/calls/${session.conversationId}`)
       .then(({ body }) => {
         const participant = body.participants
           .find(p => p.user && p.user.id === this._personDetails.id);
-        return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
+        return this._requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
           method: 'patch',
           data: JSON.stringify({ state: 'disconnected' })
         });
@@ -204,6 +238,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
       message: stringify(log)
     };
     this._logBuffer.push(logContainer);
+    // this.spamLogBuffer(100); // TODO: delete this, just for debugging
     this._notifyLogs(); // debounced _sendLogs
   }
 
@@ -212,12 +247,14 @@ class PureCloudWebrtcSdk extends WildEmitter {
       clearTimeout(this._logTimer);
     }
     this._logTimer = setTimeout(() => {
-      this._sendLogs();
+      if (!this._backoffActive) {
+        this._backoff.backoff();
+      }
     }, 1000);
   }
 
   _sendLogs () {
-    const traces = this._logBuffer.splice(0, this._logBuffer.length);
+    const traces = this._getLogPayload();
     const payload = {
       app: {
         appId: 'webrtc-sdk',
@@ -225,14 +262,79 @@ class PureCloudWebrtcSdk extends WildEmitter {
       },
       traces
     };
-    return requestApi.call(this, '/diagnostics/trace', {
+
+    return this._requestApi.call(this, '/diagnostics/trace', {
       method: 'post',
       contentType: 'application/json; charset=UTF-8',
       data: JSON.stringify(payload)
-    }).catch(() => {
-      this.logger.error('Failed to post logs to server', traces);
+    }).then(() => {
+      this.logger.log('Log data sent successfully');
+      this._resetBackoffFlags();
+      this._backoff.reset();
+
+      if (this._logBuffer.length) {
+        this.logger.log('Data still left in log buffer, preparing to send again');
+        this._backoff.backoff();
+      }
+    }).catch((error) => {
+      this._failedLogAttempts++;
+
+      if (error.status === PAYLOAD_TOO_LARGE) {
+        this.logger.error(error);
+
+        // If sending a single log is too big, then scrap it and reset backoff
+        if (traces.length === 1) {
+          this._resetBackoffFlags();
+          this._backoff.reset();
+          return;
+        }
+
+        this._reduceLogPayload = true;
+      } else {
+        this.logger.error('Failed to post logs to server', traces);
+      }
+
+      // Put traces back into buffer in their original order
+      const reverseTraces = traces.reverse(); // Reverse traces so they will be unshifted into their original order
+      reverseTraces.forEach((log) => this._logBuffer.unshift(log));
     });
   }
+
+  _getLogPayload () {
+    let traces;
+    if (this._reduceLogPayload) {
+      const bufferDivisionFactor = this._failedLogAttempts || 1;
+      traces = this._getReducedLogPayload(bufferDivisionFactor);
+    } else {
+      traces = this._logBuffer.splice(0, this._logBuffer.length);
+    }
+
+    return traces;
+  }
+
+  _getReducedLogPayload (reduceFactor) {
+    const reduceBy = reduceFactor * 2;
+    const itemsToGet = Math.floor(this._logBuffer.length / reduceBy) || 1;
+    const traces = this._logBuffer.splice(0, itemsToGet);
+    return traces;
+  }
+
+  _resetBackoffFlags () {
+    this._backoffActive = false;
+    this._failedLogAttempts = 0;
+    this._reduceLogPayload = false;
+  }
+
+  // TODO: remove this test function
+  // spamLogBuffer (timesToSpam) {
+  //   console.warn('adding ' + timesToSpam + ' items to _logBuffer');
+  //   let i = 0;
+  //   while (i < timesToSpam) {
+  //     this._logBuffer.push(this._logBuffer[0]);
+  //     ++i;
+  //   }
+  //   console.warn(`the buffer now has ${this._logBuffer.length} items in it.  Have fun with that`);
+  // }
 }
 
 module.exports = PureCloudWebrtcSdk;
