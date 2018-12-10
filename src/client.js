@@ -83,8 +83,6 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._streamingConnection = null;
     this._pendingSessions = [];
 
-    this._requestApi = requestApi;
-
     this._backoffActive = false;
     this._failedLogAttempts = 0;
     this._reduceLogPayload = false;
@@ -99,13 +97,13 @@ class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   initialize () {
-    const getOrg = this._requestApi.call(this, '/organizations/me')
+    const getOrg = requestApi.call(this, '/organizations/me')
       .then(({ body }) => {
         this._orgDetails = body;
         this._log('debug', 'Organization details', body);
       });
 
-    const getPerson = this._requestApi.call(this, '/users/me')
+    const getPerson = requestApi.call(this, '/users/me')
       .then(({ body }) => {
         this._personDetails = body;
         this._log('debug', 'Person details', body);
@@ -178,11 +176,11 @@ class PureCloudWebrtcSdk extends WildEmitter {
       session.end();
       return Promise.resolve();
     }
-    return this._requestApi.call(this, `/conversations/calls/${session.conversationId}`)
+    return requestApi.call(this, `/conversations/calls/${session.conversationId}`)
       .then(({ body }) => {
         const participant = body.participants
           .find(p => p.user && p.user.id === this._personDetails.id);
-        return this._requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
+        return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
           method: 'patch',
           data: JSON.stringify({ state: 'disconnected' })
         });
@@ -263,7 +261,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
       traces
     };
 
-    return this._requestApi.call(this, '/diagnostics/trace', {
+    return requestApi.call(this, '/diagnostics/trace', {
       method: 'post',
       contentType: 'application/json; charset=UTF-8',
       data: JSON.stringify(payload)

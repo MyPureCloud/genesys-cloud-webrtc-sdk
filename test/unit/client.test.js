@@ -7,13 +7,6 @@ const WildEmitter = require('wildemitter');
 
 const PureCloudWebrtcSdk = require('../../src/client');
 
-function fakeHttpError (obj) {
-  const err = new Error();
-  err['status'] = obj.status;
-  err['message'] = obj.message;
-  return err;
-}
-
 function random () {
   return `${Math.random()}`.split('.')[1];
 }
@@ -121,7 +114,7 @@ test('constructor | sets up options when provided', t => {
   t.is(sdk._iceTransportPolicy, 'relay');
 });
 
-function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conversationId, participantId } = {}) {
+function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId } = {}) {
   const api = nock('https://api.mypurecloud.com');
 
   let getOrg;
@@ -156,7 +149,9 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conv
   const logsApi = nock('https://api.mypurecloud.com');
   let sendLogs;
 
-  if (failLogs) {
+  if (failLogsPayload) {
+    sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 413, message: 'test fail'});
+  } else if (failLogs) {
     sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 419, message: 'test fail'});
   } else {
     sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
@@ -729,7 +724,7 @@ test('_notifyLogs | will debounce logs and only send logs once at the end', asyn
   sinon.assert.calledOnce(sdk._sendLogs);
 });
 
-test('_sendLogs | resets all flags related to backoff on success', async t => {
+test.serial('_sendLogs | resets all flags related to backoff on success', async t => {
   const { sdk } = mockApis();
   sdk._logLevel = 'warn';
   await sdk.initialize();
@@ -745,7 +740,7 @@ test('_sendLogs | resets all flags related to backoff on success', async t => {
   t.is(sdk._reduceLogPayload, false);
 });
 
-test('_sendLogs | resets the backoff on success', async t => {
+test.serial('_sendLogs | resets the backoff on success', async t => {
   const { sdk } = mockApis();
   sdk._logLevel = 'warn';
   await sdk.initialize();
@@ -758,7 +753,7 @@ test('_sendLogs | resets the backoff on success', async t => {
   sinon.assert.calledOnce(backoffResetSpy);
 });
 
-test('_sendLogs | should call backoff.backoff() again if there are still items in the _logBuffer after a successful call to api', async t => {
+test.serial('_sendLogs | should call backoff.backoff() again if there are still items in the _logBuffer after a successfull call to api', async t => {
   const { sdk } = mockApis();
   sdk._logLevel = 'warn';
   await sdk.initialize();
@@ -774,19 +769,13 @@ test('_sendLogs | should call backoff.backoff() again if there are still items i
   sinon.assert.calledOnce(backoffSpy);
 });
 
-test('_sendLogs | will add logs back to buffer if request fails', async t => {
+test.serial('_sendLogs | will add logs back to buffer if request fails', async t => {
   const expectedFirstLog = 'log1';
   const expectedSecondLog = 'log2';
   const expectedThirdLog = 'log3';
-  let { sdk } = mockApis();
+  let { sdk } = mockApis({failLogs: true});
   sdk._logLevel = 'warn';
   await sdk.initialize();
-
-  sdk._requestApi = {
-    call: () => {
-      return Promise.reject(fakeHttpError({status: 419, message: 'error test message'}));
-    }
-  };
 
   t.is(sdk._logBuffer.length, 0);
   sdk._logBuffer.push(expectedFirstLog);
@@ -801,25 +790,20 @@ test('_sendLogs | will add logs back to buffer if request fails', async t => {
   t.is(sdk._logBuffer[2], expectedThirdLog, 'Log items should be put back into the buffer the same way they went out');
 });
 
-test('_sendLogs | increments _failedLogAttemps on failure', async t => {
-  const { sdk } = mockApis({failLogs: true});
+test.serial('_sendLogs | increments _failedLogAttemps on failure', async t => {
+  const { sdk } = mockApis({failLogsPayload: true});
   sdk._logLevel = 'warn';
   await sdk.initialize();
   t.is(sdk._logBuffer.length, 0);
   sdk._logBuffer.push('log1');
   sdk._logBuffer.push('log2');
   t.is(sdk._failedLogAttempts, 0);
-  sdk._requestApi = {
-    call: () => {
-      return Promise.reject(fakeHttpError({status: 419, message: 'error test message'}));
-    }
-  };
 
   await sdk._sendLogs();
   t.is(sdk._failedLogAttempts, 1);
 });
 
-test('_sendLogs | sets _reduceLogPayload to true if error status is 413 (payload too large)', async t => {
+test.serial('_sendLogs | sets _reduceLogPayload to true if error status is 413 (payload too large)', async t => {
   const { sdk } = mockApis({failLogsPayload: true});
   sdk._logLevel = 'warn';
   await sdk.initialize();
@@ -827,11 +811,6 @@ test('_sendLogs | sets _reduceLogPayload to true if error status is 413 (payload
   sdk._logBuffer.push('log1');
   sdk._logBuffer.push('log2');
   t.is(sdk._reduceLogPayload, false);
-  sdk._requestApi = {
-    call: () => {
-      return Promise.reject(fakeHttpError({status: 413, message: 'error test message'}));
-    }
-  };
 
   try {
     await sdk._sendLogs();
@@ -842,17 +821,12 @@ test('_sendLogs | sets _reduceLogPayload to true if error status is 413 (payload
   t.is(sdk._reduceLogPayload, true);
 });
 
-test('_sendLogs | should reset all backoff flags and reset the backoff if api request returns error and payload was only 1 log', async t => {
+test.serial('_sendLogs | should reset all backoff flags and reset the backoff if api request returns error and payload was only 1 log', async t => {
   const { sdk } = mockApis({failLogsPayload: true});
   sdk._logLevel = 'warn';
   await sdk.initialize();
   sdk._logBuffer.push('log1');
   const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
-  sdk._requestApi = {
-    call: () => {
-      return Promise.reject(fakeHttpError({status: 413, message: 'error test message'}));
-    }
-  };
 
   await sdk._sendLogs();
   t.is(sdk._backoffActive, false);
@@ -861,18 +835,13 @@ test('_sendLogs | should reset all backoff flags and reset the backoff if api re
   sinon.assert.calledOnce(backoffResetSpy);
 });
 
-test('_sendLogs | set backoffActive to false if the backoff fails', async t => {
+test.serial('_sendLogs | set backoffActive to false if the backoff fails', async t => {
   const { sdk } = mockApis({failLogsPayload: true});
   sdk._logLevel = 'warn';
   await sdk.initialize();
   sdk._logBuffer.push('log1');
 
   sdk._backoff.failAfter(1);
-  sdk._requestApi = {
-    call: () => {
-      return Promise.reject(fakeHttpError({status: 413, message: 'error test message'}));
-    }
-  };
 
   await sdk._sendLogs();
   await timeout(1000);
