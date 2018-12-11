@@ -129,7 +129,6 @@ class PureCloudWebrtcSdk extends WildEmitter {
 
     this._backoff.on('backoff', (number, delay) => {
       this._backoffActive = true;
-
       return this._sendLogs();
     });
 
