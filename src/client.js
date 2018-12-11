@@ -83,10 +83,10 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._streamingConnection = null;
     this._pendingSessions = [];
 
+    // Flags for backoff functionality
     this._backoffActive = false;
     this._failedLogAttempts = 0;
     this._reduceLogPayload = false;
-
     this._backoff = backoff.exponential({
       randomisationFactor: 0.2,
       initialDelay: 500,
@@ -125,7 +125,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   _initializeBackoff () {
-    this._backoff.failAfter(6);
+    this._backoff.failAfter(5);
 
     this._backoff.on('backoff', (number, delay) => {
       this._backoffActive = true;
@@ -235,7 +235,6 @@ class PureCloudWebrtcSdk extends WildEmitter {
       message: stringify(log)
     };
     this._logBuffer.push(logContainer);
-    // this.spamLogBuffer(100); // TODO: delete this, just for debugging
     this._notifyLogs(); // debounced _sendLogs
   }
 
@@ -321,17 +320,6 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._failedLogAttempts = 0;
     this._reduceLogPayload = false;
   }
-
-  // TODO: remove this test function
-  // spamLogBuffer (timesToSpam) {
-  //   console.warn('adding ' + timesToSpam + ' items to _logBuffer');
-  //   let i = 0;
-  //   while (i < timesToSpam) {
-  //     this._logBuffer.push(this._logBuffer[0]);
-  //     ++i;
-  //   }
-  //   console.warn(`the buffer now has ${this._logBuffer.length} items in it.  Have fun with that`);
-  // }
 }
 
 module.exports = PureCloudWebrtcSdk;

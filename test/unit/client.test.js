@@ -821,12 +821,7 @@ test.serial('_sendLogs | sets _reduceLogPayload to true if error status is 413 (
   sdk._logBuffer.push('log2');
   t.is(sdk._reduceLogPayload, false);
 
-  try {
-    await sdk._sendLogs();
-  } catch (err) {
-    console.log('test err');
-    console.log(err);
-  }
+  await sdk._sendLogs();
   t.is(sdk._reduceLogPayload, true);
 });
 
