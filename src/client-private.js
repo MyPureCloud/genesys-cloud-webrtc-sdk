@@ -114,7 +114,11 @@ function attachMedia (stream) {
 }
 
 function onSession (session) {
-  this._log('info', 'onSession', session);
+  try {
+    this._log('info', 'onSession', { id: session.sid, remoteDescription: session.pc.remoteDescription });
+  } catch (e) {
+    // don't let log errors ruin a session
+  }
 
   session.id = session.sid;
   const pendingSessionInfo = this._pendingSessions[session.id];

@@ -41,19 +41,19 @@ const MOCK_CONVERSATION = {
   ]
 };
 
-test('constructor | throws if options are not provided', t => {
+test.serial('constructor | throws if options are not provided', t => {
   t.throws(() => {
     const sdk = new PureCloudWebrtcSdk(); // eslint-disable-line
   });
 });
 
-test('constructor | throws if accessToken is not provided', t => {
+test.serial('constructor | throws if accessToken is not provided', t => {
   t.throws(() => {
     const sdk = new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // eslint-disable-line
   });
 });
 
-test('constructor | warns if environment is not valid', t => {
+test.serial('constructor | warns if environment is not valid', t => {
   const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' }); // eslint-disable-line
   const sdk2 = new PureCloudWebrtcSdk({  // eslint-disable-line
     accessToken: '1234',
@@ -64,7 +64,7 @@ test('constructor | warns if environment is not valid', t => {
   sinon.assert.calledOnce(sdk2.logger.warn);
 });
 
-test('constructor | warns if the logLevel is not valid', t => {
+test.serial('constructor | warns if the logLevel is not valid', t => {
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     environment: 'mypurecloud.com',
@@ -74,7 +74,7 @@ test('constructor | warns if the logLevel is not valid', t => {
   sinon.assert.calledOnce(sdk.logger.warn);
 });
 
-test('constructor | does not warn if things are fine', t => {
+test.serial('constructor | does not warn if things are fine', t => {
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     environment: 'mypurecloud.com',
@@ -84,7 +84,7 @@ test('constructor | does not warn if things are fine', t => {
   sinon.assert.notCalled(sdk.logger.warn);
 });
 
-test('constructor | sets up options with defaults', t => {
+test.serial('constructor | sets up options with defaults', t => {
   const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' });
   t.is(sdk.logger, console);
   t.is(sdk._accessToken, '1234');
@@ -94,7 +94,7 @@ test('constructor | sets up options with defaults', t => {
   t.is(sdk._iceTransportPolicy, 'all');
 });
 
-test('constructor | sets up options when provided', t => {
+test.serial('constructor | sets up options when provided', t => {
   const logger = {};
   const iceServers = [];
   const sdk = new PureCloudWebrtcSdk({
@@ -114,7 +114,8 @@ test('constructor | sets up options when provided', t => {
   t.is(sdk._iceTransportPolicy, 'relay');
 });
 
-function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conversationId, participantId } = {}) {
+function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs } = {}) {
+  nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
 
   let getOrg;
@@ -144,14 +145,6 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conv
     patchConversation = conversationsApi
       .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
       .reply(202, {});
-  }
-
-  const logsApi = nock('https://api.mypurecloud.com');
-  let sendLogs;
-  if (failLogs) {
-    sendLogs = logsApi.get('/api/v2/diagnostics/trace').reply(429);
-  } else {
-    sendLogs = logsApi.get('api/v2/diagnostics/trace').reply(200, {});
   }
 
   if (withMedia) {
@@ -203,25 +196,42 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, withMedia, conv
     logger: { log () {}, info () {}, error () {}, warn () {}, debug () {} }
   });
 
+  let sendLogs;
+  if (withLogs) {
+    const logsApi = nock('https://api.mypurecloud.com').persist();
+
+    if (failLogsPayload) {
+      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 413, message: 'test fail'});
+    } else if (failLogs) {
+      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 419, message: 'test fail'});
+    } else {
+      sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
+    }
+  } else {
+    sdk._optOutOfTelemetry = true;
+  }
+
   return { getOrg, getUser, getConversation, sendLogs, patchConversation, sdk };
 }
 
-test('initialize | fetches org and person details, sets up the streaming connection', async t => {
+test.serial('initialize | fetches org and person details, sets up the streaming connection', async t => {
   const { getOrg, getUser, sdk } = mockApis();
 
   await sdk.initialize();
   getOrg.done();
   getUser.done();
   t.truthy(sdk._streamingConnection);
+  sdk.logBuffer = [];
+  sdk._optOutOfTelemetry = true;
 });
 
-test('initialize | throws if getting the org fails', t => {
+test.serial('initialize | throws if getting the org fails', t => {
   const { sdk } = mockApis({ failOrg: true });
 
   return sdk.initialize().then(() => t.fail()).catch(() => t.pass());
 });
 
-test('initialize | throws if getting the user fails', t => {
+test.serial('initialize | throws if getting the user fails', t => {
   const { sdk } = mockApis({ failUser: true });
 
   return sdk.initialize().then(t => t.fail()).catch(() => t.pass());
@@ -233,7 +243,7 @@ test.serial('initialize | throws if setting up streaming connection fails', t =>
   return sdk.initialize().then(() => t.fail()).catch(() => t.pass());
 });
 
-test('initialize sets up event proxies', async t => {
+test.serial('initialize sets up event proxies', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -281,7 +291,7 @@ test('initialize sets up event proxies', async t => {
   return Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
 });
 
-test('connected | returns the streaming client connection status', async t => {
+test.serial('connected | returns the streaming client connection status', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -291,7 +301,7 @@ test('connected | returns the streaming client connection status', async t => {
   t.false(sdk.connected);
 });
 
-test('acceptPendingSession | proxies the call to the streaming connection', async t => {
+test.serial('acceptPendingSession | proxies the call to the streaming connection', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -303,7 +313,7 @@ test('acceptPendingSession | proxies the call to the streaming connection', asyn
   t.plan(0);
 });
 
-test('endSession | requests the conversation then patches the participant to disconnected', async t => {
+test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
   const sessionId = random();
   const conversationId = random();
   const participantId = PARTICIPANT_ID;
@@ -320,7 +330,7 @@ test('endSession | requests the conversation then patches the participant to dis
   sinon.assert.notCalled(mockSession.end);
 });
 
-test('endSession | requests the conversation then patches the participant to disconnected', async t => {
+test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
   const sessionId = random();
   const conversationId = random();
   const participantId = PARTICIPANT_ID;
@@ -337,7 +347,7 @@ test('endSession | requests the conversation then patches the participant to dis
   sinon.assert.notCalled(mockSession.end);
 });
 
-test('endSession | rejects if not provided either an id or a conversationId', async t => {
+test.serial('endSession | rejects if not provided either an id or a conversationId', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
   await sdk.endSession({})
@@ -350,7 +360,7 @@ test('endSession | rejects if not provided either an id or a conversationId', as
     });
 });
 
-test('endSession | rejects if not provided anything', async t => {
+test.serial('endSession | rejects if not provided anything', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
   await sdk.endSession()
@@ -363,7 +373,7 @@ test('endSession | rejects if not provided anything', async t => {
     });
 });
 
-test('endSession | rejects if the session is not found', async t => {
+test.serial('endSession | rejects if the session is not found', async t => {
   const sessionId = random();
   const conversationId = random();
   const participantId = PARTICIPANT_ID;
@@ -384,7 +394,7 @@ test('endSession | rejects if the session is not found', async t => {
     });
 });
 
-test('endSession | ends the session and rejects if there is an error fetching the conversation', async t => {
+test.serial('endSession | ends the session and rejects if there is an error fetching the conversation', async t => {
   const sessionId = random();
   const conversationId = random();
   const participantId = random();
@@ -405,7 +415,7 @@ test('endSession | ends the session and rejects if there is an error fetching th
     });
 });
 
-test('endSession | terminates the session of the existing session has no conversationId', async t => {
+test.serial('endSession | terminates the session of the existing session has no conversationId', async t => {
   const sessionId = random();
   const conversationId = random();
   const participantId = random();
@@ -420,7 +430,7 @@ test('endSession | terminates the session of the existing session has no convers
   sinon.assert.calledOnce(mockSession.end);
 });
 
-test('disconnect | proxies the call to the streaming connection', async t => {
+test.serial('disconnect | proxies the call to the streaming connection', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -431,7 +441,7 @@ test('disconnect | proxies the call to the streaming connection', async t => {
   t.plan(0);
 });
 
-test('reconnect | proxies the call to the streaming connection', async t => {
+test.serial('reconnect | proxies the call to the streaming connection', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -442,7 +452,7 @@ test('reconnect | proxies the call to the streaming connection', async t => {
   t.plan(0);
 });
 
-test('_customIceServersConfig | gets reset if the client refreshes ice servers', async t => {
+test.serial('_customIceServersConfig | gets reset if the client refreshes ice servers', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
   const mockIceServers = [{ urls: [ 'turn:mycustomturn.com' ] }];
@@ -456,7 +466,7 @@ test('_customIceServersConfig | gets reset if the client refreshes ice servers',
   t.is(sdk._streamingConnection.sessionManager.iceServers, mockIceServers);
 });
 
-test('onPendingSession | emits a pendingSession event and accepts the session', async t => {
+test.serial('onPendingSession | emits a pendingSession event and accepts the session', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -481,7 +491,7 @@ test('onPendingSession | emits a pendingSession event and accepts the session', 
   sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
 });
 
-test('onPendingSession | emits a pendingSession event but does not accept the session if autoAnswer is false', async t => {
+test.serial('onPendingSession | emits a pendingSession event but does not accept the session if autoAnswer is false', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -641,7 +651,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sandbox.restore();
 });
 
-test('_refreshTurnServers | refreshes the turn servers', async t => {
+test.serial('_refreshTurnServers | refreshes the turn servers', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -654,7 +664,7 @@ test('_refreshTurnServers | refreshes the turn servers', async t => {
   t.truthy(sdk._refreshTurnServersInterval);
 });
 
-test('_refreshTurnServers | emits an error if there is an error refreshing turn servers', async t => {
+test.serial('_refreshTurnServers | emits an error if there is an error refreshing turn servers', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -668,8 +678,8 @@ test('_refreshTurnServers | emits an error if there is an error refreshing turn 
   await promise;
 });
 
-test('_log | will not notify logs if the logLevel is lower than configured', async t => {
-  const { sdk } = mockApis();
+test.serial('_log | will not notify logs if the logLevel is lower than configured', async t => {
+  const { sdk } = mockApis({ withLogs: true });
   sdk._logLevel = 'warn';
   await sdk.initialize();
   sinon.stub(sdk, '_notifyLogs');
@@ -677,8 +687,8 @@ test('_log | will not notify logs if the logLevel is lower than configured', asy
   sinon.assert.notCalled(sdk._notifyLogs);
 });
 
-test('_log | will not notify logs if opted out', async t => {
-  const { sdk } = mockApis();
+test.serial('_log | will not notify logs if opted out', async t => {
+  const { sdk } = mockApis({ withLogs: true });
   sdk._logLevel = 'debug';
   sdk._optOutOfTelemetry = true;
   await sdk.initialize();
@@ -687,8 +697,8 @@ test('_log | will not notify logs if opted out', async t => {
   sinon.assert.notCalled(sdk._notifyLogs);
 });
 
-test('_log | will buffer a log and notify it if the logLevel is gte configured', async t => {
-  const { sdk } = mockApis();
+test.serial('_log | will buffer a log and notify it if the logLevel is gte configured', async t => {
+  const { sdk } = mockApis({ withLogs: true });
   sdk._logLevel = 'warn';
   await sdk.initialize();
   sinon.stub(sdk, '_notifyLogs');
@@ -703,8 +713,8 @@ function timeout (n) {
   return new Promise(resolve => setTimeout(resolve, n));
 }
 
-test('_notifyLogs | will debounce logs and only send logs once at the end', async t => {
-  const { sdk } = mockApis();
+test.serial('_notifyLogs | will debounce logs and only send logs once at the end', async t => {
+  const { sdk } = mockApis({ withLogs: true });
   sdk._logLevel = 'warn';
   await sdk.initialize();
   sinon.stub(sdk, '_sendLogs');
@@ -719,4 +729,242 @@ test('_notifyLogs | will debounce logs and only send logs once at the end', asyn
   t.is(sdk._logBuffer.length, 6);
   await timeout(1100);
   sinon.assert.calledOnce(sdk._sendLogs);
+});
+
+test.serial('_sendLogs | resets all flags related to backoff on success', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  sdk._backoffActive = true;
+  sdk._failedLogAttempts = 2;
+  sdk._reduceLogPayload = true;
+  sdk._logBuffer.push('log1');
+
+  await sdk._sendLogs();
+  t.is(sdk._backoffActive, false);
+  t.is(sdk._failedLogAttempts, 0);
+  t.is(sdk._reduceLogPayload, false);
+});
+
+test.serial('_sendLogs | resets the backoff on success', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log1');
+
+  await sdk._sendLogs();
+  sinon.assert.calledOnce(backoffResetSpy);
+});
+
+test.serial('_sendLogs | should call backoff.backoff() again if there are still items in the _logBuffer after a successfull call to api', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  const backoffSpy = sinon.spy(sdk._backoff, 'backoff');
+  sdk._reduceLogPayload = true;
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log2');
+  sdk._logBuffer.push('log3');
+  sdk._logBuffer.push('log4');
+
+  await sdk._sendLogs();
+  sinon.assert.calledOnce(backoffSpy);
+});
+
+test.serial('_sendLogs | will add logs back to buffer if request fails', async t => {
+  const expectedFirstLog = 'log1';
+  const expectedSecondLog = 'log2';
+  const expectedThirdLog = 'log3';
+  let { sdk } = mockApis({failLogs: true, withLogs: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+
+  t.is(sdk._logBuffer.length, 0);
+  sdk._logBuffer.push(expectedFirstLog);
+  sdk._logBuffer.push(expectedSecondLog);
+  sdk._logBuffer.push(expectedThirdLog);
+
+  await sdk._sendLogs();
+
+  t.is(sdk._logBuffer.length, 3);
+  t.is(sdk._logBuffer[0], expectedFirstLog, 'Log items should be put back into the buffer the same way they went out');
+  t.is(sdk._logBuffer[1], expectedSecondLog, 'Log items should be put back into the buffer the same way they went out');
+  t.is(sdk._logBuffer[2], expectedThirdLog, 'Log items should be put back into the buffer the same way they went out');
+  sdk.logBuffer = [];
+  sdk._optOutOfTelemetry = true;
+});
+
+test.serial('_sendLogs | increments _failedLogAttemps on failure', async t => {
+  const { sdk } = mockApis({failLogsPayload: true, withLogs: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  t.is(sdk._logBuffer.length, 0);
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log2');
+  t.is(sdk._failedLogAttempts, 0);
+
+  await sdk._sendLogs();
+  t.is(sdk._failedLogAttempts, 1);
+});
+
+test.serial('_sendLogs | sets _reduceLogPayload to true if error status is 413 (payload too large)', async t => {
+  const { sdk } = mockApis({failLogsPayload: true, withLogs: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  t.is(sdk._logBuffer.length, 0);
+  sdk._logBuffer.push('log1');
+  sdk._logBuffer.push('log2');
+  t.is(sdk._reduceLogPayload, false);
+
+  await sdk._sendLogs();
+  t.is(sdk._reduceLogPayload, true);
+});
+
+test.serial('_sendLogs | should reset all backoff flags and reset the backoff if api request returns error and payload was only 1 log', async t => {
+  const { sdk } = mockApis({failLogsPayload: true, withLogs: true});
+  sdk._logLevel = 'warn';
+  await sdk.initialize();
+  sdk._logBuffer.push('log1');
+  const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
+
+  await sdk._sendLogs();
+  t.is(sdk._backoffActive, false);
+  t.is(sdk._failedLogAttempts, 0);
+  t.is(sdk._reduceLogPayload, false);
+  sinon.assert.calledOnce(backoffResetSpy);
+});
+
+test.serial('_sendLogs | set backoffActive to false if the backoff fails', async t => {
+  const { sdk } = mockApis({failLogs: true, withLogs: true});
+  sdk._logLevel = 'warn';
+  sinon.spy(sdk, '_sendLogs');
+  await sdk.initialize();
+  sdk._log('error', 'log1');
+  sdk._log('error', 'log2');
+
+  sdk._backoff.failAfter(1); // means it will retry once, or 2 tries total
+
+  sdk._notifyLogs();
+  sdk._notifyLogs();
+  await timeout(1000);
+  sdk._notifyLogs();
+  await timeout(5000);
+  sinon.assert.calledTwice(sdk._sendLogs);
+  t.is(sdk._backoffActive, false);
+});
+
+test.serial('_getLogPayload | returns the entire _logBuffer if _reduceLogPayload is false', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  await sdk.initialize();
+  sdk._reduceLogPayload = false;
+  sdk._logBuffer = [0, 1, 2, 3, 4];
+
+  const result = sdk._getLogPayload();
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+  t.is(sdk._logBuffer.length, 0, 'Items should have been removed from _logBuffer');
+});
+
+test.serial('_getLogPayload | returns part of _logBuffer if _reduceLogPayload is true', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  await sdk.initialize();
+  sdk._reduceLogPayload = true;
+  sdk._failedLogAttempts = 1;
+  sdk._logBuffer = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  const result = sdk._getLogPayload();
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+
+  t.is(sdk._logBuffer.length, 5, 'Items should have been removed from _logBuffer');
+  t.is(sdk._logBuffer[0], 5);
+  t.is(sdk._logBuffer[1], 6);
+  t.is(sdk._logBuffer[2], 7);
+  t.is(sdk._logBuffer[3], 8);
+  t.is(sdk._logBuffer[4], 9);
+});
+
+test.serial('_getLogPayload | returns part of _logBuffer if _reduceLogPayload is true and _failedLogAttempts is 0', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  await sdk.initialize();
+  sdk._reduceLogPayload = true;
+  sdk._failedLogAttempts = 0;
+  sdk._logBuffer = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  const result = sdk._getLogPayload();
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+
+  t.is(sdk._logBuffer.length, 5, 'Items should have been removed from _logBuffer');
+  t.is(sdk._logBuffer[0], 5);
+  t.is(sdk._logBuffer[1], 6);
+  t.is(sdk._logBuffer[2], 7);
+  t.is(sdk._logBuffer[3], 8);
+  t.is(sdk._logBuffer[4], 9);
+});
+
+test.serial('_resetBackoffFlags | should reset values of _backoffActive, _failedLogAttempts, and _reduceLogPaylod', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  await sdk.initialize();
+  sdk._backoffActive = true;
+  sdk._failedLogAttempts = 3;
+  sdk._reduceLogPayload = true;
+
+  sdk._resetBackoffFlags();
+
+  t.is(sdk._backoffActive, false);
+  t.is(sdk._failedLogAttempts, 0);
+  t.is(sdk._reduceLogPayload, false);
+});
+
+test.serial('_getReducedLogPayload | should return at least one log item', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  await sdk.initialize();
+
+  sdk._logBuffer = [1, 2, 3, 4, 5];
+  const result = sdk._getReducedLogPayload(6);
+
+  t.is(result.length, 1);
+});
+
+test.serial('_getReducesLogPayload | should remove items from _logBuffer and return them', async t => {
+  const { sdk } = mockApis({ withLogs: true });
+  await sdk.initialize();
+
+  sdk._logBuffer = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const result = sdk._getReducedLogPayload(1);
+
+  t.is(result.length, 5);
+  t.is(result[0], 0);
+  t.is(result[1], 1);
+  t.is(result[2], 2);
+  t.is(result[3], 3);
+  t.is(result[4], 4);
+
+  t.is(sdk._logBuffer.length, 5, 'Items should have been removed from the _logBuffer');
+  t.is(sdk._logBuffer[0], 5);
+  t.is(sdk._logBuffer[1], 6);
+  t.is(sdk._logBuffer[2], 7);
+  t.is(sdk._logBuffer[3], 8);
+  t.is(sdk._logBuffer[4], 9);
 });
