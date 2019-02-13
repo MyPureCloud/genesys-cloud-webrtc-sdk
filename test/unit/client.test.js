@@ -520,6 +520,7 @@ class MockSession extends WildEmitter {
     super();
     this.streams = [];
     this.sid = random();
+    this.pc = new WildEmitter();
   }
   accept () { }
   addStream () { }
@@ -562,6 +563,12 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   sdk._streamingConnection.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
+  mockSession._statsGatherer.emit('traces', { some: 'traces' });
+  mockSession._statsGatherer.emit('stats', { some: 'stats' });
+  sandbox.stub(mockSession._statsGatherer, 'collectInitialConnectionStats');
+  mockSession.emit('change:active', mockSession, true);
+  sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
+
   sinon.assert.calledOnce(mockSession.addStream);
   sinon.assert.calledOnce(mockSession.accept);
   sinon.assert.calledOnce(global.window.navigator.mediaDevices.getUserMedia);
@@ -571,6 +578,8 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
   mockSession.emit('terminated', mockSession);
+  mockSession.emit('change:active', mockSession, false);
+  sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
   await sessionEnded;
 
   sandbox.restore();

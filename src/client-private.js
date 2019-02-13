@@ -3,6 +3,7 @@
 // instance object.
 
 const request = require('superagent');
+const StatsGatherer = require('webrtc-stats-gatherer');
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 
@@ -115,7 +116,7 @@ function attachMedia (stream) {
 
 function onSession (session) {
   try {
-    this._log('info', 'onSession', { id: session.sid, remoteDescription: session.pc.remoteDescription });
+    this._log('info', 'onSession', { id: session.sid });
   } catch (e) {
     // don't let log errors ruin a session
   }
@@ -126,6 +127,25 @@ function onSession (session) {
     session.conversationId = pendingSessionInfo.conversationId;
   }
   this._pendingSessions[session.id] = null;
+
+  session._statsGatherer = new StatsGatherer(session.pc, {
+    session: session.sid,
+    conference: session.conversationId
+  });
+  session._statsGatherer.on('stats', (data) => {
+    data.conversationId = session.conversationId;
+    this._log('info', 'session:stats', data);
+  });
+  session._statsGatherer.on('traces', (data) => {
+    data.conversationId = session.conversationId;
+    this._log('warn', 'session:trace', data);
+  });
+  session.on('change:active', (session, active) => {
+    if (active) {
+      session._statsGatherer.collectInitialConnectionStats();
+    }
+    this._log('info', 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
+  });
 
   startMedia.call(this).then(stream => {
     this._log('debug', 'onMediaStarted');
@@ -145,7 +165,7 @@ function onSession (session) {
     }
 
     session.on('terminated', (session, reason) => {
-      this._log('info', 'onSessionTerminated', { peers: session.peers, pc: session.pc, reason });
+      this._log('info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
       if (session._outboundStream) {
         session._outboundStream.getTracks().forEach(t => t.stop());
       }
