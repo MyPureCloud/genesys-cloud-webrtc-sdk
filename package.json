@@ -71,6 +71,7 @@
     "superagent": "^3.8.3",
     "uuid": "^3.3.2",
     "webpack-auto-inject-version": "^1.2.2",
+    "webrtc-stats-gatherer": "^6.0.4",
     "wildemitter": "^1.2.0"
   },
   "devDependencies": {
@@ -80,7 +81,7 @@
     "babel-plugin-istanbul": "^4.1.6",
     "babel-preset-env": "^1.7.0",
     "babelify": "^8.0.0",
-    "browserify": "^16.2.2",
+    "browserify": "^16.2.3",
     "gulp": "^4.0.0",
     "gulp-uglify": "^3.0.1",
     "gulp-util": "^3.0.8",
