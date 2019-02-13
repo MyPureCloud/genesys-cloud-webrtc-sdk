@@ -230,7 +230,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
       details
     };
     const logContainer = {
-      topic: `purecloud-webrtc-sdk.${this._clientId}`,
+      topic: `purecloud-webrtc-sdk`,
       level: level.toUpperCase(),
       message: stringify(log)
     };
