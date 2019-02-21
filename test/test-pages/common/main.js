@@ -1,4 +1,8 @@
 const controller = require('./app-controller');
+const pureCloudWebTelemetry = require('purecloud-web-telemetry');
+
+pureCloudWebTelemetry.wrap();
+window.pureCloudWebTelemetry = pureCloudWebTelemetry;
 
 function initApp () {
   const envInput = document.getElementById('environment').value;
