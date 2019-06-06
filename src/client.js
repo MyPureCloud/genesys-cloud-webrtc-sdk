@@ -17,7 +17,8 @@ const ENVIRONMENTS = [
   'mypurecloud.com.au',
   'mypurecloud.jp',
   'mypurecloud.de',
-  'mypurecloud.ie'
+  'mypurecloud.ie',
+  'usw2.pure.cloud'
 ];
 
 const LOG_LEVELS = ['debug', 'log', 'info', 'warn', 'error'];
