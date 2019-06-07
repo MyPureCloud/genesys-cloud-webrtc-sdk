@@ -1,6 +1,6 @@
 {
   "name": "purecloud-webrtc-sdk",
-  "version": "1.1.12",
+  "version": "2.0.0",
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "pretest": "npm run build",
     "start": "stupid-server -s -p 8443",
     "test": "npm run semistandard && npm run unit-test",
-    "watch-tests": "watch 'npm test' src test",
+    "watch-tests": "watch 'npm run unit-test' src test",
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix"
   },
@@ -66,6 +66,7 @@
   "dependencies": {
     "backoff-web": "^1.0.1",
     "purecloud-platform-client-v2": "^28.0.0",
+    "purecloud-streaming-client": "^8.3.1",
     "safe-json-stringify": "^1.2.0",
     "stupid-server": "^0.2.2",
     "superagent": "^3.8.3",
@@ -94,7 +95,8 @@
     "vinyl-source-stream": "^2.0.0",
     "watch": "^1.0.2",
     "webpack": "^4.8.3",
-    "webpack-cli": "^2.1.4"
+    "webpack-cli": "^2.1.4",
+    "ws": "^7.0.0"
   },
   "false": {}
 }
