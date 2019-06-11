@@ -153,7 +153,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
 
   // public API methods
   acceptPendingSession (id) {
-    this._streamingConnection.acceptRtcSession(id);
+    this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
   endSession (opts = {}) {

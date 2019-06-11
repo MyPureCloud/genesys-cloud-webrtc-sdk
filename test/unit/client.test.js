@@ -12,10 +12,6 @@ function random () {
   return `${Math.random()}`.split('.')[1];
 }
 
-test.beforeEach(() => {
-
-});
-
 const USER_ID = random();
 const PARTICIPANT_ID = random();
 
@@ -203,7 +199,8 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { log () {}, info () {}, error () {}, warn () {}, debug () {} }
+    logger: { debug () {}, log () {}, info () {}, warn () {}, error () {} }
+    // logger: { debug () {}, log () {}, info () {}, warn: console.warn.bind(console), error: console.error.bind(console) }
   });
 
   let sendLogs;
@@ -247,7 +244,7 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
         }
       } else if (msg.indexOf('<auth') === 0) {
         if (failStreaming) {
-          send('<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></failure>' );
+          send('<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></failure>');
         } else {
           send('<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>');
         }
@@ -311,7 +308,7 @@ test.serial('initialize | throws if setting up streaming connection fails', t =>
   return sdk.initialize().then(() => t.fail()).catch(() => t.pass());
 });
 
-test.skip('initialize sets up event proxies', async t => {
+test.serial('initialize sets up event proxies', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -330,8 +327,8 @@ test.skip('initialize sets up event proxies', async t => {
       args: [ 1 ],
       transformedArgs: [ 1 ]
     },
-    // { name: 'error', trigger: 'rtcSessionError' },
-    { name: 'disconnected', trigger: 'disconnect', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
+    { name: 'error', trigger: 'rtcSessionError' },
+    { name: 'disconnected', trigger: 'session:end', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
   ];
 
   async function awaitEvent (sdk, eventName, trigger, args = [], transformedArgs) {
@@ -347,6 +344,7 @@ test.skip('initialize sets up event proxies', async t => {
       sdk.on(eventName, handler);
     });
     if (typeof trigger === 'string') {
+      sdk._streamingConnection._webrtcSessions.emit(trigger, ...args);
       sdk._streamingConnection._stanzaio.emit(trigger, ...args);
     } else {
       trigger(args);
@@ -371,12 +369,12 @@ test.serial('acceptPendingSession | proxies the call to the streaming connection
   const { sdk } = mockApis();
   await sdk.initialize();
 
-  sdk._streamingConnection.acceptRtcSession = sinon.stub();
-
+  const promise = new Promise(resolve => {
+    sdk._streamingConnection.webrtcSessions.on('rtcSessionError', resolve);
+  });
+  sdk._streamingConnection._webrtcSessions.acceptRtcSession = sinon.stub();
   sdk.acceptPendingSession('4321');
-  sinon.assert.calledOnce(sdk._streamingConnection.acceptRtcSession);
-  sinon.assert.calledWithExactly(sdk._streamingConnection.acceptRtcSession, '4321');
-  t.plan(0);
+  await promise;
 });
 
 test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
@@ -538,7 +536,7 @@ test.serial('_customIceServersConfig | gets reset if the client refreshes ice se
     },
     {
       type: 'stun',
-      urls: 'stun:turn.us-east-1.mypurecloud.com:3456',
+      urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
     }
   ]);
 });
@@ -552,7 +550,7 @@ test.serial('onPendingSession | emits a pendingSession event and accepts the ses
     sdk.on('pendingSession', resolve);
   });
 
-  sdk._streamingConnection._stanzaio.emit('requestIncomingRtcSession', {
+  sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
     sessionId: '1077',
     autoAnswer: true,
     conversationId: 'deadbeef-guid',
@@ -577,7 +575,7 @@ test.serial('onPendingSession | emits a pendingSession event but does not accept
     sdk.on('pendingSession', resolve);
   });
 
-  sdk._streamingConnection._stanzaio.emit('requestIncomingRtcSession', {
+  sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
     sessionId: '1077',
     autoAnswer: false,
     conversationId: 'deadbeef-guid',
@@ -637,7 +635,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   sandbox.stub(mockSession, 'addStream');
   sandbox.stub(mockSession, 'accept');
 
-  sdk._streamingConnection._stanzaio.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   mockSession._statsGatherer.emit('traces', { some: 'traces' });
@@ -681,7 +679,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sinon.stub(mockSession, 'addStream');
   sinon.stub(mockSession, 'accept');
 
-  sdk._streamingConnection._stanzaio.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   sinon.assert.calledOnce(mockSession.addStream);
@@ -721,7 +719,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sinon.stub(mockSession, 'addStream');
   sinon.stub(mockSession, 'accept');
 
-  sdk._streamingConnection._stanzaio.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   sinon.assert.calledOnce(mockSession.addStream);

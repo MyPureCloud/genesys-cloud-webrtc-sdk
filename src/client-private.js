@@ -35,7 +35,8 @@ function setupStreamingClient () {
     iceTransportPolicy: this._iceTransportPolicy,
     host: this._wsHost || `wss://streaming.${this._environment}`,
     apiHost: this._environment,
-    logger: this.logger
+    logger: this.logger,
+    authToken: this._accessToken
   };
 
   this._log('debug', 'Streaming client WebSocket connection options', connectionOptions);
@@ -167,7 +168,7 @@ function onPendingSession (sessionInfo) {
 
 function proxyStreamingClientEvents () {
   // webrtc events
-  const on = this._streamingConnection.on.bind(this._streamingConnection);
+  const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);
   on('requestIncomingRtcSession', onPendingSession.bind(this));
   on('incomingRtcSession', onSession.bind(this));
   on('rtcSessionError', this.emit.bind(this, 'error'));
@@ -176,8 +177,8 @@ function proxyStreamingClientEvents () {
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
   // other events
-  on('error', this.emit.bind(this, 'error'));
-  on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
+  this._streamingConnection.on('error', this.emit.bind(this, 'error'));
+  this._streamingConnection.on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
 }
 
 module.exports = {

@@ -60,13 +60,15 @@
     "powerAssert": true,
     "require": [
       "babel-register"
-    ]
+    ],
+    "tap": true,
+    "timeout": "30s"
   },
   "author": "",
   "dependencies": {
     "backoff-web": "^1.0.1",
     "purecloud-platform-client-v2": "^28.0.0",
-    "purecloud-streaming-client": "^8.3.1",
+    "purecloud-streaming-client": "^8.3.2",
     "safe-json-stringify": "^1.2.0",
     "stupid-server": "^0.2.2",
     "superagent": "^3.8.3",
