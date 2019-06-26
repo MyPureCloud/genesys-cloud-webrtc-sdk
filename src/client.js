@@ -51,6 +51,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
 
     this._accessToken = options.accessToken;
     this._environment = options.environment;
+    this._wsHost = options.wsHost;
     this._autoConnectSessions = options.autoConnectSessions !== false;
     this._customIceServersConfig = options.iceServers;
     this._iceTransportPolicy = options.iceTransportPolicy || 'all';
@@ -147,12 +148,12 @@ class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   get _sessionManager () {
-    return this._streamingConnection._controllers.webrtcController.sessionManager;
+    return this._streamingConnection._webrtcSessions.jingleJs;
   }
 
   // public API methods
   acceptPendingSession (id) {
-    this._streamingConnection.acceptRtcSession(id);
+    this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
   endSession (opts = {}) {
@@ -200,15 +201,14 @@ class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   _refreshTurnServers () {
-    this._streamingConnection.requestExternalServices('turn', (err, services) => {
-      if (err) {
+    return this._streamingConnection._webrtcSessions.refreshIceServers()
+      .then(services => {
+        this.logger.debug('PureCloud SDK refreshed TURN credentials successfully');
+      }).catch(err => {
         const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
         this.logger.warn(errorMessage, err);
         this.emit('error', { message: errorMessage, error: err });
-      } else {
-        this.logger.debug('PureCloud SDK refreshed TURN credentials successfully');
-      }
-    });
+      });
   }
 
   _log (level, message, details) {

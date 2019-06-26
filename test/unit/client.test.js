@@ -4,16 +4,13 @@ const test = require('ava');
 const sinon = require('sinon');
 const nock = require('nock');
 const WildEmitter = require('wildemitter');
+const WebSocket = require('ws');
 
 const PureCloudWebrtcSdk = require('../../src/client');
 
 function random () {
   return `${Math.random()}`.split('.')[1];
 }
-
-test.beforeEach(() => {
-
-});
 
 const USER_ID = random();
 const PARTICIPANT_ID = random();
@@ -40,6 +37,10 @@ const MOCK_CONVERSATION = {
     }
   ]
 };
+
+function timeout (n) {
+  return new Promise(resolve => setTimeout(resolve, n));
+}
 
 test.serial('constructor | throws if options are not provided', t => {
   t.throws(() => {
@@ -114,9 +115,30 @@ test.serial('constructor | sets up options when provided', t => {
   t.is(sdk._iceTransportPolicy, 'relay');
 });
 
+let wss;
+let ws;
+test.after(() => {
+  wss.close();
+});
+
+const sandbox = sinon.createSandbox();
+test.afterEach(() => {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  if (wss) {
+    wss.removeAllListeners();
+  }
+  sandbox.restore();
+});
+
 function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs } = {}) {
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
+
+  // easy to debug nock
+  // api.log(console.error);
 
   let getOrg;
   if (failOrg) {
@@ -131,6 +153,10 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
   } else {
     getUser = api.get('/api/v2/users/me').reply(200, MOCK_USER);
   }
+
+  const getChannel = api
+    .post('/api/v2/notifications/channels?connectionType=streaming')
+    .reply(200, { id: 'somechannelid' });
 
   const conversationsApi = nock('https://api.mypurecloud.com');
   let getConversation;
@@ -147,8 +173,8 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
       .reply(202, {});
   }
 
+  global.window = global.window || {};
   if (withMedia) {
-    global.window = global.window || {};
     window.navigator = window.navigator || {};
     window.navigator.mediaDevices = window.navigator.mediaDevices || {};
     window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
@@ -166,34 +192,15 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     head: {
       appendChild: sinon.stub().callsFake((script) => {
         global.window = global.window || {};
-        global.window.Realtime = class extends WildEmitter {
-          connect () {
-            this.emit('connect');
-            this.emit('rtcIceServers');
-          }
-          constructor () {
-            super();
-            this._controllers = {
-              webrtcController: {
-                sessionManager: {
-                  sessions: []
-                }
-              }
-            };
-          }
-          requestExternalServices () {}
-        };
-        if (failStreaming) {
-          console.log('Failing the streaming connection');
-          script.onerror(new Error('Intentional error loading script'));
-        }
       })
     }
   };
 
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
-    logger: { log () {}, info () {}, error () {}, warn () {}, debug () {} }
+    wsHost: failStreaming ? null : 'ws://localhost:1234',
+    logger: { debug () {}, log () {}, info () {}, warn () {}, error () {} }
+    // logger: { debug () {}, log () {}, info () {}, warn: console.warn.bind(console), error: console.error.bind(console) }
   });
 
   let sendLogs;
@@ -211,15 +218,73 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     sdk._optOutOfTelemetry = true;
   }
 
-  return { getOrg, getUser, getConversation, sendLogs, patchConversation, sdk };
+  if (wss) {
+    wss.close();
+    wss = null;
+  }
+
+  wss = new WebSocket.Server({
+    port: 1234
+  });
+  let websocket;
+  wss.on('connection', function (ws) {
+    websocket = ws;
+    ws.on('message', function (msg) {
+      // console.error('⬆️', msg);
+      const send = function (r) {
+        // console.error('⬇️', r);
+        setTimeout(function () { ws.send(r); }, 15);
+      };
+      if (msg.indexOf('<open') === 0) {
+        send('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" xmlns:stream="http://etherx.jabber.org/streams" version="1.0" from="hawk" id="d6f681a3-358c-49df-819f-b231adb3cb97" xml:lang="en"></open>');
+        if (ws.__authSent) {
+          send(`<stream:features xmlns:stream="http://etherx.jabber.org/streams"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"></bind><session xmlns="urn:ietf:params:xml:ns:xmpp-session"></session></stream:features>`);
+        } else {
+          send('<stream:features xmlns:stream="http://etherx.jabber.org/streams"><mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism>PLAIN</mechanism></mechanisms></stream:features>');
+        }
+      } else if (msg.indexOf('<auth') === 0) {
+        if (failStreaming) {
+          send('<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></failure>');
+        } else {
+          send('<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>');
+        }
+        ws.__authSent = true;
+      } else if (msg.indexOf('<bind') !== -1) {
+        const idRegexp = /id="(.*?)"/;
+        const id = idRegexp.exec(msg)[1];
+        send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}" type="result"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>${MOCK_USER.chat.jabberId}/d6f681a3-358c-49df-819f-b231adb3cb97</jid></bind></iq>`);
+      } else if (msg.indexOf('<session') !== -1) {
+        const idRegexp = /id="(.*?)"/;
+        const id = idRegexp.exec(msg)[1];
+        send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}/d6f681a3-358c-49df-819f-b231adb3cb97" type="result"></iq>`);
+      } else if (msg.indexOf('ping') !== -1) {
+        const idRegexp = /id="(.*?)"/;
+        const id = idRegexp.exec(msg)[1];
+        send(`<iq xmlns="jabber:client" to="${MOCK_USER.chat.jabberId}" type="result" id="${id}"></iq>`);
+      } else if (msg.indexOf('extdisco') !== -1) {
+        const idRegexp = / id="(.*?)"/;
+        const id = idRegexp.exec(msg)[1];
+        if (msg.indexOf('type="turn"') > -1) {
+          send(`<iq xmlns="jabber:client" type="result" to="${MOCK_USER.chat.jabberId}" id="${id}"><services xmlns="urn:xmpp:extdisco:1"><service transport="udp" port="3456" type="turn" username="turnuser:12395" password="akskdfjka=" host="turn.us-east-1.mypurecloud.com"/></services></iq>`);
+        } else {
+          send(`<iq xmlns="jabber:client" type="result" to="${MOCK_USER.chat.jabberId}" id="${id}"><services xmlns="urn:xmpp:extdisco:1"><service transport="udp" port="3456" type="stun" host="turn.us-east-1.mypurecloud.com"/></services></iq>`);
+        }
+      }
+    });
+  });
+  global.window.WebSocket = WebSocket;
+  ws = websocket;
+
+  return { getOrg, getUser, getChannel, getConversation, sendLogs, patchConversation, sdk, websocket };
 }
 
 test.serial('initialize | fetches org and person details, sets up the streaming connection', async t => {
-  const { getOrg, getUser, sdk } = mockApis();
+  const { getOrg, getUser, getChannel, sdk } = mockApis();
 
   await sdk.initialize();
   getOrg.done();
   getUser.done();
+  getChannel.done();
   t.truthy(sdk._streamingConnection);
   sdk.logBuffer = [];
   sdk._optOutOfTelemetry = true;
@@ -262,11 +327,9 @@ test.serial('initialize sets up event proxies', async t => {
       args: [ 1 ],
       transformedArgs: [ 1 ]
     },
-    // { name: 'error', trigger: 'rtcSessionError' },
-    { name: 'disconnected', trigger: 'disconnect', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
+    { name: 'error', trigger: 'rtcSessionError' },
+    { name: 'disconnected', trigger: 'session:end', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
   ];
-
-  sdk._streamingConnection.emit('rtcIceServers');
 
   async function awaitEvent (sdk, eventName, trigger, args = [], transformedArgs) {
     if (!transformedArgs) {
@@ -281,7 +344,8 @@ test.serial('initialize sets up event proxies', async t => {
       sdk.on(eventName, handler);
     });
     if (typeof trigger === 'string') {
-      sdk._streamingConnection.emit(trigger, ...args);
+      sdk._streamingConnection._webrtcSessions.emit(trigger, ...args);
+      sdk._streamingConnection._stanzaio.emit(trigger, ...args);
     } else {
       trigger(args);
     }
@@ -305,12 +369,12 @@ test.serial('acceptPendingSession | proxies the call to the streaming connection
   const { sdk } = mockApis();
   await sdk.initialize();
 
-  sdk._streamingConnection.acceptRtcSession = sinon.stub();
-
+  const promise = new Promise(resolve => {
+    sdk._streamingConnection.webrtcSessions.on('rtcSessionError', resolve);
+  });
+  sdk._streamingConnection._webrtcSessions.acceptRtcSession = sinon.stub();
   sdk.acceptPendingSession('4321');
-  sinon.assert.calledOnce(sdk._streamingConnection.acceptRtcSession);
-  sinon.assert.calledWithExactly(sdk._streamingConnection.acceptRtcSession, '4321');
-  t.plan(0);
+  await promise;
 });
 
 test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
@@ -455,15 +519,26 @@ test.serial('reconnect | proxies the call to the streaming connection', async t 
 test.serial('_customIceServersConfig | gets reset if the client refreshes ice servers', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
-  const mockIceServers = [{ urls: [ 'turn:mycustomturn.com' ] }];
-  sdk._customIceServersConfig = mockIceServers;
+  sdk._customIceServersConfig = [{ something: 'junk' }];
 
   sdk._streamingConnection.sessionManager = {
     iceServers: [{ urls: ['turn:mypurecloud.com'] }]
   };
 
-  sdk._streamingConnection.emit('rtcIceServers');
-  t.is(sdk._streamingConnection.sessionManager.iceServers, mockIceServers);
+  await sdk._streamingConnection.webrtcSessions.refreshIceServers();
+  const actual = sdk._sessionManager.iceServers;
+  t.deepEqual(actual, [
+    {
+      type: 'turn',
+      urls: 'turn:turn.us-east-1.mypurecloud.com:3456',
+      username: 'turnuser:12395',
+      credential: 'akskdfjka='
+    },
+    {
+      type: 'stun',
+      urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
+    }
+  ]);
 });
 
 test.serial('onPendingSession | emits a pendingSession event and accepts the session', async t => {
@@ -475,7 +550,7 @@ test.serial('onPendingSession | emits a pendingSession event and accepts the ses
     sdk.on('pendingSession', resolve);
   });
 
-  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+  sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
     sessionId: '1077',
     autoAnswer: true,
     conversationId: 'deadbeef-guid',
@@ -500,7 +575,7 @@ test.serial('onPendingSession | emits a pendingSession event but does not accept
     sdk.on('pendingSession', resolve);
   });
 
-  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+  sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
     sessionId: '1077',
     autoAnswer: false,
     conversationId: 'deadbeef-guid',
@@ -560,7 +635,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   sandbox.stub(mockSession, 'addStream');
   sandbox.stub(mockSession, 'accept');
 
-  sdk._streamingConnection.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   mockSession._statsGatherer.emit('traces', { some: 'traces' });
@@ -604,7 +679,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sinon.stub(mockSession, 'addStream');
   sinon.stub(mockSession, 'accept');
 
-  sdk._streamingConnection.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   sinon.assert.calledOnce(mockSession.addStream);
@@ -644,7 +719,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sinon.stub(mockSession, 'addStream');
   sinon.stub(mockSession, 'accept');
 
-  sdk._streamingConnection.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   sinon.assert.calledOnce(mockSession.addStream);
@@ -658,33 +733,6 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sinon.assert.notCalled(global.document.body.append);
 
   sandbox.restore();
-});
-
-test.serial('_refreshTurnServers | refreshes the turn servers', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
-
-  sdk._streamingConnection.connected = true;
-  t.true(sdk.connected);
-
-  sinon.stub(sdk._streamingConnection, 'requestExternalServices').yields(null, []);
-  sdk._refreshTurnServers();
-  sinon.assert.calledOnce(sdk._streamingConnection.requestExternalServices);
-  t.truthy(sdk._refreshTurnServersInterval);
-});
-
-test.serial('_refreshTurnServers | emits an error if there is an error refreshing turn servers', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
-
-  sdk._streamingConnection.connected = true;
-  t.true(sdk.connected);
-
-  const promise = new Promise(resolve => sdk.on('error', resolve));
-  sinon.stub(sdk._streamingConnection, 'requestExternalServices').yields(new Error('fail'));
-  sdk._refreshTurnServers();
-  sinon.assert.calledOnce(sdk._streamingConnection.requestExternalServices);
-  await promise;
 });
 
 test.serial('_log | will not notify logs if the logLevel is lower than configured', async t => {
@@ -717,10 +765,6 @@ test.serial('_log | will buffer a log and notify it if the logLevel is gte confi
   sinon.assert.calledOnce(sdk._notifyLogs);
   t.is(sdk._logBuffer.length, 1);
 });
-
-function timeout (n) {
-  return new Promise(resolve => setTimeout(resolve, n));
-}
 
 test.serial('_notifyLogs | will debounce logs and only send logs once at the end', async t => {
   const { sdk } = mockApis({ withLogs: true });
@@ -976,4 +1020,31 @@ test.serial('_getReducesLogPayload | should remove items from _logBuffer and ret
   t.is(sdk._logBuffer[2], 7);
   t.is(sdk._logBuffer[3], 8);
   t.is(sdk._logBuffer[4], 9);
+});
+
+test.serial('_refreshTurnServers | refreshes the turn servers', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._streamingConnection.connected = true;
+  t.true(sdk.connected);
+
+  sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.resolve());
+  await sdk._refreshTurnServers();
+  sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
+  t.truthy(sdk._refreshTurnServersInterval);
+});
+
+test.serial('_refreshTurnServers | emits an error if there is an error refreshing turn servers', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sdk._streamingConnection.connected = true;
+  t.true(sdk.connected);
+
+  const promise = new Promise(resolve => sdk.on('error', resolve));
+  sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.reject(new Error('fail')));
+  await sdk._refreshTurnServers();
+  sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
+  await promise;
 });
