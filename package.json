@@ -16,7 +16,7 @@
   "scripts": {
     "build": "npx webpack",
     "build-sample": "./test/test-pages/build.sh",
-    "unit-test": "NODE_ENV=test nyc ava test/unit/*.js",
+    "unit-test": "tsc test/unit/*.ts && NODE_ENV=test nyc ava test/unit/*.js",
     "pretest": "npm run build",
     "start": "stupid-server -s -p 8443",
     "test": "npm run semistandard && npm run unit-test",
@@ -78,7 +78,10 @@
     "wildemitter": "^1.2.0"
   },
   "devDependencies": {
+    "@types/safe-json-stringify": "^1.1.0",
+    "@types/uuid": "^3.4.4",
     "ava": "^0.20.0",
+    "awesome-typescript-loader": "^5.2.1",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
     "babel-plugin-istanbul": "^4.1.6",
@@ -92,6 +95,7 @@
     "nyc": "^11.1.0",
     "semistandard": "^12.0.1",
     "sinon": "^7.1.1",
+    "typescript": "^3.5.2",
     "uglify-js": "^3.4.6",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",

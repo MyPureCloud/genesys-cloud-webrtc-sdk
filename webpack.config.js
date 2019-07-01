@@ -2,7 +2,7 @@ const path = require('path');
 const WebpackAutoInject = require('webpack-auto-inject-version');
 
 module.exports = {
-  entry: './src/client.js',
+  entry: './src/client.ts',
   mode: 'production',
   output: {
     path: path.resolve(__dirname, 'web'),
@@ -30,6 +30,10 @@ module.exports = {
         query: {
           presets: ['env']
         }
+      },
+      {
+        test: /\.ts$/,
+        loader: 'awesome-typescript-loader'
       }
     ]
   }
