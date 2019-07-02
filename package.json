@@ -16,11 +16,13 @@
   "scripts": {
     "build": "npx webpack",
     "build-sample": "./test/test-pages/build.sh",
-    "unit-test": "tsc test/unit/*.ts && NODE_ENV=test nyc ava test/unit/*.js",
+    "unit-test": "NODE_ENV=test nyc ava test/unit/*.js",
     "pretest": "npm run build",
     "start": "stupid-server -s -p 8443",
-    "test": "npm run semistandard && npm run unit-test",
+    "test": "npm run lint && npm run unit-test",
     "watch-tests": "watch 'npm run unit-test' src test",
+    "lint": "npm run semistandard && npm run tslint",
+    "tslint": "tslint --project . --config tslint.json",
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix"
   },
@@ -57,10 +59,17 @@
     "concurrency": 5,
     "failFast": true,
     "failWithoutAssertions": false,
+    "compileEnhancements": false,
     "powerAssert": true,
+    "extensions": [
+      "ts"
+    ],
     "require": [
+      "ts-node/register/transpile-only",
+      "babel-polyfill",
       "babel-register"
     ],
+    "serial": true,
     "tap": true,
     "timeout": "30s"
   },
@@ -85,6 +94,7 @@
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
     "babel-plugin-istanbul": "^4.1.6",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babelify": "^8.0.0",
     "browserify": "^16.2.3",
@@ -95,6 +105,9 @@
     "nyc": "^11.1.0",
     "semistandard": "^12.0.1",
     "sinon": "^7.1.1",
+    "ts-node": "^8.3.0",
+    "tslint": "^5.18.0",
+    "tslint-config-semistandard": "^8.0.1",
     "typescript": "^3.5.2",
     "uglify-js": "^3.4.6",
     "vinyl-buffer": "^1.0.1",
