@@ -85,14 +85,20 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
       .reply(202, {});
   }
 
-  global.window = global.window || {};
+  // global.window = global.window || {};
+  Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
+
   if (withMedia) {
-    (window.navigator as any) = window.navigator || {};
-    (window.navigator.mediaDevices as any) = window.navigator.mediaDevices || {};
-    window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
+    // (window.navigator as any) = window.navigator || {};
+    Object.defineProperty(window, 'navigator', { value: window.navigator || {}, writable: true });
+    // (window.navigator.mediaDevices as any) = window.navigator.mediaDevices || {};
+    Object.defineProperty(window.navigator, 'mediaDevices', { value: window.navigator.mediaDevices || {}, writable: true });
+    // window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
+    Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', { value: () => Promise.resolve(withMedia), writable: true });
   }
 
-  global.document = {
+  // global.document = {
+  const doc = {
     createElement: sinon.stub().returns({
       addEventListener: (evt, callback) => setTimeout(callback, 10),
       classList: { add () { } }
@@ -103,10 +109,12 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     },
     head: {
       appendChild: sinon.stub().callsFake((script) => {
-        global.window = global.window || {};
+        // global.window = global.window || {};
+        Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
       })
     }
   };
+  Object.defineProperty(window, 'document', { value: doc, writable: true });
 
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
@@ -184,7 +192,8 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
       }
     });
   });
-  global.window.WebSocket = WebSocket;
+  // global.window.WebSocket = WebSocket;
+  Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
   ws = websocket;
 
   return { getOrg, getUser, getChannel, getConversation, sendLogs, patchConversation, sdk, websocket };

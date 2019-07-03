@@ -1,4 +1,3 @@
-import test from 'ava';
 import WildEmitter from 'wildemitter';
 import sinon, { SinonSpy } from 'sinon';
 
@@ -11,19 +10,37 @@ declare var global: {
 
 let { wss, ws, mockApis, random, PARTICIPANT_ID } = require('../test-utils');
 
-test.serial('constructor | throws if options are not provided', t => {
-  t.throws(() => {
+afterAll(() => {
+  if (wss) {
+    wss.close();
+  }
+});
+
+const sandbox = sinon.createSandbox();
+afterEach(() => {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  if (wss) {
+    wss.removeAllListeners();
+  }
+  sandbox.restore();
+});
+
+test('constructor | throws if options are not provided', () => {
+  expect(() => {
     const sdk = new PureCloudWebrtcSdk(null); // eslint-disable-line
-  });
+  }).toThrow();
 });
 
-test.serial('constructor | throws if accessToken is not provided', t => {
-  t.throws(() => {
+test('constructor | throws if accessToken is not provided', () => {
+  expect(() => {
     const sdk = new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // eslint-disable-line
-  });
+  }).toThrow();
 });
 
-test.serial('constructor | warns if environment is not valid', t => {
+test('constructor | warns if environment is not valid', () => {
   const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' }); // eslint-disable-line
   const sdk2 = new PureCloudWebrtcSdk({  // eslint-disable-line
     accessToken: '1234',
@@ -34,7 +51,7 @@ test.serial('constructor | warns if environment is not valid', t => {
   sinon.assert.calledOnce(sdk2.logger.warn);
 });
 
-test.serial('constructor | warns if the logLevel is not valid', t => {
+test('constructor | warns if the logLevel is not valid', () => {
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     environment: 'mypurecloud.com',
@@ -44,7 +61,7 @@ test.serial('constructor | warns if the logLevel is not valid', t => {
   sinon.assert.calledOnce(sdk.logger.warn);
 });
 
-test.serial('constructor | does not warn if things are fine', t => {
+test('constructor | does not warn if things are fine', () => {
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     environment: 'mypurecloud.com',
@@ -54,17 +71,17 @@ test.serial('constructor | does not warn if things are fine', t => {
   sinon.assert.notCalled(sdk.logger.warn);
 });
 
-test.serial('constructor | sets up options with defaults', t => {
+test('constructor | sets up options with defaults', () => {
   const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' });
-  t.is(sdk.logger, console);
-  t.is(sdk._accessToken, '1234');
-  t.is(sdk._environment, 'mypurecloud.com');
-  t.is(sdk._autoConnectSessions, true);
-  t.is(typeof sdk._customIceServersConfig, 'undefined');
-  t.is(sdk._iceTransportPolicy, 'all');
+  expect(sdk.logger).toBe(console);
+  expect(sdk._accessToken).toBe('1234');
+  expect(sdk._environment).toBe('mypurecloud.com');
+  expect(sdk._autoConnectSessions).toBe(true);
+  expect(typeof sdk._customIceServersConfig).toBe('undefined');
+  expect(sdk._iceTransportPolicy).toBe('all');
 });
 
-test.serial('constructor | sets up options when provided', t => {
+test('constructor | sets up options when provided', () => {
   const logger = {};
   const iceServers = [];
   const sdk = new PureCloudWebrtcSdk({
@@ -76,63 +93,57 @@ test.serial('constructor | sets up options when provided', t => {
     logger
   });
 
-  t.is(sdk.logger, logger);
-  t.is(sdk._accessToken, '1234');
-  t.is(sdk._environment, 'mypurecloud.ie');
-  t.is(sdk._autoConnectSessions, false);
-  t.is(sdk._customIceServersConfig, iceServers);
-  t.is(sdk._iceTransportPolicy, 'relay');
+  expect(sdk.logger).toBe(logger);
+  expect(sdk._accessToken).toBe('1234');
+  expect(sdk._environment).toBe('mypurecloud.ie');
+  expect(sdk._autoConnectSessions).toBe(false);
+  expect(sdk._customIceServersConfig).toBe(iceServers);
+  expect(sdk._iceTransportPolicy).toBe('relay');
 });
 
-test.after(() => {
-  if (wss) {
-    wss.close();
+test(
+  'initialize | fetches org and person details, sets up the streaming connection',
+  async () => {
+    const { getOrg, getUser, getChannel, sdk } = mockApis();
+
+    await sdk.initialize();
+    getOrg.done();
+    getUser.done();
+    getChannel.done();
+    expect(sdk._streamingConnection).toBeTruthy();
+    sdk.logBuffer = [];
+    sdk._optOutOfTelemetry = true;
   }
-});
+);
 
-const sandbox = sinon.createSandbox();
-test.afterEach(() => {
-  if (ws) {
-    ws.close();
-    ws = null;
-  }
-  if (wss) {
-    wss.removeAllListeners();
-  }
-  sandbox.restore();
-});
-
-test.serial('initialize | fetches org and person details, sets up the streaming connection', async t => {
-  const { getOrg, getUser, getChannel, sdk } = mockApis();
-
-  await sdk.initialize();
-  getOrg.done();
-  getUser.done();
-  getChannel.done();
-  t.truthy(sdk._streamingConnection);
-  sdk.logBuffer = [];
-  sdk._optOutOfTelemetry = true;
-});
-
-test.serial('initialize | throws if getting the org fails', t => {
+test('initialize | throws if getting the org fails', done => {
   const { sdk } = mockApis({ failOrg: true });
 
-  return sdk.initialize().then(() => t.fail()).catch(() => t.pass());
+  return sdk.initialize()
+    .then(() => done.fail())
+    .catch(() => done());
 });
 
-test.serial('initialize | throws if getting the user fails', t => {
+test('initialize | throws if getting the user fails', done => {
   const { sdk } = mockApis({ failUser: true });
 
-  return sdk.initialize().then(t => t.fail()).catch(() => t.pass());
+  return sdk.initialize()
+    .then(t => done.fail())
+    .catch(() => done());
 });
 
-test.serial('initialize | throws if setting up streaming connection fails', t => {
+test('initialize | throws if setting up streaming connection fails', () => {
   const { sdk } = mockApis({ failStreaming: true });
 
-  return sdk.initialize().then(() => t.fail()).catch(() => t.pass());
+  // expect(async () => {
+  //   await sdk.initialize();
+  // }).toThrow();
+  return sdk.initialize()
+    .then(() => fail('no error?'))
+    .catch(() => expect(true).toBeTruthy());
 });
 
-test.serial('initialize sets up event proxies', async t => {
+test('initialize sets up event proxies', async () => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -142,17 +153,17 @@ test.serial('initialize sets up event proxies', async t => {
     {
       name: 'handledPendingSession',
       trigger: 'handledIncomingRtcSession',
-      args: [ 1 ],
-      transformedArgs: [ 1 ]
+      args: [1],
+      transformedArgs: [1]
     },
     {
       name: 'cancelPendingSession',
       trigger: 'cancelIncomingRtcSession',
-      args: [ 1 ],
-      transformedArgs: [ 1 ]
+      args: [1],
+      transformedArgs: [1]
     },
     { name: 'error', trigger: 'rtcSessionError' },
-    { name: 'disconnected', trigger: 'session:end', args: [], transformedArgs: [ 'Streaming API connection disconnected' ] }
+    { name: 'disconnected', trigger: 'session:end', args: [], transformedArgs: ['Streaming API connection disconnected'] }
   ];
 
   async function awaitEvent (sdk, eventName, trigger, args = [], transformedArgs) {
@@ -161,7 +172,7 @@ test.serial('initialize sets up event proxies', async t => {
     }
     const promise = new Promise(resolve => {
       const handler = (...eventArgs) => {
-        t.deepEqual(transformedArgs, eventArgs, `Args match for ${eventName}`);
+        expect(transformedArgs).toEqual(eventArgs);
         sdk.off(eventName, handler);
         resolve();
       };
@@ -179,44 +190,53 @@ test.serial('initialize sets up event proxies', async t => {
   await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
 });
 
-test.serial('connected | returns the streaming client connection status', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
+test(
+  'connected | returns the streaming client connection status',
+  async () => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
 
-  sdk._streamingConnection.connected = true;
-  t.true(sdk.connected);
-  sdk._streamingConnection.connected = false;
-  t.false(sdk.connected);
-});
+    sdk._streamingConnection.connected = true;
+    expect(sdk.connected).toBe(true);
+    sdk._streamingConnection.connected = false;
+    expect(sdk.connected).toBe(false);
+  }
+);
 
-test.serial('acceptPendingSession | proxies the call to the streaming connection', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
+test(
+  'acceptPendingSession | proxies the call to the streaming connection',
+  async () => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
 
-  const promise = new Promise(resolve => {
-    sdk._streamingConnection.webrtcSessions.on('rtcSessionError', resolve);
-  });
-  sdk._streamingConnection._webrtcSessions.acceptRtcSession = sinon.stub();
-  sdk.acceptPendingSession('4321');
-  await promise;
-});
+    const promise = new Promise(resolve => {
+      sdk._streamingConnection.webrtcSessions.on('rtcSessionError', resolve);
+    });
+    sdk._streamingConnection._webrtcSessions.acceptRtcSession = sinon.stub();
+    sdk.acceptPendingSession('4321');
+    await promise;
+  }
+);
 
-test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
-  const sessionId = random();
-  const conversationId = random();
-  const participantId = PARTICIPANT_ID;
-  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
-  await sdk.initialize();
+test(
+  'endSession | requests the conversation then patches the participant to disconnected',
+  async () => {
+    const sessionId = random();
+    const conversationId = random();
+    const participantId = PARTICIPANT_ID;
+    const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
+    await sdk.initialize();
 
-  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
-  sdk._sessionManager.sessions = {};
-  sdk._sessionManager.sessions[sessionId] = mockSession;
+    const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+    sdk._sessionManager.sessions = {};
+    sdk._sessionManager.sessions[sessionId] = mockSession;
 
-  await sdk.endSession({ id: sessionId });
-  getConversation.done();
-  patchConversation.done();
-  sinon.assert.notCalled(mockSession.end);
-});
+    await sdk.endSession({ id: sessionId });
+    getConversation.done();
+    patchConversation.done();
+    sinon.assert.notCalled(mockSession.end);
+  }
+);
 
 // test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
 //   const sessionId = random();
@@ -235,33 +255,34 @@ test.serial('endSession | requests the conversation then patches the participant
 //   sinon.assert.notCalled(mockSession.end);
 // });
 
-test.serial('endSession | rejects if not provided either an id or a conversationId', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
-  await sdk.endSession({})
-    .then(() => {
-      t.fail();
-    })
-    .catch(err => {
-      t.truthy(err);
-      t.pass();
-    });
-});
+test(
+  'endSession | rejects if not provided either an id or a conversationId',
+  async done => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
+    await sdk.endSession({})
+      .then(() => {
+        done.fail();
+      })
+      .catch(err => {
+        expect(err).toBeTruthy();
+      });
+  }
+);
 
-test.serial('endSession | rejects if not provided anything', async t => {
+test('endSession | rejects if not provided anything', async done => {
   const { sdk } = mockApis();
   await sdk.initialize();
   await sdk.endSession()
     .then(() => {
-      t.fail();
+      done.fail();
     })
     .catch(err => {
-      t.truthy(err);
-      t.pass();
+      expect(err).toBeTruthy();
     });
 });
 
-test.serial('endSession | rejects if the session is not found', async t => {
+test('endSession | rejects if the session is not found', async done => {
   const sessionId = random();
   const conversationId = random();
   const participantId = PARTICIPANT_ID;
@@ -274,51 +295,56 @@ test.serial('endSession | rejects if the session is not found', async t => {
 
   await sdk.endSession({ id: sessionId })
     .then(() => {
-      t.fail();
+      done.fail();
     })
     .catch(err => {
-      t.truthy(err);
-      t.pass();
+      expect(err).toBeTruthy();
     });
 });
 
-test.serial('endSession | ends the session and rejects if there is an error fetching the conversation', async t => {
-  const sessionId = random();
-  const conversationId = random();
-  const participantId = random();
-  const { sdk } = mockApis({ conversationId, participantId });
-  await sdk.initialize();
+test(
+  'endSession | ends the session and rejects if there is an error fetching the conversation',
+  async done => {
+    const sessionId = random();
+    const conversationId = random();
+    const participantId = random();
+    const { sdk } = mockApis({ conversationId, participantId });
+    await sdk.initialize();
 
-  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
-  sdk._sessionManager.sessions = {};
-  sdk._sessionManager.sessions[sessionId] = mockSession;
+    const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+    sdk._sessionManager.sessions = {};
+    sdk._sessionManager.sessions[sessionId] = mockSession;
 
-  await sdk.endSession({ id: sessionId })
-    .then(() => {
-      t.fail();
-    })
-    .catch(err => {
-      t.truthy(err);
-      sinon.assert.calledOnce(mockSession.end);
-    });
-});
+    await sdk.endSession({ id: sessionId })
+      .then(() => {
+        done.fail();
+      })
+      .catch(err => {
+        expect(err).toBeTruthy();
+        sinon.assert.calledOnce(mockSession.end);
+      });
+  }
+);
 
-test.serial('endSession | terminates the session of the existing session has no conversationId', async t => {
-  const sessionId = random();
-  const conversationId = random();
-  const participantId = random();
-  const { sdk, getConversation } = mockApis({ conversationId, participantId });
-  await sdk.initialize();
+test(
+  'endSession | terminates the session of the existing session has no conversationId',
+  async () => {
+    const sessionId = random();
+    const conversationId = random();
+    const participantId = random();
+    const { sdk, getConversation } = mockApis({ conversationId, participantId });
+    await sdk.initialize();
 
-  const mockSession = { id: sessionId, end: sinon.stub() };
-  sdk._sessionManager.sessions = {};
-  sdk._sessionManager.sessions[sessionId] = mockSession;
-  await sdk.endSession({ id: sessionId });
-  t.throws(() => getConversation.done());
-  sinon.assert.calledOnce(mockSession.end);
-});
+    const mockSession = { id: sessionId, end: sinon.stub() };
+    sdk._sessionManager.sessions = {};
+    sdk._sessionManager.sessions[sessionId] = mockSession;
+    await sdk.endSession({ id: sessionId });
+    expect(() => getConversation.done()).toThrow();
+    sinon.assert.calledOnce(mockSession.end);
+  }
+);
 
-test.serial('disconnect | proxies the call to the streaming connection', async t => {
+test('disconnect | proxies the call to the streaming connection', async () => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -326,10 +352,10 @@ test.serial('disconnect | proxies the call to the streaming connection', async t
 
   sdk.disconnect();
   sinon.assert.calledOnce(sdk._streamingConnection.disconnect);
-  t.plan(0);
+  expect.assertions(0);
 });
 
-test.serial('reconnect | proxies the call to the streaming connection', async t => {
+test('reconnect | proxies the call to the streaming connection', async () => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
@@ -337,82 +363,91 @@ test.serial('reconnect | proxies the call to the streaming connection', async t 
 
   sdk.reconnect();
   sinon.assert.calledOnce(sdk._streamingConnection.reconnect);
-  t.plan(0);
+  expect.assertions(0);
 });
 
-test.serial('_customIceServersConfig | gets reset if the client refreshes ice servers', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
-  sdk._customIceServersConfig = [{ something: 'junk' }];
+test(
+  '_customIceServersConfig | gets reset if the client refreshes ice servers',
+  async () => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
+    sdk._customIceServersConfig = [{ something: 'junk' }];
 
-  sdk._streamingConnection.sessionManager = {
-    iceServers: [{ urls: ['turn:mypurecloud.com'] }]
-  };
+    sdk._streamingConnection.sessionManager = {
+      iceServers: [{ urls: ['turn:mypurecloud.com'] }]
+    };
 
-  await sdk._streamingConnection.webrtcSessions.refreshIceServers();
-  const actual = sdk._sessionManager.iceServers;
-  t.deepEqual(actual, [
-    {
-      type: 'turn',
-      urls: 'turn:turn.us-east-1.mypurecloud.com:3456',
-      username: 'turnuser:12395',
-      credential: 'akskdfjka='
-    },
-    {
-      type: 'stun',
-      urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
-    }
-  ]);
-});
+    await sdk._streamingConnection.webrtcSessions.refreshIceServers();
+    const actual = sdk._sessionManager.iceServers;
+    expect(actual).toEqual([
+      {
+        type: 'turn',
+        urls: 'turn:turn.us-east-1.mypurecloud.com:3456',
+        username: 'turnuser:12395',
+        credential: 'akskdfjka='
+      },
+      {
+        type: 'stun',
+        urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
+      }
+    ]);
+  }
+);
 
-test.serial('onPendingSession | emits a pendingSession event and accepts the session', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
+test(
+  'onPendingSession | emits a pendingSession event and accepts the session',
+  async () => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
 
-  sinon.stub(sdk, 'acceptPendingSession');
-  const pendingSession = new Promise(resolve => {
-    sdk.on('pendingSession', resolve);
-  });
+    sinon.stub(sdk, 'acceptPendingSession');
+    const pendingSession = new Promise(resolve => {
+      sdk.on('pendingSession', resolve);
+    });
 
-  sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-    sessionId: '1077',
-    autoAnswer: true,
-    conversationId: 'deadbeef-guid',
-    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-  });
+    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
+      sessionId: '1077',
+      autoAnswer: true,
+      conversationId: 'deadbeef-guid',
+      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+    });
 
-  const sessionInfo: any = await pendingSession;
-  t.is(sessionInfo.id, '1077');
-  t.is(sessionInfo.conversationId, 'deadbeef-guid');
-  t.is(sessionInfo.address, '+15558675309');
-  t.is(sessionInfo.autoAnswer, true);
-  sinon.assert.calledOnce(sdk.acceptPendingSession);
-  sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
-});
+    const sessionInfo: any = await pendingSession;
+    expect(sessionInfo.id).toBe('1077');
+    expect(sessionInfo.conversationId).toBe('deadbeef-guid');
+    expect(sessionInfo.address).toBe('+15558675309');
+    expect(sessionInfo.autoAnswer).toBe(true);
+    sinon.assert.calledOnce(sdk.acceptPendingSession);
+    sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
+  }
+);
 
-test.serial('onPendingSession | emits a pendingSession event but does not accept the session if autoAnswer is false', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
+test(
+  'onPendingSession | emits a pendingSession event but does not accept the session if autoAnswer is false',
+  async () => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
 
-  sinon.stub(sdk, 'acceptPendingSession');
-  const pendingSession = new Promise(resolve => {
-    sdk.on('pendingSession', resolve);
-  });
+    sinon.stub(sdk, 'acceptPendingSession');
+    const pendingSession = new Promise(resolve => {
+      sdk.on('pendingSession', resolve);
+    });
 
-  sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-    sessionId: '1077',
-    autoAnswer: false,
-    conversationId: 'deadbeef-guid',
-    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-  });
+    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
+      sessionId: '1077',
+      autoAnswer: false,
+      conversationId: 'deadbeef-guid',
+      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+    });
 
-  const sessionInfo: any = await pendingSession;
-  t.is(sessionInfo.id, '1077');
-  t.is(sessionInfo.conversationId, 'deadbeef-guid');
-  t.is(sessionInfo.address, '+15558675309');
-  t.is(sessionInfo.autoAnswer, false);
-  sinon.assert.notCalled(sdk.acceptPendingSession);
-});
+    const sessionInfo: any = await pendingSession;
+    expect(sessionInfo.id).toBe('1077');
+    expect(sessionInfo.conversationId).toBe('deadbeef-guid');
+    expect(sessionInfo.address).toBe('+15558675309');
+    expect(sessionInfo.autoAnswer).toBe(false);
+    sinon.assert.notCalled(sdk.acceptPendingSession);
+  }
+);
 
 class MockSession extends WildEmitter {
   streams: any[];
@@ -432,162 +467,174 @@ class MockSession extends WildEmitter {
 }
 
 class MockTrack {
-  stop () {}
+  stop () { }
 }
 
 class MockStream {
   _tracks: MockTrack[];
   constructor () {
-    this._tracks = [ new MockTrack() ];
+    this._tracks = [new MockTrack()];
   }
   getTracks () {
     return this._tracks;
   }
 }
 
-test.serial('onSession | starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async t => {
-  const mockOutboundStream = new MockStream();
-  const { sdk } = mockApis({ withMedia: mockOutboundStream });
-  await sdk.initialize();
+test(
+  'onSession | starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event',
+  async () => {
+    const mockOutboundStream = new MockStream();
+    const { sdk } = mockApis({ withMedia: mockOutboundStream });
+    await sdk.initialize();
 
-  const sandbox = sinon.createSandbox();
-  sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
-  const bodyAppend = new Promise(resolve => {
-    sandbox.stub(global.document.body, 'append').callsFake(resolve);
-  });
+    const sandbox = sinon.createSandbox();
+    sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
+    const bodyAppend = new Promise(resolve => {
+      sandbox.stub(global.document.body, 'append').callsFake(resolve);
+    });
 
-  const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+    const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
-  const mockSession = new MockSession();
-  mockSession.sid = random();
-  sdk._pendingSessions[mockSession.sid] = mockSession;
-  mockSession.streams = [ new MockStream() ];
-  sandbox.stub(mockSession, 'addStream');
-  sandbox.stub(mockSession, 'accept');
+    const mockSession = new MockSession();
+    mockSession.sid = random();
+    sdk._pendingSessions[mockSession.sid] = mockSession;
+    mockSession.streams = [new MockStream()];
+    sandbox.stub(mockSession, 'addStream');
+    sandbox.stub(mockSession, 'accept');
 
-  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-  await sessionStarted;
+    sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+    await sessionStarted;
 
-  mockSession._statsGatherer.emit('traces', { some: 'traces' });
-  mockSession._statsGatherer.emit('stats', { some: 'stats' });
-  sandbox.stub(mockSession._statsGatherer, 'collectInitialConnectionStats');
-  mockSession.emit('change:active', mockSession, true);
-  sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
+    mockSession._statsGatherer.emit('traces', { some: 'traces' });
+    mockSession._statsGatherer.emit('stats', { some: 'stats' });
+    sandbox.stub(mockSession._statsGatherer, 'collectInitialConnectionStats');
+    mockSession.emit('change:active', mockSession, true);
+    sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
 
-  sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
-  sinon.assert.calledOnce(mockSession.accept as SinonSpy);
-  sinon.assert.calledOnce(global.window.navigator.mediaDevices.getUserMedia);
+    sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
+    sinon.assert.calledOnce(mockSession.accept as SinonSpy);
+    sinon.assert.calledOnce(global.window.navigator.mediaDevices.getUserMedia);
 
-  const attachedAudioElement: any = await bodyAppend;
-  t.is(attachedAudioElement.srcObject, mockSession.streams[0]);
+    const attachedAudioElement: any = await bodyAppend;
+    expect(attachedAudioElement.srcObject).toBe(mockSession.streams[0]);
 
-  const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
-  mockSession.emit('terminated', mockSession);
-  mockSession.emit('change:active', mockSession, false);
-  sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
-  await sessionEnded;
+    const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+    mockSession.emit('terminated', mockSession);
+    mockSession.emit('change:active', mockSession, false);
+    sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
+    await sessionEnded;
 
-  sandbox.restore();
-});
+    sandbox.restore();
+  }
+);
 
-test.serial('onSession | uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async t => {
-  const mockOutboundStream = new MockStream();
-  const mockAudioElement: any = { classList: { add () {} } };
-  const { sdk } = mockApis({ withMedia: {} });
-  await sdk.initialize();
-  sdk.pendingStream = mockOutboundStream;
-  sdk._autoConnectSessions = false;
+test(
+  'onSession | uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event',
+  async () => {
+    const mockOutboundStream = new MockStream();
+    const mockAudioElement: any = { classList: { add () { } } };
+    const { sdk } = mockApis({ withMedia: {} });
+    await sdk.initialize();
+    sdk.pendingStream = mockOutboundStream;
+    sdk._autoConnectSessions = false;
 
-  const sandbox = sinon.createSandbox();
-  sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
-  sandbox.stub(global.document, 'querySelector').returns(mockAudioElement);
-  sandbox.stub(global.document.body, 'append');
+    const sandbox = sinon.createSandbox();
+    sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
+    sandbox.stub(global.document, 'querySelector').returns(mockAudioElement);
+    sandbox.stub(global.document.body, 'append');
 
-  const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+    const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
-  const mockSession = new MockSession();
-  sinon.stub(mockSession, 'addStream');
-  sinon.stub(mockSession, 'accept');
+    const mockSession = new MockSession();
+    sinon.stub(mockSession, 'addStream');
+    sinon.stub(mockSession, 'accept');
 
-  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-  await sessionStarted;
+    sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+    await sessionStarted;
 
-  sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
-  sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
-  sinon.assert.notCalled(mockSession.accept as SinonSpy);
-  sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia as SinonSpy);
+    sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
+    sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
+    sinon.assert.notCalled(mockSession.accept as SinonSpy);
+    sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia as SinonSpy);
 
-  const mockInboundStream = {};
-  mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
-  t.is(mockAudioElement.srcObject, mockInboundStream);
-  sinon.assert.notCalled(global.document.body.append);
+    const mockInboundStream = {};
+    mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+    expect(mockAudioElement.srcObject).toBe(mockInboundStream);
+    sinon.assert.notCalled(global.document.body.append);
 
-  const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
-  mockSession._outboundStream = null;
-  mockSession.emit('terminated', mockSession);
-  await sessionEnded;
+    const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+    mockSession._outboundStream = null;
+    mockSession.emit('terminated', mockSession);
+    await sessionEnded;
 
-  sandbox.restore();
-});
+    sandbox.restore();
+  }
+);
 
-test.serial('onSession | uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async t => {
-  const mockOutboundStream = new MockStream();
-  const mockAudioElement: any = { classList: { add () {} } };
-  const { sdk } = mockApis({ withMedia: {} });
-  await sdk.initialize();
-  sdk.pendingStream = mockOutboundStream;
-  sdk._autoConnectSessions = false;
-  sdk._pendingAudioElement = mockAudioElement;
+test(
+  'onSession | uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event',
+  async () => {
+    const mockOutboundStream = new MockStream();
+    const mockAudioElement: any = { classList: { add () { } } };
+    const { sdk } = mockApis({ withMedia: {} });
+    await sdk.initialize();
+    sdk.pendingStream = mockOutboundStream;
+    sdk._autoConnectSessions = false;
+    sdk._pendingAudioElement = mockAudioElement;
 
-  const sandbox = sinon.createSandbox();
-  sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
-  sandbox.stub(global.document.body, 'append');
+    const sandbox = sinon.createSandbox();
+    sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
+    sandbox.stub(global.document.body, 'append');
 
-  const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+    const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
-  const mockSession = new MockSession();
-  sinon.stub(mockSession, 'addStream');
-  sinon.stub(mockSession, 'accept');
+    const mockSession = new MockSession();
+    sinon.stub(mockSession, 'addStream');
+    sinon.stub(mockSession, 'accept');
 
-  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-  await sessionStarted;
+    sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+    await sessionStarted;
 
-  sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
-  sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
-  sinon.assert.notCalled(mockSession.accept as SinonSpy);
-  sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia);
+    sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
+    sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
+    sinon.assert.notCalled(mockSession.accept as SinonSpy);
+    sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia);
 
-  const mockInboundStream = {};
-  mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
-  t.is(mockAudioElement.srcObject, mockInboundStream);
-  sinon.assert.notCalled(global.document.body.append);
+    const mockInboundStream = {};
+    mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+    expect(mockAudioElement.srcObject).toBe(mockInboundStream);
+    sinon.assert.notCalled(global.document.body.append);
 
-  sandbox.restore();
-});
+    sandbox.restore();
+  }
+);
 
-test.serial('_refreshTurnServers | refreshes the turn servers', async t => {
+test('_refreshTurnServers | refreshes the turn servers', async () => {
   const { sdk } = mockApis();
   await sdk.initialize();
 
   sdk._streamingConnection.connected = true;
-  t.true(sdk.connected);
+  expect(sdk.connected).toBe(true);
 
   sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.resolve());
   await sdk._refreshTurnServers();
   sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
-  t.truthy(sdk._refreshTurnServersInterval);
+  expect(sdk._refreshTurnServersInterval).toBeTruthy();
 });
 
-test.serial('_refreshTurnServers | emits an error if there is an error refreshing turn servers', async t => {
-  const { sdk } = mockApis();
-  await sdk.initialize();
+test(
+  '_refreshTurnServers | emits an error if there is an error refreshing turn servers',
+  async () => {
+    const { sdk } = mockApis();
+    await sdk.initialize();
 
-  sdk._streamingConnection.connected = true;
-  t.true(sdk.connected);
+    sdk._streamingConnection.connected = true;
+    expect(sdk.connected).toBe(true);
 
-  const promise = new Promise(resolve => sdk.on('error', resolve));
-  sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.reject(new Error('fail')));
-  await sdk._refreshTurnServers();
-  sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
-  await promise;
-});
+    const promise = new Promise(resolve => sdk.on('error', resolve));
+    sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.reject(new Error('fail')));
+    await sdk._refreshTurnServers();
+    sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
+    await promise;
+  }
+);
