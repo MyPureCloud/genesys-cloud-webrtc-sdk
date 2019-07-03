@@ -1,21 +1,23 @@
+import PureCloudWebrtcSdk from './client';
+
 // The "private methods" of the client class.
 // These are all invoked bound to an instance of the class, but are not exposed on the
 // instance object.
 
-const StatsGatherer = require('webrtc-stats-gatherer');
+import StatsGatherer from 'webrtc-stats-gatherer';
 const StreamingClient = require('purecloud-streaming-client');
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 
-const { log } = require('./logging');
+import { log } from './logging';
 
-function setupStreamingClient () {
+function setupStreamingClient (this: PureCloudWebrtcSdk) {
   if (this._streamingConnection) {
     this.logger.warn('Existing streaming connection detected. Disconnecting and creating a new connection.');
     this._streamingConnection.disconnect();
   }
 
-  const connectionOptions = {
+  const connectionOptions: any = {
     signalIceConnected: true,
     iceTransportPolicy: this._iceTransportPolicy,
     host: this._wsHost || `wss://streaming.${this._environment}`,
@@ -54,7 +56,7 @@ function setupStreamingClient () {
     });
 }
 
-function startMedia () {
+function startMedia (this: PureCloudWebrtcSdk) {
   return this.pendingStream
     ? Promise.resolve(this.pendingStream)
     : window.navigator.mediaDevices.getUserMedia({ audio: true });
@@ -67,13 +69,13 @@ function createMediaElement () {
   }
   const audio = document.createElement('audio');
   audio.classList.add(PC_AUDIO_EL_CLASS);
-  audio.style = 'visibility: hidden';
+  (audio.style as any) = 'visibility: hidden';
 
   document.body.append(audio);
   return audio;
 }
 
-function attachMedia (stream) {
+function attachMedia (this: PureCloudWebrtcSdk, stream) {
   let audioElement;
   if (this._pendingAudioElement) {
     audioElement = this._pendingAudioElement;
@@ -84,7 +86,7 @@ function attachMedia (stream) {
   audioElement.srcObject = stream;
 }
 
-function onSession (session) {
+function onSession (this: PureCloudWebrtcSdk, session) {
   try {
     log.call(this, 'info', 'onSession', { id: session.sid });
   } catch (e) {
@@ -117,7 +119,7 @@ function onSession (session) {
     log.call(this, 'info', 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
   });
 
-  startMedia.call(this).then(stream => {
+  startMedia.call(this).then(stream => { // tslint:disable-line
     log.call(this, 'debug', 'onMediaStarted');
     session.addStream(stream);
     session._outboundStream = stream;
@@ -145,7 +147,7 @@ function onSession (session) {
   });
 }
 
-function onPendingSession (sessionInfo) {
+function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
   log.call(this, 'info', 'onPendingSession', sessionInfo);
   const sessionEvent = {
     id: sessionInfo.sessionId,
@@ -162,7 +164,7 @@ function onPendingSession (sessionInfo) {
   }
 }
 
-function proxyStreamingClientEvents () {
+function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
   // webrtc events
   const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);
   on('requestIncomingRtcSession', onPendingSession.bind(this));
@@ -177,7 +179,7 @@ function proxyStreamingClientEvents () {
   this._streamingConnection.on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
 }
 
-module.exports = {
+export {
   setupStreamingClient,
   proxyStreamingClientEvents
 };

@@ -1,14 +1,19 @@
+import test from 'ava';
+import WildEmitter from 'wildemitter';
+import sinon, { SinonSpy } from 'sinon';
+
 import PureCloudWebrtcSdk from '../../src/client';
 
-const test = require('ava');
-const sinon = require('sinon');
-const WildEmitter = require('wildemitter');
+declare var global: {
+  window: any,
+  document: any
+} & NodeJS.Global;
 
 let { wss, ws, mockApis, random, PARTICIPANT_ID } = require('../test-utils');
 
 test.serial('constructor | throws if options are not provided', t => {
   t.throws(() => {
-    const sdk = new PureCloudWebrtcSdk(); // eslint-disable-line
+    const sdk = new PureCloudWebrtcSdk(null); // eslint-disable-line
   });
 });
 
@@ -171,7 +176,7 @@ test.serial('initialize sets up event proxies', async t => {
     await promise;
   }
 
-  return Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
+  await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
 });
 
 test.serial('connected | returns the streaming client connection status', async t => {
@@ -213,22 +218,22 @@ test.serial('endSession | requests the conversation then patches the participant
   sinon.assert.notCalled(mockSession.end);
 });
 
-test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
-  const sessionId = random();
-  const conversationId = random();
-  const participantId = PARTICIPANT_ID;
-  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
-  await sdk.initialize();
+// test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
+//   const sessionId = random();
+//   const conversationId = random();
+//   const participantId = PARTICIPANT_ID;
+//   const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
+//   await sdk.initialize();
 
-  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
-  sdk._sessionManager.sessions = {};
-  sdk._sessionManager.sessions[sessionId] = mockSession;
+//   const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+//   sdk._sessionManager.sessions = {};
+//   sdk._sessionManager.sessions[sessionId] = mockSession;
 
-  await sdk.endSession({ conversationId });
-  getConversation.done();
-  patchConversation.done();
-  sinon.assert.notCalled(mockSession.end);
-});
+//   await sdk.endSession({ conversationId });
+//   getConversation.done();
+//   patchConversation.done();
+//   sinon.assert.notCalled(mockSession.end);
+// });
 
 test.serial('endSession | rejects if not provided either an id or a conversationId', async t => {
   const { sdk } = mockApis();
@@ -376,7 +381,7 @@ test.serial('onPendingSession | emits a pendingSession event and accepts the ses
     fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
   });
 
-  const sessionInfo = await pendingSession;
+  const sessionInfo: any = await pendingSession;
   t.is(sessionInfo.id, '1077');
   t.is(sessionInfo.conversationId, 'deadbeef-guid');
   t.is(sessionInfo.address, '+15558675309');
@@ -401,7 +406,7 @@ test.serial('onPendingSession | emits a pendingSession event but does not accept
     fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
   });
 
-  const sessionInfo = await pendingSession;
+  const sessionInfo: any = await pendingSession;
   t.is(sessionInfo.id, '1077');
   t.is(sessionInfo.conversationId, 'deadbeef-guid');
   t.is(sessionInfo.address, '+15558675309');
@@ -410,6 +415,11 @@ test.serial('onPendingSession | emits a pendingSession event but does not accept
 });
 
 class MockSession extends WildEmitter {
+  streams: any[];
+  sid: any;
+  pc: any;
+  _statsGatherer: any;
+  _outboundStream: any;
   constructor () {
     super();
     this.streams = [];
@@ -426,6 +436,7 @@ class MockTrack {
 }
 
 class MockStream {
+  _tracks: MockTrack[];
   constructor () {
     this._tracks = [ new MockTrack() ];
   }
@@ -463,11 +474,11 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   mockSession.emit('change:active', mockSession, true);
   sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
 
-  sinon.assert.calledOnce(mockSession.addStream);
-  sinon.assert.calledOnce(mockSession.accept);
+  sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
+  sinon.assert.calledOnce(mockSession.accept as SinonSpy);
   sinon.assert.calledOnce(global.window.navigator.mediaDevices.getUserMedia);
 
-  const attachedAudioElement = await bodyAppend;
+  const attachedAudioElement: any = await bodyAppend;
   t.is(attachedAudioElement.srcObject, mockSession.streams[0]);
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
@@ -481,7 +492,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
 
 test.serial('onSession | uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async t => {
   const mockOutboundStream = new MockStream();
-  const mockAudioElement = { classList: { add () {} } };
+  const mockAudioElement: any = { classList: { add () {} } };
   const { sdk } = mockApis({ withMedia: {} });
   await sdk.initialize();
   sdk.pendingStream = mockOutboundStream;
@@ -501,10 +512,10 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
-  sinon.assert.calledOnce(mockSession.addStream);
-  sinon.assert.calledWithExactly(mockSession.addStream, mockOutboundStream);
-  sinon.assert.notCalled(mockSession.accept);
-  sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia);
+  sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
+  sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
+  sinon.assert.notCalled(mockSession.accept as SinonSpy);
+  sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia as SinonSpy);
 
   const mockInboundStream = {};
   mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
@@ -521,7 +532,7 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
 
 test.serial('onSession | uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async t => {
   const mockOutboundStream = new MockStream();
-  const mockAudioElement = { classList: { add () {} } };
+  const mockAudioElement: any = { classList: { add () {} } };
   const { sdk } = mockApis({ withMedia: {} });
   await sdk.initialize();
   sdk.pendingStream = mockOutboundStream;
@@ -541,9 +552,9 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
   sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
-  sinon.assert.calledOnce(mockSession.addStream);
-  sinon.assert.calledWithExactly(mockSession.addStream, mockOutboundStream);
-  sinon.assert.notCalled(mockSession.accept);
+  sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
+  sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
+  sinon.assert.notCalled(mockSession.accept as SinonSpy);
   sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia);
 
   const mockInboundStream = {};

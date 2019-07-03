@@ -1,6 +1,6 @@
 {
   "name": "purecloud-webrtc-sdk",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
   "license": "MIT",
@@ -16,7 +16,7 @@
   "scripts": {
     "build": "npx webpack",
     "build-sample": "./test/test-pages/build.sh",
-    "unit-test": "NODE_ENV=test nyc ava test/unit/*.js",
+    "unit-test": "NODE_ENV=test nyc ava",
     "pretest": "npm run build",
     "start": "stupid-server -s -p 8443",
     "test": "npm run lint && npm run unit-test",
@@ -27,11 +27,28 @@
     "semistandard:fix": "semistandard --fix"
   },
   "nyc": {
+    "check-coverage": true,
+    "extension": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
     "include": [
-      "src/**/*.js"
+      "src/**/!(*.test.*).[tj]s?(x)"
+    ],
+    "reporter": [
+      "html",
+      "lcov",
+      "text",
+      "text-summary"
     ],
     "sourceMap": false,
-    "instrument": false
+    "instrument": false,
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "all": true
   },
   "semistandard": {
     "ignore": [
@@ -47,7 +64,9 @@
     ],
     "env": {
       "test": {
-        "plugins": "istanbul"
+        "plugins": [
+          "istanbul"
+        ]
       },
       "production": {
         "plugins": []
@@ -55,7 +74,9 @@
     }
   },
   "ava": {
-    "files": [],
+    "files": [
+      "test/unit/**/*.ts"
+    ],
     "concurrency": 5,
     "failFast": true,
     "failWithoutAssertions": false,
@@ -88,8 +109,10 @@
   },
   "devDependencies": {
     "@types/safe-json-stringify": "^1.1.0",
+    "@types/sinon": "^7.0.13",
+    "@types/superagent": "^4.1.1",
     "@types/uuid": "^3.4.4",
-    "ava": "^0.20.0",
+    "ava": "^1.4.1",
     "awesome-typescript-loader": "^5.2.1",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",

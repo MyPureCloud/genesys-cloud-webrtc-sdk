@@ -1,20 +1,8 @@
-'use strict';
-
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
-import {
-  setupStreamingClient,
-  proxyStreamingClientEvents
-} from './client-private';
-import {
-  requestApi,
-  rejectErr
-} from './utils';
-
-const {
-  log,
-  setupLogging
-} = require('./logging');
+import { setupStreamingClient, proxyStreamingClientEvents } from './client-private';
+import { requestApi, rejectErr } from './utils';
+import { log, setupLogging } from './logging';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -69,6 +57,10 @@ class PureCloudWebrtcSdk extends WildEmitter {
   _optOutOfTelemetry: any;
   _clientId: any;
   _jwt: string;
+  _hasConnected: boolean;
+  _refreshTurnServersInterval: NodeJS.Timeout;
+  pendingStream: any;
+  _pendingAudioElement: any;
 
   constructor (options) {
     super();

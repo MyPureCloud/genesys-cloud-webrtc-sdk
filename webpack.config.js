@@ -21,6 +21,9 @@ module.exports = {
       }
     })
   ],
+  resolve: {
+    extensions: ['.ts', '.js', '.json']
+  },
   module: {
     rules: [
       {
@@ -33,6 +36,7 @@ module.exports = {
       },
       {
         test: /\.ts$/,
+        exclude: /(node_modules|bower_components)/,
         loader: 'awesome-typescript-loader'
       }
     ]

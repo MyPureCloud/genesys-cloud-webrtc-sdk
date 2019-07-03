@@ -1,5 +1,5 @@
-const test = require('ava');
-const sinon = require('sinon');
+import test from 'ava';
+import sinon from 'sinon';
 
 let { timeout, mockApis, wss, ws } = require('../test-utils');
 
