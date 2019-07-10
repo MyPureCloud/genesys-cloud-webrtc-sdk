@@ -7,6 +7,16 @@ const LOG_LEVELS = ['debug', 'log', 'info', 'warn', 'error'];
 const PAYLOAD_TOO_LARGE = 413;
 // declare const log: CallableFunction;
 
+let APP_VERSION = '[AIV]{version}[/AIV]'; // injected by webpack auto-inject-version
+
+// check if it was replaced.
+// if it wasn't we're being imported or required from source, so get it from package.json
+if (APP_VERSION.indexOf('AIV') > -1 &&
+  APP_VERSION.indexOf('{version}') > -1 &&
+  APP_VERSION.indexOf('/AIV') > -1) {
+  APP_VERSION = require('../package.json').version;
+}
+
 function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
   // immediately log it locally
   this.logger[level](message, details);
@@ -51,7 +61,7 @@ function sendLogs (this: PureCloudWebrtcSdk) {
   const payload = {
     app: {
       appId: 'webrtc-sdk',
-      appVersion: '[AIV]{version}[/AIV]' // injected by webpack auto-inject-version
+      appVersion: APP_VERSION
     },
     traces
   };
