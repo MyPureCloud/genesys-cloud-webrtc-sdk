@@ -1,6 +1,5 @@
 import WebSocket from 'ws';
 import nock from 'nock';
-// import sinon from 'sinon';
 import PureCloudWebrtcSdk from '../src/client';
 import { SdkConstructOptions } from '../src/types/interfaces';
 
@@ -110,27 +109,6 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     // window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
     Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', { value: () => Promise.resolve(withMedia), writable: true });
   }
-
-  // global.document = {
-  // const doc = {
-  //   createElement: sinon.stub().returns({
-  //     addEventListener: (evt, callback) => setTimeout(callback, 10),
-  //     classList: { add () { } }
-  //   }),
-  //   querySelector () { },
-  //   body: {
-  //     append () { }
-  //   },
-  //   head: {
-  //     appendChild: sinon.stub().callsFake((script) => {
-  //       // global.window = global.window || {};
-  //       Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
-  //     })
-  //   },
-  //   addEventListener: (evt, callback) => setTimeout(callback, 10),
-  //   createEvent: (type) => { return function initEvent (name, bool1, bool2) { }; }
-  // };
-  // Object.defineProperty(window, 'document', { value: doc, writable: true });
 
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
