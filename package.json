@@ -59,8 +59,10 @@
     "failWithoutAssertions": false,
     "powerAssert": true,
     "require": [
+      "babel-polyfill",
       "babel-register"
     ],
+    "serial": true,
     "tap": true,
     "timeout": "30s"
   },
@@ -82,6 +84,7 @@
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
     "babel-plugin-istanbul": "^4.1.6",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babelify": "^8.0.0",
     "browserify": "^16.2.3",
