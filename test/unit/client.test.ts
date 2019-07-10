@@ -2,6 +2,7 @@ import WildEmitter from 'wildemitter';
 import sinon, { SinonSpy } from 'sinon';
 
 import PureCloudWebrtcSdk from '../../src/client';
+import { SdkConstructOptions } from '../../src/types/interfaces';
 
 declare var global: {
   window: any,
@@ -41,19 +42,19 @@ describe('Client', () => {
 
   test('constructor | throws if accessToken is not provided', () => {
     expect(() => {
-      const sdk = new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // eslint-disable-line
+      const sdk = new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' } as SdkConstructOptions); // eslint-disable-line
     }).toThrow();
   });
 
   test('constructor | warns if environment is not valid', () => {
-    const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' }); // eslint-disable-line
+    const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' } as SdkConstructOptions); // eslint-disable-line
     const sdk2 = new PureCloudWebrtcSdk({  // eslint-disable-line
       accessToken: '1234',
       environment: 'mypurecloud.con',
-      logger: { warn: sinon.stub() }
-    });
+      logger: { warn: sinon.stub() } as any
+    } as SdkConstructOptions);
 
-    sinon.assert.calledOnce(sdk2.logger.warn);
+    sinon.assert.calledOnce(sdk2.logger.warn as any);
   });
 
   test('constructor | warns if the logLevel is not valid', () => {
@@ -61,9 +62,9 @@ describe('Client', () => {
       accessToken: '1234',
       environment: 'mypurecloud.com',
       logLevel: 'ERROR',
-      logger: { warn: sinon.stub() }
-    });
-    sinon.assert.calledOnce(sdk.logger.warn);
+      logger: { warn: sinon.stub() } as any
+    } as SdkConstructOptions);
+    sinon.assert.calledOnce(sdk.logger.warn as any);
   });
 
   test('constructor | does not warn if things are fine', () => {
@@ -71,13 +72,13 @@ describe('Client', () => {
       accessToken: '1234',
       environment: 'mypurecloud.com',
       logLevel: 'error',
-      logger: { warn: sinon.stub() }
-    });
-    sinon.assert.notCalled(sdk.logger.warn);
+      logger: { warn: sinon.stub() } as any
+    } as SdkConstructOptions);
+    sinon.assert.notCalled(sdk.logger.warn as any);
   });
 
   test('constructor | sets up options with defaults', () => {
-    const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' });
+    const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as SdkConstructOptions);
     expect(sdk.logger).toBe(console);
     expect(sdk._accessToken).toBe('1234');
     expect(sdk._environment).toBe('mypurecloud.com');
@@ -93,10 +94,10 @@ describe('Client', () => {
       accessToken: '1234',
       environment: 'mypurecloud.ie',
       autoConnectSessions: false,
-      iceServers,
+      iceServers: iceServers as any,
       iceTransportPolicy: 'relay',
-      logger
-    });
+      logger: logger as any
+    } as SdkConstructOptions);
 
     expect(sdk.logger).toBe(logger);
     expect(sdk._accessToken).toBe('1234');
