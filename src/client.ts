@@ -3,6 +3,7 @@ import uuidv4 from 'uuid/v4';
 import { setupStreamingClient, proxyStreamingClientEvents } from './client-private';
 import { requestApi, rejectErr } from './utils';
 import { log, setupLogging } from './logging';
+import { SdkConstructOptions, ILogger } from './types/interfaces';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -33,16 +34,18 @@ function validateOptions (options) {
   }
 }
 
-class PureCloudWebrtcSdk extends WildEmitter {
+export default class PureCloudWebrtcSdk extends WildEmitter {
+
+  public logger: ILogger;
+  public pendingStream: MediaStream;
 
   _reduceLogPayload: boolean;
-  _accessToken: any;
-  _environment: any;
-  _wsHost: any;
+  _accessToken: string;
+  _environment: string;
+  _wsHost: string;
   _autoConnectSessions: boolean;
-  _customIceServersConfig: any;
-  _iceTransportPolicy: any;
-  logger: any;
+  _customIceServersConfig: RTCConfiguration;
+  _iceTransportPolicy: RTCIceTransportPolicy;
   _logBuffer: any[];
   _logTimer: NodeJS.Timeout | null;
   _logLevel: string;
@@ -55,14 +58,13 @@ class PureCloudWebrtcSdk extends WildEmitter {
   _orgDetails: any;
   _personDetails: any;
   _optOutOfTelemetry: any;
-  _clientId: any;
+  _clientId: string;
   _jwt: string;
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
-  pendingStream: any;
   _pendingAudioElement: any;
 
-  constructor (options) {
+  constructor (options: SdkConstructOptions) {
     super();
     validateOptions(options);
 
@@ -94,7 +96,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._pendingSessions = [];
   }
 
-  initialize (opts) {
+  public initialize (opts?: { securityCode?: string }): Promise<void> {
     let fetchInfoPromises = [];
     if (opts && opts.securityCode) {
       const getJwt = requestApi.call(this, '/conversations/codes', {
@@ -140,7 +142,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
       });
   }
 
-  get connected () {
+  get connected (): boolean {
     return !!this._streamingConnection.connected;
   }
 
@@ -189,11 +191,11 @@ class PureCloudWebrtcSdk extends WildEmitter {
       });
   }
 
-  disconnect () {
+  public disconnect (): void {
     this._streamingConnection.disconnect();
   }
 
-  reconnect () {
+  public reconnect (): void {
     this._streamingConnection.reconnect();
   }
 
@@ -208,5 +210,3 @@ class PureCloudWebrtcSdk extends WildEmitter {
       });
   }
 }
-
-export default PureCloudWebrtcSdk;

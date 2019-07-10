@@ -1,7 +1,8 @@
 import WebSocket from 'ws';
 import nock from 'nock';
-import sinon from 'sinon';
+// import sinon from 'sinon';
 import PureCloudWebrtcSdk from '../src/client';
+import { SdkConstructOptions } from '../src/types/interfaces';
 
 declare var global: {
   window: any,
@@ -11,11 +12,11 @@ declare var global: {
 let wss;
 let ws;
 
-function random () {
+function random (): string {
   return `${Math.random()}`.split('.')[1];
 }
 
-function timeout (n) {
+function timeout (n: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, n));
 }
 
@@ -44,6 +45,19 @@ const MOCK_CONVERSATION = {
     }
   ]
 };
+
+function closeWebSocketServer (): Promise<void> {
+  if (wss) {
+    return new Promise(resolve => {
+      wss.clients.forEach(wsClient => wsClient.close());
+      wss.close(() => {
+        console.log('Closed the server...');
+        resolve();
+      });
+    });
+  }
+  return Promise.resolve();
+}
 
 function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs }: any = {}) {
   nock.cleanAll();
@@ -98,30 +112,32 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
   }
 
   // global.document = {
-  const doc = {
-    createElement: sinon.stub().returns({
-      addEventListener: (evt, callback) => setTimeout(callback, 10),
-      classList: { add () { } }
-    }),
-    querySelector () { },
-    body: {
-      append () { }
-    },
-    head: {
-      appendChild: sinon.stub().callsFake((script) => {
-        // global.window = global.window || {};
-        Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
-      })
-    }
-  };
-  Object.defineProperty(window, 'document', { value: doc, writable: true });
+  // const doc = {
+  //   createElement: sinon.stub().returns({
+  //     addEventListener: (evt, callback) => setTimeout(callback, 10),
+  //     classList: { add () { } }
+  //   }),
+  //   querySelector () { },
+  //   body: {
+  //     append () { }
+  //   },
+  //   head: {
+  //     appendChild: sinon.stub().callsFake((script) => {
+  //       // global.window = global.window || {};
+  //       Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
+  //     })
+  //   },
+  //   addEventListener: (evt, callback) => setTimeout(callback, 10),
+  //   createEvent: (type) => { return function initEvent (name, bool1, bool2) { }; }
+  // };
+  // Object.defineProperty(window, 'document', { value: doc, writable: true });
 
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
     logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
     // logger: { debug () {}, log () {}, info () {}, warn: console.warn.bind(console), error: console.error.bind(console) }
-  });
+  } as SdkConstructOptions);
 
   let sendLogs;
   if (withLogs) {
@@ -142,7 +158,6 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     wss.close();
     wss = null;
   }
-
   wss = new WebSocket.Server({
     port: 1234
   });
@@ -205,5 +220,6 @@ export {
   ws,
   random,
   timeout,
+  closeWebSocketServer,
   PARTICIPANT_ID
 };

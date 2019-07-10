@@ -5,7 +5,7 @@
  *
  * Data taken from video-test.log
  */
-module.exports = [
+export default [
   { outbound: '<presence id="mepresence-589a4b7100000a9f65ddc77c" from="589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com/realtime-test-JS-088bc99c-8b5a-4e0f-aca3-24474546f557-1094" to="589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com" type="subscribe"/>' },
 
   { inbound: '<iq id="disco" type="get" to="589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com/realtime-test-JS-088bc99c-8b5a-4e0f-aca3-24474546f557-1094" from="realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com"><query xmlns="http://jabber.org/protocol/disco#info"/></iq>' },

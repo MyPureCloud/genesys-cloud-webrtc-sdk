@@ -5,13 +5,12 @@ import PureCloudWebrtcSdk from './client';
 // instance object.
 
 import StatsGatherer from 'webrtc-stats-gatherer';
-const StreamingClient = require('purecloud-streaming-client');
+import StreamingClient from 'purecloud-streaming-client';
+import { log } from './logging';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 
-import { log } from './logging';
-
-function setupStreamingClient (this: PureCloudWebrtcSdk) {
+function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<void> {
   if (this._streamingConnection) {
     this.logger.warn('Existing streaming connection detected. Disconnecting and creating a new connection.');
     this._streamingConnection.disconnect();
