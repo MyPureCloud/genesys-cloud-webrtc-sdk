@@ -1,9 +1,6 @@
-import sinon from 'sinon';
+import { log } from '../../src/logging';
 
 let { timeout, mockApis, wss, ws, closeWebSocketServer } = require('../test-utils');
-
-const { log } = require('../../src/logging');
-const sandbox = sinon.createSandbox();
 
 describe('Logging', () => {
 
@@ -22,17 +19,17 @@ describe('Logging', () => {
     if (wss) {
       wss.removeAllListeners();
     }
-    sandbox.restore();
+    jest.resetAllMocks();
   });
 
   test('_log | will not notify logs if the logLevel is lower than configured', async () => {
     const { sdk } = mockApis({ withLogs: true });
     sdk._logLevel = 'warn';
     await sdk.initialize();
-    sinon.stub(sdk._backoff, 'backoff'); // called in notifyLogs
+    jest.spyOn(sdk._backoff, 'backoff'); // called in notifyLogs
     log.call(sdk, 'debug', 'test', { details: 'etc' });
     await timeout(1100);
-    sinon.assert.notCalled(sdk._backoff.backoff);
+    expect(sdk._backoff.backoff).not.toHaveBeenCalled();
     sdk._logBuffer = [];
   });
 
@@ -41,10 +38,10 @@ describe('Logging', () => {
     sdk._logLevel = 'debug';
     sdk._optOutOfTelemetry = true;
     await sdk.initialize();
-    sinon.stub(sdk._backoff, 'backoff'); // called in notifyLogs
+    jest.spyOn(sdk._backoff, 'backoff'); // called in notifyLogs
     log.call(sdk, 'warn', 'test', { details: 'etc' });
     await timeout(1100);
-    sinon.assert.notCalled(sdk._backoff.backoff);
+    expect(sdk._backoff.backoff).not.toHaveBeenCalled();
     sdk._logBuffer = [];
   });
 
@@ -52,12 +49,12 @@ describe('Logging', () => {
     const { sdk } = mockApis({ withLogs: true });
     sdk._logLevel = 'warn';
     await sdk.initialize();
-    sinon.stub(sdk._backoff, 'backoff'); // called in notifyLogs
+    jest.spyOn(sdk._backoff, 'backoff').mockImplementation(() => null); // called in notifyLogs
     console.log(sdk._logBuffer[0]);
     expect(sdk._logBuffer.length).toBe(0);
     log.call(sdk, 'warn', 'test', { details: 'etc' });
     await timeout(1100);
-    sinon.assert.calledOnce(sdk._backoff.backoff);
+    expect(sdk._backoff.backoff).toHaveBeenCalledTimes(1);
     expect(sdk._logBuffer.length).toBe(1);
     sdk._logBuffer = [];
   });
@@ -104,13 +101,13 @@ describe('Logging', () => {
     sdk._logLevel = 'warn';
     await sdk.initialize();
 
-    const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
+    const backoffResetSpy = jest.spyOn(sdk._backoff, 'reset');
     sdk._logBuffer.push('log1');
     sdk._logBuffer.push('log2');
 
     sdk._backoff.backoff();
     await timeout(100);
-    sinon.assert.calledOnce(backoffResetSpy);
+    expect(backoffResetSpy).toHaveBeenCalledTimes(1);
     sdk._logBuffer = [];
   });
 
@@ -119,7 +116,7 @@ describe('Logging', () => {
     sdk._logLevel = 'warn';
     await sdk.initialize();
 
-    const backoffSpy = sinon.spy(sdk._backoff, 'backoff');
+    const backoffSpy = jest.spyOn(sdk._backoff, 'backoff');
     sdk._reduceLogPayload = true;
     sdk._logBuffer.push('log1');
     sdk._logBuffer.push('log2');
@@ -128,7 +125,7 @@ describe('Logging', () => {
 
     sdk._backoff.backoff();
     await timeout(100);
-    sinon.assert.calledTwice(backoffSpy);
+    expect(backoffSpy).toHaveBeenCalledTimes(2);
     sdk._logBuffer = [];
   });
 
@@ -191,14 +188,14 @@ describe('Logging', () => {
     sdk._logLevel = 'warn';
     await sdk.initialize();
     sdk._logBuffer.push('log1');
-    const backoffResetSpy = sinon.spy(sdk._backoff, 'reset');
+    const backoffResetSpy = jest.spyOn(sdk._backoff, 'reset');
 
     sdk._backoff.backoff();
     await timeout(100);
     expect(sdk._backoffActive).toBe(false);
     expect(sdk._failedLogAttempts).toBe(0);
     expect(sdk._reduceLogPayload).toBe(false);
-    sinon.assert.calledOnce(backoffResetSpy);
+    expect(backoffResetSpy).toHaveBeenCalledTimes(1);
     sdk._logBuffer = [];
   });
 

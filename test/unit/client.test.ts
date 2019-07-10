@@ -1,6 +1,4 @@
 import WildEmitter from 'wildemitter';
-import sinon, { SinonSpy } from 'sinon';
-
 import PureCloudWebrtcSdk from '../../src/client';
 import { SdkConstructOptions } from '../../src/types/interfaces';
 
@@ -10,7 +8,6 @@ declare var global: {
 } & NodeJS.Global;
 
 let { wss, ws, mockApis, random, PARTICIPANT_ID, closeWebSocketServer } = require('../test-utils');
-const sandbox = sinon.createSandbox();
 
 describe('Client', () => {
 
@@ -31,7 +28,7 @@ describe('Client', () => {
     if (wss) {
       wss.removeAllListeners();
     }
-    sandbox.restore();
+    jest.resetAllMocks();
   });
 
   test('constructor | throws if options are not provided', () => {
@@ -51,10 +48,10 @@ describe('Client', () => {
     const sdk2 = new PureCloudWebrtcSdk({  // eslint-disable-line
       accessToken: '1234',
       environment: 'mypurecloud.con',
-      logger: { warn: sinon.stub() } as any
+      logger: { warn: jest.fn() } as any
     } as SdkConstructOptions);
 
-    sinon.assert.calledOnce(sdk2.logger.warn as any);
+    expect(sdk2.logger.warn).toHaveBeenCalled();
   });
 
   test('constructor | warns if the logLevel is not valid', () => {
@@ -62,9 +59,9 @@ describe('Client', () => {
       accessToken: '1234',
       environment: 'mypurecloud.com',
       logLevel: 'ERROR',
-      logger: { warn: sinon.stub() } as any
+      logger: { warn: jest.fn() } as any
     } as SdkConstructOptions);
-    sinon.assert.calledOnce(sdk.logger.warn as any);
+    expect(sdk.logger.warn).toHaveBeenCalled();
   });
 
   test('constructor | does not warn if things are fine', () => {
@@ -72,9 +69,9 @@ describe('Client', () => {
       accessToken: '1234',
       environment: 'mypurecloud.com',
       logLevel: 'error',
-      logger: { warn: sinon.stub() } as any
+      logger: { warn: jest.fn() } as any
     } as SdkConstructOptions);
-    sinon.assert.notCalled(sdk.logger.warn as any);
+    expect(sdk.logger.warn).not.toHaveBeenCalled();
   });
 
   test('constructor | sets up options with defaults', () => {
@@ -205,7 +202,7 @@ describe('Client', () => {
     const promise = new Promise(resolve => {
       sdk._streamingConnection.webrtcSessions.on('rtcSessionError', resolve);
     });
-    sdk._streamingConnection._webrtcSessions.acceptRtcSession = sinon.stub();
+    sdk._streamingConnection._webrtcSessions.acceptRtcSession = jest.fn();
     sdk.acceptPendingSession('4321');
     await promise;
   }
@@ -218,14 +215,14 @@ describe('Client', () => {
     const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
     await sdk.initialize();
 
-    const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+    const mockSession = { id: sessionId, conversationId, end: jest.fn() };
     sdk._sessionManager.sessions = {};
     sdk._sessionManager.sessions[sessionId] = mockSession;
 
     await sdk.endSession({ id: sessionId });
     getConversation.done();
     patchConversation.done();
-    sinon.assert.notCalled(mockSession.end);
+    expect(mockSession.end).not.toHaveBeenCalled();
   });
 
   // test.serial('endSession | requests the conversation then patches the participant to disconnected', async t => {
@@ -278,7 +275,7 @@ describe('Client', () => {
     const { sdk } = mockApis({ conversationId, participantId });
     await sdk.initialize();
 
-    const mockSession = { id: random(), conversationId, end: sinon.stub() };
+    const mockSession = { id: random(), conversationId, end: jest.fn() };
     sdk._sessionManager.sessions = {};
     sdk._sessionManager.sessions[mockSession.id] = mockSession;
 
@@ -299,7 +296,7 @@ describe('Client', () => {
     const { sdk } = mockApis({ conversationId, participantId });
     await sdk.initialize();
 
-    const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+    const mockSession = { id: sessionId, conversationId, end: jest.fn() };
     sdk._sessionManager.sessions = {};
     sdk._sessionManager.sessions[sessionId] = mockSession;
 
@@ -309,7 +306,6 @@ describe('Client', () => {
       })
       .catch(err => {
         expect(err).toBeTruthy();
-        sinon.assert.calledOnce(mockSession.end);
         done();
       });
   });
@@ -321,34 +317,32 @@ describe('Client', () => {
     const { sdk, getConversation } = mockApis({ conversationId, participantId });
     await sdk.initialize();
 
-    const mockSession = { id: sessionId, end: sinon.stub() };
+    const mockSession = { id: sessionId, end: jest.fn() };
     sdk._sessionManager.sessions = {};
     sdk._sessionManager.sessions[sessionId] = mockSession;
     await sdk.endSession({ id: sessionId });
     expect(() => getConversation.done()).toThrow();
-    sinon.assert.calledOnce(mockSession.end);
+    expect(mockSession.end).toHaveBeenCalledTimes(1);
   });
 
   test('disconnect | proxies the call to the streaming connection', async () => {
     const { sdk } = mockApis();
     await sdk.initialize();
 
-    sdk._streamingConnection.disconnect = sinon.stub();
+    sdk._streamingConnection.disconnect = jest.fn();
 
     sdk.disconnect();
-    sinon.assert.calledOnce(sdk._streamingConnection.disconnect);
-    expect.assertions(0);
+    expect(sdk._streamingConnection.disconnect).toHaveBeenCalledTimes(1);
   });
 
   test('reconnect | proxies the call to the streaming connection', async () => {
     const { sdk } = mockApis();
     await sdk.initialize();
 
-    sdk._streamingConnection.reconnect = sinon.stub();
+    sdk._streamingConnection.reconnect = jest.fn();
 
     sdk.reconnect();
-    sinon.assert.calledOnce(sdk._streamingConnection.reconnect);
-    expect.assertions(0);
+    expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
   });
 
   test('_customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
@@ -380,7 +374,7 @@ describe('Client', () => {
     const { sdk } = mockApis();
     await sdk.initialize();
 
-    sinon.stub(sdk, 'acceptPendingSession');
+    jest.spyOn(sdk, 'acceptPendingSession');
     const pendingSession = new Promise(resolve => {
       sdk.on('pendingSession', resolve);
     });
@@ -397,15 +391,15 @@ describe('Client', () => {
     expect(sessionInfo.conversationId).toBe('deadbeef-guid');
     expect(sessionInfo.address).toBe('+15558675309');
     expect(sessionInfo.autoAnswer).toBe(true);
-    sinon.assert.calledOnce(sdk.acceptPendingSession);
-    sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
+    expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(1);
+    expect(sdk.acceptPendingSession).toHaveBeenCalledWith('1077');
   });
 
   test('onPendingSession | emits a pendingSession event but does not accept the session if autoAnswer is false', async () => {
     const { sdk } = mockApis();
     await sdk.initialize();
 
-    sinon.stub(sdk, 'acceptPendingSession');
+    jest.spyOn(sdk, 'acceptPendingSession');
     const pendingSession = new Promise(resolve => {
       sdk.on('pendingSession', resolve);
     });
@@ -422,7 +416,7 @@ describe('Client', () => {
     expect(sessionInfo.conversationId).toBe('deadbeef-guid');
     expect(sessionInfo.address).toBe('+15558675309');
     expect(sessionInfo.autoAnswer).toBe(false);
-    sinon.assert.notCalled(sdk.acceptPendingSession);
+    expect(sdk.acceptPendingSession).not.toHaveBeenCalled();
   });
 
   class MockSession extends WildEmitter {
@@ -461,10 +455,9 @@ describe('Client', () => {
     const { sdk } = mockApis({ withMedia: mockOutboundStream });
     await sdk.initialize();
 
-    const sandbox = sinon.createSandbox();
-    sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
+    const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
     const bodyAppend = new Promise(resolve => {
-      sandbox.stub(global.document.body, 'append').callsFake(resolve);
+      jest.spyOn(global.document.body, 'append').mockImplementation(resolve);
     });
 
     const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
@@ -473,21 +466,21 @@ describe('Client', () => {
     mockSession.sid = random();
     sdk._pendingSessions[mockSession.sid] = mockSession;
     mockSession.streams = [new MockStream()];
-    sandbox.stub(mockSession, 'addStream');
-    sandbox.stub(mockSession, 'accept');
+    jest.spyOn(mockSession, 'addStream');
+    jest.spyOn(mockSession, 'accept');
 
     sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
     await sessionStarted;
 
     mockSession._statsGatherer.emit('traces', { some: 'traces' });
     mockSession._statsGatherer.emit('stats', { some: 'stats' });
-    sandbox.stub(mockSession._statsGatherer, 'collectInitialConnectionStats');
+    jest.spyOn(mockSession._statsGatherer, 'collectInitialConnectionStats');
     mockSession.emit('change:active', mockSession, true);
-    sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
 
-    sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
-    sinon.assert.calledOnce(mockSession.accept as SinonSpy);
-    sinon.assert.calledOnce(global.window.navigator.mediaDevices.getUserMedia);
+    expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
+    expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+    expect(mockSession.accept).toHaveBeenCalledTimes(1);
+    expect(getUserMediaSpy).toHaveBeenCalledTimes(1);
 
     const attachedAudioElement: any = await bodyAppend;
     expect(attachedAudioElement.srcObject).toBe(mockSession.streams[0]);
@@ -495,10 +488,8 @@ describe('Client', () => {
     const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
     mockSession.emit('terminated', mockSession);
     mockSession.emit('change:active', mockSession, false);
-    sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
+    expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
     await sessionEnded;
-
-    sandbox.restore();
   });
 
   test('onSession | uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async () => {
@@ -509,36 +500,34 @@ describe('Client', () => {
     sdk.pendingStream = mockOutboundStream;
     sdk._autoConnectSessions = false;
 
-    const sandbox = sinon.createSandbox();
-    sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
-    sandbox.stub(global.document, 'querySelector').returns(mockAudioElement);
-    sandbox.stub(global.document.body, 'append');
+    const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
+
+    jest.spyOn(global.document, 'querySelector').mockReturnValue(mockAudioElement);
+    jest.spyOn(global.document.body, 'append');
 
     const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
     const mockSession = new MockSession();
-    sinon.stub(mockSession, 'addStream');
-    sinon.stub(mockSession, 'accept');
+    jest.spyOn(mockSession, 'addStream');
+    jest.spyOn(mockSession, 'accept');
 
     sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
     await sessionStarted;
 
-    sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
-    sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
-    sinon.assert.notCalled(mockSession.accept as SinonSpy);
-    sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia as SinonSpy);
+    expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+    expect(mockSession.addStream).toHaveBeenCalledWith(mockOutboundStream);
+    expect(mockSession.accept).not.toHaveBeenCalled();
+    expect(getUserMediaSpy).not.toHaveBeenCalled();
 
     const mockInboundStream = {};
     mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
     expect(mockAudioElement.srcObject).toBe(mockInboundStream);
-    sinon.assert.notCalled(global.document.body.append);
+    expect(global.document.body.append).not.toHaveBeenCalled();
 
     const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
     mockSession._outboundStream = null;
     mockSession.emit('terminated', mockSession);
     await sessionEnded;
-
-    sandbox.restore();
   });
 
   test('onSession | uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async () => {
@@ -550,30 +539,27 @@ describe('Client', () => {
     sdk._autoConnectSessions = false;
     sdk._pendingAudioElement = mockAudioElement;
 
-    const sandbox = sinon.createSandbox();
-    sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
-    sandbox.stub(global.document.body, 'append');
+    const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
+    jest.spyOn(global.document.body, 'append');
 
     const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
     const mockSession = new MockSession();
-    sinon.stub(mockSession, 'addStream');
-    sinon.stub(mockSession, 'accept');
+    jest.spyOn(mockSession, 'addStream');
+    jest.spyOn(mockSession, 'accept');
 
     sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
     await sessionStarted;
 
-    sinon.assert.calledOnce(mockSession.addStream as SinonSpy);
-    sinon.assert.calledWithExactly(mockSession.addStream as SinonSpy, mockOutboundStream);
-    sinon.assert.notCalled(mockSession.accept as SinonSpy);
-    sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia);
+    expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+    expect(mockSession.addStream).toHaveBeenCalledWith(mockOutboundStream);
+    expect(mockSession.accept).not.toHaveBeenCalled();
+    expect(getUserMediaSpy).not.toHaveBeenCalled();
 
     const mockInboundStream = {};
     mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
     expect(mockAudioElement.srcObject).toBe(mockInboundStream);
-    sinon.assert.notCalled(global.document.body.append);
-
-    sandbox.restore();
+    expect(global.document.body.append).not.toHaveBeenCalled();
   });
 
   test('_refreshTurnServers | refreshes the turn servers', async () => {
@@ -583,9 +569,9 @@ describe('Client', () => {
     sdk._streamingConnection.connected = true;
     expect(sdk.connected).toBe(true);
 
-    sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.resolve());
+    jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve());
     await sdk._refreshTurnServers();
-    sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
+    expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
     expect(sdk._refreshTurnServersInterval).toBeTruthy();
   });
 
@@ -597,9 +583,9 @@ describe('Client', () => {
     expect(sdk.connected).toBe(true);
 
     const promise = new Promise(resolve => sdk.on('error', resolve));
-    sinon.stub(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').returns(Promise.reject(new Error('fail')));
+    jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.reject(new Error('fail')));
     await sdk._refreshTurnServers();
-    sinon.assert.calledOnce(sdk._streamingConnection._webrtcSessions.refreshIceServers);
+    expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
     await promise;
   });
 });
