@@ -1,16 +1,21 @@
-const WebSocket = require('ws');
-const nock = require('nock');
-const sinon = require('sinon');
-const PureCloudWebrtcSdk = require('../src/client');
+import WebSocket from 'ws';
+import nock from 'nock';
+import PureCloudWebrtcSdk from '../src/client';
+import { SdkConstructOptions } from '../src/types/interfaces';
+
+declare var global: {
+  window: any,
+  document: any
+} & NodeJS.Global;
 
 let wss;
 let ws;
 
-function random () {
+function random (): string {
   return `${Math.random()}`.split('.')[1];
 }
 
-function timeout (n) {
+function timeout (n: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, n));
 }
 
@@ -40,7 +45,20 @@ const MOCK_CONVERSATION = {
   ]
 };
 
-function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs } = {}) {
+function closeWebSocketServer (): Promise<void> {
+  if (wss) {
+    return new Promise(resolve => {
+      wss.clients.forEach(wsClient => wsClient.close());
+      wss.close(() => {
+        console.log('Closed the server...');
+        resolve();
+      });
+    });
+  }
+  return Promise.resolve();
+}
+
+function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs }: any = {}) {
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
 
@@ -80,44 +98,33 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
       .reply(202, {});
   }
 
-  global.window = global.window || {};
-  if (withMedia) {
-    window.navigator = window.navigator || {};
-    window.navigator.mediaDevices = window.navigator.mediaDevices || {};
-    window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
-  }
+  // global.window = global.window || {};
+  Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
 
-  global.document = {
-    createElement: sinon.stub().returns({
-      addEventListener: (evt, callback) => setTimeout(callback, 10),
-      classList: { add () {} }
-    }),
-    querySelector () {},
-    body: {
-      append () {}
-    },
-    head: {
-      appendChild: sinon.stub().callsFake((script) => {
-        global.window = global.window || {};
-      })
-    }
-  };
+  if (withMedia) {
+    // (window.navigator as any) = window.navigator || {};
+    Object.defineProperty(window, 'navigator', { value: window.navigator || {}, writable: true });
+    // (window.navigator.mediaDevices as any) = window.navigator.mediaDevices || {};
+    Object.defineProperty(window.navigator, 'mediaDevices', { value: window.navigator.mediaDevices || {}, writable: true });
+    // window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
+    Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', { value: () => Promise.resolve(withMedia), writable: true });
+  }
 
   const sdk = new PureCloudWebrtcSdk({
     accessToken: '1234',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { debug () {}, log () {}, info () {}, warn () {}, error () {} }
+    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
     // logger: { debug () {}, log () {}, info () {}, warn: console.warn.bind(console), error: console.error.bind(console) }
-  });
+  } as SdkConstructOptions);
 
   let sendLogs;
   if (withLogs) {
     const logsApi = nock('https://api.mypurecloud.com').persist();
 
     if (failLogsPayload) {
-      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 413, message: 'test fail'});
+      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({ status: 413, message: 'test fail' });
     } else if (failLogs) {
-      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({status: 419, message: 'test fail'});
+      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({ status: 419, message: 'test fail' });
     } else {
       sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
     }
@@ -129,7 +136,6 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     wss.close();
     wss = null;
   }
-
   wss = new WebSocket.Server({
     port: 1234
   });
@@ -179,17 +185,19 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
       }
     });
   });
-  global.window.WebSocket = WebSocket;
+  // global.window.WebSocket = WebSocket;
+  Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
   ws = websocket;
 
   return { getOrg, getUser, getChannel, getConversation, sendLogs, patchConversation, sdk, websocket };
 }
 
-module.exports = {
+export {
   mockApis,
   wss,
   ws,
   random,
   timeout,
+  closeWebSocketServer,
   PARTICIPANT_ID
 };

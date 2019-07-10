@@ -60,7 +60,7 @@ function makeOutboundCall () {
     return;
   }
 
-  let body = {phoneNumber: numberToCall};
+  let body = { phoneNumber: numberToCall };
   conversationsApi.postConversationsCalls(body)
     .then((data) => {
       currentConversationId = data.id;

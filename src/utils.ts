@@ -1,11 +1,12 @@
-const fetch = require('superagent');
+import fetch from 'superagent';
+import PureCloudWebrtcSdk from './client';
 
-function buildUri (path, version = 'v2') {
+function buildUri (this: PureCloudWebrtcSdk, path: string, version: string = 'v2'): string {
   path = path.replace(/^\/+|\/+$/g, ''); // trim leading/trailing /
   return `https://api.${this._environment}/api/${version}/${path}`;
 }
 
-function requestApi (path, { method, data, version, contentType, auth } = {}) {
+function requestApi (this: PureCloudWebrtcSdk, path, { method, data, version, contentType, auth }: any = {}) {
   let request = fetch[method || 'get'](buildUri.call(this, path, version));
   if (auth !== false) {
     request.set('Authorization', `Bearer ${auth || this._accessToken}`);
@@ -15,14 +16,14 @@ function requestApi (path, { method, data, version, contentType, auth } = {}) {
   return request.send(data); // trigger request
 }
 
-function rejectErr (message, details) {
+function rejectErr (this: PureCloudWebrtcSdk, message: any, details: any) {
   const error = new Error(message);
-  error.details = details;
+  error['details'] = details;
   this.emit('error', message, details);
   throw error;
 }
 
-module.exports = {
+export {
   buildUri,
   requestApi,
   rejectErr

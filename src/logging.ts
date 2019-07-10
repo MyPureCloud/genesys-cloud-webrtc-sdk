@@ -1,22 +1,23 @@
-const stringify = require('safe-json-stringify');
-const backoff = require('backoff-web');
+import PureCloudWebrtcSdk from './client';
+import stringify from 'safe-json-stringify';
+import backoff from 'backoff-web';
 
+import { requestApi } from './utils';
 const LOG_LEVELS = ['debug', 'log', 'info', 'warn', 'error'];
 const PAYLOAD_TOO_LARGE = 413;
-
-const { requestApi } = require('./utils');
+// declare const log: CallableFunction;
 
 let APP_VERSION = '[AIV]{version}[/AIV]'; // injected by webpack auto-inject-version
 
 // check if it was replaced.
 // if it wasn't we're being imported or required from source, so get it from package.json
 if (APP_VERSION.indexOf('AIV') > -1 &&
-    APP_VERSION.indexOf('{version}') > -1 &&
-    APP_VERSION.indexOf('/AIV') > -1) {
+  APP_VERSION.indexOf('{version}') > -1 &&
+  APP_VERSION.indexOf('/AIV') > -1) {
   APP_VERSION = require('../package.json').version;
 }
 
-function log (level, message, details) {
+function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
   // immediately log it locally
   this.logger[level](message, details);
 
@@ -44,7 +45,7 @@ function log (level, message, details) {
   notifyLogs.call(this); // debounced sendLogs
 }
 
-function notifyLogs () {
+function notifyLogs (this: PureCloudWebrtcSdk) {
   if (this._logTimer) {
     clearTimeout(this._logTimer);
   }
@@ -55,7 +56,7 @@ function notifyLogs () {
   }, 1000);
 }
 
-function sendLogs () {
+function sendLogs (this: PureCloudWebrtcSdk) {
   const traces = getLogPayload.call(this);
   const payload = {
     app: {
@@ -106,7 +107,7 @@ function sendLogs () {
   });
 }
 
-function setupLogging (logger, logLevel) {
+function setupLogging (this: PureCloudWebrtcSdk, logger, logLevel) {
   this._logBuffer = [];
   this._logTimer = null;
   this.logger = logger || console;
@@ -131,24 +132,24 @@ function setupLogging (logger, logLevel) {
   initializeBackoff.call(this);
 }
 
-function initializeBackoff () {
+function initializeBackoff (this: PureCloudWebrtcSdk) {
   this._backoff.failAfter(20);
 
-  this._backoff.on('backoff', (number, delay) => {
+  this._backoff.on('backoff', (num, delay) => {
     this._backoffActive = true;
     return sendLogs.call(this);
   });
 
-  this._backoff.on('ready', (number, delay) => {
+  this._backoff.on('ready', (num, delay) => {
     this._backoff.backoff();
   });
 
-  this._backoff.on('fail', (number, delay) => {
+  this._backoff.on('fail', (num, delay) => {
     this._backoffActive = false;
   });
 }
 
-function getLogPayload () {
+function getLogPayload (this: PureCloudWebrtcSdk) {
   let traces;
   if (this._reduceLogPayload) {
     const bufferDivisionFactor = this._failedLogAttempts || 1;
@@ -160,20 +161,20 @@ function getLogPayload () {
   return traces;
 }
 
-function getReducedLogPayload (reduceFactor) {
+function getReducedLogPayload (this: PureCloudWebrtcSdk, reduceFactor) {
   const reduceBy = reduceFactor * 2;
   const itemsToGet = Math.floor(this._logBuffer.length / reduceBy) || 1;
   const traces = this._logBuffer.splice(0, itemsToGet);
   return traces;
 }
 
-function resetBackoffFlags () {
+function resetBackoffFlags (this: PureCloudWebrtcSdk) {
   this._backoffActive = false;
   this._failedLogAttempts = 0;
   this._reduceLogPayload = false;
 }
 
-module.exports = {
+export {
   log,
   setupLogging
 };

@@ -1,22 +1,9 @@
-'use strict';
-
-const WildEmitter = require('wildemitter');
-const uuidv4 = require('uuid/v4');
-
-const {
-  setupStreamingClient,
-  proxyStreamingClientEvents
-} = require('./client-private');
-
-const {
-  requestApi,
-  rejectErr
-} = require('./utils');
-
-const {
-  log,
-  setupLogging
-} = require('./logging');
+import WildEmitter from 'wildemitter';
+import uuidv4 from 'uuid/v4';
+import { setupStreamingClient, proxyStreamingClientEvents } from './client-private';
+import { requestApi, rejectErr } from './utils';
+import { log, setupLogging } from './logging';
+import { SdkConstructOptions, ILogger } from './types/interfaces';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -47,8 +34,37 @@ function validateOptions (options) {
   }
 }
 
-class PureCloudWebrtcSdk extends WildEmitter {
-  constructor (options) {
+export default class PureCloudWebrtcSdk extends WildEmitter {
+
+  public logger: ILogger;
+  public pendingStream: MediaStream;
+
+  _reduceLogPayload: boolean;
+  _accessToken: string;
+  _environment: string;
+  _wsHost: string;
+  _autoConnectSessions: boolean;
+  _customIceServersConfig: RTCConfiguration;
+  _iceTransportPolicy: RTCIceTransportPolicy;
+  _logBuffer: any[];
+  _logTimer: NodeJS.Timeout | null;
+  _logLevel: string;
+  _connected: boolean;
+  _streamingConnection: any;
+  _pendingSessions: any[];
+  _backoffActive: boolean;
+  _failedLogAttempts: number;
+  _backoff: any;
+  _orgDetails: any;
+  _personDetails: any;
+  _optOutOfTelemetry: any;
+  _clientId: string;
+  _jwt: string;
+  _hasConnected: boolean;
+  _refreshTurnServersInterval: NodeJS.Timeout;
+  _pendingAudioElement: any;
+
+  constructor (options: SdkConstructOptions) {
     super();
     validateOptions(options);
 
@@ -80,7 +96,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._pendingSessions = [];
   }
 
-  initialize (opts) {
+  public initialize (opts?: { securityCode?: string }): Promise<void> {
     let fetchInfoPromises = [];
     if (opts && opts.securityCode) {
       const getJwt = requestApi.call(this, '/conversations/codes', {
@@ -89,7 +105,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
           organizationId: this._orgDetails.id,
           addCommunicationCode: opts.securityCode
         }
-      }).then(info => {
+      } as any).then(info => {
         this._jwt = info.jwt;
       });
 
@@ -126,7 +142,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
       });
   }
 
-  get connected () {
+  get connected (): boolean {
     return !!this._streamingConnection.connected;
   }
 
@@ -139,7 +155,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
     this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
-  endSession (opts = {}) {
+  endSession (opts: any = {}) {
     if (!opts.id && !opts.conversationId) {
       return Promise.reject(new Error('Unable to end session: must provide session id or conversationId.'));
     }
@@ -167,7 +183,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
         return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
           method: 'patch',
           data: JSON.stringify({ state: 'disconnected' })
-        });
+        } as any);
       })
       .catch(err => {
         session.end();
@@ -175,11 +191,11 @@ class PureCloudWebrtcSdk extends WildEmitter {
       });
   }
 
-  disconnect () {
+  public disconnect (): void {
     this._streamingConnection.disconnect();
   }
 
-  reconnect () {
+  public reconnect (): void {
     this._streamingConnection.reconnect();
   }
 
@@ -194,5 +210,3 @@ class PureCloudWebrtcSdk extends WildEmitter {
       });
   }
 }
-
-module.exports = PureCloudWebrtcSdk;
