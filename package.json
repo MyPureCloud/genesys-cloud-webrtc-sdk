@@ -24,7 +24,8 @@
     "lint": "npm run semistandard && npm run tslint",
     "tslint": "tslint --project . --config tslint.json",
     "semistandard": "semistandard",
-    "semistandard:fix": "semistandard --fix"
+    "semistandard:fix": "semistandard --fix",
+    "greenkeep": "npx npm-check --update"
   },
   "semistandard": {
     "ignore": [
@@ -52,13 +53,13 @@
   "dependencies": {
     "@types/webrtc": "0.0.25",
     "backoff-web": "^1.0.1",
-    "purecloud-platform-client-v2": "^28.0.0",
+    "purecloud-platform-client-v2": "^52.1.0",
     "purecloud-streaming-client": "^8.3.4",
     "safe-json-stringify": "^1.2.0",
-    "superagent": "^3.8.3",
+    "superagent": "^5.1.0",
     "uuid": "^3.3.2",
     "webpack-auto-inject-version": "^1.2.2",
-    "webrtc-stats-gatherer": "^6.0.4",
+    "webrtc-stats-gatherer": "^7.1.1",
     "wildemitter": "^1.2.1"
   },
   "devDependencies": {
