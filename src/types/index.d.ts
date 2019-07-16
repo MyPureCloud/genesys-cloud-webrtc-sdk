@@ -15,3 +15,9 @@ declare module 'purecloud-streaming-client' {
     }
   }
 }
+
+declare module 'webrtc-stats-gatherer' {
+  export default class WebrtcStatsGatherer {
+    constructor (pc: any, options: any);
+  }
+}
