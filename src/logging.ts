@@ -19,7 +19,7 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
 
 function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
   // immediately log it locally
-  this.logger[level](message, details);
+  this.logger[level]('SDK:', message, details);
 
   // ex: if level is debug and config is warn, then debug is less than warn, don't push
   if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._logLevel)) {

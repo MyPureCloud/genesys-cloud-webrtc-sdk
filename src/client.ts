@@ -1,9 +1,9 @@
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
-import { setupStreamingClient, proxyStreamingClientEvents } from './client-private';
+import { setupStreamingClient, proxyStreamingClientEvents, startGuestScreenShare } from './client-private';
 import { requestApi, rejectErr } from './utils';
 import { log, setupLogging } from './logging';
-import { SdkConstructOptions, ILogger } from './types/interfaces';
+import { SdkConstructOptions, ILogger, SupportedSdkTypes } from './types/interfaces';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -15,7 +15,7 @@ const ENVIRONMENTS = [
 ];
 
 // helper methods
-function validateOptions (options) {
+function validateOptions (options: SdkConstructOptions) {
   if (!options) {
     throw new Error('Options required to create an instance of the SDK');
   }
@@ -63,6 +63,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
+  _sdkType: SupportedSdkTypes;
 
   constructor (options: SdkConstructOptions) {
     super();
@@ -75,6 +76,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
     this._autoConnectSessions = options.autoConnectSessions !== false;
     this._customIceServersConfig = options.iceServers;
     this._iceTransportPolicy = options.iceTransportPolicy || 'all';
+    this._sdkType = options.sdkType || 'softphone';
 
     Object.defineProperty(this, '_clientId', {
       value: uuidv4(),
@@ -97,16 +99,17 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   public initialize (opts?: { securityCode?: string }): Promise<void> {
-    let fetchInfoPromises = [];
+    let fetchInfoPromises: Promise<any>[] = [];
     if (opts && opts.securityCode) {
       const getJwt = requestApi.call(this, '/conversations/codes', {
-        method: 'POST',
+        method: 'post',
         data: {
           organizationId: this._orgDetails.id,
           addCommunicationCode: opts.securityCode
-        }
-      } as any).then(info => {
-        this._jwt = info.jwt;
+        },
+        auth: false
+      }).then(({ body }) => {
+        this._jwt = body.jwt;
       });
 
       fetchInfoPromises.push(getJwt);
@@ -136,6 +139,11 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
       })
       .then(() => {
         this.emit('ready');
+        // if we are a guest and sdkType is screenshare, then we have to kick off
+        // the rtc session by getting the user's display stream
+        if (this._sdkType === 'screenshare' && this._jwt) {
+          return startGuestScreenShare.call(this);
+        }
       })
       .catch(err => {
         rejectErr.call(this, 'Failed to initialize SDK', err);
@@ -151,11 +159,11 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   // public API methods
-  acceptPendingSession (id) {
+  public acceptPendingSession (id: string) {
     this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
-  endSession (opts: any = {}) {
+  public endSession (opts: { id?: string, conversationId?: string } = {}) {
     if (!opts.id && !opts.conversationId) {
       return Promise.reject(new Error('Unable to end session: must provide session id or conversationId.'));
     }
@@ -183,7 +191,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
         return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
           method: 'patch',
           data: JSON.stringify({ state: 'disconnected' })
-        } as any);
+        });
       })
       .catch(err => {
         session.end();
