@@ -1,7 +1,7 @@
 export interface SdkConstructOptions {
-  organizationId: string;
   environment: string;
   accessToken?: string;
+  organizationId?: string;
   wsHost?: string;
   autoConnectSessions?: boolean;
   iceServers?: RTCConfiguration;

@@ -2,7 +2,6 @@ import PureCloudWebrtcSdk from './client';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import StreamingClient from 'purecloud-streaming-client';
 import { log } from './logging';
-import { SupportedSdkTypes } from './types/interfaces';
 import { parseJwt } from './utils';
 
 declare var window: {
@@ -20,7 +19,7 @@ const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 const PC_SCREEN_SHARE_EL_CLASS = '__pc-webrtc-screen-share';
 let temporaryOutboundStream: MediaStream;
 
-export async function setupStreamingClient (this: PureCloudWebrtcSdk, type: SupportedSdkTypes = 'softphone'): Promise<void> {
+export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<void> {
   if (this._streamingConnection) {
     this.logger.warn('Existing streaming connection detected. Disconnecting and creating a new connection.');
     await this._streamingConnection.disconnect();
@@ -58,7 +57,7 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk, type: Supp
   this._hasConnected = true;
   // refresh turn servers every 6 hours
   this._refreshTurnServersInterval = setInterval(this._refreshTurnServers.bind(this), 6 * 60 * 60 * 1000);
-  const e = await connection.webrtcSessions.refreshIceServers();
+  await connection.webrtcSessions.refreshIceServers();
   log.call(this, 'info', 'PureCloud streaming client ready for WebRTC calls');
 }
 
@@ -173,7 +172,7 @@ function attachMedia (this: PureCloudWebrtcSdk, stream: MediaStream) {
   audioElement.srcObject = stream;
 }
 
-function onSession (this: PureCloudWebrtcSdk, session): void {
+async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   try {
     log.call(this, 'info', 'onSession', session);
   } catch (e) {
@@ -207,36 +206,35 @@ function onSession (this: PureCloudWebrtcSdk, session): void {
   });
 
   // if authenticated and sdkType is softphone then we have an agent
-  if (this._sdkType === 'softphone' && this._accessToken) {
-    startAudioMedia.call(this).then(stream => { // tslint:disable-line
-      log.call(this, 'debug', 'onAudioMediaStarted');
-      session.addStream(stream);
-      session._outboundStream = stream;
+  if (!this._guest && this._sdkType === 'softphone' && this._accessToken) {
+    const stream = await startAudioMedia.call(this);
+    log.call(this, 'debug', 'onAudioMediaStarted');
+    session.addStream(stream);
+    session._outboundStream = stream;
 
-      if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-        attachMedia.call(this, session.streams[0]);
-      } else {
-        session.on('peerStreamAdded', (session, stream) => {
-          attachMedia.call(this, stream);
-        });
-      }
-
-      if (this._autoConnectSessions) {
-        session.accept();
-      }
-
-      session.on('terminated', (session, reason) => {
-        log.call(this, 'info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
-        if (session._outboundStream) {
-          session._outboundStream.getTracks().forEach(t => t.stop());
-        }
-        this.emit('sessionEnded', session, reason);
+    if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
+      attachMedia.call(this, session.streams[0]);
+    } else {
+      session.on('peerStreamAdded', (session, stream) => {
+        attachMedia.call(this, stream);
       });
-      this.emit('sessionStarted', session);
+    }
+
+    if (this._autoConnectSessions) {
+      session.accept();
+    }
+
+    session.on('terminated', (session, reason) => {
+      log.call(this, 'info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
+      if (session._outboundStream) {
+        session._outboundStream.getTracks().forEach(t => t.stop());
+      }
+      this.emit('sessionEnded', session, reason);
     });
+    this.emit('sessionStarted', session);
     // if authenitcation is jwt (meaning guest/annoyomous) and sdkType is screenshare
     // then we are sharing our screen
-  } else if (this._sdkType === 'screenshare' && this._jwt) {
+  } else if (this._guest && this._sdkType === 'screenshare' && this._jwt) {
     log.call(this, 'debug', 'sdkType is \'screenshare\' and there is a jwt');
     if (temporaryOutboundStream) {
       log.call(this, 'debug', 'temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
@@ -269,7 +267,7 @@ function onSession (this: PureCloudWebrtcSdk, session): void {
 
     // if we don't have a matching combination
   } else {
-    let errorMessage = `Unsupported media type and/or user in purecloud-webrtc-sdk. SdkType: ${this._sdkType}. Guest user: ${!!this._jwt}. Authenticated user: ${!!this._accessToken}`;
+    let errorMessage = `Unsupported media type and/or user in purecloud-webrtc-sdk. SdkType: ${this._sdkType}. Guest user: ${this._guest}. Authentication type: ${this._accessToken ? 'Access Token' : ''} ${this._jwt ? 'JWT' : ''}`;
     let err = new Error(errorMessage);
     this.logger.error(errorMessage);
     this.emit('error', { message: errorMessage, error: err });

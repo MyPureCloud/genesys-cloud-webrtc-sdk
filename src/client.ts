@@ -64,6 +64,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
   _sdkType: SupportedSdkTypes;
+  _guest: boolean;
 
   constructor (options: SdkConstructOptions) {
     super();
@@ -77,6 +78,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
     this._customIceServersConfig = options.iceServers;
     this._iceTransportPolicy = options.iceTransportPolicy || 'all';
     this._sdkType = options.sdkType || 'softphone';
+    this._guest = !options.accessToken;
 
     Object.defineProperty(this, '_clientId', {
       value: uuidv4(),
@@ -100,7 +102,10 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
 
   public initialize (opts?: { securityCode?: string }): Promise<void> {
     let fetchInfoPromises: Promise<any>[] = [];
-    if (opts && opts.securityCode) {
+    if (this._guest) {
+      if (!opts || !opts.securityCode) {
+        throw new Error('Security Code is required to initialize the SDK as a guest');
+      }
       const getJwt = requestApi.call(this, '/conversations/codes', {
         method: 'post',
         data: {
@@ -141,7 +146,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
         this.emit('ready');
         // if we are a guest and sdkType is screenshare, then we have to kick off
         // the rtc session by getting the user's display stream
-        if (this._sdkType === 'screenshare' && this._jwt) {
+        if (this._guest && this._sdkType === 'screenshare') {
           return startGuestScreenShare.call(this);
         }
       })
@@ -156,6 +161,14 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
 
   get _sessionManager () {
     return this._streamingConnection._webrtcSessions.jingleJs;
+  }
+
+  get isGuest (): boolean {
+    return this._guest;
+  }
+
+  get sdkType (): SupportedSdkTypes {
+    return this._sdkType;
   }
 
   // public API methods
