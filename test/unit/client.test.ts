@@ -122,12 +122,11 @@ describe('Client', () => {
       sdk._optOutOfTelemetry = true;
     });
 
-    test.skip('fetches jwt for guest users, sets up the streaming connection', async () => {
+    test('fetches jwt for guest users, sets up the streaming connection', async () => {
       // jest.spyOn(window.navigator.mediaDevices, 'getDisplayMedia' as any).mockResolvedValue(new MockStream());
       const { getJwt, getChannel, sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true });
       await sdk.initialize({ securityCode: '123456' });
       getJwt.done();
-      getChannel.done();
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
       sdk._optOutOfTelemetry = true;
