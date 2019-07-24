@@ -120,7 +120,20 @@ function closeWebSocketServer (): Promise<void> {
 }
 
 function mockApis (options: MockApiOptions = {}): MockApiReturns {
-  const { failSecurityCode, failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs, guestSdk, sdkType } = options;
+  const {
+    failSecurityCode,
+    failOrg,
+    failUser,
+    failStreaming,
+    failLogs,
+    failLogsPayload,
+    withMedia,
+    conversationId,
+    participantId,
+    withLogs,
+    guestSdk,
+    sdkType
+  } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
 
@@ -130,6 +143,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   let getJwt: nock.Scope;
   let getOrg: nock.Scope;
   let getUser: nock.Scope;
+  let getChannel: nock.Scope;
 
   if (guestSdk) {
     if (failSecurityCode) {
@@ -149,11 +163,11 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     } else {
       getUser = api.get('/api/v2/users/me').reply(200, MOCK_USER);
     }
-  }
 
-  const getChannel = api
-    .post('/api/v2/notifications/channels?connectionType=streaming')
-    .reply(200, { id: 'somechannelid' });
+    getChannel = api
+      .post('/api/v2/notifications/channels?connectionType=streaming')
+      .reply(200, { id: 'somechannelid' });
+  }
 
   const conversationsApi = nock('https://api.mypurecloud.com');
   let getConversation: nock.Scope;
@@ -188,7 +202,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
     logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } },
-    sdkType,
+    sdkType
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
   } as SdkConstructOptions;
 
@@ -231,7 +245,11 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
         if (ws.__authSent) {
           send(`<stream:features xmlns:stream="http://etherx.jabber.org/streams"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"></bind><session xmlns="urn:ietf:params:xml:ns:xmpp-session"></session></stream:features>`);
         } else {
-          send('<stream:features xmlns:stream="http://etherx.jabber.org/streams"><mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism>PLAIN</mechanism></mechanisms></stream:features>');
+          if (guestSdk) {
+            send('<stream:features xmlns:stream="http://etherx.jabber.org/streams"><mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism>ANONYMOUS</mechanism></mechanisms></stream:features>');
+          } else {
+            send('<stream:features xmlns:stream="http://etherx.jabber.org/streams"><mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism>PLAIN</mechanism></mechanisms></stream:features>');
+          }
         }
       } else if (msg.indexOf('<auth') === 0) {
         if (failStreaming) {

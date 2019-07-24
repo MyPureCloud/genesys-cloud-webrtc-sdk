@@ -47,16 +47,15 @@ describe('Logging', () => {
       sdk._logBuffer = [];
     });
 
-    test.skip('will not notify logs if guest user', async () => {
+    test('will not notify logs if guest user', async () => {
       const { sdk } = mockApis({ guestSdk: true, withLogs: true });
       sdk._logLevel = 'debug';
       sdk._guest = true;
       await sdk.initialize({ securityCode: '123456' });
-      jest.spyOn(sdk._backoff, 'backoff'); // called in notifyLogs
+      expect(sdk._backoff).toEqual(undefined);
       log.call(sdk, 'warn', 'test', { details: 'etc' });
       await timeout(1100);
-      expect(sdk._backoff.backoff).not.toHaveBeenCalled();
-      sdk._logBuffer = [];
+      expect(sdk._logBuffer).toEqual([]);
     });
 
     test('will buffer a log and notify it if the logLevel is gte configured', async () => {
@@ -322,7 +321,7 @@ describe('Logging', () => {
 
       expect.assertions(4);
       let callCount = 1;
-      sendLogs.filteringRequestBody((body: string): any=> {
+      sendLogs.filteringRequestBody((body: string): any => {
         const traces = JSON.parse(body).traces;
         if (callCount === 1) {
           expect(traces).toEqual([1]);
