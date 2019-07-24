@@ -271,6 +271,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     let err = new Error(errorMessage);
     this.logger.error(errorMessage);
     this.emit('error', { message: errorMessage, error: err });
+    // Should we throw this error?
   }
 }
 

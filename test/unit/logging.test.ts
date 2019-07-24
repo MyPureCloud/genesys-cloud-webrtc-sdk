@@ -48,7 +48,7 @@ describe('Logging', () => {
     });
 
     test('will not notify logs if guest user', async () => {
-      const { sdk } = mockApis({ guestSdk: true, withLogs: true });
+      const { sdk } = mockApis({ guestSdk: true, withLogs: true, sdkType: 'screenshare' });
       sdk._logLevel = 'debug';
       sdk._guest = true;
       await sdk.initialize({ securityCode: '123456' });

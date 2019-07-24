@@ -14,8 +14,21 @@ const ENVIRONMENTS = [
   'usw2.pure.cloud'
 ];
 
+const SUPPORTED_TYPES = {
+  guest: ['screenshare'] as SupportedSdkTypes[],
+  authenticated: ['softphone'] as SupportedSdkTypes[]
+};
+
 // helper methods
-function validateOptions (options: SdkConstructOptions) {
+function validateUserAndSdkType (isGuest: boolean, sdkType: SupportedSdkTypes): void {
+  const userType = isGuest ? 'guest' : 'authenticated';
+  const supported = SUPPORTED_TYPES[userType].includes(sdkType);
+  if (!supported) {
+    throw new Error(`Unsupported media type and/or user in purecloud-webrtc-sdk. SdkType: ${sdkType}. Guest user: ${isGuest}.`);
+  }
+}
+
+function validateOptions (options: SdkConstructOptions): void {
   if (!options) {
     throw new Error('Options required to create an instance of the SDK');
   }
@@ -79,6 +92,9 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
     this._iceTransportPolicy = options.iceTransportPolicy || 'all';
     this._sdkType = options.sdkType || 'softphone';
     this._guest = !options.accessToken;
+
+    // validate auth/guest user and sdkType
+    validateUserAndSdkType(this._guest, this._sdkType);
 
     Object.defineProperty(this, '_clientId', {
       value: uuidv4(),

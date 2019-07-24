@@ -186,6 +186,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
 
   // global.window = global.window || {};
   Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
+  Object.defineProperty(window.navigator, 'mediaDevices', { value: window.navigator.mediaDevices || {}, writable: true });
+  Object.defineProperty(window.navigator.mediaDevices, 'getDisplayMedia', { value: () => Promise.resolve(), writable: true });
 
   if (withMedia) {
     // (window.navigator as any) = window.navigator || {};

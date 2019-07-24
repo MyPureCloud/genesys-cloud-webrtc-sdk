@@ -33,19 +33,31 @@ describe('Client', () => {
   describe('constructor()', () => {
     test('throws if options are not provided', () => {
       expect(() => {
-        const sdk = new PureCloudWebrtcSdk(null); // eslint-disable-line
+        new PureCloudWebrtcSdk(null); // tslint:disable-line
       }).toThrow();
     });
 
     test('throws if accessToken and organizationId is not provided', () => {
       expect(() => {
-        const sdk = new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // eslint-disable-line
+        new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
+      }).toThrow();
+    });
+
+    test('throws if authenticated user with \'screenshare\' sdk type', () => {
+      expect(() => {
+        new PureCloudWebrtcSdk({ sdkType: 'screenshare', environment: 'mypurecloud.com', accessToken: '1234' }); // tslint:disable-line
+      }).toThrow();
+    });
+
+    test('throws if guest user with \'softphone\' sdk type', () => {
+      expect(() => {
+        new PureCloudWebrtcSdk({ sdkType: 'softphone', organizationId: '123d-123', environment: 'mypurecloud.com' }); // tslint:disable-line
       }).toThrow();
     });
 
     test('warns if environment is not valid', () => {
-      const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' }); // eslint-disable-line
-      const sdk2 = new PureCloudWebrtcSdk({  // eslint-disable-line
+      const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
+      const sdk2 = new PureCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.con',
         logger: { warn: jest.fn(), debug: jest.fn() } as any
@@ -95,8 +107,7 @@ describe('Client', () => {
         autoConnectSessions: false,
         iceServers: iceServers as any,
         iceTransportPolicy: 'relay',
-        logger: logger as any,
-        sdkType: 'screenshare'
+        logger: logger as any
       } as SdkConstructOptions);
 
       expect(sdk.logger).toBe(logger);
@@ -105,7 +116,7 @@ describe('Client', () => {
       expect(sdk._autoConnectSessions).toBe(false);
       expect(sdk._customIceServersConfig).toBe(iceServers);
       expect(sdk._iceTransportPolicy).toBe('relay');
-      expect(sdk._sdkType).toBe('screenshare');
+      expect(sdk._sdkType).toBe('softphone');
       expect(sdk._guest).toBe(false);
     });
   });
@@ -123,14 +134,29 @@ describe('Client', () => {
     });
 
     test('fetches jwt for guest users, sets up the streaming connection', async () => {
-      // jest.spyOn(window.navigator.mediaDevices, 'getDisplayMedia' as any).mockResolvedValue(new MockStream());
-      const { getJwt, getChannel, sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true });
+      const { getJwt, sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true });
       await sdk.initialize({ securityCode: '123456' });
       getJwt.done();
       expect(sdk._streamingConnection).toBeTruthy();
-      sdk._logBuffer = [];
-      sdk._optOutOfTelemetry = true;
     }, 15 * 1000);
+
+    test('throws error for guest users without an access code', async () => {
+      const { sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true });
+      try {
+        await sdk.initialize();
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.message).toBe('Security Code is required to initialize the SDK as a guest');
+      }
+    }, 15 * 1000);
+
+    test('throws if getting the jwt fails', done => {
+      const { sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true, failSecurityCode: true });
+
+      return sdk.initialize({ securityCode: '12345' })
+        .then(() => done.fail())
+        .catch(() => done());
+    });
 
     test('throws if getting the org fails', done => {
       const { sdk } = mockApis({ failOrg: true });
@@ -447,116 +473,153 @@ describe('Client', () => {
   });
 
   describe('onSession()', () => {
-    test('starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async () => {
-      const mockOutboundStream = new MockStream();
-      const { sdk } = mockApis({ withMedia: mockOutboundStream });
-      await sdk.initialize();
+    describe('authenticated user | softphone', () => {
+      test('starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async () => {
+        const mockOutboundStream = new MockStream();
+        const { sdk } = mockApis({ withMedia: mockOutboundStream });
+        await sdk.initialize();
 
-      const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
-      const bodyAppend = new Promise(resolve => {
-        jest.spyOn(global.document.body, 'append').mockImplementation(resolve);
+        const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
+        const bodyAppend = new Promise(resolve => {
+          jest.spyOn(global.document.body, 'append').mockImplementation(resolve);
+        });
+
+        const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+
+        const mockSession = new MockSession();
+        mockSession.sid = random();
+        sdk._pendingSessions[mockSession.sid] = mockSession;
+        mockSession.streams = [new MockStream()];
+        jest.spyOn(mockSession, 'addStream');
+        jest.spyOn(mockSession, 'accept');
+
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
+
+        mockSession._statsGatherer.emit('traces', { some: 'traces' });
+        mockSession._statsGatherer.emit('stats', { some: 'stats' });
+        jest.spyOn(mockSession._statsGatherer, 'collectInitialConnectionStats');
+        mockSession.emit('change:active', mockSession, true);
+
+        expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
+        expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+        expect(mockSession.accept).toHaveBeenCalledTimes(1);
+        expect(getUserMediaSpy).toHaveBeenCalledTimes(1);
+
+        const attachedAudioElement: any = await bodyAppend;
+        expect(attachedAudioElement.srcObject).toBe(mockSession.streams[0]);
+
+        const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+        mockSession.emit('terminated', mockSession);
+        mockSession.emit('change:active', mockSession, false);
+        expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
+        await sessionEnded;
       });
 
-      const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+      test('uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async () => {
+        const mockOutboundStream = new MockStream();
+        const mockAudioElement: any = { classList: { add () { } } };
+        const { sdk } = mockApis({ withMedia: {} as MockStream });
+        await sdk.initialize();
+        sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
+        sdk._autoConnectSessions = false;
 
-      const mockSession = new MockSession();
-      mockSession.sid = random();
-      sdk._pendingSessions[mockSession.sid] = mockSession;
-      mockSession.streams = [new MockStream()];
-      jest.spyOn(mockSession, 'addStream');
-      jest.spyOn(mockSession, 'accept');
+        const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
 
-      sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-      await sessionStarted;
+        jest.spyOn(global.document, 'querySelector').mockReturnValue(mockAudioElement);
+        jest.spyOn(global.document.body, 'append');
 
-      mockSession._statsGatherer.emit('traces', { some: 'traces' });
-      mockSession._statsGatherer.emit('stats', { some: 'stats' });
-      jest.spyOn(mockSession._statsGatherer, 'collectInitialConnectionStats');
-      mockSession.emit('change:active', mockSession, true);
+        const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
-      expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
-      expect(mockSession.addStream).toHaveBeenCalledTimes(1);
-      expect(mockSession.accept).toHaveBeenCalledTimes(1);
-      expect(getUserMediaSpy).toHaveBeenCalledTimes(1);
+        const mockSession = new MockSession();
+        jest.spyOn(mockSession, 'addStream');
+        jest.spyOn(mockSession, 'accept');
 
-      const attachedAudioElement: any = await bodyAppend;
-      expect(attachedAudioElement.srcObject).toBe(mockSession.streams[0]);
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
 
-      const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
-      mockSession.emit('terminated', mockSession);
-      mockSession.emit('change:active', mockSession, false);
-      expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
-      await sessionEnded;
+        expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+        expect(mockSession.addStream).toHaveBeenCalledWith(mockOutboundStream);
+        expect(mockSession.accept).not.toHaveBeenCalled();
+        expect(getUserMediaSpy).not.toHaveBeenCalled();
+
+        const mockInboundStream = {};
+        mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+        expect(mockAudioElement.srcObject).toBe(mockInboundStream);
+        expect(global.document.body.append).not.toHaveBeenCalled();
+
+        const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+        mockSession._outboundStream = null;
+        mockSession.emit('terminated', mockSession);
+        await sessionEnded;
+      });
+
+      test('uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async () => {
+        const mockOutboundStream = new MockStream();
+        const mockAudioElement: any = { classList: { add () { } } };
+        const { sdk } = mockApis({ withMedia: {} as MockStream });
+        await sdk.initialize();
+        sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
+        sdk._autoConnectSessions = false;
+        sdk._pendingAudioElement = mockAudioElement;
+
+        const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
+        jest.spyOn(global.document.body, 'append');
+
+        const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+
+        const mockSession = new MockSession();
+        jest.spyOn(mockSession, 'addStream');
+        jest.spyOn(mockSession, 'accept');
+
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
+
+        expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+        expect(mockSession.addStream).toHaveBeenCalledWith(mockOutboundStream);
+        expect(mockSession.accept).not.toHaveBeenCalled();
+        expect(getUserMediaSpy).not.toHaveBeenCalled();
+
+        const mockInboundStream = {};
+        mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+        expect(mockAudioElement.srcObject).toBe(mockInboundStream);
+        expect(global.document.body.append).not.toHaveBeenCalled();
+      });
     });
 
-    test('uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async () => {
-      const mockOutboundStream = new MockStream();
-      const mockAudioElement: any = { classList: { add () { } } };
-      const { sdk } = mockApis({ withMedia: {} as MockStream });
-      await sdk.initialize();
-      sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
-      sdk._autoConnectSessions = false;
+    describe('guest user | screenshare', () => {
+      test('starts media, attaches it to the session, accepts the session, and emits a started event', async () => {
+        const mockOutboundStream = new MockStream();
+        const { sdk } = mockApis({ withMedia: mockOutboundStream, guestSdk: true, sdkType: 'screenshare' });
+        await sdk.initialize({ securityCode: '129034' });
 
-      const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
+        const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
-      jest.spyOn(global.document, 'querySelector').mockReturnValue(mockAudioElement);
-      jest.spyOn(global.document.body, 'append');
+        const mockSession = new MockSession();
+        mockSession.sid = random();
+        sdk._pendingSessions[mockSession.sid] = mockSession;
+        mockSession.streams = [new MockStream()];
+        jest.spyOn(mockSession, 'addStream');
+        jest.spyOn(mockSession, 'accept');
 
-      const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
 
-      const mockSession = new MockSession();
-      jest.spyOn(mockSession, 'addStream');
-      jest.spyOn(mockSession, 'accept');
+        mockSession._statsGatherer.emit('traces', { some: 'traces' });
+        mockSession._statsGatherer.emit('stats', { some: 'stats' });
+        jest.spyOn(mockSession._statsGatherer, 'collectInitialConnectionStats');
+        mockSession.emit('change:active', mockSession, true);
 
-      sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-      await sessionStarted;
+        expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
+        expect(mockSession.addStream).toHaveBeenCalledTimes(1);
+        expect(mockSession.accept).toHaveBeenCalledTimes(1);
 
-      expect(mockSession.addStream).toHaveBeenCalledTimes(1);
-      expect(mockSession.addStream).toHaveBeenCalledWith(mockOutboundStream);
-      expect(mockSession.accept).not.toHaveBeenCalled();
-      expect(getUserMediaSpy).not.toHaveBeenCalled();
-
-      const mockInboundStream = {};
-      mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
-      expect(mockAudioElement.srcObject).toBe(mockInboundStream);
-      expect(global.document.body.append).not.toHaveBeenCalled();
-
-      const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
-      mockSession._outboundStream = null;
-      mockSession.emit('terminated', mockSession);
-      await sessionEnded;
-    });
-
-    test('uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async () => {
-      const mockOutboundStream = new MockStream();
-      const mockAudioElement: any = { classList: { add () { } } };
-      const { sdk } = mockApis({ withMedia: {} as MockStream });
-      await sdk.initialize();
-      sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
-      sdk._autoConnectSessions = false;
-      sdk._pendingAudioElement = mockAudioElement;
-
-      const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
-      jest.spyOn(global.document.body, 'append');
-
-      const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
-
-      const mockSession = new MockSession();
-      jest.spyOn(mockSession, 'addStream');
-      jest.spyOn(mockSession, 'accept');
-
-      sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-      await sessionStarted;
-
-      expect(mockSession.addStream).toHaveBeenCalledTimes(1);
-      expect(mockSession.addStream).toHaveBeenCalledWith(mockOutboundStream);
-      expect(mockSession.accept).not.toHaveBeenCalled();
-      expect(getUserMediaSpy).not.toHaveBeenCalled();
-
-      const mockInboundStream = {};
-      mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
-      expect(mockAudioElement.srcObject).toBe(mockInboundStream);
-      expect(global.document.body.append).not.toHaveBeenCalled();
+        const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+        mockSession.emit('terminated', mockSession);
+        mockSession.emit('change:active', mockSession, false);
+        expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
+        await sessionEnded;
+      });
     });
   });
 
