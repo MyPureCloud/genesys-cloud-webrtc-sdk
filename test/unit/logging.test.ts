@@ -214,20 +214,20 @@ describe('Logging', () => {
     sdk._logBuffer = [];
   }, 10 * 1000);
 
-  test('_getLogPayload | returns the entire _logBuffer if _reduceLogPayload is false', async done => {
+  test('_getLogPayload | returns the entire _logBuffer if _reduceLogPayload is false', async () => {
     const { sdk, sendLogs } = mockApis({ withLogs: true });
     await sdk.initialize();
     sdk._reduceLogPayload = false;
     sdk._logBuffer = [0, 1, 2, 3, 4];
 
+    expect.assertions(3);
     let callCount = 1;
     sendLogs.filteringRequestBody((body) => {
       const traces = JSON.parse(body).traces;
       if (callCount === 1) {
         expect(traces).toEqual([0, 1, 2, 3, 4]);
-        done();
       } else {
-        done.fail();
+        fail();
       }
       callCount += 1;
     });
