@@ -185,6 +185,45 @@ describe('Logging', () => {
       sdk._logBuffer = [];
     });
 
+    test('_sendLogs | set backoffActive to false if the backoff fails', async () => {
+      const { sdk, sendLogs } = mockApis({ failLogs: true, withLogs: true });
+      sdk._logLevel = 'warn';
+      await sdk.initialize();
+      log.call(sdk, 'error', 'log1');
+      log.call(sdk, 'error', 'log2');
+      sdk._backoff.failAfter(1); // means it will retry once, or 2 tries total
+      await timeout(1000);
+      log.call(sdk, 'error', 'log3');
+      await timeout(5000);
+      expect(true).toBe(sendLogs.isDone());
+      expect(sdk._backoffActive).toBe(false);
+      sdk._logBuffer = [];
+    }, 10 * 1000);
+
+    test('_getLogPayload | returns the entire _logBuffer if _reduceLogPayload is false', async () => {
+      const { sdk, sendLogs } = mockApis({ withLogs: true });
+      await sdk.initialize();
+      sdk._reduceLogPayload = false;
+      sdk._logBuffer = [0, 1, 2, 3, 4];
+
+      expect.assertions(3);
+      let callCount = 1;
+      (sendLogs as any).filteringRequestBody((body) => {
+        const traces = JSON.parse(body as string).traces;
+        if (callCount === 1) {
+          expect(traces).toEqual([0, 1, 2, 3, 4]);
+        } else {
+          fail();
+        }
+        callCount += 1;
+      });
+      sdk._backoff.backoff();
+      await timeout(1000);
+      expect(true).toBe(sendLogs.isDone());
+      expect(sdk._logBuffer.length).toBe(0);
+      sdk._logBuffer = [];
+    }, 10 * 1000);
+
     test('sets _reduceLogPayload to true if error status is 413 (payload too large)', async () => {
       const { sdk } = mockApis({ failLogsPayload: true, withLogs: true });
       sdk._logLevel = 'warn';
