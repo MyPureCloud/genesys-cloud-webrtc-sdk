@@ -491,6 +491,98 @@ test.serial('onPendingSession | emits a pendingSession event and accepts the ses
   sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
 });
 
+test.serial('onPendingSession | handles double pending sessions', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sinon.stub(sdk, 'acceptPendingSession');
+  const pendingSession = new Promise(resolve => {
+    sdk.on('pendingSession', resolve);
+  });
+
+  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+    sessionId: '1077',
+    autoAnswer: true,
+    conversationId: 'deadbeef-guid',
+    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+  });
+
+  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+    sessionId: '1078',
+    autoAnswer: true,
+    conversationId: 'deadbeef-guid',
+    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+  });
+
+  const sessionInfo = await pendingSession;
+  t.is(sessionInfo.id, '1077');
+  t.is(sessionInfo.conversationId, 'deadbeef-guid');
+  t.is(sessionInfo.address, '+15558675309');
+  t.is(sessionInfo.autoAnswer, true);
+  sinon.assert.calledOnce(sdk.acceptPendingSession);
+  sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
+});
+
+test.serial('onPendingSession | allows double pending sessions after 10 seconds', async t => {
+  const { sdk } = mockApis();
+  await sdk.initialize();
+
+  sinon.stub(sdk, 'acceptPendingSession');
+  const pendingSession = new Promise(resolve => {
+    const done = function () {
+      sdk.off('pendingSession', done);
+      resolve(...arguments);
+    };
+    sdk.on('pendingSession', done);
+  });
+
+  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+    sessionId: '1077',
+    autoAnswer: true,
+    conversationId: 'deadbeef-guid',
+    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+  });
+
+  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+    sessionId: '1078',
+    autoAnswer: true,
+    conversationId: 'deadbeef-guid',
+    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+  });
+
+  const sessionInfo = await pendingSession;
+  t.is(sessionInfo.id, '1077');
+  t.is(sessionInfo.conversationId, 'deadbeef-guid');
+  t.is(sessionInfo.address, '+15558675309');
+  t.is(sessionInfo.autoAnswer, true);
+  sinon.assert.calledOnce(sdk.acceptPendingSession);
+  sinon.assert.calledWithExactly(sdk.acceptPendingSession, '1077');
+
+  await timeout(1100);
+
+  const pendingSession2 = new Promise(resolve => {
+    const done = function () {
+      sdk.off('pendingSession', done);
+      resolve(...arguments);
+    };
+    sdk.on('pendingSession', done);
+  });
+
+  sdk._streamingConnection.emit('requestIncomingRtcSession', {
+    sessionId: '1078',
+    autoAnswer: true,
+    conversationId: 'deadbeef-guid',
+    fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+  });
+
+  const sessionInfo2 = await pendingSession2;
+  t.is(sessionInfo2.id, '1078');
+  t.is(sessionInfo2.conversationId, 'deadbeef-guid');
+  t.is(sessionInfo2.address, '+15558675309');
+  t.is(sessionInfo2.autoAnswer, true);
+  sinon.assert.calledTwice(sdk.acceptPendingSession);
+});
+
 test.serial('onPendingSession | emits a pendingSession event but does not accept the session if autoAnswer is false', async t => {
   const { sdk } = mockApis();
   await sdk.initialize();
