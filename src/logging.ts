@@ -26,7 +26,7 @@ function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
     return;
   }
 
-  if (this._optOutOfTelemetry || this._guest) {
+  if (this._optOutOfTelemetry || this.isGuest) {
     return;
   }
 
@@ -124,18 +124,19 @@ function setupLogging (this: PureCloudWebrtcSdk, logger, logLevel) {
   this._failedLogAttempts = 0;
   this._reduceLogPayload = false;
 
-  if (this._guest) {
+  if (this.isGuest) {
     this.logger.debug('Guest user. Not initializing backoff logging');
-  } else {
-    this.logger.debug('Authenticated user. Initializing backoff logging');
-    this._backoff = backoff.exponential({
-      randomisationFactor: 0.2,
-      initialDelay: 500,
-      maxDelay: 5000,
-      factor: 2
-    });
-    initializeBackoff.call(this);
+    return;
   }
+
+  this.logger.debug('Authenticated user. Initializing backoff logging');
+  this._backoff = backoff.exponential({
+    randomisationFactor: 0.2,
+    initialDelay: 500,
+    maxDelay: 5000,
+    factor: 2
+  });
+  initializeBackoff.call(this);
 }
 
 function initializeBackoff (this: PureCloudWebrtcSdk) {

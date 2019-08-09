@@ -8,7 +8,6 @@ export interface SdkConstructOptions {
   iceTransportPolicy?: RTCIceTransportPolicy;
   logLevel?: string;
   logger?: ILogger;
-  sdkType?: SupportedSdkTypes;
 }
 
 export interface ILogger {
@@ -18,5 +17,3 @@ export interface ILogger {
   warn (...args: any[]): void;
   error (...args: any[]): void;
 }
-
-export type SupportedSdkTypes = 'softphone' | 'screenshare';

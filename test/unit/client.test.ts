@@ -43,18 +43,6 @@ describe('Client', () => {
       }).toThrow();
     });
 
-    test('throws if authenticated user with \'screenshare\' sdk type', () => {
-      expect(() => {
-        new PureCloudWebrtcSdk({ sdkType: 'screenshare', environment: 'mypurecloud.com', accessToken: '1234' }); // tslint:disable-line
-      }).toThrow();
-    });
-
-    test('throws if guest user with \'softphone\' sdk type', () => {
-      expect(() => {
-        new PureCloudWebrtcSdk({ sdkType: 'softphone', organizationId: '123d-123', environment: 'mypurecloud.com' }); // tslint:disable-line
-      }).toThrow();
-    });
-
     test('warns if environment is not valid', () => {
       const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
       const sdk2 = new PureCloudWebrtcSdk({
@@ -94,8 +82,7 @@ describe('Client', () => {
       expect(sdk._autoConnectSessions).toBe(true);
       expect(typeof sdk._customIceServersConfig).toBe('undefined');
       expect(sdk._iceTransportPolicy).toBe('all');
-      expect(sdk._sdkType).toBe('softphone');
-      expect(sdk._guest).toBe(false);
+      expect(sdk.isGuest).toBe(false);
     });
 
     test('sets up options when provided', () => {
@@ -116,8 +103,7 @@ describe('Client', () => {
       expect(sdk._autoConnectSessions).toBe(false);
       expect(sdk._customIceServersConfig).toBe(iceServers);
       expect(sdk._iceTransportPolicy).toBe('relay');
-      expect(sdk._sdkType).toBe('softphone');
-      expect(sdk._guest).toBe(false);
+      expect(sdk.isGuest).toBe(false);
     });
   });
 
@@ -134,14 +120,14 @@ describe('Client', () => {
     });
 
     test('fetches jwt for guest users, sets up the streaming connection', async () => {
-      const { getJwt, sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true });
+      const { getJwt, sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       await sdk.initialize({ securityCode: '123456' });
       getJwt.done();
       expect(sdk._streamingConnection).toBeTruthy();
     }, 15 * 1000);
 
     test('throws error for guest users without an access code', async () => {
-      const { sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true });
+      const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       try {
         await sdk.initialize();
         fail('should have thrown');
@@ -151,7 +137,7 @@ describe('Client', () => {
     }, 15 * 1000);
 
     test('throws if getting the jwt fails', done => {
-      const { sdk } = mockApis({ sdkType: 'screenshare', withMedia: new MockStream(), guestSdk: true, failSecurityCode: true });
+      const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true, failSecurityCode: true });
 
       return sdk.initialize({ securityCode: '12345' })
         .then(() => done.fail())
@@ -226,6 +212,31 @@ describe('Client', () => {
       }
 
       await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
+    });
+  });
+
+  describe('startScreenShare()', () => {
+    test('should reject if authenticated user', () => {
+      const { sdk } = mockApis();
+      expect.assertions(1);
+      sdk.startScreenShare()
+        .then(() => fail('should have failed'))
+        .catch(e => expect(e).toBe('Agent screen share is not yet supported'));
+    });
+
+    test('should initiate a RTC session', async () => {
+      const media = new MockStream();
+      const { sdk } = mockApis({ guestSdk: true, withMedia: media });
+
+      await sdk.initialize({ securityCode: '123454' });
+      const spy = jest.spyOn(sdk._streamingConnection.webrtcSessions, 'initiateRtcSession').mockImplementation();
+
+      await sdk.startScreenShare();
+      expect(spy).toHaveBeenCalledWith({
+        stream: media,
+        jid: expect.any(String),
+        mediaPurpose: 'screenshare'
+      });
     });
   });
 
@@ -590,8 +601,9 @@ describe('Client', () => {
     describe('guest user | screenshare', () => {
       test('starts media, attaches it to the session, accepts the session, and emits a started event', async () => {
         const mockOutboundStream = new MockStream();
-        const { sdk } = mockApis({ withMedia: mockOutboundStream, guestSdk: true, sdkType: 'screenshare' });
+        const { sdk } = mockApis({ withMedia: mockOutboundStream, guestSdk: true });
         await sdk.initialize({ securityCode: '129034' });
+        await sdk.startScreenShare();
 
         const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 

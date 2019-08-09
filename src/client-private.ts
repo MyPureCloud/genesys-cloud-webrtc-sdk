@@ -1,6 +1,7 @@
 import PureCloudWebrtcSdk from './client';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import StreamingClient from 'purecloud-streaming-client';
+import browserama from 'browserama';
 import { log } from './logging';
 import { parseJwt } from './utils';
 
@@ -19,6 +20,11 @@ const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 const PC_SCREEN_SHARE_EL_CLASS = '__pc-webrtc-screen-share';
 let temporaryOutboundStream: MediaStream;
 
+/**
+ * Establish the connection with the streaming client.
+ *  Must be called after construction _before_ the SDK is used.
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ */
 export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<void> {
   if (this._streamingConnection) {
     this.logger.warn('Existing streaming connection detected. Disconnecting and creating a new connection.');
@@ -61,6 +67,10 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
   log.call(this, 'info', 'PureCloud streaming client ready for WebRTC calls');
 }
 
+/**
+ * Set up proxy for streaming client events
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ */
 export function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
   // webrtc events
   const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);
@@ -76,6 +86,10 @@ export function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
   this._streamingConnection.on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
 }
 
+/**
+ * Start a guest screen share
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ */
 export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<void> {
   const stream = await startDisplayMedia.call(this);
   const jid = parseJwt(this._jwt).data.jid;
@@ -84,51 +98,71 @@ export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<
     jid,
     mediaPurpose: 'screenshare'
   });
-  // Should we attach the video stream on the guest's DOM?
-  // attachScreenShareMedia.call(this, stream);
   temporaryOutboundStream = stream;
 }
 
-function getDefaultChromeConstraints (): MediaStreamConstraints {
-  if (window.navigator.mediaDevices.getDisplayMedia) {
+function hasGetDisplayMedia (): boolean {
+  return !!(window.navigator && window.navigator.mediaDevices && window.navigator.mediaDevices.getDisplayMedia);
+}
+
+function getScreenShareConstraints (): MediaStreamConstraints {
+  if (browserama.isChromeOrChromium) {
+    if (hasGetDisplayMedia()) {
+      return {
+        audio: false,
+        video: true // || { displaySurface: 'monitor' }
+      };
+    }
     return {
       audio: false,
       video: {
-        displaySurface: 'monitor'
-      }
-    } as MediaStreamConstraints;
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          maxWidth: window.screen.width,
+          maxHeight: window.screen.height,
+          maxFrameRate: 15
+        }
+      } as MediaTrackConstraints
+    };
+
+  } else { /* if not chrome */
+    return {
+      audio: false,
+      video: {
+        mediaSource: 'window'
+      } as MediaTrackConstraints
+    };
   }
-  return {
-    audio: false,
-    video: {
-      mandatory: {
-        chromeMediaSource: 'desktop',
-        maxWidth: window.screen.width,
-        maxHeight: window.screen.height,
-        maxFrameRate: 15
-      }
-    }
-  } as MediaStreamConstraints;
 }
 
+/**
+ * Get the screen media
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ */
 function startDisplayMedia (this: PureCloudWebrtcSdk): Promise<MediaStream> {
-  if (window.navigator.getDisplayMedia) {
-    return window.navigator.getDisplayMedia({ video: true });
-  } else if (window.navigator.mediaDevices.getDisplayMedia) {
-    return window.navigator.mediaDevices.getDisplayMedia({ video: true });
-  } else {
-    return window.navigator.mediaDevices.getUserMedia({ video: { mediaSource: 'screen' } as any });
-    // Not sure what to do here. If this is for chrome, should we check the browser first?
-    // return window.navigator.mediaDevices.getUserMedia(getDefaultChromeConstraints());
+  const constraints = getScreenShareConstraints();
+
+  if (hasGetDisplayMedia()) {
+    return window.navigator.mediaDevices.getDisplayMedia(constraints);
   }
+
+  return window.navigator.mediaDevices.getUserMedia(constraints);
 }
 
+/**
+ * Get the audio media
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ */
 function startAudioMedia (this: PureCloudWebrtcSdk): Promise<MediaStream> {
   return this.pendingStream
     ? Promise.resolve(this.pendingStream)
     : window.navigator.mediaDevices.getUserMedia({ audio: true });
 }
 
+/**
+ * NOT IN USE: This function will create a video element to attach the
+ *  screen share media to. This may be taken out. See `attachScreenShareMedia()`
+ */
 function createScreenShareElement (): HTMLVideoElement {
   const existing = document.querySelector(`video.${PC_SCREEN_SHARE_EL_CLASS}`);
   if (existing) {
@@ -140,18 +174,27 @@ function createScreenShareElement (): HTMLVideoElement {
   return video;
 }
 
+/**
+ * This function will be used once agent screen share is supported.
+ *  It may need a video element (or div) to be passed in to attach the
+ *  stream to.
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param stream for the shared screen
+ */
 function attachScreenShareMedia (this: PureCloudWebrtcSdk, stream: MediaStream): void {
   let videoElement: HTMLVideoElement;
   videoElement = createScreenShareElement();
   videoElement.autoplay = true;
-  (videoElement.style as any) = 'visibility: hidden';
   videoElement.srcObject = stream;
 }
 
-function createMediaElement () {
-  const existing = document.querySelector(`.${PC_AUDIO_EL_CLASS}`);
+/**
+ * Select or create the `audio.__pc-webrtc-inbound` element
+ */
+function createAudioMediaElement (): HTMLAudioElement {
+  const existing = document.querySelector(`audio.${PC_AUDIO_EL_CLASS}`);
   if (existing) {
-    return existing;
+    return existing as HTMLAudioElement;
   }
   const audio = document.createElement('audio');
   audio.classList.add(PC_AUDIO_EL_CLASS);
@@ -161,17 +204,27 @@ function createMediaElement () {
   return audio;
 }
 
-function attachMedia (this: PureCloudWebrtcSdk, stream: MediaStream) {
-  let audioElement;
+/**
+ * Attach an audio stream to the audio element
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param stream audio stream to attach
+ */
+function attachAudioMedia (this: PureCloudWebrtcSdk, stream: MediaStream) {
+  let audioElement: HTMLAudioElement;
   if (this._pendingAudioElement) {
     audioElement = this._pendingAudioElement;
   } else {
-    audioElement = createMediaElement();
+    audioElement = createAudioMediaElement();
   }
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
 }
 
+/**
+ * Event handler for incoming webrtc-sessions.
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param session incoming webrtc-session
+ */
 async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   try {
     log.call(this, 'info', 'onSession', session);
@@ -205,76 +258,51 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     log.call(this, 'info', 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
   });
 
-  // if authenticated and sdkType is softphone then we have an agent
-  if (!this._guest && this._sdkType === 'softphone' && this._accessToken) {
+  if (!this.isGuest) { /* authenitcated user */
+    // Need to add logic here to determine the type of session
+    // Currently, we always assume agents can only have softphone session in the sdk
     const stream = await startAudioMedia.call(this);
     log.call(this, 'debug', 'onAudioMediaStarted');
     session.addStream(stream);
     session._outboundStream = stream;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      attachMedia.call(this, session.streams[0]);
+      attachAudioMedia.call(this, session.streams[0]);
     } else {
       session.on('peerStreamAdded', (session, stream) => {
-        attachMedia.call(this, stream);
+        attachAudioMedia.call(this, stream);
       });
     }
-
-    if (this._autoConnectSessions) {
-      session.accept();
-    }
-
-    session.on('terminated', (session, reason) => {
-      log.call(this, 'info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
-      if (session._outboundStream) {
-        session._outboundStream.getTracks().forEach(t => t.stop());
-      }
-      this.emit('sessionEnded', session, reason);
-    });
-    this.emit('sessionStarted', session);
-    // if authenitcation is jwt (meaning guest/annoyomous) and sdkType is screenshare
-    // then we are sharing our screen
-  } else if (this._guest && this._sdkType === 'screenshare' && this._jwt) {
-    log.call(this, 'debug', 'sdkType is \'screenshare\' and there is a jwt');
+  } else { /* unauthenitcated user */
+    log.call(this, 'debug', 'user is a guest');
     if (temporaryOutboundStream) {
       log.call(this, 'debug', 'temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
       session.addStream(temporaryOutboundStream);
       session._outboundStream = temporaryOutboundStream;
       temporaryOutboundStream = null;
     }
-
-    /* don't attach? or should we and then hide it?
-      if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-        attachScreenShareMedia.call(this, session.streams[0]);
-      } else {
-        session.on('peerStreamAdded', (session, stream) => {
-          attachScreenShareMedia.call(this, stream);
-        });
-      }
-    */
-
-    // always accept since we are the ones who initiated the session
-    session.accept();
-
-    session.on('terminated', (session, reason) => {
-      log.call(this, 'info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
-      if (session._outboundStream) {
-        session._outboundStream.getTracks().forEach(t => t.stop());
-      }
-      this.emit('sessionEnded', session, reason);
-    });
-    this.emit('sessionStarted', session);
-
-    // if we don't have a matching combination
-  } else {
-    let errorMessage = `Unsupported media type and/or user in purecloud-webrtc-sdk. SdkType: ${this._sdkType}. Guest user: ${this._guest}. Authentication type: ${this._accessToken ? 'Access Token' : ''} ${this._jwt ? 'JWT' : ''}`;
-    let err = new Error(errorMessage);
-    this.logger.error(errorMessage);
-    this.emit('error', { message: errorMessage, error: err });
-    // Should we throw this error?
   }
+
+  // This may need to change for guests as more functionality is added
+  if (this._autoConnectSessions) {
+    session.accept();
+  }
+
+  session.on('terminated', (session, reason) => {
+    log.call(this, 'info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
+    if (session._outboundStream) {
+      session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    }
+    this.emit('sessionEnded', session, reason);
+  });
+  this.emit('sessionStarted', session);
 }
 
+/**
+ * Event handler for pending webrtc-sessions.
+ * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param sessionInfo pending webrtc-session info
+ */
 function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
   log.call(this, 'info', 'onPendingSession', sessionInfo);
   const sessionEvent = {

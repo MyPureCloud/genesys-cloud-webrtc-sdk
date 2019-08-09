@@ -52,7 +52,6 @@ interface MockApiOptions {
   participantId?: string;
   withLogs?: boolean;
   guestSdk?: boolean;
-  sdkType?: 'screenshare' | 'softphone';
 }
 
 interface MockApiReturns {
@@ -131,8 +130,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     conversationId,
     participantId,
     withLogs,
-    guestSdk,
-    sdkType
+    guestSdk
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
@@ -184,17 +182,13 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       .reply(202, {});
   }
 
-  // global.window = global.window || {};
   Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
   Object.defineProperty(window.navigator, 'mediaDevices', { value: window.navigator.mediaDevices || {}, writable: true });
   Object.defineProperty(window.navigator.mediaDevices, 'getDisplayMedia', { value: () => Promise.resolve(), writable: true });
 
   if (withMedia) {
-    // (window.navigator as any) = window.navigator || {};
     Object.defineProperty(window, 'navigator', { value: window.navigator || {}, writable: true });
-    // (window.navigator.mediaDevices as any) = window.navigator.mediaDevices || {};
     Object.defineProperty(window.navigator, 'mediaDevices', { value: window.navigator.mediaDevices || {}, writable: true });
-    // window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
     Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', { value: () => Promise.resolve(withMedia), writable: true });
 
     Object.defineProperty(window.navigator.mediaDevices, 'getDisplayMedia', { value: () => Promise.resolve(withMedia), writable: true });
@@ -203,8 +197,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     accessToken: guestSdk ? undefined : '1234',
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } },
-    sdkType
+    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
   } as SdkConstructOptions;
 
@@ -283,7 +276,6 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       }
     });
   });
-  // global.window.WebSocket = WebSocket;
   Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
   ws = websocket;
 
