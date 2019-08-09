@@ -116,7 +116,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
 
   /**
    * Setup the SDK for use and authenticate the user
-   *  - agents must have an accessCode passed into the constructor options
+   *  - agents must have an accessToken passed into the constructor options
    *  - guest's need a securityCode
    * @param opts optional initialize options
    */

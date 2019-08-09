@@ -126,7 +126,7 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeTruthy();
     }, 15 * 1000);
 
-    test('throws error for guest users without an access code', async () => {
+    test('throws error for guest users without an security code', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       try {
         await sdk.initialize();
