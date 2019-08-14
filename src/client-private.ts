@@ -311,9 +311,24 @@ function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
     address: sessionInfo.fromJid.split('@')[0],
     conversationId: sessionInfo.conversationId
   };
+
+  const existingSessionId = Object.keys(this._pendingSessions).find(k => {
+    const session = this._pendingSessions[k];
+    return session && session.conversationId === sessionInfo.conversationId;
+  });
+
+  if (existingSessionId) {
+    log.call(this, 'info', 'duplicate session invitation, ignoring', sessionInfo);
+    return;
+  }
+
   this.emit('pendingSession', sessionEvent);
 
   this._pendingSessions[sessionEvent.id] = sessionEvent;
+
+  setTimeout(() => {
+    this._pendingSessions[sessionEvent.id] = null;
+  }, 1000);
 
   if (sessionInfo.autoAnswer) {
     this.acceptPendingSession(sessionInfo.sessionId);
