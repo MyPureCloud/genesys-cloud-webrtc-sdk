@@ -1,6 +1,6 @@
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
-import { setupStreamingClient, proxyStreamingClientEvents } from './client-private';
+import { setupStreamingClient, proxyStreamingClientEvents, startGuestScreenShare } from './client-private';
 import { requestApi, rejectErr } from './utils';
 import { log, setupLogging } from './logging';
 import { SdkConstructOptions, ILogger } from './types/interfaces';
@@ -14,8 +14,11 @@ const ENVIRONMENTS = [
   'usw2.pure.cloud'
 ];
 
-// helper methods
-function validateOptions (options) {
+/**
+ * Validate SDK construct options
+ * @param options
+ */
+function validateOptions (options: SdkConstructOptions): void {
   if (!options) {
     throw new Error('Options required to create an instance of the SDK');
   }
@@ -34,6 +37,9 @@ function validateOptions (options) {
   }
 }
 
+/**
+ * SDK to interact with PureCloud WebRTC functionality
+ */
 export default class PureCloudWebrtcSdk extends WildEmitter {
 
   public logger: ILogger;
@@ -63,6 +69,18 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
+
+  get connected (): boolean {
+    return !!this._streamingConnection.connected;
+  }
+
+  get _sessionManager () {
+    return this._streamingConnection._webrtcSessions.jingleJs;
+  }
+
+  get isGuest (): boolean {
+    return !this._accessToken;
+  }
 
   constructor (options: SdkConstructOptions) {
     super();
@@ -96,17 +114,27 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
     this._pendingSessions = [];
   }
 
-  public initialize (opts?: { securityCode?: string }): Promise<void> {
-    let fetchInfoPromises = [];
-    if (opts && opts.securityCode) {
+  /**
+   * Setup the SDK for use and authenticate the user
+   *  - agents must have an accessToken passed into the constructor options
+   *  - guest's need a securityCode
+   * @param opts optional initialize options
+   */
+  public async initialize (opts?: { securityCode?: string }): Promise<void> {
+    let fetchInfoPromises: Promise<any>[] = [];
+    if (this.isGuest) {
+      if (!opts || !opts.securityCode) {
+        throw new Error('Security Code is required to initialize the SDK as a guest');
+      }
       const getJwt = requestApi.call(this, '/conversations/codes', {
-        method: 'POST',
+        method: 'post',
         data: {
           organizationId: this._orgDetails.id,
           addCommunicationCode: opts.securityCode
-        }
-      } as any).then(info => {
-        this._jwt = info.jwt;
+        },
+        auth: false
+      }).then(({ body }) => {
+        this._jwt = body.jwt;
       });
 
       fetchInfoPromises.push(getJwt);
@@ -127,35 +155,41 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
       fetchInfoPromises.push(getPerson);
     }
 
-    return Promise.all(fetchInfoPromises)
-      .then(() => {
-        return setupStreamingClient.call(this);
-      })
-      .then(() => {
-        return proxyStreamingClientEvents.call(this);
-      })
-      .then(() => {
-        this.emit('ready');
-      })
-      .catch(err => {
-        rejectErr.call(this, 'Failed to initialize SDK', err);
-      });
+    try {
+      await Promise.all(fetchInfoPromises);
+      await setupStreamingClient.call(this);
+      proxyStreamingClientEvents.call(this);
+      this.emit('ready');
+    } catch (err) {
+      rejectErr.call(this, 'Failed to initialize SDK', err);
+    }
   }
 
-  get connected (): boolean {
-    return !!this._streamingConnection.connected;
+  /**
+   * Start a screen share. Currently, guest is the only supported screen share.
+   *  `initialize()` must be called first.
+   */
+  public startScreenShare (): Promise<void> {
+    if (this.isGuest) {
+      return startGuestScreenShare.call(this);
+    }
+
+    return Promise.reject('Agent screen share is not yet supported');
   }
 
-  get _sessionManager () {
-    return this._streamingConnection._webrtcSessions.jingleJs;
-  }
-
-  // public API methods
-  acceptPendingSession (id) {
+  /**
+   * Accept a pending session based on the passed in ID.
+   * @param id string ID of the pending session
+   */
+  public acceptPendingSession (id: string): void {
     this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
-  endSession (opts: any = {}) {
+  /**
+   * End an active session based on the session ID _or_ conversation ID (one is required)
+   * @param opts object with session ID _or_ conversation ID
+   */
+  public async endSession (opts: { id?: string, conversationId?: string } = {}): Promise<void> {
     if (!opts.id && !opts.conversationId) {
       return Promise.reject(new Error('Unable to end session: must provide session id or conversationId.'));
     }
@@ -176,25 +210,30 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
       session.end();
       return Promise.resolve();
     }
-    return requestApi.call(this, `/conversations/calls/${session.conversationId}`)
-      .then(({ body }) => {
-        const participant = body.participants
-          .find(p => p.user && p.user.id === this._personDetails.id);
-        return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
-          method: 'patch',
-          data: JSON.stringify({ state: 'disconnected' })
-        } as any);
-      })
-      .catch(err => {
-        session.end();
-        throw err;
+    try {
+      const { body } = await requestApi.call(this, `/conversations/calls/${session.conversationId}`);
+      const participant = body.participants
+        .find((p: { user?: { id?: string } }) => p.user && p.user.id === this._personDetails.id);
+      return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
+        method: 'patch',
+        data: JSON.stringify({ state: 'disconnected' })
       });
+    } catch (err) {
+      session.end();
+      throw err;
+    }
   }
 
+  /**
+   * Disconnect the streaming connection
+   */
   public disconnect (): void {
     this._streamingConnection.disconnect();
   }
 
+  /**
+   * Reconnect the streaming connection
+   */
   public reconnect (): void {
     this._streamingConnection.reconnect();
   }

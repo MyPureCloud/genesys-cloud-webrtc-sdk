@@ -19,14 +19,14 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
 
 function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
   // immediately log it locally
-  this.logger[level](message, details);
+  this.logger[level](`[webrtc-sdk] ${message}`, details);
 
   // ex: if level is debug and config is warn, then debug is less than warn, don't push
   if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._logLevel)) {
     return;
   }
 
-  if (this._optOutOfTelemetry) {
+  if (this._optOutOfTelemetry || this.isGuest) {
     return;
   }
 
@@ -123,6 +123,13 @@ function setupLogging (this: PureCloudWebrtcSdk, logger, logLevel) {
   this._backoffActive = false;
   this._failedLogAttempts = 0;
   this._reduceLogPayload = false;
+
+  if (this.isGuest) {
+    this.logger.debug('Guest user. Not initializing backoff logging');
+    return;
+  }
+
+  this.logger.debug('Authenticated user. Initializing backoff logging');
   this._backoff = backoff.exponential({
     randomisationFactor: 0.2,
     initialDelay: 500,

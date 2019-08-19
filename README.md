@@ -5,13 +5,14 @@ The PureCloud WebRTC SDK is a client library for connecting to PureCloud WebRTC
 services. Supported WebRTC Features:
 
 - WebRTC SoftPhone (Authenticated Business User/Agent Telephony - inbound/outbound, etc)
+- WebRTC Screen Share (Unauthenticated User/Guest)
 
 Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ (requires PureCloud Credentials)
 
 Not yet supported:
 
 - WebRTC Video
-- WebRTC Screen Share
+- WebRTC Screen Share (Authenticated Business User/Agent Telephony)
 - WebRTC Screen Recording
 - WebRTC Click-to-Call (Unauthenticated user SoftPhone, Telephony)
 
@@ -44,13 +45,12 @@ Or via global module
 ### Documentation
 
 Documentation is in doc/documentation.md and available on the PureCloud Developer Center
-at [DeveloperCenter][1]
+at [DeveloperCenter][1] and in the [documentation](/doc/documentation.md) in this repo.
 
 
 ### Contributing
 
-This repo uses [semistandard][2] for code style, Ava for tests, and Istanbul/NYC for
-code coverage.
+This repo uses [typescript semistandard][2] for code style and [Jest][3] for tests and code coverage.
 
 To get started in development:
 ```sh
@@ -65,4 +65,5 @@ pass 100%, and coverage should remain at 100%.
 Run the tests using `npm test` in the command line
 
 [1]: https://developer.mypurecloud.com/api/webrtcsdk/
-[2]: https://github.com/Flet/semistandard
+[2]: https://github.com/bukalapak/tslint-config-semistandard
+[3]: https://jestjs.io/en/

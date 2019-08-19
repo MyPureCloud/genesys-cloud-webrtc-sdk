@@ -1,90 +1,13 @@
-# WebRTC Softphone SDK
+# PureCloud WebRTC SDK Documentation
 
-This SDK supports receiving inbound and outbound WebRTC Softphone audio
-sessions. The API is used in conjunction with the public API for call controls.
+## Feature Index
 
-When initiating a conversation that will use a WebRTC session, the call is placed
-via the Public API, and an incoming request will be evented via the SDK.
-
-It is up to the consuming application to link the outbound session returned from
-the API request and push notification events to the WebRTC session by comparing
-`conversationId` properties. The incoming session will include a `conversationId`
-attribute with the associated `conversationId`.
-
-## Session Flow
-
-
-WebRTC Softphone sessions use an initiation/discovery flow before media is
-established in order that a user might decide which client (i.e., device or
-browser tab) will be used to establish the session media.
-
-The two primary differences for incoming calls and outbound calls are:
-
-1. Outbound placed calls should be automatically accepted on the client that
-requested the outbound call, or by a client designed to handle all outbound calls.
-2. Outbound calls require an initial REST request to the public API to initiate.
-
-```text
-Outbound
-
-Alice                       Public API           WebRTC SDK
-   |                            |                     |
-   |    make new call (1)       |                     |    1. POST to api/v2/conversation/calls
-   +--------------------------->|                     |
-   |                            |                     |
-   |   return conversationId*   |                     |
-   |<---------------------------+                     |
-   |                            |    propose* (2)     |    2. Event on SDK (see events below)
-   |<-------------------------------------------------+
-   |                            |                     |
-   |    proceed (3)             |                     |    3. Sent by accepting the proposed session
-   +------------------------------------------------->|
-   |                            |                     |
-   |                            |    initiate (4)     |    4. Full session details in an event on SDK
-   |<-------------------------------------------------|
-   |     accept (5)             |                     |    5. Sent by accepting the session
-   +------------------------------------------------->|       (programmatically, or automatically based on config)
-   |                            |                     |
-```
-
-```text
-Inbound
-
-Alice                     Push Notifications    WebRTC SDK
-   |                            |                  |
-   |      notification* (1)     |                  |    1. A pub sub notification pushed to client via Notifications
-   |<---------------------------+                  |       API websocket with incoming call details^
-   |                            |   propose* (2)   |    2. Event on SDK (see events below)
-   |<----------------------------------------------+
-   |                            |                  |
-   |       proceed (3)          |                  |    3. Sent by accepting the proposed session
-   +---------------------------------------------->|
-   |                            |                  |
-   |                            |  initiate (4)    |    4. Full session details in an event on SDK
-   |<----------------------------------------------|
-   |     accept (5)             |                  |    5. Sent by accepting the session
-   +---------------------------------------------->|       (programmatically, or automatically based on config)
-   |                            |                  |
-```
-\* denotes asynchronous events/responses and order is not guaranteed.
-
-\^ denotes optional API usage outside of the SDK to get complete conversation details
-
-## Usage
-
-After creating an instance of the SDK, your client can add event handlers for
-incoming sessions (for inbound or outbound calls). `pendingSession` is an example
-of an SDK event. You can answer and control sessions via the SDK methods documented
-below. Most call control actions, however, should be done via the PureCloud Public
-API (or the Public API javascript SDK).
-
-Once the client has a session, it can add event handlers for lower level control
-over sessions. `terminated` is an example of a session event; all session events
-are detailed below.
+- [WebRTC SoftPhone](softphone.md)
+- [WebRTC Screen Share](screenshare.md)
 
 ## API
 
-###### Behavior notes
+#### Behavior notes
 
 - By default, the SDK will keep all active sessions active if the WebSocket disconnects.
 It is the consuming application's responsibility to end all pending or active sessions after a
@@ -92,58 +15,49 @@ disconnect in the event that it doesn't recover. This behavior can be disabled b
 `sessionSurvivability: false` in the SDK constructor options. If this is set to false, if
 the WebSocket connection drops, all active WebRTC connections will be disconnected.
 
-- In the case of an outbound call, the application initiating the call should
-automatically accept the pending session, which should have a conversationId
-that matches the conversationId in the response to the request to place the call.
-Alternatively, a client designed to handle all outbound call connections can
-immediately accept pending sessions for outbound calls. If two such applications
-are running simultaneously, there will be a race condition for which instance
-actually connects the call audio.
-
-- When a client sends a POST to conversations/calls (from her desired client)
-for a conversation to the Public API, asynchronously, she will receive a pending
-session event from the SDK and a response from the public API with the `conversationId`
-for the conversation. If only handling outbound calls placed by your client, these
-can be correlated by conversationId together, and should not be expected to
-arrive in a guaranteed order.
-
-- If you wish to control the MediaStream settings (i.e., input device) you can
-provide it as an option to `acceptPendingSession`. Note that to do this for outbound
-calls, you'll have to disable `autoAnswerOutboundCalls` and answer them yourself
-when the event is triggered
-
 #### Constructor
 
 `new PureCloudWebrtcSdk(options)`
 
 - parameters
   - `Object options` with properties:
-    - `String accessToken`: Required; access token for the user
     - `String environment`: Required; `mypurecloud.com || mypurecloud.ie ||
         mypurecloud.jp || mypurecloud.de || mypurecloud.com.au`
+    - One of the following is required:
+      - `String accessToken`: access token for the authenticated user
+      - `String organizationId`: organization ID (used for unauthenticated user)
 
     Advanced options:
-    - `Boolean sessionSurvivability`: Optional, default true; see Behavior Notes
+    - `Boolean sessionSurvivability`: **not yet supported**: Optional, default true; see Behavior Notes
         above
-    - `Boolean autoAnswerOutboundCalls`: Optional, default true; See Behavior Notes
+    - `Boolean autoAnswerOutboundCalls`: **not yet supported**: Optional, default true; See [softphone behavior notes](softphone.md#softphone-behavior-notes)
     - `Boolean autoConnectSessions`: Optional, default true; whether or not
-        the SDK should auto connect the sessions after answering or outbound.
+        the SDK should auto connect the sessions.
     - `Array[IceServerConfiguration] iceServers`: Custom ICE server configuration.
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
     - `RTCConfiguration iceTransportPolicy`: Set the ICE transport policy
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
+    - `String logLevel`: Optional, desired log level. Available options: `debug`, `log`, `info`, `warn`, `error`
+    - `Object logger`: Optional, desired logger. Default, `console`. Must contain methods: `debug`, `log`, `info`, `warn`, `error`
+    - `String wsHost`: Optional, websocket host
+
 
 #### Methods
 
-`sdk.intialize() : Promise<void>` - Initialize the WebSocket connection for streaming
+`sdk.intialize(options) : Promise<void>` - Initialize the WebSocket connection for streaming
 connectivity with PureCloud. Initialize must be called before any events will trigger.
+  - paramaters
+    - `Object options`: Optional; with properties
+      - `String securityCode`: Optional; one-time security code used to authenticate guest users
+
+`sdk.startScreenShare() : Promise<void>` - Start sharing the guest user's screen.
 
 `sdk.acceptPendingSession(id, opts) : void` - Accept an incoming RTC session proposal.
 Should be called automatically for outbound calls.
 
 - parameters
   - `String id`: the id from the `pendingSession` event
-  - `Object opts`: with properties:
+  - `Object opts`: **not yet supported**; with properties:
     - `MediaStream mediaStream`: Optional; stream to use for input audio. If not
         provided, the SDK will start media capture for a default stream.
     - `HTMLAudioElement audioElement`: Optional; the audio tag to use for attaching
@@ -154,6 +68,8 @@ Should be called automatically for outbound calls.
 - Examples:
   - `sdk.acceptPendingSession(id)`
     - SDK will start media, attach it to the session, and connect
+
+  Not yet supported:
   - `sdk.acceptPendingSession(id, { autoStartMedia: false, autoConnectSession: false })`
     - handle all media and session events yourself
   - `sdk.acceptPendingSession(id, { mediaStream: stream, autoConnectSession: true })`
@@ -237,7 +153,7 @@ messages for the session manager
 `sdk.on('connected', (details) => {})` - the underlying websocket has (re)connected
     - `Object details` - has a `reconnect` boolean indicating if it is a reconnect event
 
-##### Session level events.
+#### Session level events
 
 Session level events are events emitted from the `session` objects themselves,
 not the SDK instance library. These can be used if you want lower level access

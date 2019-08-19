@@ -1,13 +1,13 @@
 export interface SdkConstructOptions {
-  accessToken: string;
-  organizationId: string;
   environment: string;
-  wsHost: string;
-  autoConnectSessions: boolean;
-  iceServers: RTCConfiguration;
-  iceTransportPolicy: RTCIceTransportPolicy;
-  logLevel: string;
-  logger: ILogger;
+  accessToken?: string;
+  organizationId?: string;
+  wsHost?: string;
+  autoConnectSessions?: boolean;
+  iceServers?: RTCConfiguration;
+  iceTransportPolicy?: RTCIceTransportPolicy;
+  logLevel?: string;
+  logger?: ILogger;
 }
 
 export interface ILogger {
