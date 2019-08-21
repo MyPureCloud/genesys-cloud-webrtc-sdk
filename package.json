@@ -4,6 +4,9 @@
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "main": "web/purecloud-webrtc-sdk.js",
   "browser": "web/purecloud-webrtc-sdk.js",
   "files": [
