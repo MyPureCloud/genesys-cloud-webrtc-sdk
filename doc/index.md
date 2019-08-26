@@ -12,7 +12,7 @@
 For using the SDK with OAuth scopes, you will need the following scopes enabled:
  - authorization
  - conversations
- - orgainizations
+ - organizations
  - notifications
 
 These can be set in PureCloud > Admin > Integrations > OAuth > Scope.  Note that the scope options are not available when the "Grant Type" option is set to "Client Credentials"
