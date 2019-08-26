@@ -7,6 +7,16 @@
 
 ## API
 
+#### App Authorization
+
+For using the SDK with OAuth scopes, you will need the following scopes enabled:
+ - authorization
+ - conversations
+ - orgainizations
+ - notifications
+
+These can be set in PureCloud > Admin > Integrations > OAuth > Scope.  Note that the scope options are not available when the "Grant Type" option is set to "Client Credentials"
+
 #### Behavior notes
 
 - By default, the SDK will keep all active sessions active if the WebSocket disconnects.

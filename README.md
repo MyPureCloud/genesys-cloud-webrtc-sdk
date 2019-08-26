@@ -45,7 +45,7 @@ Or via global module
 ### Documentation
 
 Documentation is in doc/documentation.md and available on the PureCloud Developer Center
-at [DeveloperCenter][1] and in the [documentation](/doc/documentation.md) in this repo.
+at [DeveloperCenter][1] and in the [documentation](/doc/index.md) in this repo.
 
 
 ### Contributing
