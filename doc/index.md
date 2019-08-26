@@ -9,7 +9,7 @@
 
 #### App Authorization
 
-For using the SDK with OAuth scopes, you will need the following scopes enabled:
+To use the SDK with OAuth scopes, you will need the following scopes enabled:
  - authorization
  - conversations
  - organizations
