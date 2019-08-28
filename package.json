@@ -7,17 +7,19 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "web/purecloud-webrtc-sdk.js",
-  "browser": "web/purecloud-webrtc-sdk.js",
+  "main": "dist/purecloud-webrtc-sdk.min.cjs",
+  "browser": "dist/purecloud-webrtc-sdkj.min.js",
   "files": [
     "src",
-    "web/purecloud-webrtc-sdk.js"
+    "dist"
   ],
   "pre-push": [
     "test"
   ],
   "scripts": {
-    "build": "npx webpack",
+    "build": "npm run build-umd && npm run build-cjs",
+    "build-umd": "webpack && webpack --env.production",
+    "build-cjs": "webpack --env.node && webpack --env.node --env.production",
     "build-sample": "./test/test-pages/build.sh",
     "unit-test": "NODE_ENV=test jest --runInBand",
     "pretest": "npm run build",
@@ -38,21 +40,6 @@
       "/test/test-pages/sdk-sample.js"
     ]
   },
-  "babel": {
-    "presets": [
-      "env"
-    ],
-    "env": {
-      "test": {
-        "plugins": [
-          "istanbul"
-        ]
-      },
-      "production": {
-        "plugins": []
-      }
-    }
-  },
   "author": "",
   "dependencies": {
     "backoff-web": "^1.0.1",
@@ -66,6 +53,9 @@
     "wildemitter": "^1.2.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/polyfill": "^7.4.4",
+    "@babel/preset-env": "^7.5.5",
     "@types/jest": "^24.0.15",
     "@types/nock": "^10.0.3",
     "@types/readable-stream": "^2.3.2",
@@ -75,7 +65,6 @@
     "@types/webrtc": "0.0.25",
     "@types/ws": "^6.0.1",
     "awesome-typescript-loader": "^5.2.1",
-    "babel-core": "^6.26.3",
     "babel-jest": "^24.8.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.4",

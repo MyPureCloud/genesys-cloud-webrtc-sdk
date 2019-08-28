@@ -40,7 +40,7 @@ function validateOptions (options: SdkConstructOptions): void {
 /**
  * SDK to interact with PureCloud WebRTC functionality
  */
-export default class PureCloudWebrtcSdk extends WildEmitter {
+export class PureCloudWebrtcSdk extends WildEmitter {
 
   public logger: ILogger;
   public pendingStream: MediaStream;

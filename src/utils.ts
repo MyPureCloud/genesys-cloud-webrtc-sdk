@@ -1,5 +1,5 @@
 import fetch from 'superagent';
-import PureCloudWebrtcSdk from './client';
+import { PureCloudWebrtcSdk } from './client';
 
 interface RequestApiOptions {
   method?: string;

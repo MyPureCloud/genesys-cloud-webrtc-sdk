@@ -5,9 +5,9 @@ webappPipeline {
     nodeVersion = '10.16.2'
     useArtifactoryRepo = false
     projectName = 'developercenter-cdn/webrtc-sdk'
-    manifest = customManifest('web') {
+    manifest = customManifest('dist') {
         sh('node ./create-manifest.js')
-        readJSON(file: 'web/manifest.json')
+        readJSON(file: 'dist/manifest.json')
     }
     buildType = { env.BRANCH_NAME == 'master' ? 'MAINLINE' : 'FEATURE' }
     publishPackage = { 'prod' }
