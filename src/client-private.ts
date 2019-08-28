@@ -1,4 +1,4 @@
-import PureCloudWebrtcSdk from './client';
+import { PureCloudWebrtcSdk } from './client';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import StreamingClient from 'purecloud-streaming-client';
 import browserama from 'browserama';

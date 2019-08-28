@@ -1,9 +1,0 @@
-image: node:8.11.2
-
-pipelines:
-  default:
-    - step:
-        script: # Modify the commands below to build your repository.
-          - npm install -g npm@^6.0.0
-          - npm install
-          - npm test
