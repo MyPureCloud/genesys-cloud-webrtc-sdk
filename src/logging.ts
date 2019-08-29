@@ -1,4 +1,4 @@
-import { PureCloudWebrtcSdk } from './client';
+import PureCloudWebrtcSdk from './client';
 import stringify from 'safe-json-stringify';
 import backoff from 'backoff-web';
 

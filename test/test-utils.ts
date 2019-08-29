@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import nock from 'nock';
 import WildEmitter from 'wildemitter';
-import { PureCloudWebrtcSdk } from '../src/client';
+import PureCloudWebrtcSdk from '../src/client';
 import { SdkConstructOptions } from '../src/types/interfaces';
 
 declare var global: {

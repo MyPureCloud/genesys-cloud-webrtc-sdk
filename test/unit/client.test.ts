@@ -1,4 +1,4 @@
-import { PureCloudWebrtcSdk } from '../../src/client';
+import PureCloudWebrtcSdk from '../../src/client';
 import { SdkConstructOptions } from '../../src/types/interfaces';
 import { MockStream, MockSession, mockApis, timeout } from '../test-utils';
 
