@@ -44,6 +44,7 @@ interface MockApiOptions {
   failSecurityCode?: boolean;
   failOrg?: boolean;
   failUser?: boolean;
+  failConversationPatch?: boolean;
   failStreaming?: boolean;
   failLogs?: boolean;
   failLogsPayload?: boolean;
@@ -123,6 +124,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     failSecurityCode,
     failOrg,
     failUser,
+    failConversationPatch,
     failStreaming,
     failLogs,
     failLogsPayload,
@@ -175,11 +177,18 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       .reply(200, MOCK_CONVERSATION);
   }
 
+
   let patchConversation: nock.Scope;
   if (conversationId && participantId) {
-    patchConversation = conversationsApi
-      .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
-      .reply(202, {});
+    if (failConversationPatch) {
+      patchConversation = conversationsApi
+        .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
+        .reply(401);
+    } else {
+      patchConversation = conversationsApi
+        .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
+        .reply(202, {});
+    }
   }
 
   Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });

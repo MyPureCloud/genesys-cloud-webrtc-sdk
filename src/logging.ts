@@ -11,6 +11,7 @@ let APP_VERSION = '[AIV]{version}[/AIV]'; // injected by webpack auto-inject-ver
 
 // check if it was replaced.
 // if it wasn't we're being imported or required from source, so get it from package.json
+/* istanbul ignore next */
 if (APP_VERSION.indexOf('AIV') > -1 &&
   APP_VERSION.indexOf('{version}') > -1 &&
   APP_VERSION.indexOf('/AIV') > -1) {
