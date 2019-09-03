@@ -17,12 +17,12 @@ const manifest = {
 };
 
 try {
-  const files = fs.readdirSync('web/demo/');
+  const files = fs.readdirSync('dist/demo/');
   files.forEach(file => {
-    if (fs.lstatSync('web/demo/' + file).isDirectory()) {
-      const dirFiles = fs.readdirSync('web/demo/' + file);
+    if (fs.lstatSync('dist/demo/' + file).isDirectory()) {
+      const dirFiles = fs.readdirSync('dist/demo/' + file);
       dirFiles.forEach(dirFile => {
-        if (fs.lstatSync('web/demo/' + file + '/' + dirFile).isDirectory()) {
+        if (fs.lstatSync('dist/demo/' + file + '/' + dirFile).isDirectory()) {
           return;
         }
         manifest.indexFiles.push({
@@ -39,4 +39,4 @@ try {
   // demo dir (examples don't exist)
 }
 
-fs.writeFileSync('./web/manifest.json', JSON.stringify(manifest, null, 2), { encoding: 'utf8' });
+fs.writeFileSync('./dist/manifest.json', JSON.stringify(manifest, null, 2), { encoding: 'utf8' });
