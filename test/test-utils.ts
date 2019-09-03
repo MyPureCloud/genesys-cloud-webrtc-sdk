@@ -177,7 +177,6 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       .reply(200, MOCK_CONVERSATION);
   }
 
-
   let patchConversation: nock.Scope;
   if (conversationId && participantId) {
     if (failConversationPatch) {

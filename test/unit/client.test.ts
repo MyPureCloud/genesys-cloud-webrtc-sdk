@@ -301,7 +301,7 @@ describe('Client', () => {
           patchConversation.done();
           expect(mockSession.end).toHaveBeenCalled();
         });
-    })
+    });
 
     test('rejects if not provided either an id or a conversationId', async done => {
       const { sdk } = mockApis();
