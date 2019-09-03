@@ -180,8 +180,15 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   /**
    * Accept a pending session based on the passed in ID.
    * @param id string ID of the pending session
+   * @param opts object with mediaStream and/or audioElement to attach to session
    */
-  public acceptPendingSession (id: string): void {
+  public acceptPendingSession (id: string, opts?: { mediaStream ?: MediaStream, audioElement?: HTMLAudioElement}): void {
+    if (opts && opts.mediaStream) {
+      this.pendingStream = opts.mediaStream;
+    }
+    if (opts && opts.audioElement) {
+      this._pendingAudioElement = opts.audioElement;
+    }
     this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
@@ -214,7 +221,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
       const { body } = await requestApi.call(this, `/conversations/calls/${session.conversationId}`);
       const participant = body.participants
         .find((p: { user?: { id?: string } }) => p.user && p.user.id === this._personDetails.id);
-      return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
+      await requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
         method: 'patch',
         data: JSON.stringify({ state: 'disconnected' })
       });

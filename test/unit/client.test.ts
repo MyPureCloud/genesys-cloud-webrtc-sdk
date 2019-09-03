@@ -284,22 +284,24 @@ describe('Client', () => {
       expect(mockSession.end).not.toHaveBeenCalled();
     });
 
-    // test.serial('requests the conversation then patches the participant to disconnected', async t => {
-    //   const sessionId = random();
-    //   const conversationId = random();
-    //   const participantId = PARTICIPANT_ID;
-    //   const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
-    //   await sdk.initialize();
+    test('ends the session directly if patching the conversation fails', async () => {
+      const sessionId = random();
+      const conversationId = random();
+      const participantId = PARTICIPANT_ID;
+      const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId, failConversationPatch: true });
+      await sdk.initialize();
 
-    //   const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
-    //   sdk._sessionManager.sessions = {};
-    //   sdk._sessionManager.sessions[sessionId] = mockSession;
+      const mockSession = { id: sessionId, conversationId, end: jest.fn() };
+      sdk._sessionManager.sessions = {};
+      sdk._sessionManager.sessions[sessionId] = mockSession;
 
-    //   await sdk.endSession({ conversationId });
-    //   getConversation.done();
-    //   patchConversation.done();
-    //   sinon.assert.notCalled(mockSession.end);
-    // });
+      await sdk.endSession({ id: sessionId })
+        .catch(() => {
+          getConversation.done();
+          patchConversation.done();
+          expect(mockSession.end).toHaveBeenCalled();
+        });
+    });
 
     test('rejects if not provided either an id or a conversationId', async done => {
       const { sdk } = mockApis();
