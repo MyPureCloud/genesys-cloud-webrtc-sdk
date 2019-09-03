@@ -37,12 +37,8 @@
     "ignore": [
       "/.coverage",
       "/scripts",
+      "/dist",
       "/test/test-pages/sdk-sample.js"
-    ]
-  },
-  "babel": {
-    "presets": [
-      "@babel/preset-env"
     ]
   },
   "author": "",
