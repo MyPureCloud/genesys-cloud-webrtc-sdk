@@ -9,7 +9,7 @@ webappPipeline {
         sh('node ./create-manifest.js')
         readJSON(file: 'dist/manifest.json')
     }
-    buildType = { env.BRANCH_NAME == 'master' ? 'MAINLINE' : 'FEATURE' }
+    buildType = { (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'release') ? 'MAINLINE' : 'FEATURE' }
     publishPackage = { 'prod' }
     testJob = 'valve-webrtcsdk-tests'
 
@@ -34,11 +34,13 @@ webappPipeline {
     shouldTagOnRelease = { true }
 
     postReleaseStep = {
-        sh("""
-            # patch to prep for the next version
-            npm version patch --no-git-tag-version
-            git commit -am "Prep next version"
-            git push origin HEAD:master
-        """)
+        if (env.BRANCH_NAME == 'master') {
+            sh("""
+                # patch to prep for the next version
+                npm version patch --no-git-tag-version
+                git commit -am "Prep next version"
+                git push origin HEAD:master
+            """)
+        }
     }
 }
