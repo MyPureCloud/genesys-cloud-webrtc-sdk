@@ -17,6 +17,7 @@ test.beforeEach(() => {
 
 const USER_ID = random();
 const PARTICIPANT_ID = random();
+const PARTICIPANT_ID_2 = random();
 
 const MOCK_USER = {
   id: USER_ID,
@@ -115,7 +116,7 @@ test.serial('constructor | sets up options when provided', t => {
   t.is(sdk._iceTransportPolicy, 'relay');
 });
 
-function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs } = {}) {
+function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload, withMedia, conversationId, participantId, withLogs, conversation } = {}) {
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
 
@@ -138,7 +139,7 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
   if (conversationId) {
     getConversation = conversationsApi
       .get(`/api/v2/conversations/calls/${conversationId}`)
-      .reply(200, MOCK_CONVERSATION);
+      .reply(200, conversation || MOCK_CONVERSATION);
   }
 
   let patchConversation;
@@ -336,6 +337,56 @@ test.serial('endSession | requests the conversation then patches the participant
   const conversationId = random();
   const participantId = PARTICIPANT_ID;
   const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId });
+  await sdk.initialize();
+
+  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
+
+  await sdk.endSession({ conversationId });
+  getConversation.done();
+  patchConversation.done();
+  sinon.assert.notCalled(mockSession.end);
+});
+
+test.serial('endSession | requests the conversation then patches the correct participant to be disconnected', async t => {
+  const sessionId = random();
+  const conversationId = random();
+
+  // create a conversation with a second participant with the same user id
+  const participantId = PARTICIPANT_ID_2;
+  const conversation = JSON.parse(JSON.stringify(MOCK_CONVERSATION));
+  conversation.participants[0].state = 'terminated';
+  const participant = JSON.parse(JSON.stringify(conversation.participants[0]));
+  participant.state = 'connected';
+  participant.id = participantId;
+  conversation.participants.push(participant);
+  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId, conversation });
+  await sdk.initialize();
+
+  const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
+  sdk._sessionManager.sessions = {};
+  sdk._sessionManager.sessions[sessionId] = mockSession;
+
+  await sdk.endSession({ conversationId });
+  getConversation.done();
+  patchConversation.done();
+  sinon.assert.notCalled(mockSession.end);
+});
+
+test.serial('endSession | requests the conversation then patches the correct participant to be disconnected regardless of participant order', async t => {
+  const sessionId = random();
+  const conversationId = random();
+
+  // create a conversation with a second participant with the same user id
+  const participantId = PARTICIPANT_ID;
+  const conversation = JSON.parse(JSON.stringify(MOCK_CONVERSATION));
+  conversation.participants[0].state = 'connected';
+  const participant = JSON.parse(JSON.stringify(conversation.participants[0]));
+  participant.state = 'terminated';
+  participant.id = PARTICIPANT_ID;
+  conversation.participants.push(participant);
+  const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId, conversation });
   await sdk.initialize();
 
   const mockSession = { id: sessionId, conversationId, end: sinon.stub() };
