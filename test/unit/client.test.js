@@ -31,6 +31,7 @@ const MOCK_CONVERSATION = {
   participants: [
     {
       id: PARTICIPANT_ID,
+      state: 'connected',
       user: {
         id: USER_ID
       }
