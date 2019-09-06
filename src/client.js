@@ -152,7 +152,13 @@ class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   // public API methods
-  acceptPendingSession (id) {
+  acceptPendingSession (id, opts) {
+    if (opts && opts.mediaStream) {
+      this.pendingStream = opts.mediaStream;
+    }
+    if (opts && opts.audioElement) {
+      this._pendingAudioElement = opts.audioElement;
+    }
     this._streamingConnection.webrtcSessions.acceptRtcSession(id);
   }
 
@@ -180,7 +186,7 @@ class PureCloudWebrtcSdk extends WildEmitter {
     return requestApi.call(this, `/conversations/calls/${session.conversationId}`)
       .then(({ body }) => {
         const participant = body.participants
-          .find(p => p.user && p.user.id === this._personDetails.id);
+          .find(p => p.user && p.user.id === this._personDetails.id && p.state === 'connected');
         return requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
           method: 'patch',
           data: JSON.stringify({ state: 'disconnected' })

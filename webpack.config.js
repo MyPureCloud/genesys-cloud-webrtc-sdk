@@ -5,7 +5,7 @@ module.exports = {
   entry: './src/client.js',
   mode: 'production',
   output: {
-    path: path.resolve(__dirname, 'web'),
+    path: path.resolve(__dirname, 'dist'),
     filename: 'purecloud-webrtc-sdk.js',
     library: 'PureCloudWebrtcSdk',
     libraryTarget: 'umd'

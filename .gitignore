@@ -4,6 +4,7 @@
 .npmrc
 
 web
+dist
 test/test-pages/sdk-sample.js
 test/test-pages/*/sdk-sample.js
 test/test-pages/*/index.html
