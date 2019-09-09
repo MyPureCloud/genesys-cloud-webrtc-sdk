@@ -23,11 +23,11 @@ function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
   this.logger[level](`[webrtc-sdk] ${message}`, details);
 
   // ex: if level is debug and config is warn, then debug is less than warn, don't push
-  if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._logLevel)) {
+  if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._config.logLevel)) {
     return;
   }
 
-  if (this._optOutOfTelemetry || this.isGuest) {
+  if (this._config.optOutOfTelemetry || this.isGuest) {
     return;
   }
 
@@ -116,9 +116,7 @@ function setupLogging (this: PureCloudWebrtcSdk, logger, logLevel) {
     if (logLevel) {
       this.logger.warn(`Invalid log level: '${logLevel}'. Default 'info' will be used instead.`);
     }
-    this._logLevel = 'info';
-  } else {
-    this._logLevel = logLevel;
+    this._config.logLevel = 'info';
   }
 
   this._backoffActive = false;

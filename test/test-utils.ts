@@ -223,7 +223,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
     }
   } else {
-    sdk._optOutOfTelemetry = true;
+    sdk._config.optOutOfTelemetry = true;
   }
 
   if (wss) {

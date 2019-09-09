@@ -77,11 +77,11 @@ describe('Client', () => {
     test('sets up options with defaults', () => {
       const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as SdkConstructOptions);
       expect(sdk.logger).toBe(console);
-      expect(sdk._accessToken).toBe('1234');
-      expect(sdk._environment).toBe('mypurecloud.com');
-      expect(sdk._autoConnectSessions).toBe(true);
-      expect(typeof sdk._customIceServersConfig).toBe('undefined');
-      expect(sdk._iceTransportPolicy).toBe('all');
+      expect(sdk._config.accessToken).toBe('1234');
+      expect(sdk._config.environment).toBe('mypurecloud.com');
+      expect(sdk._config.autoConnectSessions).toBe(true);
+      expect(typeof sdk._config.customIceServersConfig).toBe('undefined');
+      expect(sdk._config.iceTransportPolicy).toBe('all');
       expect(sdk.isGuest).toBe(false);
     });
 
@@ -98,11 +98,11 @@ describe('Client', () => {
       } as SdkConstructOptions);
 
       expect(sdk.logger).toBe(logger);
-      expect(sdk._accessToken).toBe('1234');
-      expect(sdk._environment).toBe('mypurecloud.ie');
-      expect(sdk._autoConnectSessions).toBe(false);
-      expect(sdk._customIceServersConfig).toBe(iceServers);
-      expect(sdk._iceTransportPolicy).toBe('relay');
+      expect(sdk._config.accessToken).toBe('1234');
+      expect(sdk._config.environment).toBe('mypurecloud.ie');
+      expect(sdk._config.autoConnectSessions).toBe(false);
+      expect(sdk._config.customIceServersConfig).toBe(iceServers);
+      expect(sdk._config.iceTransportPolicy).toBe('relay');
       expect(sdk.isGuest).toBe(false);
     });
   });
@@ -116,7 +116,7 @@ describe('Client', () => {
       getChannel.done();
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
-      sdk._optOutOfTelemetry = true;
+      sdk._config.optOutOfTelemetry = true;
     });
 
     test('fetches jwt for guest users, sets up the streaming connection', async () => {
@@ -411,7 +411,7 @@ describe('Client', () => {
     test('_customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
-      sdk._customIceServersConfig = [{ something: 'junk' }] as RTCConfiguration;
+      sdk._config.customIceServersConfig = [{ something: 'junk' }] as RTCConfiguration;
 
       sdk._streamingConnection.sessionManager = {
         iceServers: [{ urls: ['turn:mypurecloud.com'] }]
@@ -458,6 +458,31 @@ describe('Client', () => {
       expect(sessionInfo.autoAnswer).toBe(true);
       expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(1);
       expect(sdk.acceptPendingSession).toHaveBeenCalledWith('1077');
+    });
+
+    test('emits a pendingSession event and does not accept the session if disableAutoAnwer is true', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+      sdk._config.disableAutoAnswer = true;
+
+      jest.spyOn(sdk, 'acceptPendingSession');
+      const pendingSession = new Promise(resolve => {
+        sdk.on('pendingSession', resolve);
+      });
+
+      sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
+        sessionId: '1077',
+        autoAnswer: true,
+        conversationId: 'deadbeef-guid',
+        fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
+      });
+
+      const sessionInfo: any = await pendingSession;
+      expect(sessionInfo.id).toBe('1077');
+      expect(sessionInfo.conversationId).toBe('deadbeef-guid');
+      expect(sessionInfo.address).toBe('+15558675309');
+      expect(sessionInfo.autoAnswer).toBe(true);
+      expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(0);
     });
 
     test('should handles double pending sessions', async () => {
@@ -627,7 +652,7 @@ describe('Client', () => {
         const { sdk } = mockApis({ withMedia: {} as MockStream });
         await sdk.initialize();
         sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
-        sdk._autoConnectSessions = false;
+        sdk._config.autoConnectSessions = false;
 
         const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
 
@@ -665,7 +690,7 @@ describe('Client', () => {
         const { sdk } = mockApis({ withMedia: {} as MockStream });
         await sdk.initialize();
         sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
-        sdk._autoConnectSessions = false;
+        sdk._config.autoConnectSessions = false;
         sdk._pendingAudioElement = mockAudioElement;
 
         const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');

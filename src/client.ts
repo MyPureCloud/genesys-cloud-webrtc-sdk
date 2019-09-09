@@ -46,15 +46,8 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   public pendingStream: MediaStream;
 
   _reduceLogPayload: boolean;
-  _accessToken: string;
-  _environment: string;
-  _wsHost: string;
-  _autoConnectSessions: boolean;
-  _customIceServersConfig: RTCConfiguration;
-  _iceTransportPolicy: RTCIceTransportPolicy;
   _logBuffer: any[];
   _logTimer: NodeJS.Timeout | null;
-  _logLevel: string;
   _connected: boolean;
   _streamingConnection: any;
   _pendingSessions: any[];
@@ -63,12 +56,23 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _backoff: any;
   _orgDetails: any;
   _personDetails: any;
-  _optOutOfTelemetry: any;
   _clientId: string;
   _jwt: string;
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
+
+  _config: {
+    accessToken: string;
+    autoConnectSessions: boolean;
+    customIceServersConfig: RTCConfiguration;
+    disableAutoAnswer: boolean;
+    environment: string;
+    iceTransportPolicy: RTCIceTransportPolicy;
+    logLevel: string;
+    optOutOfTelemetry: any;
+    wsHost: string;
+  };
 
   get connected (): boolean {
     return !!this._streamingConnection.connected;
@@ -79,27 +83,33 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   get isGuest (): boolean {
-    return !this._accessToken;
+    return !this._config.accessToken;
   }
 
   constructor (options: SdkConstructOptions) {
     super();
     validateOptions(options);
 
-    this._accessToken = options.accessToken;
+    this._config = {
+      accessToken: options.accessToken,
+      autoConnectSessions: options.autoConnectSessions !== false, // default true
+      customIceServersConfig: options.iceServers,
+      disableAutoAnswer: options.disableAutoAnswer || false, // default false
+      environment: options.environment,
+      iceTransportPolicy: options.iceTransportPolicy || 'all',
+      logLevel: options.logLevel || 'info',
+      optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
+      wsHost: options.wsHost
+    };
+
     this._orgDetails = { id: options.organizationId };
-    this._environment = options.environment;
-    this._wsHost = options.wsHost;
-    this._autoConnectSessions = options.autoConnectSessions !== false;
-    this._customIceServersConfig = options.iceServers;
-    this._iceTransportPolicy = options.iceTransportPolicy || 'all';
 
     Object.defineProperty(this, '_clientId', {
       value: uuidv4(),
       writable: false
     });
 
-    setupLogging.call(this, options.logger, options.logLevel);
+    setupLogging.call(this, options.logger, this._config.logLevel);
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
