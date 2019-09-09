@@ -8,6 +8,8 @@ export interface SdkConstructOptions {
   iceTransportPolicy?: RTCIceTransportPolicy;
   logLevel?: string;
   logger?: ILogger;
+  optOutOfTelemetry?: boolean;
+  disableAutoAnswer?: boolean;
 }
 
 export interface ILogger {

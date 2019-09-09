@@ -11,13 +11,13 @@ interface RequestApiOptions {
 
 export function buildUri (this: PureCloudWebrtcSdk, path: string, version: string = 'v2'): string {
   path = path.replace(/^\/+|\/+$/g, ''); // trim leading/trailing /
-  return `https://api.${this._environment}/api/${version}/${path}`;
+  return `https://api.${this._config.environment}/api/${version}/${path}`;
 }
 
 export function requestApi (this: PureCloudWebrtcSdk, path: string, { method, data, version, contentType, auth }: RequestApiOptions = {}): Promise<any> {
   let request = fetch[method || 'get'](buildUri.call(this, path, version));
   if (auth !== false) {
-    request.set('Authorization', `Bearer ${auth || this._accessToken}`);
+    request.set('Authorization', `Bearer ${auth || this._config.accessToken}`);
   }
   request.type(contentType || 'json');
 

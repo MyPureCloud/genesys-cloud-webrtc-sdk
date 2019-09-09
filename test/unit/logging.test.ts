@@ -26,7 +26,7 @@ describe('Logging', () => {
   describe('_log()', () => {
     test('will not notify logs if the logLevel is lower than configured', async () => {
       const { sdk } = mockApis({ withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       jest.spyOn(sdk._backoff, 'backoff'); // called in notifyLogs
       log.call(sdk, 'debug', 'test', { details: 'etc' });
@@ -37,8 +37,8 @@ describe('Logging', () => {
 
     test('will not notify logs if opted out', async () => {
       const { sdk } = mockApis({ withLogs: true });
-      sdk._logLevel = 'debug';
-      sdk._optOutOfTelemetry = true;
+      sdk._config.logLevel = 'debug';
+      sdk._config.optOutOfTelemetry = true;
       await sdk.initialize();
       jest.spyOn(sdk._backoff, 'backoff'); // called in notifyLogs
       log.call(sdk, 'warn', 'test', { details: 'etc' });
@@ -49,7 +49,7 @@ describe('Logging', () => {
 
     test('will not notify logs if guest user', async () => {
       const { sdk } = mockApis({ guestSdk: true, withLogs: true });
-      sdk._logLevel = 'debug';
+      sdk._config.logLevel = 'debug';
       await sdk.initialize({ securityCode: '123456' });
       expect(sdk._backoff).toEqual(undefined);
       log.call(sdk, 'warn', 'test', { details: 'etc' });
@@ -59,7 +59,7 @@ describe('Logging', () => {
 
     test('will buffer a log and notify it if the logLevel is gte configured', async () => {
       const { sdk } = mockApis({ withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       jest.spyOn(sdk._backoff, 'backoff').mockImplementation(() => null); // called in notifyLogs
       console.log(sdk._logBuffer[0]);
@@ -75,7 +75,7 @@ describe('Logging', () => {
   describe('_notifyLogs()', () => {
     test('will debounce logs and only send logs once at the end', async () => {
       const { sdk, sendLogs } = mockApis({ withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
 
       expect(sdk._logBuffer.length).toBe(0);
@@ -96,7 +96,7 @@ describe('Logging', () => {
   describe('_sendLogs()', () => {
     test('resets all flags related to backoff on success', async () => {
       const { sdk } = mockApis({ withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
 
       sdk._backoffActive = true;
@@ -114,7 +114,7 @@ describe('Logging', () => {
 
     test('resets the backoff on success', async () => {
       const { sdk } = mockApis({ withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
 
       const backoffResetSpy = jest.spyOn(sdk._backoff, 'reset');
@@ -129,7 +129,7 @@ describe('Logging', () => {
 
     test('should call backoff.backoff() again if there are still items in the _logBuffer after a successfull call to api', async () => {
       const { sdk } = mockApis({ withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
 
       const backoffSpy = jest.spyOn(sdk._backoff, 'backoff');
@@ -150,7 +150,7 @@ describe('Logging', () => {
       const expectedSecondLog = 'log2';
       const expectedThirdLog = 'log3';
       let { sdk } = mockApis({ failLogs: true, withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
 
       expect(sdk._logBuffer.length).toBe(0);
@@ -166,12 +166,12 @@ describe('Logging', () => {
       expect(sdk._logBuffer[1]).toBe(expectedSecondLog);
       expect(sdk._logBuffer[2]).toBe(expectedThirdLog);
       sdk._logBuffer = [];
-      sdk._optOutOfTelemetry = true;
+      sdk._config.optOutOfTelemetry = true;
     });
 
     test('increments _failedLogAttemps on failure', async () => {
       const { sdk } = mockApis({ failLogsPayload: true, withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       expect(sdk._logBuffer.length).toBe(0);
       sdk._logBuffer.push('log1');
@@ -186,7 +186,7 @@ describe('Logging', () => {
 
     test('_sendLogs | set backoffActive to false if the backoff fails', async () => {
       const { sdk, sendLogs } = mockApis({ failLogs: true, withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       log.call(sdk, 'error', 'log1');
       log.call(sdk, 'error', 'log2');
@@ -225,7 +225,7 @@ describe('Logging', () => {
 
     test('sets _reduceLogPayload to true if error status is 413 (payload too large)', async () => {
       const { sdk } = mockApis({ failLogsPayload: true, withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       expect(sdk._logBuffer.length).toBe(0);
       sdk._logBuffer.push('log1');
@@ -240,7 +240,7 @@ describe('Logging', () => {
 
     test('should reset all backoff flags and reset the backoff if api request returns error and payload was only 1 log', async () => {
       const { sdk } = mockApis({ failLogsPayload: true, withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       sdk._logBuffer.push('log1');
       const backoffResetSpy = jest.spyOn(sdk._backoff, 'reset');
@@ -256,7 +256,7 @@ describe('Logging', () => {
 
     test('set backoffActive to false if the backoff fails', async () => {
       const { sdk, sendLogs } = mockApis({ failLogs: true, withLogs: true });
-      sdk._logLevel = 'warn';
+      sdk._config.logLevel = 'warn';
       await sdk.initialize();
       log.call(sdk, 'error', 'log1');
       log.call(sdk, 'error', 'log2');

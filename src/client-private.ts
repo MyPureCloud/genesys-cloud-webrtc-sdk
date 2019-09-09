@@ -33,9 +33,9 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
 
   const connectionOptions: any = {
     signalIceConnected: true,
-    iceTransportPolicy: this._iceTransportPolicy,
-    host: this._wsHost || `wss://streaming.${this._environment}`,
-    apiHost: this._environment,
+    iceTransportPolicy: this._config.iceTransportPolicy,
+    host: this._config.wsHost || `wss://streaming.${this._config.environment}`,
+    apiHost: this._config.environment,
     logger: this.logger
   };
 
@@ -43,8 +43,8 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
     connectionOptions.jid = this._personDetails.chat.jabberId;
   }
 
-  if (this._accessToken) {
-    connectionOptions.authToken = this._accessToken;
+  if (this._config.accessToken) {
+    connectionOptions.authToken = this._config.accessToken;
   }
 
   if (this._jwt) {
@@ -284,7 +284,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   }
 
   // This may need to change for guests as more functionality is added
-  if (this._autoConnectSessions) {
+  if (this._config.autoConnectSessions) {
     session.accept();
   }
 
@@ -330,7 +330,7 @@ function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
     this._pendingSessions[sessionEvent.id] = null;
   }, 1000);
 
-  if (sessionInfo.autoAnswer) {
+  if (sessionInfo.autoAnswer && !this._config.disableAutoAnswer) {
     this.acceptPendingSession(sessionInfo.sessionId);
   }
 }
