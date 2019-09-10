@@ -61,7 +61,6 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
-
   _config: {
     accessToken: string;
     autoConnectSessions: boolean;
@@ -179,12 +178,12 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
    * Start a screen share. Currently, guest is the only supported screen share.
    *  `initialize()` must be called first.
    */
-  public startScreenShare (): Promise<void> {
+  public async startScreenShare (): Promise<void> {
     if (this.isGuest) {
-      return startGuestScreenShare.call(this);
+      await startGuestScreenShare.call(this);
+    } else {
+      throw new Error('Agent screen share is not yet supported');
     }
-
-    return Promise.reject('Agent screen share is not yet supported');
   }
 
   /**

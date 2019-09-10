@@ -64,7 +64,7 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
   // refresh turn servers every 6 hours
   this._refreshTurnServersInterval = setInterval(this._refreshTurnServers.bind(this), 6 * 60 * 60 * 1000);
   await connection.webrtcSessions.refreshIceServers();
-  log.call(this, 'info', 'PureCloud streaming client ready for WebRTC calls');
+  log.call(this, 'info', 'PureCloud streaming client ready for use');
 }
 
 /**
@@ -93,11 +93,12 @@ export function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
 export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<void> {
   const stream = await startDisplayMedia.call(this);
   const jid = parseJwt(this._jwt).data.jid;
-  this._streamingConnection.webrtcSessions.initiateRtcSession({
+  const opts = {
     stream,
     jid,
-    mediaPurpose: 'screenshare'
-  });
+    mediaPurpose: 'screenShare'
+  };
+  this._streamingConnection.webrtcSessions.initiateRtcSession(opts);
   temporaryOutboundStream = stream;
 }
 
