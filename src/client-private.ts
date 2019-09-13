@@ -285,7 +285,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   }
 
   // This may need to change for guests as more functionality is added
-  if (this._config.autoConnectSessions) {
+  if (this._config.autoConnectSessions || this.isGuest) {
     session.accept();
   }
 
@@ -331,7 +331,8 @@ function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
     this._pendingSessions[sessionEvent.id] = null;
   }, 1000);
 
-  if (sessionInfo.autoAnswer && !this._config.disableAutoAnswer) {
+  // this needs to change once we can distinguish what type of session it is
+  if ((sessionInfo.autoAnswer && !this._config.disableAutoAnswer) || this.isGuest) {
     this.acceptPendingSession(sessionInfo.sessionId);
   }
 }
