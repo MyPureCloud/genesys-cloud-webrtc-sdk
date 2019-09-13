@@ -47,8 +47,8 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
     connectionOptions.authToken = this._config.accessToken;
   }
 
-  if (this._jwt) {
-    connectionOptions.jwt = this._jwt;
+  if (this._customerData) {
+    connectionOptions.jwt = this._customerData.jwt;
   }
 
   log.call(this, 'debug', 'Streaming client WebSocket connection options', connectionOptions);
@@ -92,10 +92,12 @@ export function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
  */
 export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<void> {
   const stream = await startDisplayMedia.call(this);
-  const jid = parseJwt(this._jwt).data.jid;
+  const jid = parseJwt(this._customerData.jwt).data.jid;
   const opts = {
     stream,
     jid,
+    conversationId: this._customerData.conversation.id,
+    sourceCommunicationId: this._customerData.sourceCommunicationId,
     mediaPurpose: 'screenShare'
   };
   this._streamingConnection.webrtcSessions.initiateRtcSession(opts);

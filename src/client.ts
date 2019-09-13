@@ -57,7 +57,11 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _orgDetails: any;
   _personDetails: any;
   _clientId: string;
-  _jwt: string;
+  _customerData: {
+    conversation: { id: string };
+    sourceCommunicationId: string;
+    jwt: string;
+  };
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
@@ -143,7 +147,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
         },
         auth: false
       }).then(({ body }) => {
-        this._jwt = body.jwt;
+        this._customerData = body;
       });
 
       fetchInfoPromises.push(getJwt);
