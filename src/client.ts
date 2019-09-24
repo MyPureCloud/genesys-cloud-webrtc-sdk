@@ -45,6 +45,8 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   public logger: ILogger;
   public pendingStream: MediaStream;
 
+  readonly VERSION = '[AIV]{version}[/AIV]';
+
   _reduceLogPayload: boolean;
   _logBuffer: any[];
   _logTimer: NodeJS.Timeout | null;
@@ -184,9 +186,9 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
    */
   public async startScreenShare (): Promise<void> {
     if (this.isGuest) {
-			// TODO: When the "stop sharing screen" button is clicked,
-			//  we need to terminate the session
-			//  should we disconnect the socket once it is over?
+      // TODO: When the "stop sharing screen" button is clicked,
+      //  we need to terminate the session
+      //  should we disconnect the socket once it is over?
       await startGuestScreenShare.call(this);
     } else {
       throw new Error('Agent screen share is not yet supported');
@@ -254,15 +256,15 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   /**
    * Disconnect the streaming connection
    */
-  public disconnect (): void {
-    this._streamingConnection.disconnect();
+  public disconnect (): Promise<void> {
+    return this._streamingConnection.disconnect();
   }
 
   /**
    * Reconnect the streaming connection
    */
-  public reconnect (): void {
-    this._streamingConnection.reconnect();
+  public reconnect (): Promise<void> {
+    return this._streamingConnection.reconnect();
   }
 
   _refreshTurnServers () {

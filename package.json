@@ -46,7 +46,7 @@
     "backoff-web": "^1.0.1",
     "browserama": "^3.1.1",
     "purecloud-platform-client-v2": "^52.1.0",
-    "purecloud-streaming-client": "^9.0.2",
+    "purecloud-streaming-client": "^9.0.3",
     "safe-json-stringify": "^1.2.0",
     "superagent": "^5.1.0",
     "uuid": "^3.3.2",

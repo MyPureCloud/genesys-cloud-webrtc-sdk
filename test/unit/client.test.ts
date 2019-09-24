@@ -1,6 +1,6 @@
 import PureCloudWebrtcSdk from '../../src/client';
 import { SdkConstructOptions } from '../../src/types/interfaces';
-import { MockStream, MockSession, mockApis, timeout } from '../test-utils';
+import { MockStream, MockSession, mockApis, timeout, MockTrack } from '../test-utils';
 
 declare var global: {
   window: any,
@@ -221,7 +221,7 @@ describe('Client', () => {
       expect.assertions(1);
       sdk.startScreenShare()
         .then(() => fail('should have failed'))
-        .catch(e => expect(e).toBe('Agent screen share is not yet supported'));
+        .catch(e => expect(e).toEqual(new Error('Agent screen share is not yet supported')));
     });
 
     test('should initiate a RTC session', async () => {
@@ -235,7 +235,9 @@ describe('Client', () => {
       expect(spy).toHaveBeenCalledWith({
         stream: media,
         jid: expect.any(String),
-        mediaPurpose: 'screenshare'
+        mediaPurpose: 'screenShare',
+        conversationId: expect.any(String),
+        sourceCommunicationId: expect.any(String)
       });
     });
   });
@@ -394,7 +396,7 @@ describe('Client', () => {
 
       sdk._streamingConnection.disconnect = jest.fn();
 
-      sdk.disconnect();
+      await sdk.disconnect();
       expect(sdk._streamingConnection.disconnect).toHaveBeenCalledTimes(1);
     });
 
@@ -404,7 +406,7 @@ describe('Client', () => {
 
       sdk._streamingConnection.reconnect = jest.fn();
 
-      sdk.reconnect();
+      await sdk.reconnect();
       expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
     });
 
@@ -750,6 +752,52 @@ describe('Client', () => {
         mockSession.emit('change:active', mockSession, false);
         expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
         await sessionEnded;
+      });
+
+      test.skip('ends session if the stream stops', async () => {
+        const mockOutboundStream = new MockStream();
+        const { sdk } = mockApis({ withMedia: mockOutboundStream, guestSdk: true });
+        await sdk.initialize({ securityCode: '129034' });
+        await sdk.startScreenShare();
+
+        const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+
+        const mockSession = new MockSession();
+        mockSession.sid = random();
+        sdk._pendingSessions[mockSession.sid] = mockSession;
+        mockSession.streams = [new MockStream()];
+        jest.spyOn(mockSession, 'addStream');
+        jest.spyOn(mockSession, 'accept');
+        jest.spyOn(mockSession, 'end');
+
+        // mockSession.streams.forEach((stream: MockStream) => {
+        console.log('mockOutboundStream', mockOutboundStream);
+        const tracks = mockOutboundStream.getTracks();
+        console.log('tracks', tracks);
+        tracks.forEach((track: MockTrack) => {
+          console.log('listeners', track._listeners);
+
+          const handler = track._listeners.find(listener => listener.event === 'ended');
+          console.log(handler);
+          handler.callback();
+          mockSession.emit('terminated', mockSession);
+          mockSession.emit('change:active', mockSession, false);
+        });
+        // });
+
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
+
+        mockSession.emit('change:active', mockSession, true);
+
+        expect(mockSession.accept).toHaveBeenCalledTimes(1);
+        const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+
+        // jest.spyOn(mockSession._statsGatherer, 'collectInitialConnectionStats');
+        // expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
+
+        await sessionEnded;
+        expect(mockSession.end).toHaveBeenCalledTimes(1);
       });
     });
   });

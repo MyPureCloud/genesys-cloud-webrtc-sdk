@@ -17,7 +17,6 @@ declare var window: {
 // instance object.
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
-const PC_SCREEN_SHARE_EL_CLASS = '__pc-webrtc-screen-share';
 let temporaryOutboundStream: MediaStream;
 
 /**
@@ -104,6 +103,14 @@ export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<
   temporaryOutboundStream = stream;
 }
 
+function hasAllTracksEnded (stream: MediaStream): boolean {
+  let hasAllTracksEnded = true;
+  stream.getTracks().forEach(function (t) {
+    hasAllTracksEnded = t.readyState === 'ended' && hasAllTracksEnded;
+  });
+  return hasAllTracksEnded;
+}
+
 function hasGetDisplayMedia (): boolean {
   return !!(window.navigator && window.navigator.mediaDevices && window.navigator.mediaDevices.getDisplayMedia);
 }
@@ -160,35 +167,6 @@ function startAudioMedia (this: PureCloudWebrtcSdk): Promise<MediaStream> {
   return this.pendingStream
     ? Promise.resolve(this.pendingStream)
     : window.navigator.mediaDevices.getUserMedia({ audio: true });
-}
-
-/**
- * NOT IN USE: This function will create a video element to attach the
- *  screen share media to. This may be taken out. See `attachScreenShareMedia()`
- */
-function createScreenShareElement (): HTMLVideoElement {
-  const existing = document.querySelector(`video.${PC_SCREEN_SHARE_EL_CLASS}`);
-  if (existing) {
-    return existing as HTMLVideoElement;
-  }
-  const video = document.createElement('video');
-  video.classList.add(PC_SCREEN_SHARE_EL_CLASS);
-  document.body.append(video);
-  return video;
-}
-
-/**
- * This function will be used once agent screen share is supported.
- *  It may need a video element (or div) to be passed in to attach the
- *  stream to.
- * @param this must be called with a PureCloudWebrtcSdk as `this`
- * @param stream for the shared screen
- */
-function attachScreenShareMedia (this: PureCloudWebrtcSdk, stream: MediaStream): void {
-  let videoElement: HTMLVideoElement;
-  videoElement = createScreenShareElement();
-  videoElement.autoplay = true;
-  videoElement.srcObject = stream;
 }
 
 /**
@@ -279,6 +257,14 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   } else { /* unauthenitcated user */
     log.call(this, 'debug', 'user is a guest');
     if (temporaryOutboundStream) {
+      temporaryOutboundStream.getTracks().forEach((track: MediaStreamTrack) => {
+        track.addEventListener('ended', () => {
+          log.call(this, 'debug', 'Track ended');
+          if (hasAllTracksEnded(session._outboundStream)) {
+            session.end();
+          }
+        });
+      });
       log.call(this, 'debug', 'temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
       session.addStream(temporaryOutboundStream);
       session._outboundStream = temporaryOutboundStream;
@@ -286,9 +272,14 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     }
   }
 
-  // This may need to change for guests as more functionality is added
-  if (this._config.autoConnectSessions || this.isGuest) {
+  if (this._config.autoConnectSessions) {
     session.accept();
+  } else if (this.isGuest) {
+    // if autoConnectSessions is 'false' and we have a guest, throw an error
+    //  guests should auto accept screen share session
+    const errMsg = '`autoConnectSession` must be set to "true" for guests';
+    log.call(this, 'error', errMsg);
+    throw new Error(errMsg);
   }
 
   session.on('terminated', (session, reason) => {
