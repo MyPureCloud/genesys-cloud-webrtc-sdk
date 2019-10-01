@@ -182,10 +182,15 @@ function mockApis ({ failOrg, failUser, failStreaming, failLogs, failLogsPayload
     window.navigator.mediaDevices.getUserMedia = () => Promise.resolve(withMedia);
   }
 
+  const classList = [];
+  classList.add = (...items) => {
+    classList.push(...items);
+  };
+
   global.document = {
     createElement: sinon.stub().returns({
       addEventListener: (evt, callback) => setTimeout(callback, 10),
-      classList: { add () {} }
+      classList
     }),
     querySelector () {},
     body: {
@@ -667,7 +672,7 @@ class MockStream {
   }
 }
 
-test.serial('onSession | starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async t => {
+test.serial('onSession | starts media, attaches it to the session, attaches it to the dom, accepts the session, emits a started event, and cleans up element', async t => {
   const mockOutboundStream = new MockStream();
   const { sdk } = mockApis({ withMedia: mockOutboundStream });
   await sdk.initialize();
@@ -675,7 +680,11 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   const sandbox = sinon.createSandbox();
   sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
   const bodyAppend = new Promise(resolve => {
-    sandbox.stub(global.document.body, 'append').callsFake(resolve);
+    const orig = global.document.body.append;
+    sandbox.stub(global.document.body, 'append').callsFake((elem) => {
+      orig();
+      resolve(elem);
+    });
   });
 
   const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
@@ -701,13 +710,19 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   sinon.assert.calledOnce(global.window.navigator.mediaDevices.getUserMedia);
 
   const attachedAudioElement = await bodyAppend;
+  const removeSpy = sinon.spy();
+  attachedAudioElement.parentNode = { removeChild: removeSpy };
+  const elementClasses = Array.from(attachedAudioElement.classList);
+  t.truthy(elementClasses.includes(`call-${mockSession.sid}`), 'Audio element should include the session id in the classes');
   t.is(attachedAudioElement.srcObject, mockSession.streams[0]);
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+  sandbox.stub(global.document, 'querySelector').returns(attachedAudioElement);
   mockSession.emit('terminated', mockSession);
   mockSession.emit('change:active', mockSession, false);
   sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
   await sessionEnded;
+  sinon.assert.called(removeSpy);
 
   sandbox.restore();
 });
@@ -746,9 +761,52 @@ test.serial('onSession | uses existing media, attaches it to the session, attach
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
   mockSession._outboundStream = null;
+  global.document.querySelector.restore();
   mockSession.emit('terminated', mockSession);
   await sessionEnded;
 
+  sandbox.restore();
+});
+
+test.serial('onSession | should log warning if audio element exists and already has a srcObject', async t => {
+  const mockOutboundStream = new MockStream();
+  const mockAudioElement = { classList: { add () {} }, srcObject: {} };
+  const { sdk } = mockApis({ withMedia: {} });
+  await sdk.initialize();
+  sdk.pendingStream = mockOutboundStream;
+  sdk._autoConnectSessions = false;
+
+  const sandbox = sinon.createSandbox();
+  sandbox.spy(global.window.navigator.mediaDevices, 'getUserMedia');
+  sandbox.stub(global.document, 'querySelector').returns(mockAudioElement);
+  sandbox.stub(global.document.body, 'append');
+
+  const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
+
+  const mockSession = new MockSession();
+  sinon.stub(mockSession, 'addStream');
+  sinon.stub(mockSession, 'accept');
+  sinon.stub(sdk, '_log');
+
+  sdk._streamingConnection.emit('incomingRtcSession', mockSession);
+  await sessionStarted;
+
+  sinon.assert.calledOnce(mockSession.addStream);
+  sinon.assert.calledWithExactly(mockSession.addStream, mockOutboundStream);
+  sinon.assert.notCalled(mockSession.accept);
+  sinon.assert.notCalled(global.window.navigator.mediaDevices.getUserMedia);
+
+  const mockInboundStream = {};
+  mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+  t.is(mockAudioElement.srcObject, mockInboundStream);
+  sinon.assert.notCalled(global.document.body.append);
+
+  const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+  mockSession._outboundStream = null;
+  global.document.querySelector.restore();
+  mockSession.emit('terminated', mockSession);
+  await sessionEnded;
+  sinon.assert.calledWith(sdk._log, 'warn', 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
   sandbox.restore();
 });
 
