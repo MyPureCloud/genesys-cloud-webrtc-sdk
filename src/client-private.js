@@ -90,26 +90,48 @@ function startMedia () {
     : window.navigator.mediaDevices.getUserMedia({ audio: true });
 }
 
-function createMediaElement () {
-  const existing = document.querySelector(`.${PC_AUDIO_EL_CLASS}`);
+function getSafeIdentifier (identifier) {
+  return `call-${identifier}`;
+}
+
+function getMediaElement (sid) {
+  const safeIdentifier = getSafeIdentifier(sid);
+  return document.querySelector(`.${PC_AUDIO_EL_CLASS}${safeIdentifier}`);
+}
+
+function createMediaElement (identifier) {
+  const existing = getMediaElement(identifier);
   if (existing) {
     return existing;
   }
   const audio = document.createElement('audio');
-  audio.classList.add(PC_AUDIO_EL_CLASS);
+  audio.classList.add(PC_AUDIO_EL_CLASS, getSafeIdentifier(identifier));
   audio.style = 'visibility: hidden';
 
   document.body.append(audio);
   return audio;
 }
 
-function attachMedia (stream) {
+function cleanupMediaElement (identifier) {
+  const elem = getMediaElement(identifier);
+  if (elem) {
+    this._log('info', 'Removing media element', { identifier });
+    elem.parentNode.removeChild(elem);
+  }
+}
+
+function attachMedia (stream, sessionId) {
   let audioElement;
   if (this._pendingAudioElement) {
     audioElement = this._pendingAudioElement;
   } else {
-    audioElement = createMediaElement();
+    audioElement = createMediaElement(sessionId);
   }
+
+  if (audioElement.srcObject) {
+    this._log('warn', 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
+  }
+
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
 }
@@ -153,10 +175,10 @@ function onSession (session) {
     session._outboundStream = stream;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      attachMedia.call(this, session.streams[0]);
+      attachMedia.call(this, session.streams[0], session.sid);
     } else {
       session.on('peerStreamAdded', (session, stream) => {
-        attachMedia.call(this, stream);
+        attachMedia.call(this, stream, session.sid);
       });
     }
 
@@ -169,6 +191,8 @@ function onSession (session) {
       if (session._outboundStream) {
         session._outboundStream.getTracks().forEach(t => t.stop());
       }
+
+      cleanupMediaElement.call(this, session.sid);
       this.emit('sessionEnded', session, reason);
     });
     this.emit('sessionStarted', session);
