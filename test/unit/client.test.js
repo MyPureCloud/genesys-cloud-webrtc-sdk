@@ -788,7 +788,7 @@ test.serial('onSession | should log warning if audio element exists and already 
   sinon.stub(mockSession, 'accept');
   sinon.stub(sdk, '_log');
 
-  sdk._streamingConnection.emit('incomingRtcSession', mockSession);
+  sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
   await sessionStarted;
 
   sinon.assert.calledOnce(mockSession.addStream);
