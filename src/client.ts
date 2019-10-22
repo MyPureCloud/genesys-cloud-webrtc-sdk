@@ -1,9 +1,10 @@
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
 import { setupStreamingClient, proxyStreamingClientEvents, startGuestScreenShare } from './client-private';
-import { requestApi, rejectErr } from './utils';
+import { requestApi, throwSdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { SdkConstructOptions, ILogger } from './types/interfaces';
+import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig } from './types/interfaces';
+import { SdkErrorTypes, LogLevels } from './types/enums';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -15,16 +16,18 @@ const ENVIRONMENTS = [
 ];
 
 /**
- * Validate SDK construct options
+ * Validate SDK construct options.
+ *  Returns `null` if no errors,
+ *    returns `string` with error message if there are errors
  * @param options
  */
-function validateOptions (options: SdkConstructOptions): void {
+function validateOptions (options: ISdkConstructOptions): string | null {
   if (!options) {
-    throw new Error('Options required to create an instance of the SDK');
+    return 'Options required to create an instance of the SDK';
   }
 
   if (!options.accessToken && !options.organizationId) {
-    throw new Error('Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.');
+    return 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.';
   }
 
   if (!options.environment) {
@@ -35,12 +38,13 @@ function validateOptions (options: SdkConstructOptions): void {
   if (ENVIRONMENTS.indexOf(options.environment) === -1) {
     (options.logger || console).warn('Environment is not in the standard list. You may not be able to connect.');
   }
+  return null;
 }
 
 /**
  * SDK to interact with PureCloud WebRTC functionality
  */
-export default class PureCloudWebrtcSdk extends WildEmitter {
+export class PureCloudWebrtcSdk extends WildEmitter {
 
   public logger: ILogger;
   public pendingStream: MediaStream;
@@ -59,28 +63,14 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
   _orgDetails: any;
   _personDetails: any;
   _clientId: string;
-  _customerData: {
-    conversation: { id: string };
-    sourceCommunicationId: string;
-    jwt: string;
-  };
+  _customerData: ICustomerData;
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
   _pendingAudioElement: any;
-  _config: {
-    accessToken: string;
-    autoConnectSessions: boolean;
-    customIceServersConfig: RTCConfiguration;
-    disableAutoAnswer: boolean;
-    environment: string;
-    iceTransportPolicy: RTCIceTransportPolicy;
-    logLevel: string;
-    optOutOfTelemetry: any;
-    wsHost: string;
-  };
+  _config: ISdkConfig;
 
   get connected (): boolean {
-    return !!this._streamingConnection.connected;
+    return !!(this._streamingConnection && this._streamingConnection.connected);
   }
 
   get _sessionManager () {
@@ -91,9 +81,13 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
     return !this._config.accessToken;
   }
 
-  constructor (options: SdkConstructOptions) {
+  constructor (options: ISdkConstructOptions) {
     super();
-    validateOptions(options);
+
+    const errorMsg = validateOptions(options);
+    if (errorMsg) {
+      throwSdkError.call(this, SdkErrorTypes.invalid_options, errorMsg);
+    }
 
     this._config = {
       accessToken: options.accessToken,
@@ -102,7 +96,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
-      logLevel: options.logLevel || 'info',
+      logLevel: options.logLevel || LogLevels.info,
       optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
       wsHost: options.wsHost
     };
@@ -118,11 +112,11 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
-    this.on('error', log.bind(this, 'error'));
-    this.on('disconnected', log.bind(this, 'error', 'onDisconnected'));
-    this.on('cancelPendingSession', log.bind(this, 'warn', 'cancelPendingSession'));
-    this.on('handledPendingSession', log.bind(this, 'warn', 'handledPendingSession'));
-    this.on('trace', log.bind(this, 'debug'));
+    this.on('error', log.bind(this, LogLevels.error));
+    this.on('disconnected', log.bind(this, LogLevels.error, 'onDisconnected'));
+    this.on('cancelPendingSession', log.bind(this, LogLevels.warn, 'cancelPendingSession'));
+    this.on('handledPendingSession', log.bind(this, LogLevels.warn, 'handledPendingSession'));
+    this.on('trace', log.bind(this, LogLevels.debug));
 
     this._connected = false;
     this._streamingConnection = null;
@@ -135,48 +129,65 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
    *  - guest's need a securityCode
    * @param opts optional initialize options
    */
-  public async initialize (opts?: { securityCode?: string }): Promise<void> {
-    let fetchInfoPromises: Promise<any>[] = [];
+  public async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
+    let httpRequests: Promise<any>[] = [];
     if (this.isGuest) {
-      if (!opts || !opts.securityCode) {
-        throw new Error('Security Code is required to initialize the SDK as a guest');
-      }
-      const getJwt = requestApi.call(this, '/conversations/codes', {
-        method: 'post',
-        data: {
-          organizationId: this._orgDetails.id,
-          addCommunicationCode: opts.securityCode
-        },
-        auth: false
-      }).then(({ body }) => {
-        this._customerData = body;
-      });
+      let guestPromise: Promise<void>;
 
-      fetchInfoPromises.push(getJwt);
+      /* if there is a securityCode, fetch conversation details */
+      if (this.isSecurityCode(opts)) {
+        log.call(this, LogLevels.debug, 'Fetching conversation details via secuirty code', opts.securityCode);
+        guestPromise = requestApi.call(this, '/conversations/codes', {
+          method: 'post',
+          data: {
+            organizationId: this._orgDetails.id,
+            addCommunicationCode: opts.securityCode
+          },
+          auth: false
+        }).then(({ body }) => {
+          this._customerData = body;
+        });
+
+        /* if no securityCode, check for valid customerData */
+      } else if (this.isCustomerData(opts)) {
+        log.call(this, LogLevels.debug, 'Using customerData passed into the initialize', opts);
+        guestPromise = Promise.resolve().then(() => {
+          this._customerData = opts;
+        });
+      } else {
+        throwSdkError.call(this, SdkErrorTypes.invalid_options, '`securityCode` is required to initialize the SDK as a guest');
+      }
+
+      httpRequests.push(guestPromise);
     } else {
       const getOrg = requestApi.call(this, '/organizations/me')
         .then(({ body }) => {
           this._orgDetails = body;
-          log.call(this, 'debug', 'Organization details', body);
+          log.call(this, LogLevels.debug, 'Organization details', body);
         });
 
       const getPerson = requestApi.call(this, '/users/me')
         .then(({ body }) => {
           this._personDetails = body;
-          log.call(this, 'debug', 'Person details', body);
+          log.call(this, LogLevels.debug, 'Person details', body);
         });
 
-      fetchInfoPromises.push(getOrg);
-      fetchInfoPromises.push(getPerson);
+      httpRequests.push(getOrg);
+      httpRequests.push(getPerson);
     }
 
     try {
-      await Promise.all(fetchInfoPromises);
+      await Promise.all(httpRequests);
+    } catch (err) {
+      throwSdkError.call(this, SdkErrorTypes.http, err.message, err);
+    }
+
+    try {
       await setupStreamingClient.call(this);
       proxyStreamingClientEvents.call(this);
       this.emit('ready');
     } catch (err) {
-      rejectErr.call(this, 'Failed to initialize SDK', err);
+      throwSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
     }
   }
 
@@ -186,12 +197,9 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
    */
   public async startScreenShare (): Promise<void> {
     if (this.isGuest) {
-      // TODO: When the "stop sharing screen" button is clicked,
-      //  we need to terminate the session
-      //  should we disconnect the socket once it is over?
       await startGuestScreenShare.call(this);
     } else {
-      throw new Error('Agent screen share is not yet supported');
+      throwSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
   }
 
@@ -216,7 +224,7 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
    */
   public async endSession (opts: { id?: string, conversationId?: string } = {}): Promise<void> {
     if (!opts.id && !opts.conversationId) {
-      return Promise.reject(new Error('Unable to end session: must provide session id or conversationId.'));
+      throwSdkError.call(this, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
     }
     let session;
     if (opts.id) {
@@ -227,30 +235,33 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
     }
 
     if (!session) {
-      return Promise.reject(new Error('Unable to end session: session not connected.'));
+      throwSdkError.call(this, SdkErrorTypes.session, 'Unable to end session: session not connected.');
     }
 
     if (!session.conversationId) {
-      log.call(this, 'warn', 'Session has no conversationId. Terminating session.');
+      log.call(this, LogLevels.warn, 'Session has no conversationId. Terminating session.');
       session.end();
-      return Promise.resolve();
+      return;
     }
+
+    if (this.isGuest) {
+      session.end();
+      return;
+    }
+
     try {
-      if (!this.isGuest) {
-        const { body } = await requestApi.call(this, `/conversations/calls/${session.conversationId}`);
-        const participant = body.participants
-          .find((p: { user?: { id?: string } }) => p.user && p.user.id === this._personDetails.id);
-        await requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
-          method: 'patch',
-          data: JSON.stringify({ state: 'disconnected' })
-        });
-      } else {
-        session.end();
-      }
+      const { body } = await requestApi.call(this, `/conversations/calls/${session.conversationId}`);
+      const participant = body.participants
+        .find((p: { user?: { id?: string } }) => p.user && p.user.id === this._personDetails.id);
+      await requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
+        method: 'patch',
+        data: JSON.stringify({ state: 'disconnected' })
+      });
     } catch (err) {
       session.end();
-      throw err;
+      throwSdkError.call(this, SdkErrorTypes.http, err.message, err);
     }
+
   }
 
   /**
@@ -274,7 +285,21 @@ export default class PureCloudWebrtcSdk extends WildEmitter {
       }).catch(err => {
         const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
         this.logger.warn(errorMessage, err);
-        this.emit('error', { message: errorMessage, error: err });
+        throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
       });
   }
+
+  private isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {
+    return !!(data as { securityCode: string }).securityCode;
+  }
+
+  private isCustomerData (data: { securityCode: string } | ICustomerData): data is ICustomerData {
+    data = data as ICustomerData;
+    return !!(data
+      && data.conversation
+      && data.conversation.id
+      && data.sourceCommunicationId
+      && data.jwt);
+  }
+
 }

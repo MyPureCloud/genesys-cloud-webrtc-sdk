@@ -1,8 +1,8 @@
 import WebSocket from 'ws';
 import nock from 'nock';
 import WildEmitter from 'wildemitter';
-import PureCloudWebrtcSdk from '../src/client';
-import { SdkConstructOptions } from '../src/types/interfaces';
+import { PureCloudWebrtcSdk } from '../src/client';
+import { ISdkConstructOptions } from '../src/types/interfaces';
 
 declare var global: {
   window: any,
@@ -58,6 +58,7 @@ interface MockApiOptions {
   participantId?: string;
   withLogs?: boolean;
   guestSdk?: boolean;
+  withCustomerData?: boolean;
 }
 
 interface MockApiReturns {
@@ -143,7 +144,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     conversationId,
     participantId,
     withLogs,
-    guestSdk
+    guestSdk,
+    withCustomerData
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
@@ -216,9 +218,10 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     accessToken: guestSdk ? undefined : '1234',
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
+    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } },
+    customerData: withCustomerData ? MOCK_CUSTOMER_DATA : undefined
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
-  } as SdkConstructOptions;
+  } as ISdkConstructOptions;
 
   const sdk = new PureCloudWebrtcSdk(sdkOpts);
 

@@ -1,6 +1,8 @@
-import PureCloudWebrtcSdk from '../../src/client';
-import { SdkConstructOptions } from '../../src/types/interfaces';
+import { PureCloudWebrtcSdk } from '../../src/client';
+import { ISdkConstructOptions, ICustomerData } from '../../src/types/interfaces';
 import { MockStream, MockSession, mockApis, timeout, MockTrack } from '../test-utils';
+import { SdkError } from '../../src/utils';
+import { SDK_ERRORS } from '../../src/types/enums';
 
 declare var global: {
   window: any,
@@ -32,15 +34,21 @@ describe('Client', () => {
 
   describe('constructor()', () => {
     test('throws if options are not provided', () => {
-      expect(() => {
+      try {
         new PureCloudWebrtcSdk(null); // tslint:disable-line
-      }).toThrow();
+        fail();
+      } catch (err) {
+        expect(err).toEqual(new SdkError(SDK_ERRORS.invalidOptions, 'Options required to create an instance of the SDK'));
+      }
     });
 
     test('throws if accessToken and organizationId is not provided', () => {
-      expect(() => {
+      try {
         new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
-      }).toThrow();
+        fail();
+      } catch (err) {
+        expect(err).toEqual(new SdkError(SDK_ERRORS.invalidOptions, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
+      }
     });
 
     test('warns if environment is not valid', () => {
@@ -49,7 +57,7 @@ describe('Client', () => {
         accessToken: '1234',
         environment: 'mypurecloud.con',
         logger: { warn: jest.fn(), debug: jest.fn() } as any
-      } as SdkConstructOptions);
+      } as ISdkConstructOptions);
 
       expect(sdk2.logger.warn).toHaveBeenCalled();
     });
@@ -58,9 +66,9 @@ describe('Client', () => {
       const sdk = new PureCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.com',
-        logLevel: 'ERROR',
+        logLevel: 'error',
         logger: { warn: jest.fn(), debug: jest.fn() } as any
-      } as SdkConstructOptions);
+      } as ISdkConstructOptions);
       expect(sdk.logger.warn).toHaveBeenCalled();
     });
 
@@ -70,12 +78,12 @@ describe('Client', () => {
         environment: 'mypurecloud.com',
         logLevel: 'error',
         logger: { warn: jest.fn(), debug: jest.fn() } as any
-      } as SdkConstructOptions);
+      } as ISdkConstructOptions);
       expect(sdk.logger.warn).not.toHaveBeenCalled();
     });
 
     test('sets up options with defaults', () => {
-      const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as SdkConstructOptions);
+      const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
       expect(sdk.logger).toBe(console);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.com');
@@ -88,14 +96,20 @@ describe('Client', () => {
     test('sets up options when provided', () => {
       const logger = { debug: jest.fn() };
       const iceServers = [];
+      const customerData = {
+        conversation: { id: 'something' },
+        sourceCommunicationId: 'somethingElse',
+        jwt: 'hash'
+      };
       const sdk = new PureCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
         iceServers: iceServers as any,
         iceTransportPolicy: 'relay',
-        logger: logger as any
-      } as SdkConstructOptions);
+        logger: logger as any,
+        customerData
+      } as ISdkConstructOptions);
 
       expect(sdk.logger).toBe(logger);
       expect(sdk._config.accessToken).toBe('1234');
@@ -104,6 +118,7 @@ describe('Client', () => {
       expect(sdk._config.customIceServersConfig).toBe(iceServers);
       expect(sdk._config.iceTransportPolicy).toBe('relay');
       expect(sdk.isGuest).toBe(false);
+      expect(sdk._customerData).toEqual(customerData);
     });
   });
 
@@ -126,45 +141,63 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeTruthy();
     }, 15 * 1000);
 
-    test('throws error for guest users without an security code', async () => {
+    test('should use the customerData if present and no securityCode passed in', async () => {
+      const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true, withCustomerData: true });
+      await sdk.initialize();
+      expect(sdk._streamingConnection).toBeTruthy();
+    }, 15 * 1000);
+
+    test('throws error for guest users without a security code', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       try {
         await sdk.initialize();
-        fail('should have thrown');
+        fail();
       } catch (e) {
-        expect(e.message).toBe('Security Code is required to initialize the SDK as a guest');
+        expect(e).toEqual(new SdkError(SDK_ERRORS.initialization, '`securityCode` is required to initialize the SDK as a guest'));
       }
     }, 15 * 1000);
 
-    test('throws if getting the jwt fails', done => {
+    test('throws if getting the jwt fails', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true, failSecurityCode: true });
 
-      return sdk.initialize({ securityCode: '12345' })
-        .then(() => done.fail())
-        .catch(() => done());
+      try {
+        await sdk.initialize({ securityCode: '12345' });
+        fail();
+      } catch (e) {
+        expect(e.type).toBe(SDK_ERRORS.http);
+      }
     });
 
-    test('throws if getting the org fails', done => {
+    test('throws if getting the org fails', async () => {
       const { sdk } = mockApis({ failOrg: true });
 
-      return sdk.initialize()
-        .then(() => done.fail())
-        .catch(() => done());
+      try {
+        await sdk.initialize();
+        fail();
+      } catch (e) {
+        expect(e.type).toBe(SDK_ERRORS.http);
+      }
     });
 
-    test('throws if getting the user fails', done => {
+    test('throws if getting the user fails', async () => {
       const { sdk } = mockApis({ failUser: true });
 
-      return sdk.initialize()
-        .then(t => done.fail())
-        .catch(() => done());
+      try {
+        await sdk.initialize();
+        fail();
+      } catch (e) {
+        expect(e.type).toBe(SDK_ERRORS.http);
+      }
     });
 
-    test('throws if setting up streaming connection fails', async done => {
+    test('throws if setting up streaming connection fails', async () => {
       const { sdk } = mockApis({ failStreaming: true });
-      sdk.initialize()
-        .then(() => fail())
-        .catch(() => done());
+      try {
+        await sdk.initialize();
+        fail();
+      } catch (e) {
+        expect(e.type).toBe(SDK_ERRORS.initialization);
+      }
     }, 15 * 1000);
 
     test('sets up event proxies', async () => {
@@ -269,7 +302,60 @@ describe('Client', () => {
   });
 
   describe('endSession()', () => {
-    test('requests the conversation then patches the participant to disconnected', async () => {
+    test('rejects if not provided either an id or a conversationId', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+      try {
+        await sdk.endSession({});
+        fail();
+      } catch (e) {
+        expect(e).toEqual(new SdkError(SDK_ERRORS.session, 'Unable to end session: must provide session id or conversationId.'));
+      }
+    });
+
+    test('should throw if it cannot find the session', async () => {
+      const { sdk } = mockApis({});
+      const sessionId = random();
+      await sdk.initialize();
+      try {
+        await sdk.endSession({ id: sessionId });
+      } catch (e) {
+        expect(e).toEqual(new SdkError(SDK_ERRORS.session, 'Unable to end session: session not connected.'));
+      }
+    });
+
+    test('terminates the session if the existing session has no conversationId', async () => {
+      const sessionId = random();
+      const conversationId = random();
+      const participantId = random();
+      const { sdk, getConversation } = mockApis({ conversationId, participantId });
+      await sdk.initialize();
+
+      const mockSession = { id: sessionId, end: jest.fn() };
+      sdk._sessionManager.sessions = {};
+      sdk._sessionManager.sessions[sessionId] = mockSession;
+      await sdk.endSession({ id: sessionId });
+      expect(() => getConversation.done()).toThrow();
+      expect(mockSession.end).toHaveBeenCalledTimes(1);
+    });
+
+    test('should end the session for guests', async () => {
+      const sessionId = random();
+      const conversationId = random();
+      const participantId = random();
+      const { sdk, getConversation, getJwt } = mockApis({ conversationId, participantId, guestSdk: true });
+      await sdk.initialize({ securityCode: 'adf' });
+
+      const mockSession = { id: sessionId, end: jest.fn() };
+      sdk._sessionManager.sessions = {};
+      sdk._sessionManager.sessions[sessionId] = mockSession;
+      await sdk.endSession({ id: sessionId, conversationId });
+      getJwt.done();
+      expect(() => getConversation.done()).toThrow();
+      expect(mockSession.end).toHaveBeenCalledTimes(1);
+    });
+
+    test('requests the conversation then patches the participant to "disconnected"', async () => {
       const sessionId = random();
       const conversationId = random();
       const participantId = PARTICIPANT_ID;
@@ -286,6 +372,26 @@ describe('Client', () => {
       expect(mockSession.end).not.toHaveBeenCalled();
     });
 
+    test('ends the session and rejects if there is an error fetching the conversation', async () => {
+      const sessionId = random();
+      const conversationId = random();
+      const participantId = random();
+      const { sdk } = mockApis({ conversationId, participantId });
+      await sdk.initialize();
+
+      const mockSession = { id: sessionId, conversationId, end: jest.fn() };
+      sdk._sessionManager.sessions = {};
+      sdk._sessionManager.sessions[sessionId] = mockSession;
+
+      try {
+        await sdk.endSession({ id: sessionId });
+        fail();
+      } catch (e) {
+        expect(mockSession.end).toHaveBeenCalled();
+        expect(e.type).toBe(SDK_ERRORS.http);
+      }
+    });
+
     test('ends the session directly if patching the conversation fails', async () => {
       const sessionId = random();
       const conversationId = random();
@@ -297,95 +403,15 @@ describe('Client', () => {
       sdk._sessionManager.sessions = {};
       sdk._sessionManager.sessions[sessionId] = mockSession;
 
-      await sdk.endSession({ id: sessionId })
-        .catch(() => {
-          getConversation.done();
-          patchConversation.done();
-          expect(mockSession.end).toHaveBeenCalled();
-        });
-    });
-
-    test('rejects if not provided either an id or a conversationId', async done => {
-      const { sdk } = mockApis();
-      await sdk.initialize();
-      await sdk.endSession({})
-        .then(() => {
-          done.fail();
-        })
-        .catch(err => {
-          expect(err).toBeTruthy();
-          done();
-        });
-    });
-
-    test('rejects if not provided anything', async done => {
-      const { sdk } = mockApis();
-      await sdk.initialize();
-      await sdk.endSession()
-        .then(() => {
-          done.fail();
-        })
-        .catch(err => {
-          expect(err).toBeTruthy();
-          done();
-        });
-    });
-
-    test('rejects if the session is not found', async done => {
-      const sessionId = random();
-      const conversationId = random();
-      const participantId = PARTICIPANT_ID;
-      const { sdk } = mockApis({ conversationId, participantId });
-      await sdk.initialize();
-
-      const mockSession = { id: random(), conversationId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[mockSession.id] = mockSession;
-
-      await sdk.endSession({ id: sessionId })
-        .then(() => {
-          done.fail();
-        })
-        .catch(err => {
-          expect(err).toBeTruthy();
-          done();
-        });
-    });
-
-    test('ends the session and rejects if there is an error fetching the conversation', async done => {
-      const sessionId = random();
-      const conversationId = random();
-      const participantId = random();
-      const { sdk } = mockApis({ conversationId, participantId });
-      await sdk.initialize();
-
-      const mockSession = { id: sessionId, conversationId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
-
-      await sdk.endSession({ id: sessionId })
-        .then(() => {
-          done.fail();
-        })
-        .catch(err => {
-          expect(err).toBeTruthy();
-          done();
-        });
-    });
-
-    test('terminates the session of the existing session has no conversationId', async () => {
-      const sessionId = random();
-      const conversationId = random();
-      const participantId = random();
-      const { sdk, getConversation } = mockApis({ conversationId, participantId });
-      await sdk.initialize();
-
-      const mockSession = { id: sessionId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
-      await sdk.endSession({ id: sessionId });
-      expect(() => getConversation.done()).toThrow();
-      expect(mockSession.end).toHaveBeenCalledTimes(1);
+      try {
+        await sdk.endSession({ id: sessionId });
+        fail();
+      } catch (e) {
+        getConversation.done();
+        patchConversation.done();
+        expect(mockSession.end).toHaveBeenCalled();
+        expect(e.type).toBe(SDK_ERRORS.http);
+      }
     });
   });
 
@@ -828,6 +854,79 @@ describe('Client', () => {
       await sdk._refreshTurnServers();
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       await promise;
+    }, 15 * 1000);
+  });
+
+  describe('_hasValidCustomerData()', () => {
+    test('should return true if valid customerData is present', () => {
+      const sdk = new PureCloudWebrtcSdk({
+        environment: 'pc.com',
+        organizationId: 'pc-123',
+        customerData: {
+          jwt: 'JWT',
+          sourceCommunicationId: 'source-123',
+          conversation: { id: 'convo-123' }
+        }
+      });
+      expect(sdk['_hasValidCustomerData']()).toBe(true);
     });
+
+    test('should return false if no customerData is present', () => {
+      const sdk = new PureCloudWebrtcSdk({
+        environment: 'pc.com',
+        organizationId: 'pc-123'
+      });
+      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    });
+
+    test('should return false if no conversation is missing from customerData', () => {
+      const sdk = new PureCloudWebrtcSdk({
+        environment: 'pc.com',
+        organizationId: 'pc-123',
+        customerData: {
+          jwt: 'JWT',
+          sourceCommunicationId: 'source-123'
+        } as ICustomerData
+      });
+      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    });
+
+    test('should return false if no conversation.id is missing from customerData', () => {
+      const sdk = new PureCloudWebrtcSdk({
+        environment: 'pc.com',
+        organizationId: 'pc-123',
+        customerData: {
+          jwt: 'JWT',
+          sourceCommunicationId: 'source-123',
+          conversation: {}
+        } as ICustomerData
+      });
+      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    });
+
+    test('should return false if no jwt is missing from customerData', () => {
+      const sdk = new PureCloudWebrtcSdk({
+        environment: 'pc.com',
+        organizationId: 'pc-123',
+        customerData: {
+          sourceCommunicationId: 'source-123',
+          conversation: { id: 'convo-123' }
+        } as ICustomerData
+      });
+      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    });
+
+    test('should return false if no sourceCommunicationId is missing from customerData', () => {
+      const sdk = new PureCloudWebrtcSdk({
+        environment: 'pc.com',
+        organizationId: 'pc-123',
+        customerData: {
+          jwt: 'JWT',
+          conversation: { id: 'convo-123' }
+        } as ICustomerData
+      });
+      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    });
+
   });
 });

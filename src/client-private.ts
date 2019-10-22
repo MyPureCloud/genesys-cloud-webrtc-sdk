@@ -1,9 +1,10 @@
-import PureCloudWebrtcSdk from './client';
+import { PureCloudWebrtcSdk } from './client';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import StreamingClient from 'purecloud-streaming-client';
 import browserama from 'browserama';
 import { log } from './logging';
-import { parseJwt } from './utils';
+import { parseJwt, throwSdkError } from './utils';
+import { LogLevels, SdkErrorTypes } from './types/enums';
 
 declare var window: {
   navigator: {
@@ -17,7 +18,8 @@ declare var window: {
 // instance object.
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
-let temporaryOutboundStream: MediaStream;
+let _temporaryOutboundStream: MediaStream;
+let _hasTransceiverFunctionality: boolean | null = null;
 
 /**
  * Establish the connection with the streaming client.
@@ -46,11 +48,11 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
     connectionOptions.authToken = this._config.accessToken;
   }
 
-  if (this._customerData) {
+  if (this._customerData && this._customerData.jwt) {
     connectionOptions.jwt = this._customerData.jwt;
   }
 
-  log.call(this, 'debug', 'Streaming client WebSocket connection options', connectionOptions);
+  log.call(this, LogLevels.debug, 'Streaming client WebSocket connection options', connectionOptions);
   this._hasConnected = false;
 
   const connection = new StreamingClient(connectionOptions);
@@ -58,12 +60,12 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
 
   await connection.connect();
   this.emit('connected', { reconnect: this._hasConnected });
-  log.call(this, 'info', 'PureCloud streaming client connected', { reconnect: this._hasConnected });
+  log.call(this, LogLevels.info, 'PureCloud streaming client connected', { reconnect: this._hasConnected });
   this._hasConnected = true;
   // refresh turn servers every 6 hours
   this._refreshTurnServersInterval = setInterval(this._refreshTurnServers.bind(this), 6 * 60 * 60 * 1000);
   await connection.webrtcSessions.refreshIceServers();
-  log.call(this, 'info', 'PureCloud streaming client ready for use');
+  log.call(this, LogLevels.info, 'PureCloud streaming client ready for use');
 }
 
 /**
@@ -100,7 +102,24 @@ export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<
     mediaPurpose: 'screenShare'
   };
   this._streamingConnection.webrtcSessions.initiateRtcSession(opts);
-  temporaryOutboundStream = stream;
+  _temporaryOutboundStream = stream;
+}
+
+function checkHasTransceiverFunctionality (): boolean {
+  if (_hasTransceiverFunctionality !== null) {
+    return _hasTransceiverFunctionality;
+  }
+
+  try {
+    // make sure we are capable to use tracks
+    const dummyRtcPeerConnection = new RTCPeerConnection();
+    // if this function exists we should be good
+    _hasTransceiverFunctionality = !!dummyRtcPeerConnection.getTransceivers;
+  } catch (err) {
+    log.call(this, LogLevels.info, 'RTCPeerConnection.getTranceivers capability check failed.');
+    _hasTransceiverFunctionality = false;
+  }
+  return _hasTransceiverFunctionality;
 }
 
 function hasAllTracksEnded (stream: MediaStream): boolean {
@@ -120,7 +139,7 @@ function getScreenShareConstraints (): MediaStreamConstraints {
     if (hasGetDisplayMedia()) {
       return {
         audio: false,
-        video: true // || { displaySurface: 'monitor' }
+        video: true
       };
     }
     return {
@@ -208,7 +227,7 @@ function attachAudioMedia (this: PureCloudWebrtcSdk, stream: MediaStream) {
  */
 async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   try {
-    log.call(this, 'info', 'onSession', session);
+    log.call(this, LogLevels.info, 'onSession', session);
   } catch (e) {
     // don't let log errors ruin a session
   }
@@ -226,24 +245,24 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
   });
   session._statsGatherer.on('stats', (data) => {
     data.conversationId = session.conversationId;
-    log.call(this, 'info', 'session:stats', data);
+    log.call(this, LogLevels.info, 'session:stats', data);
   });
   session._statsGatherer.on('traces', (data) => {
     data.conversationId = session.conversationId;
-    log.call(this, 'warn', 'session:trace', data);
+    log.call(this, LogLevels.warn, 'session:trace', data);
   });
   session.on('change:active', (session, active) => {
     if (active) {
       session._statsGatherer.collectInitialConnectionStats();
     }
-    log.call(this, 'info', 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
+    log.call(this, LogLevels.info, 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
   });
 
   if (!this.isGuest) { /* authenitcated user */
     // Need to add logic here to determine the type of session
     // Currently, we always assume agents can only have softphone session in the sdk
     const stream = await startAudioMedia.call(this);
-    log.call(this, 'debug', 'onAudioMediaStarted');
+    log.call(this, LogLevels.debug, 'onAudioMediaStarted');
     session.addStream(stream);
     session._outboundStream = stream;
 
@@ -255,20 +274,34 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
       });
     }
   } else { /* unauthenitcated user */
-    log.call(this, 'debug', 'user is a guest');
-    if (temporaryOutboundStream) {
-      temporaryOutboundStream.getTracks().forEach((track: MediaStreamTrack) => {
+    log.call(this, LogLevels.debug, 'user is a guest');
+    if (_temporaryOutboundStream) {
+      _temporaryOutboundStream.getTracks().forEach((track: MediaStreamTrack) => {
         track.addEventListener('ended', () => {
-          log.call(this, 'debug', 'Track ended');
+          log.call(this, LogLevels.debug, 'Track ended');
           if (hasAllTracksEnded(session._outboundStream)) {
             session.end();
           }
         });
       });
-      log.call(this, 'debug', 'temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
-      session.addStream(temporaryOutboundStream);
-      session._outboundStream = temporaryOutboundStream;
-      temporaryOutboundStream = null;
+      log.call(this, LogLevels.debug, '_temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
+
+      if (checkHasTransceiverFunctionality()) {
+        log.call(this, LogLevels.info, 'Using track based actions');
+        _temporaryOutboundStream.getTracks().forEach(t => {
+          log.call(this, LogLevels.debug, 'Adding track to session', t);
+          session.addTrack(t);
+        });
+      } else {
+        log.call(this, LogLevels.info, 'Using stream based actions.');
+        log.call(this, LogLevels.debug, 'Adding stream to session', _temporaryOutboundStream);
+        session.addStream(_temporaryOutboundStream);
+      }
+
+      session._outboundStream = _temporaryOutboundStream;
+      _temporaryOutboundStream = null;
+    } else {
+      log.call(this, LogLevels.warn, 'There is no `_temporaryOutboundStream` for guest user');
     }
   }
 
@@ -278,12 +311,12 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     // if autoConnectSessions is 'false' and we have a guest, throw an error
     //  guests should auto accept screen share session
     const errMsg = '`autoConnectSession` must be set to "true" for guests';
-    log.call(this, 'error', errMsg);
-    throw new Error(errMsg);
+    log.call(this, LogLevels.error, errMsg);
+    throwSdkError.call(this, SdkErrorTypes.generic, errMsg);
   }
 
   session.on('terminated', (session, reason) => {
-    log.call(this, 'info', 'onSessionTerminated', { conversationId: session.conversationId, reason });
+    log.call(this, LogLevels.info, 'onSessionTerminated', { conversationId: session.conversationId, reason });
     if (session._outboundStream) {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     }
@@ -298,7 +331,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
  * @param sessionInfo pending webrtc-session info
  */
 function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
-  log.call(this, 'info', 'onPendingSession', sessionInfo);
+  log.call(this, LogLevels.info, 'onPendingSession', sessionInfo);
   const sessionEvent = {
     id: sessionInfo.sessionId,
     autoAnswer: sessionInfo.autoAnswer,
@@ -312,7 +345,7 @@ function onPendingSession (this: PureCloudWebrtcSdk, sessionInfo) {
   });
 
   if (existingSessionId) {
-    log.call(this, 'info', 'duplicate session invitation, ignoring', sessionInfo);
+    log.call(this, LogLevels.info, 'duplicate session invitation, ignoring', sessionInfo);
     return;
   }
 
