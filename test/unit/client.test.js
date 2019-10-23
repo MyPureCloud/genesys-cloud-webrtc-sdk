@@ -713,7 +713,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   const removeSpy = sinon.spy();
   attachedAudioElement.parentNode = { removeChild: removeSpy };
   const elementClasses = Array.from(attachedAudioElement.classList);
-  t.truthy(elementClasses.includes(`call-${mockSession.sid}`), 'Audio element should include the session id in the classes');
+  t.truthy(elementClasses.includes(`sid-${mockSession.sid}`), 'Audio element should include the session id in the classes');
   t.is(attachedAudioElement.srcObject, mockSession.streams[0]);
 
   const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
@@ -722,7 +722,7 @@ test.serial('onSession | starts media, attaches it to the session, attaches it t
   mockSession.emit('change:active', mockSession, false);
   sinon.assert.calledOnce(mockSession._statsGatherer.collectInitialConnectionStats);
   await sessionEnded;
-  sinon.assert.called(removeSpy);
+  sinon.assert.calledWith(removeSpy, attachedAudioElement);
 
   sandbox.restore();
 });
