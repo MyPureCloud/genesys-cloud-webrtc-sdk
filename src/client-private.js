@@ -65,12 +65,12 @@ function startMedia () {
 }
 
 function getSafeIdentifier (identifier) {
-  return `call-${identifier}`;
+  return `sid-${identifier}`;
 }
 
 function getMediaElement (sid) {
   const safeIdentifier = getSafeIdentifier(sid);
-  return document.querySelector(`.${PC_AUDIO_EL_CLASS}${safeIdentifier}`);
+  return document.querySelector(`.${PC_AUDIO_EL_CLASS}.${safeIdentifier}`);
 }
 
 function createMediaElement (identifier) {
@@ -88,10 +88,13 @@ function createMediaElement (identifier) {
 
 function cleanupMediaElement (identifier) {
   const elem = getMediaElement(identifier);
-  if (elem) {
-    this._log('info', 'Removing media element', { identifier });
-    elem.parentNode.removeChild(elem);
+  if (!elem) {
+    this._log('info', 'failed to find audio element for removal', { identifier });
+    return;
   }
+
+  this._log('info', 'Removing media element', { identifier });
+  elem.parentNode.removeChild(elem);
 }
 
 function attachMedia (stream, sessionId) {
