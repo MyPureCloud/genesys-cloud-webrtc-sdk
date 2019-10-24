@@ -105,7 +105,7 @@ export async function startGuestScreenShare (this: PureCloudWebrtcSdk): Promise<
   _temporaryOutboundStream = stream;
 }
 
-function checkHasTransceiverFunctionality (): boolean {
+function checkHasTransceiverFunctionality (this: PureCloudWebrtcSdk): boolean {
   if (_hasTransceiverFunctionality !== null) {
     return _hasTransceiverFunctionality;
   }
@@ -286,7 +286,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
       });
       log.call(this, LogLevels.debug, '_temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
 
-      if (checkHasTransceiverFunctionality()) {
+      if (checkHasTransceiverFunctionality.call(this)) {
         log.call(this, LogLevels.info, 'Using track based actions');
         _temporaryOutboundStream.getTracks().forEach(t => {
           log.call(this, LogLevels.debug, 'Adding track to session', t);

@@ -2,7 +2,7 @@ import { PureCloudWebrtcSdk } from '../../src/client';
 import { ISdkConstructOptions, ICustomerData } from '../../src/types/interfaces';
 import { MockStream, MockSession, mockApis, timeout, MockTrack } from '../test-utils';
 import { SdkError } from '../../src/utils';
-import { SDK_ERRORS } from '../../src/types/enums';
+import { SdkErrorTypes, LogLevels } from '../../src/types/enums';
 
 declare var global: {
   window: any,
@@ -38,7 +38,7 @@ describe('Client', () => {
         new PureCloudWebrtcSdk(null); // tslint:disable-line
         fail();
       } catch (err) {
-        expect(err).toEqual(new SdkError(SDK_ERRORS.invalidOptions, 'Options required to create an instance of the SDK'));
+        expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Options required to create an instance of the SDK'));
       }
     });
 
@@ -47,7 +47,7 @@ describe('Client', () => {
         new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
         fail();
       } catch (err) {
-        expect(err).toEqual(new SdkError(SDK_ERRORS.invalidOptions, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
+        expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
       }
     });
 
@@ -66,7 +66,7 @@ describe('Client', () => {
       const sdk = new PureCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.com',
-        logLevel: 'error',
+        logLevel: 'error__' as LogLevels,
         logger: { warn: jest.fn(), debug: jest.fn() } as any
       } as ISdkConstructOptions);
       expect(sdk.logger.warn).toHaveBeenCalled();
@@ -96,19 +96,13 @@ describe('Client', () => {
     test('sets up options when provided', () => {
       const logger = { debug: jest.fn() };
       const iceServers = [];
-      const customerData = {
-        conversation: { id: 'something' },
-        sourceCommunicationId: 'somethingElse',
-        jwt: 'hash'
-      };
       const sdk = new PureCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
         iceServers: iceServers as any,
         iceTransportPolicy: 'relay',
-        logger: logger as any,
-        customerData
+        logger: logger as any
       } as ISdkConstructOptions);
 
       expect(sdk.logger).toBe(logger);
@@ -118,7 +112,6 @@ describe('Client', () => {
       expect(sdk._config.customIceServersConfig).toBe(iceServers);
       expect(sdk._config.iceTransportPolicy).toBe('relay');
       expect(sdk.isGuest).toBe(false);
-      expect(sdk._customerData).toEqual(customerData);
     });
   });
 
@@ -141,10 +134,23 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeTruthy();
     }, 15 * 1000);
 
-    test('should use the customerData if present and no securityCode passed in', async () => {
-      const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true, withCustomerData: true });
-      await sdk.initialize();
+    test('should use the customerData when passed in', async () => {
+      const { sdk, mockCustomerData } = mockApis({ withMedia: new MockStream(), guestSdk: true, withCustomerData: true });
+
+      await sdk.initialize(mockCustomerData);
       expect(sdk._streamingConnection).toBeTruthy();
+    }, 15 * 1000);
+
+    test('should throw if invalid customerData is passed in', async () => {
+      const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
+
+      const invalidCustomerData = {};
+      try {
+        await sdk.initialize(invalidCustomerData as ICustomerData);
+        fail('should have thrown');
+      } catch (e) {
+        expect(e).toBeTruthy();
+      }
     }, 15 * 1000);
 
     test('throws error for guest users without a security code', async () => {
@@ -153,7 +159,7 @@ describe('Client', () => {
         await sdk.initialize();
         fail();
       } catch (e) {
-        expect(e).toEqual(new SdkError(SDK_ERRORS.initialization, '`securityCode` is required to initialize the SDK as a guest'));
+        expect(e).toEqual(new SdkError(SdkErrorTypes.initialization, '`securityCode` is required to initialize the SDK as a guest'));
       }
     }, 15 * 1000);
 
@@ -164,7 +170,7 @@ describe('Client', () => {
         await sdk.initialize({ securityCode: '12345' });
         fail();
       } catch (e) {
-        expect(e.type).toBe(SDK_ERRORS.http);
+        expect(e.type).toBe(SdkErrorTypes.http);
       }
     });
 
@@ -175,7 +181,7 @@ describe('Client', () => {
         await sdk.initialize();
         fail();
       } catch (e) {
-        expect(e.type).toBe(SDK_ERRORS.http);
+        expect(e.type).toBe(SdkErrorTypes.http);
       }
     });
 
@@ -186,7 +192,7 @@ describe('Client', () => {
         await sdk.initialize();
         fail();
       } catch (e) {
-        expect(e.type).toBe(SDK_ERRORS.http);
+        expect(e.type).toBe(SdkErrorTypes.http);
       }
     });
 
@@ -196,7 +202,7 @@ describe('Client', () => {
         await sdk.initialize();
         fail();
       } catch (e) {
-        expect(e.type).toBe(SDK_ERRORS.initialization);
+        expect(e.type).toBe(SdkErrorTypes.initialization);
       }
     }, 15 * 1000);
 
@@ -309,7 +315,7 @@ describe('Client', () => {
         await sdk.endSession({});
         fail();
       } catch (e) {
-        expect(e).toEqual(new SdkError(SDK_ERRORS.session, 'Unable to end session: must provide session id or conversationId.'));
+        expect(e).toEqual(new SdkError(SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.'));
       }
     });
 
@@ -320,7 +326,7 @@ describe('Client', () => {
       try {
         await sdk.endSession({ id: sessionId });
       } catch (e) {
-        expect(e).toEqual(new SdkError(SDK_ERRORS.session, 'Unable to end session: session not connected.'));
+        expect(e).toEqual(new SdkError(SdkErrorTypes.session, 'Unable to end session: session not connected.'));
       }
     });
 
@@ -388,7 +394,7 @@ describe('Client', () => {
         fail();
       } catch (e) {
         expect(mockSession.end).toHaveBeenCalled();
-        expect(e.type).toBe(SDK_ERRORS.http);
+        expect(e.type).toBe(SdkErrorTypes.http);
       }
     });
 
@@ -410,8 +416,20 @@ describe('Client', () => {
         getConversation.done();
         patchConversation.done();
         expect(mockSession.end).toHaveBeenCalled();
-        expect(e.type).toBe(SDK_ERRORS.http);
+        expect(e.type).toBe(SdkErrorTypes.http);
       }
+    });
+  });
+
+  describe('reconnect()', () => {
+    test('proxies the call to the streaming connection', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      sdk._streamingConnection.reconnect = jest.fn();
+
+      await sdk.reconnect();
+      expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -426,17 +444,7 @@ describe('Client', () => {
       expect(sdk._streamingConnection.disconnect).toHaveBeenCalledTimes(1);
     });
 
-    test('reconnect | proxies the call to the streaming connection', async () => {
-      const { sdk } = mockApis();
-      await sdk.initialize();
-
-      sdk._streamingConnection.reconnect = jest.fn();
-
-      await sdk.reconnect();
-      expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
-    });
-
-    test('_customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
+    test('_config.customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
       sdk._config.customIceServersConfig = [{ something: 'junk' }] as RTCConfiguration;
@@ -840,7 +848,7 @@ describe('Client', () => {
       await sdk._refreshTurnServers();
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshTurnServersInterval).toBeTruthy();
-    });
+    }, 15 * 1000);
 
     test('emits an error if there is an error refreshing turn servers', async () => {
       const { sdk } = mockApis();
@@ -851,82 +859,93 @@ describe('Client', () => {
 
       const promise = new Promise(resolve => sdk.on('error', resolve));
       jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.reject(new Error('fail')));
-      await sdk._refreshTurnServers();
+      try {
+        await sdk._refreshTurnServers();
+        fail('should have thrown');
+      } catch (e) {
+        expect(e).toBeTruthy();
+      }
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       await promise;
     }, 15 * 1000);
   });
 
-  describe('_hasValidCustomerData()', () => {
+  describe('isCustomerData()', () => {
+    let sdk: PureCloudWebrtcSdk;
+    let isCustomerData: PureCloudWebrtcSdk['isCustomerData'];
+
+    beforeEach(() => {
+      sdk = mockApis().sdk;
+      isCustomerData = sdk['isCustomerData'];
+    });
+
     test('should return true if valid customerData is present', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        environment: 'pc.com',
-        organizationId: 'pc-123',
-        customerData: {
-          jwt: 'JWT',
-          sourceCommunicationId: 'source-123',
-          conversation: { id: 'convo-123' }
-        }
-      });
-      expect(sdk['_hasValidCustomerData']()).toBe(true);
+      const customerData = {
+        jwt: 'JWT',
+        sourceCommunicationId: 'source-123',
+        conversation: { id: 'convo-123' }
+      };
+      expect(isCustomerData(customerData)).toBe(true);
     });
 
     test('should return false if no customerData is present', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        environment: 'pc.com',
-        organizationId: 'pc-123'
-      });
-      expect(sdk['_hasValidCustomerData']()).toBe(false);
+      let customerData: ICustomerData;
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if no conversation is missing from customerData', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        environment: 'pc.com',
-        organizationId: 'pc-123',
-        customerData: {
-          jwt: 'JWT',
-          sourceCommunicationId: 'source-123'
-        } as ICustomerData
-      });
-      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    test('should return false if conversation is missing from customerData', () => {
+      const customerData = {
+        jwt: 'string',
+        sourceCommunicationId: 'commId'
+      } as ICustomerData;
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if no conversation.id is missing from customerData', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        environment: 'pc.com',
-        organizationId: 'pc-123',
-        customerData: {
-          jwt: 'JWT',
-          sourceCommunicationId: 'source-123',
-          conversation: {}
-        } as ICustomerData
-      });
-      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    test('should return false if conversation.id is missing from customerData', () => {
+      const customerData = {
+        conversation: {},
+        jwt: 'string',
+        sourceCommunicationId: 'commId'
+      } as ICustomerData;
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if no jwt is missing from customerData', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        environment: 'pc.com',
-        organizationId: 'pc-123',
-        customerData: {
-          sourceCommunicationId: 'source-123',
-          conversation: { id: 'convo-123' }
-        } as ICustomerData
-      });
-      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    test('should return false if jwt is missing from customerData', () => {
+      const customerData = {
+        conversation: { id: 'convoId' },
+        sourceCommunicationId: 'commId'
+      } as ICustomerData;
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if no sourceCommunicationId is missing from customerData', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        environment: 'pc.com',
-        organizationId: 'pc-123',
-        customerData: {
-          jwt: 'JWT',
-          conversation: { id: 'convo-123' }
-        } as ICustomerData
-      });
-      expect(sdk['_hasValidCustomerData']()).toBe(false);
+    test('should return false if sourceCommunicationId is missing from customerData', () => {
+      const customerData = {
+        conversation: { id: 'convoId' },
+        jwt: 'string'
+      } as ICustomerData;
+      expect(isCustomerData(customerData)).toBe(false);
+    });
+  });
+
+  describe('isSecurityCode()', () => {
+    let sdk: PureCloudWebrtcSdk;
+    let isSecurityCode: PureCloudWebrtcSdk['isSecurityCode'];
+
+    beforeEach(() => {
+      sdk = mockApis().sdk;
+      isSecurityCode = sdk['isSecurityCode'];
     });
 
+    test('should return true if object has securityKey', () => {
+      expect(isSecurityCode({ securityCode: '123456' })).toBe(true);
+    });
+
+    test('should return false if object is missing securityKey', () => {
+      expect(isSecurityCode({ key: 'prop' } as any)).toBe(false);
+    });
+
+    test('should return false if nothing is passed in', () => {
+      expect(isSecurityCode(undefined as any)).toBe(false);
+    });
   });
 });

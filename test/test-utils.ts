@@ -2,12 +2,26 @@ import WebSocket from 'ws';
 import nock from 'nock';
 import WildEmitter from 'wildemitter';
 import { PureCloudWebrtcSdk } from '../src/client';
-import { ISdkConstructOptions } from '../src/types/interfaces';
+import { ISdkConstructOptions, ICustomerData } from '../src/types/interfaces';
+import crypto from 'crypto';
 
 declare var global: {
   window: any,
-  document: any
+  document: any,
+  crypto: any
 } & NodeJS.Global;
+
+// polyfill window.getRandomValues() for node (because we are using jest)
+Object.defineProperty(global, 'crypto', {
+  value: {
+    getRandomValues: function (rawBytes: Uint8Array) {
+      const buffer = crypto.randomBytes(rawBytes.length);
+      for (let i = 0; i < rawBytes.length; i++) {
+        rawBytes[i] = buffer[i];
+      }
+    }
+  }
+});
 
 class MockSession extends WildEmitter {
   streams: any[];
@@ -29,6 +43,7 @@ class MockSession extends WildEmitter {
 class MockTrack {
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
+  kind = 'video';
   stop () { }
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
@@ -71,6 +86,7 @@ interface MockApiReturns {
   patchConversation: nock.Scope;
   sdk: PureCloudWebrtcSdk;
   websocket: WebSocket;
+  mockCustomerData: ICustomerData;
 }
 
 let wss: WebSocket.Server;
@@ -153,6 +169,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   // easy to debug nock
   // api.log(console.error);
 
+  const mockCustomerData: ICustomerData = withCustomerData ? MOCK_CUSTOMER_DATA : null;
+
   let getJwt: nock.Scope;
   let getOrg: nock.Scope;
   let getUser: nock.Scope;
@@ -218,8 +236,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     accessToken: guestSdk ? undefined : '1234',
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } },
-    customerData: withCustomerData ? MOCK_CUSTOMER_DATA : undefined
+    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
   } as ISdkConstructOptions;
 
@@ -301,7 +318,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
   ws = websocket;
 
-  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket };
+  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket, mockCustomerData };
 }
 
 export {

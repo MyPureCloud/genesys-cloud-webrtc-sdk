@@ -1,7 +1,7 @@
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
 import { setupStreamingClient, proxyStreamingClientEvents, startGuestScreenShare } from './client-private';
-import { requestApi, throwSdkError } from './utils';
+import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
 import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig } from './types/interfaces';
 import { SdkErrorTypes, LogLevels } from './types/enums';
@@ -69,8 +69,12 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _pendingAudioElement: any;
   _config: ISdkConfig;
 
+  get isInitialized (): boolean {
+    return !!this._streamingConnection;
+  }
+
   get connected (): boolean {
-    return !!(this._streamingConnection && this._streamingConnection.connected);
+    return !!this._streamingConnection.connected;
   }
 
   get _sessionManager () {
@@ -86,7 +90,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     const errorMsg = validateOptions(options);
     if (errorMsg) {
-      throwSdkError.call(this, SdkErrorTypes.invalid_options, errorMsg);
+      throw new SdkError(SdkErrorTypes.invalid_options, errorMsg);
     }
 
     this._config = {
@@ -290,7 +294,8 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   private isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {
-    return !!(data as { securityCode: string }).securityCode;
+    data = data as { securityCode: string };
+    return !!(data && data.securityCode);
   }
 
   private isCustomerData (data: { securityCode: string } | ICustomerData): data is ICustomerData {
