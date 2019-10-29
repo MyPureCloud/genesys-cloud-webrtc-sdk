@@ -94,6 +94,7 @@ function cleanupMediaElement (identifier) {
   }
 
   this._log('info', 'Removing media element', { identifier });
+
   elem.parentNode.removeChild(elem);
 }
 
