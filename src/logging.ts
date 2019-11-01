@@ -1,11 +1,13 @@
-import PureCloudWebrtcSdk from './client';
+import { PureCloudWebrtcSdk } from './client';
 import stringify from 'safe-json-stringify';
 import backoff from 'backoff-web';
 
 import { requestApi } from './utils';
-const LOG_LEVELS = ['debug', 'log', 'info', 'warn', 'error'];
+import { ILogger } from './types/interfaces';
+import { LogLevels } from './types/enums';
+
+const LOG_LEVELS: string[] = Object.keys(LogLevels);
 const PAYLOAD_TOO_LARGE = 413;
-// declare const log: CallableFunction;
 
 let APP_VERSION = '[AIV]{version}[/AIV]'; // injected by webpack auto-inject-version
 
@@ -18,12 +20,13 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
   APP_VERSION = require('../package.json').version;
 }
 
-function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
+export function log (this: PureCloudWebrtcSdk, level: LogLevels, message: any, details?: any) {
+  level = (level || LogLevels.log).toString().toLowerCase() as LogLevels;
   // immediately log it locally
   this.logger[level](`[webrtc-sdk] ${message}`, details);
 
   // ex: if level is debug and config is warn, then debug is less than warn, don't push
-  if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._config.logLevel)) {
+  if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(this._config.logLevel.toString())) {
     return;
   }
 
@@ -44,6 +47,38 @@ function log (this: PureCloudWebrtcSdk, level, message, details?: any) {
   };
   this._logBuffer.push(logContainer);
   notifyLogs.call(this); // debounced sendLogs
+}
+
+export function setupLogging (this: PureCloudWebrtcSdk, logger: ILogger, logLevel: LogLevels) {
+  this._logBuffer = [];
+  this._logTimer = null;
+  this.logger = logger || console;
+  logLevel = (logLevel || '').toString().toLowerCase() as LogLevels;
+
+  if (LOG_LEVELS.indexOf(logLevel) === -1) {
+    if (logLevel) {
+      this.logger.warn(`Invalid log level: '${logLevel}'. Default '${LogLevels.info}' will be used instead.`);
+    }
+    this._config.logLevel = LogLevels.info;
+  }
+
+  this._backoffActive = false;
+  this._failedLogAttempts = 0;
+  this._reduceLogPayload = false;
+
+  if (this.isGuest) {
+    this.logger.debug('Guest user. Not initializing backoff logging');
+    return;
+  }
+
+  this.logger.debug('Authenticated user. Initializing backoff logging');
+  this._backoff = backoff.exponential({
+    randomisationFactor: 0.2,
+    initialDelay: 500,
+    maxDelay: 5000,
+    factor: 2
+  });
+  initializeBackoff.call(this);
 }
 
 function notifyLogs (this: PureCloudWebrtcSdk) {
@@ -108,36 +143,6 @@ function sendLogs (this: PureCloudWebrtcSdk) {
   });
 }
 
-function setupLogging (this: PureCloudWebrtcSdk, logger, logLevel) {
-  this._logBuffer = [];
-  this._logTimer = null;
-  this.logger = logger || console;
-  if (LOG_LEVELS.indexOf(logLevel) === -1) {
-    if (logLevel) {
-      this.logger.warn(`Invalid log level: '${logLevel}'. Default 'info' will be used instead.`);
-    }
-    this._config.logLevel = 'info';
-  }
-
-  this._backoffActive = false;
-  this._failedLogAttempts = 0;
-  this._reduceLogPayload = false;
-
-  if (this.isGuest) {
-    this.logger.debug('Guest user. Not initializing backoff logging');
-    return;
-  }
-
-  this.logger.debug('Authenticated user. Initializing backoff logging');
-  this._backoff = backoff.exponential({
-    randomisationFactor: 0.2,
-    initialDelay: 500,
-    maxDelay: 5000,
-    factor: 2
-  });
-  initializeBackoff.call(this);
-}
-
 function initializeBackoff (this: PureCloudWebrtcSdk) {
   this._backoff.failAfter(20);
 
@@ -179,8 +184,3 @@ function resetBackoffFlags (this: PureCloudWebrtcSdk) {
   this._failedLogAttempts = 0;
   this._reduceLogPayload = false;
 }
-
-export {
-  log,
-  setupLogging
-};

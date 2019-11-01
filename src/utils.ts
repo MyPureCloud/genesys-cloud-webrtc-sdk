@@ -1,5 +1,6 @@
 import fetch from 'superagent';
-import PureCloudWebrtcSdk from './client';
+import { PureCloudWebrtcSdk } from './client';
+import { SdkErrorTypes } from './types/enums';
 
 interface RequestApiOptions {
   method?: string;
@@ -7,6 +8,23 @@ interface RequestApiOptions {
   version?: string;
   contentType?: string;
   auth?: string | boolean;
+}
+
+export class SdkError extends Error {
+  type: SdkErrorTypes;
+  details: any;
+
+  constructor (errorType: SdkErrorTypes | null, message: string | null, details?: any) {
+    super(message);
+    this.type = errorType || SdkErrorTypes.generic;
+    this.details = details;
+  }
+}
+
+export function throwSdkError (this: PureCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): void {
+  const error = new SdkError(errorType, message, details);
+  this.emit('error', error);
+  throw error;
 }
 
 export function buildUri (this: PureCloudWebrtcSdk, path: string, version: string = 'v2'): string {
@@ -22,13 +40,6 @@ export function requestApi (this: PureCloudWebrtcSdk, path: string, { method, da
   request.type(contentType || 'json');
 
   return request.send(data); // trigger request
-}
-
-export function rejectErr (this: PureCloudWebrtcSdk, message: string, details: any) {
-  const error = new Error(message);
-  error['details'] = details;
-  this.emit('error', message, details);
-  throw error;
 }
 
 // this is duplicated in streaming-client and valve. It may need to be its own package.

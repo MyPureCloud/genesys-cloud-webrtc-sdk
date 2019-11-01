@@ -1,13 +1,27 @@
 import WebSocket from 'ws';
 import nock from 'nock';
 import WildEmitter from 'wildemitter';
-import PureCloudWebrtcSdk from '../src/client';
-import { SdkConstructOptions } from '../src/types/interfaces';
+import { PureCloudWebrtcSdk } from '../src/client';
+import { ISdkConstructOptions, ICustomerData } from '../src/types/interfaces';
+import crypto from 'crypto';
 
 declare var global: {
   window: any,
-  document: any
+  document: any,
+  crypto: any
 } & NodeJS.Global;
+
+// polyfill window.getRandomValues() for node (because we are using jest)
+Object.defineProperty(global, 'crypto', {
+  value: {
+    getRandomValues: function (rawBytes: Uint8Array) {
+      const buffer = crypto.randomBytes(rawBytes.length);
+      for (let i = 0; i < rawBytes.length; i++) {
+        rawBytes[i] = buffer[i];
+      }
+    }
+  }
+});
 
 class MockSession extends WildEmitter {
   streams: any[];
@@ -27,7 +41,13 @@ class MockSession extends WildEmitter {
 }
 
 class MockTrack {
+  _listeners: { event: string, callback: Function }[] = [];
+  readyState = 'ended';
+  kind = 'video';
   stop () { }
+  addEventListener (event: string, callback: Function) {
+    this._listeners.push({ event, callback });
+  }
 }
 
 class MockStream {
@@ -53,6 +73,7 @@ interface MockApiOptions {
   participantId?: string;
   withLogs?: boolean;
   guestSdk?: boolean;
+  withCustomerData?: boolean;
 }
 
 interface MockApiReturns {
@@ -65,6 +86,7 @@ interface MockApiReturns {
   patchConversation: nock.Scope;
   sdk: PureCloudWebrtcSdk;
   websocket: WebSocket;
+  mockCustomerData: ICustomerData;
 }
 
 let wss: WebSocket.Server;
@@ -86,7 +108,13 @@ const MOCK_USER = {
   chat: { jabberId: 'hubert.j.farnsworth@planetexpress.mypurecloud.com' }
 };
 
-const MOCK_JWT = { jwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjE1YzFiNmIwLWQ4NDUtNDgzOS1hYWVmLWQwNTc0ZTQ5OGM0OSIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImppZCI6ImFjZC1jMjAxNjVkNS1hNDdmLTQzOTctYjlmMy03MjM3ZDI5YWJmZTAtNTQzMTcyQGNvbmZlcmVuY2UuVEVTVC12YWx2ZS0xeW0zN21qMWthby5vcmdzcGFuLmNvbSJ9LCJleHAiOjE1NjM2NDk0MTAsImlhdCI6MTU2MzU2NDM1MiwiaXNzIjoidXJuOnB1cmVjbG91ZDpjb252ZXJzYXRpb24iLCJvcmciOiI4MDg4MzMzMy04NjE3LTQ3MmYtODI3NC01OGQ1YjlhMTAwMzMifQ.ECYnVhuPvxtuapsmf_usB0FhX3PQ6taiFsJA-7TQqpfNWvBhXqxImPcM1UPV4PW23bBYsSFyxivANL5AGOeNpC4lBIO_O_ENfR2iziFZz5SqIY9tksxqTsEgq_b5D2VlQuGNC-xfNy7dK-TzjrA8ySHG_iSWD-MZ2M2vx8J5nW1BD8uoc9LtTYaldLCDi0IVfoPE-qMCYp53VxeN4XPGTFO7ULvgIfXmNImvSSDcEDXorrUs6N4ocaANdpFL1EYUbCL_EzvkjZ3tb5FT3GoGC6uFNgOJtRp69uB7TLmacnKGrRxI3v3sNkERiSqzvXSpB6-PI74pP3cEd1L9IlnyiA' };
+const MOCK_CUSTOMER_DATA = {
+  sourceCommunicationId: 'source-123567-1234',
+  conversation: {
+    id: 'conversation-aedvi38t5nbia-123'
+  },
+  jwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjE1YzFiNmIwLWQ4NDUtNDgzOS1hYWVmLWQwNTc0ZTQ5OGM0OSIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImppZCI6ImFjZC1jMjAxNjVkNS1hNDdmLTQzOTctYjlmMy03MjM3ZDI5YWJmZTAtNTQzMTcyQGNvbmZlcmVuY2UuVEVTVC12YWx2ZS0xeW0zN21qMWthby5vcmdzcGFuLmNvbSJ9LCJleHAiOjE1NjM2NDk0MTAsImlhdCI6MTU2MzU2NDM1MiwiaXNzIjoidXJuOnB1cmVjbG91ZDpjb252ZXJzYXRpb24iLCJvcmciOiI4MDg4MzMzMy04NjE3LTQ3MmYtODI3NC01OGQ1YjlhMTAwMzMifQ.ECYnVhuPvxtuapsmf_usB0FhX3PQ6taiFsJA-7TQqpfNWvBhXqxImPcM1UPV4PW23bBYsSFyxivANL5AGOeNpC4lBIO_O_ENfR2iziFZz5SqIY9tksxqTsEgq_b5D2VlQuGNC-xfNy7dK-TzjrA8ySHG_iSWD-MZ2M2vx8J5nW1BD8uoc9LtTYaldLCDi0IVfoPE-qMCYp53VxeN4XPGTFO7ULvgIfXmNImvSSDcEDXorrUs6N4ocaANdpFL1EYUbCL_EzvkjZ3tb5FT3GoGC6uFNgOJtRp69uB7TLmacnKGrRxI3v3sNkERiSqzvXSpB6-PI74pP3cEd1L9IlnyiA'
+};
 
 const MOCK_ORG = {
   thirdPartyOrgId: '3000'
@@ -132,13 +160,16 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     conversationId,
     participantId,
     withLogs,
-    guestSdk
+    guestSdk,
+    withCustomerData
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
 
   // easy to debug nock
   // api.log(console.error);
+
+  const mockCustomerData: ICustomerData = withCustomerData ? MOCK_CUSTOMER_DATA : null;
 
   let getJwt: nock.Scope;
   let getOrg: nock.Scope;
@@ -149,7 +180,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     if (failSecurityCode) {
       getJwt = api.post('/api/v2/conversations/codes').reply(401);
     } else {
-      getJwt = api.post('/api/v2/conversations/codes').reply(200, MOCK_JWT);
+      getJwt = api.post('/api/v2/conversations/codes').reply(200, MOCK_CUSTOMER_DATA);
     }
   } else {
     if (failOrg) {
@@ -207,7 +238,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     wsHost: failStreaming ? null : 'ws://localhost:1234',
     logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
-  } as SdkConstructOptions;
+  } as ISdkConstructOptions;
 
   const sdk = new PureCloudWebrtcSdk(sdkOpts);
 
@@ -287,7 +318,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
   ws = websocket;
 
-  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket };
+  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket, mockCustomerData };
 }
 
 export {
