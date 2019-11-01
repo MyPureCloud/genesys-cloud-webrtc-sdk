@@ -17,9 +17,8 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
 
   const environment = environmentData.uri;
   const options = { accessToken, environment, logLevel: 'info' };
-  let SdkConstructor = PureCloudWebrtcSdk || window.PureCloudWebrtcSdk;
 
-  webrtcSdk = new SdkConstructor(options);
+  webrtcSdk = new PureCloudWebrtcSdk(options);
   window.webrtcSdk = webrtcSdk;
 
   connectEventHandlers();

@@ -1,4 +1,3 @@
-import '@babel/polyfill';
 import controller from './app-controller';
 
 function initApp () {
