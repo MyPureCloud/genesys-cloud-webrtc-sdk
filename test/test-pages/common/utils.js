@@ -19,7 +19,7 @@ function getAccessToken () {
   return accessToken;
 }
 
-module.exports = {
+export default {
   writeToLog: writeToLog,
   getAccessToken: getAccessToken
 };

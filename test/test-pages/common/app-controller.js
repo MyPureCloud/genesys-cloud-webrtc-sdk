@@ -1,5 +1,5 @@
-const sdkHandler = require('./sdk-controller');
-const utils = require('./utils');
+import sdkHandler from './sdk-controller';
+import utils from './utils';
 
 function clearLog () {
   document.getElementById('log-data').value = '';
@@ -48,7 +48,7 @@ function disconnect () {
   setAppControlVisiblity(false);
 }
 
-module.exports = {
-  initialize: initialize,
-  clearLog: clearLog
+export default {
+  initialize,
+  clearLog
 };
