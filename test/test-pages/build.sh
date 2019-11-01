@@ -17,7 +17,7 @@ printf "Webpack sample built successfully\n\n"
 echo "Building browserify sample..."
 cp -r common browserify/
 cp index-template.html browserify/index.html
-npx browserify browserify/common/main.js -o browserify/sdk-sample.js -t [ babelify --presets [ "@babel/preset-env" ] ]
+npx browserify browserify/common/main.js -o browserify/sdk-sample.js -t [ babelify --presets [ "@babel/preset-env" ] --plugins ["@babel/transform-runtime"] ]
 npx uglifyjs ./browserify/sdk-sample.js > ./browserify/sdk-sample.min.js
 mv browserify/sdk-sample.min.js browserify/sdk-sample.js
 rm -rf browserify/common

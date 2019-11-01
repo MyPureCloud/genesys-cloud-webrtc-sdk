@@ -13,7 +13,7 @@ gulp.task('default', function () {
   const b = browserify({
     entries: './common/main.js',
     debug: true
-  }).transform(babelify, { presets: ['@babel/preset-env'] });
+  }).transform(babelify, { presets: ['@babel/preset-env'], plugins: ['@babel/plugin-transform-runtime'] });
 
   return b.bundle()
     .pipe(source('./sdk-sample.js'))

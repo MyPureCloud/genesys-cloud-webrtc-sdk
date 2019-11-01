@@ -1,4 +1,4 @@
-import PureCloudWebrtcSdk from '../sdk-proxy';
+import { getSdk, PureCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
 
 let currentConversationId;
@@ -18,7 +18,8 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
   const environment = environmentData.uri;
   const options = { accessToken, environment, logLevel: 'info' };
 
-  webrtcSdk = new PureCloudWebrtcSdk(options);
+  const SDK = PureCloudWebrtcSdk || getSdk();
+  webrtcSdk = new SDK(options);
   window.webrtcSdk = webrtcSdk;
 
   connectEventHandlers();
