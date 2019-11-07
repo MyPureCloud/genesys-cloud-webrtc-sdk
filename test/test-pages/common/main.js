@@ -1,4 +1,4 @@
-const controller = require('./app-controller');
+import controller from './app-controller';
 
 function initApp () {
   const envInput = document.getElementById('environment').value;

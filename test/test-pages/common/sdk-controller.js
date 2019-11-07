@@ -1,5 +1,5 @@
-const utils = require('./utils');
-let PureCloudWebrtcSdk = require('../sdk-proxy');
+import { getSdk, PureCloudWebrtcSdk } from '../sdk-proxy';
+import utils from './utils';
 
 let currentConversationId;
 let currentSessionId;
@@ -18,10 +18,8 @@ function initWebrtcSDK (environmentData, _conversationsApi) {
   const environment = environmentData.uri;
   const options = { accessToken, environment, logLevel: 'info' };
 
-  if (!PureCloudWebrtcSdk) {
-    PureCloudWebrtcSdk = window.PureCloudWebrtcSdk;
-  }
-  webrtcSdk = new PureCloudWebrtcSdk(options);
+  const SDK = PureCloudWebrtcSdk || getSdk();
+  webrtcSdk = new SDK(options);
   window.webrtcSdk = webrtcSdk;
 
   connectEventHandlers();
@@ -228,11 +226,11 @@ function connected (e) {
   utils.writeToLog('connected event', e);
 }
 
-module.exports = {
-  makeOutboundCall: makeOutboundCall,
-  endCall: endCall,
-  answerCall: answerCall,
-  disconnectSdk: disconnectSdk,
-  rejectCall: rejectCall,
-  initWebrtcSDK: initWebrtcSDK
+export default {
+  makeOutboundCall,
+  endCall,
+  answerCall,
+  disconnectSdk,
+  rejectCall,
+  initWebrtcSDK
 };

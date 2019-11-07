@@ -10,10 +10,11 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
+        exclude: /(node_modules|bower_components|dist)/,
         loader: 'babel-loader',
         query: {
-          presets: ['env']
+          presets: ['@babel/preset-env'],
+          plugins: ['@babel/plugin-transform-runtime']
         }
       }
     ]
