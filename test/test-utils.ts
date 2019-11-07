@@ -74,6 +74,7 @@ interface MockApiOptions {
   withLogs?: boolean;
   guestSdk?: boolean;
   withCustomerData?: boolean;
+  conversation?: MockConversation;
 }
 
 interface MockApiReturns {
@@ -89,6 +90,18 @@ interface MockApiReturns {
   mockCustomerData: ICustomerData;
 }
 
+interface MockParticipant {
+  id: string;
+  state?: string;
+  user?: {
+    id: string
+  };
+}
+
+interface MockConversation {
+  participants: MockParticipant[];
+}
+
 let wss: WebSocket.Server;
 let ws: WebSocket;
 
@@ -102,6 +115,7 @@ function timeout (n: number): Promise<void> {
 
 const USER_ID = random();
 const PARTICIPANT_ID = random();
+const PARTICIPANT_ID_2 = random();
 
 const MOCK_USER = {
   id: USER_ID,
@@ -120,10 +134,11 @@ const MOCK_ORG = {
   thirdPartyOrgId: '3000'
 };
 
-const MOCK_CONVERSATION = {
+const MOCK_CONVERSATION: MockConversation = {
   participants: [
     {
       id: PARTICIPANT_ID,
+      state: 'connected',
       user: {
         id: USER_ID
       }
@@ -147,6 +162,10 @@ function closeWebSocketServer (): Promise<void> {
   return Promise.resolve();
 }
 
+function getMockConversation (): MockConversation {
+  return JSON.parse(JSON.stringify(MOCK_CONVERSATION));
+}
+
 function mockApis (options: MockApiOptions = {}): MockApiReturns {
   const {
     failSecurityCode,
@@ -161,7 +180,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     participantId,
     withLogs,
     guestSdk,
-    withCustomerData
+    withCustomerData,
+    conversation
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
@@ -205,7 +225,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   if (conversationId) {
     getConversation = conversationsApi
       .get(`/api/v2/conversations/calls/${conversationId}`)
-      .reply(200, MOCK_CONVERSATION);
+      .reply(200, conversation || MOCK_CONVERSATION);
   }
 
   let patchConversation: nock.Scope;
@@ -328,7 +348,9 @@ export {
   random,
   timeout,
   closeWebSocketServer,
+  getMockConversation,
   PARTICIPANT_ID,
+  PARTICIPANT_ID_2,
   MockSession,
   MockStream,
   MockTrack

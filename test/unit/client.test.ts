@@ -1,15 +1,28 @@
 import { PureCloudWebrtcSdk } from '../../src/client';
 import { ISdkConstructOptions, ICustomerData } from '../../src/types/interfaces';
-import { MockStream, MockSession, mockApis, timeout, MockTrack } from '../test-utils';
+import {
+  MockStream,
+  MockSession,
+  mockApis,
+  timeout,
+  MockTrack,
+  wss,
+  random,
+  PARTICIPANT_ID,
+  PARTICIPANT_ID_2,
+  closeWebSocketServer,
+  getMockConversation
+} from '../test-utils';
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels } from '../../src/types/enums';
+import * as logging from '../../src/logging';
 
 declare var global: {
   window: any,
   document: any
 } & NodeJS.Global;
 
-let { wss, ws, random, PARTICIPANT_ID, closeWebSocketServer } = require('../test-utils');
+let { ws } = require('../test-utils');
 
 describe('Client', () => {
   // check to make sure the server isn't running
@@ -308,6 +321,56 @@ describe('Client', () => {
   });
 
   describe('endSession()', () => {
+    it('requests the conversation then patches the correct participant to be disconnected', async () => {
+      const sessionId = random();
+      const conversationId = random();
+
+      // create a conversation with a second participant with the same user id
+      const participantId = PARTICIPANT_ID_2;
+      const conversation = getMockConversation();
+      conversation.participants[0].state = 'terminated';
+      const participant = JSON.parse(JSON.stringify(conversation.participants[0]));
+      participant.state = 'connected';
+      participant.id = participantId;
+      conversation.participants.push(participant);
+      const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId, conversation });
+      await sdk.initialize();
+
+      const mockSession = { id: sessionId, conversationId, end: jest.fn() };
+      sdk._sessionManager.sessions = {};
+      sdk._sessionManager.sessions[sessionId] = mockSession;
+
+      await sdk.endSession({ conversationId });
+      getConversation.done();
+      patchConversation.done();
+      expect(mockSession.end).not.toHaveBeenCalled();
+    });
+
+    it('requests the conversation then patches the correct participant to be disconnected regardless of participant order', async () => {
+      const sessionId = random();
+      const conversationId = random();
+
+      // create a conversation with a second participant with the same user id
+      const participantId = PARTICIPANT_ID;
+      const conversation = getMockConversation();
+      conversation.participants[0].state = 'connected';
+      const participant = JSON.parse(JSON.stringify(conversation.participants[0]));
+      participant.state = 'terminated';
+      participant.id = PARTICIPANT_ID;
+      conversation.participants.push(participant);
+      const { sdk, getConversation, patchConversation } = mockApis({ conversationId, participantId, conversation });
+      await sdk.initialize();
+
+      const mockSession = { id: sessionId, conversationId, end: jest.fn() };
+      sdk._sessionManager.sessions = {};
+      sdk._sessionManager.sessions[sessionId] = mockSession;
+
+      await sdk.endSession({ conversationId });
+      getConversation.done();
+      patchConversation.done();
+      expect(mockSession.end).not.toHaveBeenCalled();
+    });
+
     test('rejects if not provided either an id or a conversationId', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
@@ -640,15 +703,13 @@ describe('Client', () => {
 
   describe('onSession()', () => {
     describe('authenticated user | softphone', () => {
-      test('starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event', async () => {
+      test('starts media, attaches it to the session, attaches it to the dom, accepts the session, and emits a started event, and cleans up element', async () => {
         const mockOutboundStream = new MockStream();
         const { sdk } = mockApis({ withMedia: mockOutboundStream });
         await sdk.initialize();
 
         const getUserMediaSpy = jest.spyOn(global.window.navigator.mediaDevices, 'getUserMedia');
-        const bodyAppend = new Promise(resolve => {
-          jest.spyOn(global.document.body, 'append').mockImplementation(resolve);
-        });
+        const appendSpy = jest.spyOn(global.document.body, 'append');
 
         const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
@@ -672,7 +733,11 @@ describe('Client', () => {
         expect(mockSession.accept).toHaveBeenCalledTimes(1);
         expect(getUserMediaSpy).toHaveBeenCalledTimes(1);
 
-        const attachedAudioElement: any = await bodyAppend;
+        const attachedAudioElement: any = appendSpy.mock.calls[0][0];
+        global.document.body.append.mockRestore();
+        const removeSpy = jest.spyOn(attachedAudioElement.parentNode, 'removeChild');
+        const elementClasses = Array.from(attachedAudioElement.classList);
+        expect(elementClasses).toContainEqual(`sid-${mockSession.sid}`);
         expect(attachedAudioElement.srcObject).toBe(mockSession.streams[0]);
 
         const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
@@ -680,11 +745,54 @@ describe('Client', () => {
         mockSession.emit('change:active', mockSession, false);
         expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
         await sessionEnded;
+        expect(removeSpy).toHaveBeenCalled();
+      });
+
+      it('onSession | should log warning if audio element exists and already has a srcObject', async () => {
+        const mockOutboundStream = new MockStream();
+        const { sdk } = mockApis({ withMedia: new MockStream() });
+        await sdk.initialize();
+        sdk.pendingStream = (mockOutboundStream as any);
+        sdk._config.autoConnectSessions = false;
+
+        const appendSpy = jest.spyOn(global.document.body, 'append');
+
+        const logSpy = jest.spyOn(logging, 'log');
+        const sessionStarted = new Promise(resolve => sdk.once('sessionStarted', resolve));
+        const mockSession = new MockSession();
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
+
+        const mockInboundStream = {};
+        mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+        const audioElement = appendSpy.mock.calls[0][0] as HTMLAudioElement;
+
+        jest.spyOn(global.document, 'querySelector').mockReturnValue(audioElement);
+
+        const sessionStarted2 = new Promise(resolve => sdk.once('sessionStarted', resolve));
+        const mockSession2 = new MockSession();
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession2);
+        await sessionStarted2;
+
+        mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+
+        expect(logSpy).toHaveBeenCalledWith(LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
+
+        // test cleanup
+        const sessionEnded = new Promise(resolve => sdk.once('sessionEnded', resolve));
+        mockSession.emit('terminated', mockSession);
+        await sessionEnded;
+        const sessionEnded2 = new Promise(resolve => sdk.once('sessionEnded', resolve));
+        mockSession.emit('terminated', mockSession2);
+        global.document.querySelector.mockRestore();
+        await sessionEnded2;
+        global.document.body.append.mockRestore();
+        logSpy.mockRestore();
       });
 
       test('uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async () => {
         const mockOutboundStream = new MockStream();
-        const mockAudioElement: any = { classList: { add () { } } };
+        const mockAudioElement: any = { classList: { add () { } }, parentNode: { removeChild: jest.fn() } };
         const { sdk } = mockApis({ withMedia: {} as MockStream });
         await sdk.initialize();
         sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
