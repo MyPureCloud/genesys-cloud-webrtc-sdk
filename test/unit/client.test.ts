@@ -138,6 +138,7 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
       sdk._config.optOutOfTelemetry = true;
+      await sdk.disconnect();
     });
 
     test('fetches jwt for guest users, sets up the streaming connection', async () => {
@@ -145,14 +146,16 @@ describe('Client', () => {
       await sdk.initialize({ securityCode: '123456' });
       getJwt.done();
       expect(sdk._streamingConnection).toBeTruthy();
-    }, 15 * 1000);
+      await sdk.disconnect();
+    });
 
     test('should use the customerData when passed in', async () => {
       const { sdk, mockCustomerData } = mockApis({ withMedia: new MockStream(), guestSdk: true, withCustomerData: true });
 
       await sdk.initialize(mockCustomerData);
       expect(sdk._streamingConnection).toBeTruthy();
-    }, 15 * 1000);
+      await sdk.disconnect();
+    });
 
     test('should throw if invalid customerData is passed in', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
@@ -164,7 +167,7 @@ describe('Client', () => {
       } catch (e) {
         expect(e).toBeTruthy();
       }
-    }, 15 * 1000);
+    });
 
     test('throws error for guest users without a security code', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
@@ -174,7 +177,7 @@ describe('Client', () => {
       } catch (e) {
         expect(e).toEqual(new SdkError(SdkErrorTypes.initialization, '`securityCode` is required to initialize the SDK as a guest'));
       }
-    }, 15 * 1000);
+    });
 
     test('throws if getting the jwt fails', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true, failSecurityCode: true });
@@ -264,16 +267,19 @@ describe('Client', () => {
       }
 
       await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
+      await sdk.disconnect();
     });
   });
 
   describe('startScreenShare()', () => {
-    test('should reject if authenticated user', () => {
+    test('should reject if authenticated user', async () => {
       const { sdk } = mockApis();
-      expect.assertions(1);
-      sdk.startScreenShare()
-        .then(() => fail('should have failed'))
-        .catch(e => expect(e).toEqual(new Error('Agent screen share is not yet supported')));
+      try {
+        await sdk.startScreenShare();
+        fail('should have failed');
+      } catch (e) {
+        expect(e).toEqual(new Error('Agent screen share is not yet supported'));
+      }
     });
 
     test('should initiate a RTC session', async () => {
@@ -291,6 +297,7 @@ describe('Client', () => {
         conversationId: expect.any(String),
         sourceCommunicationId: expect.any(String)
       });
+      await sdk.disconnect();
     });
   });
 
@@ -303,6 +310,7 @@ describe('Client', () => {
       expect(sdk.connected).toBe(true);
       sdk._streamingConnection.connected = false;
       expect(sdk.connected).toBe(false);
+      await sdk.disconnect();
     });
   });
 
@@ -317,11 +325,12 @@ describe('Client', () => {
       sdk._streamingConnection._webrtcSessions.acceptRtcSession = jest.fn();
       sdk.acceptPendingSession('4321');
       await promise;
+      await sdk.disconnect();
     });
   });
 
   describe('endSession()', () => {
-    it('requests the conversation then patches the correct participant to be disconnected', async () => {
+    test('requests the conversation then patches the correct participant to be disconnected', async () => {
       const sessionId = random();
       const conversationId = random();
 
@@ -344,9 +353,10 @@ describe('Client', () => {
       getConversation.done();
       patchConversation.done();
       expect(mockSession.end).not.toHaveBeenCalled();
+      await sdk.disconnect();
     });
 
-    it('requests the conversation then patches the correct participant to be disconnected regardless of participant order', async () => {
+    test('requests the conversation then patches the correct participant to be disconnected regardless of participant order', async () => {
       const sessionId = random();
       const conversationId = random();
 
@@ -369,6 +379,7 @@ describe('Client', () => {
       getConversation.done();
       patchConversation.done();
       expect(mockSession.end).not.toHaveBeenCalled();
+      await sdk.disconnect();
     });
 
     test('rejects if not provided either an id or a conversationId', async () => {
@@ -380,6 +391,7 @@ describe('Client', () => {
       } catch (e) {
         expect(e).toEqual(new SdkError(SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.'));
       }
+      await sdk.disconnect();
     });
 
     test('should throw if it cannot find the session', async () => {
@@ -391,6 +403,7 @@ describe('Client', () => {
       } catch (e) {
         expect(e).toEqual(new SdkError(SdkErrorTypes.session, 'Unable to end session: session not connected.'));
       }
+      await sdk.disconnect();
     });
 
     test('terminates the session if the existing session has no conversationId', async () => {
@@ -406,6 +419,7 @@ describe('Client', () => {
       await sdk.endSession({ id: sessionId });
       expect(() => getConversation.done()).toThrow();
       expect(mockSession.end).toHaveBeenCalledTimes(1);
+      await sdk.disconnect();
     });
 
     test('should end the session for guests', async () => {
@@ -422,6 +436,7 @@ describe('Client', () => {
       getJwt.done();
       expect(() => getConversation.done()).toThrow();
       expect(mockSession.end).toHaveBeenCalledTimes(1);
+      await sdk.disconnect();
     });
 
     test('requests the conversation then patches the participant to "disconnected"', async () => {
@@ -439,6 +454,7 @@ describe('Client', () => {
       getConversation.done();
       patchConversation.done();
       expect(mockSession.end).not.toHaveBeenCalled();
+      await sdk.disconnect();
     });
 
     test('ends the session and rejects if there is an error fetching the conversation', async () => {
@@ -459,6 +475,7 @@ describe('Client', () => {
         expect(mockSession.end).toHaveBeenCalled();
         expect(e.type).toBe(SdkErrorTypes.http);
       }
+      await sdk.disconnect();
     });
 
     test('ends the session directly if patching the conversation fails', async () => {
@@ -481,6 +498,7 @@ describe('Client', () => {
         expect(mockSession.end).toHaveBeenCalled();
         expect(e.type).toBe(SdkErrorTypes.http);
       }
+      await sdk.disconnect();
     });
   });
 
@@ -493,6 +511,7 @@ describe('Client', () => {
 
       await sdk.reconnect();
       expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
+      await sdk.disconnect();
     });
   });
 
@@ -530,6 +549,7 @@ describe('Client', () => {
           urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
         }
       ]);
+      await sdk.disconnect();
     });
   });
 
@@ -557,6 +577,7 @@ describe('Client', () => {
       expect(sessionInfo.autoAnswer).toBe(true);
       expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(1);
       expect(sdk.acceptPendingSession).toHaveBeenCalledWith('1077');
+      await sdk.disconnect();
     });
 
     test('emits a pendingSession event and does not accept the session if disableAutoAnwer is true', async () => {
@@ -582,6 +603,7 @@ describe('Client', () => {
       expect(sessionInfo.address).toBe('+15558675309');
       expect(sessionInfo.autoAnswer).toBe(true);
       expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(0);
+      await sdk.disconnect();
     });
 
     test('should handles double pending sessions', async () => {
@@ -614,10 +636,10 @@ describe('Client', () => {
       expect(sessionInfo.autoAnswer).toBe(true);
       expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(1);
       expect(sdk.acceptPendingSession).toHaveBeenCalledWith('1077');
+      await sdk.disconnect();
     });
 
     test('should allow double pending sessions after 10 seconds', async () => {
-
       const { sdk } = mockApis();
       await sdk.initialize();
       jest.spyOn(sdk, 'acceptPendingSession').mockImplementation();
@@ -674,6 +696,7 @@ describe('Client', () => {
       expect(sessionInfo2.address).toBe('+15558675309');
       expect(sessionInfo2.autoAnswer).toBe(true);
       expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(2);
+      await sdk.disconnect();
     });
 
     test('emits a pendingSession event but does not accept the session if autoAnswer is false', async () => {
@@ -698,6 +721,7 @@ describe('Client', () => {
       expect(sessionInfo.address).toBe('+15558675309');
       expect(sessionInfo.autoAnswer).toBe(false);
       expect(sdk.acceptPendingSession).not.toHaveBeenCalled();
+      await sdk.disconnect();
     });
   });
 
@@ -733,8 +757,8 @@ describe('Client', () => {
         expect(mockSession.accept).toHaveBeenCalledTimes(1);
         expect(getUserMediaSpy).toHaveBeenCalledTimes(1);
 
-        const attachedAudioElement: any = appendSpy.mock.calls[0][0];
-        global.document.body.append.mockRestore();
+        const attachedAudioElement: HTMLAudioElement = appendSpy.mock.calls[0][0] as any;
+        appendSpy.mockRestore();
         const removeSpy = jest.spyOn(attachedAudioElement.parentNode, 'removeChild');
         const elementClasses = Array.from(attachedAudioElement.classList);
         expect(elementClasses).toContainEqual(`sid-${mockSession.sid}`);
@@ -746,35 +770,43 @@ describe('Client', () => {
         expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
         await sessionEnded;
         expect(removeSpy).toHaveBeenCalled();
+        await sdk.disconnect();
       });
 
-      it('onSession | should log warning if audio element exists and already has a srcObject', async () => {
+      test('should log warning if audio element exists and already has a srcObject', async () => {
         const mockOutboundStream = new MockStream();
-        const { sdk } = mockApis({ withMedia: new MockStream() });
+        const { sdk } = mockApis({ withMedia: mockOutboundStream });
         await sdk.initialize();
         sdk.pendingStream = (mockOutboundStream as any);
         sdk._config.autoConnectSessions = false;
 
         const appendSpy = jest.spyOn(global.document.body, 'append');
 
-        const logSpy = jest.spyOn(logging, 'log');
         const sessionStarted = new Promise(resolve => sdk.once('sessionStarted', resolve));
         const mockSession = new MockSession();
         sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
         await sessionStarted;
 
-        const mockInboundStream = {};
+        const mockInboundStream = new MockStream();
         mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
-        const audioElement = appendSpy.mock.calls[0][0] as HTMLAudioElement;
+        const audioElement = Object.assign(
+          {},
+          appendSpy.mock.calls[0][0],
+          { parentNode: { removeChild: jest.fn() } }
+        );
+        await timeout(10);
 
         jest.spyOn(global.document, 'querySelector').mockReturnValue(audioElement);
 
         const sessionStarted2 = new Promise(resolve => sdk.once('sessionStarted', resolve));
         const mockSession2 = new MockSession();
+        const logSpy = jest.spyOn(logging, 'log');
+
         sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession2);
         await sessionStarted2;
 
         mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
+        await timeout(10);
 
         expect(logSpy).toHaveBeenCalledWith(LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
 
@@ -788,12 +820,13 @@ describe('Client', () => {
         await sessionEnded2;
         global.document.body.append.mockRestore();
         logSpy.mockRestore();
+        await sdk.disconnect();
       });
 
       test('uses existing media, attaches it to the session, attaches it to the dom in existing element when ready, and emits a started event', async () => {
         const mockOutboundStream = new MockStream();
         const mockAudioElement: any = { classList: { add () { } }, parentNode: { removeChild: jest.fn() } };
-        const { sdk } = mockApis({ withMedia: {} as MockStream });
+        const { sdk } = mockApis({ withMedia: mockOutboundStream });
         await sdk.initialize();
         sdk.pendingStream = mockOutboundStream as unknown as MediaStream;
         sdk._config.autoConnectSessions = false;
@@ -806,6 +839,7 @@ describe('Client', () => {
         const sessionStarted = new Promise(resolve => sdk.on('sessionStarted', resolve));
 
         const mockSession = new MockSession();
+        mockSession.streams = [new MockStream()];
         jest.spyOn(mockSession, 'addStream');
         jest.spyOn(mockSession, 'accept');
 
@@ -817,15 +851,17 @@ describe('Client', () => {
         expect(mockSession.accept).not.toHaveBeenCalled();
         expect(getUserMediaSpy).not.toHaveBeenCalled();
 
-        const mockInboundStream = {};
+        const mockInboundStream = new MockStream();
         mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
-        expect(mockAudioElement.srcObject).toBe(mockInboundStream);
+        await timeout(10);
+        expect(mockAudioElement.srcObject).toEqual(mockInboundStream);
         expect(global.document.body.append).not.toHaveBeenCalled();
 
         const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
         mockSession._outboundStream = null;
         mockSession.emit('terminated', mockSession);
         await sessionEnded;
+        await sdk.disconnect();
       });
 
       test('uses existing media, attaches it to the session, attaches it to the dom in _pendingAudioElement element when ready, and emits a started event', async () => {
@@ -858,6 +894,7 @@ describe('Client', () => {
         mockSession.emit('peerStreamAdded', mockSession, mockInboundStream);
         expect(mockAudioElement.srcObject).toBe(mockInboundStream);
         expect(global.document.body.append).not.toHaveBeenCalled();
+        await sdk.disconnect();
       });
     });
 
@@ -894,9 +931,10 @@ describe('Client', () => {
         mockSession.emit('change:active', mockSession, false);
         expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
         await sessionEnded;
+        await sdk.disconnect();
       });
 
-      test.skip('ends session if the stream stops', async () => {
+      test('ends session if the stream stops', async () => {
         const mockOutboundStream = new MockStream();
         const { sdk } = mockApis({ withMedia: mockOutboundStream, guestSdk: true });
         await sdk.initialize({ securityCode: '129034' });
@@ -907,39 +945,29 @@ describe('Client', () => {
         const mockSession = new MockSession();
         mockSession.sid = random();
         sdk._pendingSessions[mockSession.sid] = mockSession;
-        mockSession.streams = [new MockStream()];
         jest.spyOn(mockSession, 'addStream');
         jest.spyOn(mockSession, 'accept');
         jest.spyOn(mockSession, 'end');
 
-        // mockSession.streams.forEach((stream: MockStream) => {
-        console.log('mockOutboundStream', mockOutboundStream);
-        const tracks = mockOutboundStream.getTracks();
-        console.log('tracks', tracks);
-        tracks.forEach((track: MockTrack) => {
-          console.log('listeners', track._listeners);
+        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
+        await sessionStarted;
 
+        expect(mockSession.accept).toHaveBeenCalledTimes(1);
+        mockSession.emit('change:active', mockSession, true);
+
+        const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
+        const tracks = mockOutboundStream.getTracks();
+
+        tracks.forEach((track: MockTrack) => {
           const handler = track._listeners.find(listener => listener.event === 'ended');
-          console.log(handler);
           handler.callback();
           mockSession.emit('terminated', mockSession);
           mockSession.emit('change:active', mockSession, false);
         });
-        // });
-
-        sdk._streamingConnection._webrtcSessions.emit('incomingRtcSession', mockSession);
-        await sessionStarted;
-
-        mockSession.emit('change:active', mockSession, true);
-
-        expect(mockSession.accept).toHaveBeenCalledTimes(1);
-        const sessionEnded = new Promise(resolve => sdk.on('sessionEnded', resolve));
-
-        // jest.spyOn(mockSession._statsGatherer, 'collectInitialConnectionStats');
-        // expect(mockSession._statsGatherer.collectInitialConnectionStats).toHaveBeenCalledTimes(1);
 
         await sessionEnded;
         expect(mockSession.end).toHaveBeenCalledTimes(1);
+        await sdk.disconnect();
       });
     });
   });
@@ -956,7 +984,8 @@ describe('Client', () => {
       await sdk._refreshTurnServers();
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshTurnServersInterval).toBeTruthy();
-    }, 15 * 1000);
+      await sdk.disconnect();
+    });
 
     test('emits an error if there is an error refreshing turn servers', async () => {
       const { sdk } = mockApis();
@@ -975,7 +1004,8 @@ describe('Client', () => {
       }
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       await promise;
-    }, 15 * 1000);
+      await sdk.disconnect();
+    });
   });
 
   describe('isCustomerData()', () => {

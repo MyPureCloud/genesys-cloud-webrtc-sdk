@@ -202,6 +202,11 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     } else {
       getJwt = api.post('/api/v2/conversations/codes').reply(200, MOCK_CUSTOMER_DATA);
     }
+
+    // getChannel = api
+    //   .post('/api/v2/stream/jwt')
+    //   .reply(200, { id: 'someguestchangeid' });
+
   } else {
     if (failOrg) {
       getOrg = api.get('/api/v2/organizations/me').reply(401);
@@ -332,6 +337,10 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
         } else {
           send(`<iq xmlns="jabber:client" type="result" to="${MOCK_USER.chat.jabberId}" id="${id}"><services xmlns="urn:xmpp:extdisco:1"><service transport="udp" port="3456" type="stun" host="turn.us-east-1.mypurecloud.com"/></services></iq>`);
         }
+      } else if (msg.indexOf('<close') === 0) {
+        send(`<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" version="1.0"></close>`);
+      } else {
+        console.warn('Incoming stanza that does not have a test handler to send a response', msg);
       }
     });
   });
