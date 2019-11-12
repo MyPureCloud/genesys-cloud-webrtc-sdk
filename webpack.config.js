@@ -8,10 +8,14 @@ module.exports = (env) => {
   const extension = node ? '.cjs' : '.js';
   const filename = file + extension;
 
+  const mode = minimize ? 'production' : 'development';
+
+  console.log(`build mode: ${mode}`);
+
   return {
     target: node ? 'node' : 'web',
     entry: './src/client.ts',
-    mode: minimize ? 'production' : 'development',
+    mode,
     optimization: {
       minimize
     },

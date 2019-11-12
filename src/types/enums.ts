@@ -14,3 +14,9 @@ export enum LogLevels {
   warn = 'warn',
   error = 'error'
 }
+
+export enum SessionTypes {
+  softphone = 'softphone',
+  collaborateVideo = 'collaborateVideo',
+  acdScreenShare = 'acdScreenShare'
+}

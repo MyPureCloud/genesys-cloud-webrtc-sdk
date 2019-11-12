@@ -4,7 +4,7 @@ import StreamingClient from 'purecloud-streaming-client';
 import browserama from 'browserama';
 import { log } from './logging';
 import { parseJwt, throwSdkError } from './utils';
-import { LogLevels, SdkErrorTypes } from './types/enums';
+import { LogLevels, SdkErrorTypes, SessionTypes } from './types/enums';
 
 declare var window: {
   navigator: {
@@ -221,6 +221,17 @@ function attachAudioMedia (this: PureCloudWebrtcSdk, stream: MediaStream) {
 }
 
 /**
+ * Get the session type based on information in the session
+ * @param session jingle media session
+ */
+function getSessionType (session): SessionTypes {
+  if (session.peerID.includes('@gjoll')) {
+    return SessionTypes.softphone;
+  }
+  return null;
+}
+
+/**
  * Event handler for incoming webrtc-sessions.
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  * @param session incoming webrtc-session
@@ -258,12 +269,13 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     log.call(this, LogLevels.info, 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
   });
 
-  if (!this.isGuest) { /* authenitcated user */
+  /* authenitcated user */
+  if (!this.isGuest) {
     // Need to add logic here to determine the type of session
     // Currently, we always assume agents can only have softphone session in the sdk
     const stream = await startAudioMedia.call(this);
     log.call(this, LogLevels.debug, 'onAudioMediaStarted');
-    session.addStream(stream);
+    addMediaToSession(session, stream);
     session._outboundStream = stream;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
@@ -286,17 +298,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
       });
       log.call(this, LogLevels.debug, '_temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
 
-      if (checkHasTransceiverFunctionality.call(this)) {
-        log.call(this, LogLevels.info, 'Using track based actions');
-        _temporaryOutboundStream.getTracks().forEach(t => {
-          log.call(this, LogLevels.debug, 'Adding track to session', t);
-          session.addTrack(t);
-        });
-      } else {
-        log.call(this, LogLevels.info, 'Using stream based actions.');
-        log.call(this, LogLevels.debug, 'Adding stream to session', _temporaryOutboundStream);
-        session.addStream(_temporaryOutboundStream);
-      }
+      addMediaToSession(session, _temporaryOutboundStream);
 
       session._outboundStream = _temporaryOutboundStream;
       _temporaryOutboundStream = null;
@@ -323,6 +325,29 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     this.emit('sessionEnded', session, reason);
   });
   this.emit('sessionStarted', session);
+}
+
+/**
+ * Add new media to a session. Will attempt to use tracksBasedActions if possible.
+ * @param session jingle media session
+ * @param stream local MediaStream to add to session
+ * @param allowLegacyStreamBasedActionsFallback if false, an error will be thrown if track based actions are not supported
+ */
+function addMediaToSession (session, stream: MediaStream, allowLegacyStreamBasedActionsFallback: boolean = true) {
+  if (checkHasTransceiverFunctionality.call(this)) {
+    log.call(this, LogLevels.info, 'Using track based actions');
+    _temporaryOutboundStream.getTracks().forEach(t => {
+      log.call(this, LogLevels.debug, 'Adding track to session', t);
+      session.addTrack(t);
+    });
+  } else if (allowLegacyStreamBasedActionsFallback) {
+    log.call(this, LogLevels.info, 'Using stream based actions.');
+    log.call(this, LogLevels.debug, 'Adding stream to session', _temporaryOutboundStream);
+    session.addStream(_temporaryOutboundStream);
+  } else {
+    const errMsg = 'Track based actions are required for this session but the client is not capable';
+    throwSdkError.call(this, SdkErrorTypes.generic, errMsg);
+  }
 }
 
 /**
