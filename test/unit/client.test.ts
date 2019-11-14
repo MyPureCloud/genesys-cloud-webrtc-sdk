@@ -302,7 +302,7 @@ describe('Client', () => {
         sdk._streamingConnection.webrtcSessions.on('rtcSessionError', resolve);
       });
       sdk._streamingConnection._webrtcSessions.acceptRtcSession = jest.fn();
-      sdk.acceptPendingSession('4321');
+      await sdk.acceptPendingSession({ id: '4321' });
       await promise;
     });
   });
@@ -338,8 +338,8 @@ describe('Client', () => {
       await sdk.initialize();
 
       const mockSession = { id: sessionId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
+      sdk.sessionManager.jingle.sessions = {};
+      sdk.sessionManager.jingle.sessions[sessionId] = mockSession;
       await sdk.endSession({ id: sessionId });
       expect(() => getConversation.done()).toThrow();
       expect(mockSession.end).toHaveBeenCalledTimes(1);
@@ -353,8 +353,8 @@ describe('Client', () => {
       await sdk.initialize({ securityCode: 'adf' });
 
       const mockSession = { id: sessionId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
+      sdk.sessionManager.jingle.sessions = {};
+      sdk.sessionManager.jingle.sessions[sessionId] = mockSession;
       await sdk.endSession({ id: sessionId, conversationId });
       getJwt.done();
       expect(() => getConversation.done()).toThrow();
@@ -369,8 +369,8 @@ describe('Client', () => {
       await sdk.initialize();
 
       const mockSession = { id: sessionId, conversationId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
+      sdk.sessionManager.jingle.sessions = {};
+      sdk.sessionManager.jingle.sessions[sessionId] = mockSession;
 
       await sdk.endSession({ id: sessionId });
       getConversation.done();
@@ -386,8 +386,8 @@ describe('Client', () => {
       await sdk.initialize();
 
       const mockSession = { id: sessionId, conversationId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
+      sdk.sessionManager.jingle.sessions = {};
+      sdk.sessionManager.jingle.sessions[sessionId] = mockSession;
 
       try {
         await sdk.endSession({ id: sessionId });
@@ -406,8 +406,8 @@ describe('Client', () => {
       await sdk.initialize();
 
       const mockSession = { id: sessionId, conversationId, end: jest.fn() };
-      sdk._sessionManager.sessions = {};
-      sdk._sessionManager.sessions[sessionId] = mockSession;
+      sdk.sessionManager.jingle.sessions = {};
+      sdk.sessionManager.jingle.sessions[sessionId] = mockSession;
 
       try {
         await sdk.endSession({ id: sessionId });
@@ -454,7 +454,7 @@ describe('Client', () => {
       };
 
       await sdk._streamingConnection.webrtcSessions.refreshIceServers();
-      const actual = sdk._sessionManager.iceServers;
+      const actual = sdk.sessionManager.jingle.iceServers;
       expect(actual).toEqual([
         {
           type: 'turn',

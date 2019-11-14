@@ -86,7 +86,7 @@ function answerCall () {
     return;
   }
 
-  webrtcSdk.acceptPendingSession(currentSessionId);
+  webrtcSdk.acceptPendingSession({ id: currentSessionId });
   currentSessionId = null;
 }
 
@@ -98,11 +98,6 @@ function disconnectSdk () {
 
   webrtcSdk.disconnect();
   utils.writeToLog('Disconnected -- Reauthenticate to reconnect');
-}
-
-function rejectCall () {
-  utils.writeToLog(`rejecting sessionId: ${currentSessionId}`);
-  webrtcSdk.rejectPendingSession(currentSessionId);
 }
 
 function getInputValue (inputId) {
@@ -231,6 +226,5 @@ export default {
   endCall,
   answerCall,
   disconnectSdk,
-  rejectCall,
   initWebrtcSDK
 };

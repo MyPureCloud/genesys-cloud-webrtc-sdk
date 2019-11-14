@@ -1,4 +1,4 @@
-import { LogLevels } from "./enums";
+import { LogLevels, SessionTypes } from "./enums";
 
 export interface ISdkConstructOptions {
   environment: string;
@@ -38,4 +38,35 @@ export interface ICustomerData {
   conversation: { id: string };
   sourceCommunicationId: string;
   jwt: string;
+}
+
+export interface IPendingSession {
+  id: string;
+  autoAnswer: boolean;
+  address: string;
+  conversationId: string;
+  sessionType: SessionTypes;
+}
+
+export interface ISessionInfo {
+  sessionId: string;
+  autoAnswer: boolean;
+  fromJid: string;
+  conversationId: string;
+}
+
+export interface IAcceptPendingSessionRequest {
+  id: string;
+  mediaStream?: MediaStream;
+  audioElement?: HTMLAudioElement;
+  videoElement?: HTMLVideoElement;
+}
+
+export interface IEndSessionRequest {
+  id?: string;
+  conversationId?: string;
+}
+
+export interface IStartSessionParams {
+  sessionType: SessionTypes
 }

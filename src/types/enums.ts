@@ -18,5 +18,5 @@ export enum LogLevels {
 export enum SessionTypes {
   softphone = 'softphone',
   collaborateVideo = 'collaborateVideo',
-  acdScreenShare = 'acdScreenShare'
+  acdScreenShare = 'screenShare'
 }

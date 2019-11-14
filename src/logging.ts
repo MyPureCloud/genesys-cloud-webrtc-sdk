@@ -22,6 +22,12 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
 
 export function log (this: PureCloudWebrtcSdk, level: LogLevels, message: any, details?: any) {
   level = (level || LogLevels.log).toString().toLowerCase() as LogLevels;
+
+  if (message instanceof Error) {
+    details = details || message;
+    message = message.message;
+  }
+
   // immediately log it locally
   this.logger[level](`[webrtc-sdk] ${message}`, details);
 
