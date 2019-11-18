@@ -1,8 +1,4 @@
-import { PureCloudWebrtcSdk } from './client';
-import { log } from './logging';
-import { LogLevels, SdkErrorTypes } from './types/enums';
 import browserama from 'browserama';
-import { throwSdkError } from './utils';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 let _hasTransceiverFunctionality: boolean | null = null;

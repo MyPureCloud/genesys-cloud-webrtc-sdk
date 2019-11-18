@@ -5,9 +5,11 @@ import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest, IEndSessionRequest, IStartSessionParams } from '../types/interfaces';
 import { throwSdkError } from '../utils';
+import ScreenShareSessionHandler from './screen-share-session-handler';
 
 const sessionHandlersToConfigure: any[] = [
-  SoftphoneSessionHandler
+  SoftphoneSessionHandler,
+  ScreenShareSessionHandler
 ];
 
 export class SessionManager {

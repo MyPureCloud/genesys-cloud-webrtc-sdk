@@ -1,5 +1,5 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest, IStartSessionParams } from '../types/interfaces';
+import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { startAudioMedia, attachAudioMedia } from '../media-utils';
 import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
@@ -46,7 +46,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
       attachAudioMedia(session.streams[0], this.pendingAudioElement);
     } else {
-      session.on('peerStreamAdded', (session, stream) => {
+      session.on('peerStreamAdded', (session, stream: MediaStream) => {
         attachAudioMedia(stream, this.pendingAudioElement);
       });
     }

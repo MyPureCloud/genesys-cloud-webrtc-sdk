@@ -1,4 +1,4 @@
-import { LogLevels, SessionTypes } from "./enums";
+import { LogLevels, SessionTypes } from './enums';
 
 export interface ISdkConstructOptions {
   environment: string;
@@ -69,5 +69,4 @@ export interface IEndSessionRequest {
 export interface IStartSessionParams {
   sessionType: SessionTypes;
   jid?: string;
-}
 }

@@ -3,7 +3,7 @@ import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
-import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest, IStartSessionParams } from '../types/interfaces';
+import { IPendingSession, IAcceptPendingSessionRequest, IStartSessionParams } from '../types/interfaces';
 import { checkHasTransceiverFunctionality } from '../media-utils';
 import { throwSdkError } from '../utils';
 

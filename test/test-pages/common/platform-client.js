@@ -1,5 +1,6 @@
 const platformClient = require('platformClient');
 const client = platformClient.ApiClient.instance;
+const persitentName = 'sdk_test';
 
 (function () {
   function getInputValue (inputId) {
@@ -7,7 +8,7 @@ const client = platformClient.ApiClient.instance;
   }
 
   function initClientEnvironment (environment) {
-    client.setPersistSettings(true, 'sdk-test');
+    client.setPersistSettings(true, persitentName);
     client.setEnvironment(window.environments[environment].uri);
   }
 
@@ -23,7 +24,7 @@ const client = platformClient.ApiClient.instance;
 
     client.loginImplicitGrant(clientId, window.location.href)
       .then(() => {
-        const authInfo = JSON.parse(window.localStorage.getItem('sdk_test_auth_data'));
+        const authInfo = JSON.parse(window.localStorage.getItem(`${persitentName}_auth_data`));
         platformClient.ApiClient.instance.authentications['PureCloud Auth'].accessToken = authInfo.accessToken;
 
         window.conversationsAPI = new platformClient.ConversationsApi();
@@ -38,6 +39,7 @@ const client = platformClient.ApiClient.instance;
     const environment = getInputValue('environment');
     initClientEnvironment(environment);
 
+    window.localStorage.setItem(`${persitentName}_auth_data`, JSON.stringify({ accessToken: token }));
     platformClient.ApiClient.instance.authentications['PureCloud Auth'].accessToken = token;
     window.conversationsAPI = new platformClient.ConversationsApi();
 
@@ -62,9 +64,8 @@ const client = platformClient.ApiClient.instance;
       return;
     }
 
-    let url = window.location.href;
-    url += `${url.indexOf('?') ? '&' : '?'}access_token=${token}`;
-    window.location.href = url;
+    window.location.hash = `#access_token=${token}`;
+    window.location.reload(true);
   }
   const form = this.document.getElementById('manual-form');
   const manualAuthInput = this.document.getElementById('manual-auth');
