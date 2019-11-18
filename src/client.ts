@@ -256,7 +256,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     try {
       const { body } = await requestApi.call(this, `/conversations/calls/${session.conversationId}`);
       const participant = body.participants
-        .find((p: { user?: { id?: string } }) => p.user && p.user.id === this._personDetails.id);
+        .find((p: { user?: { id?: string }, state?: string }) => p.user && p.user.id === this._personDetails.id && p.state === 'connected');
       await requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
         method: 'patch',
         data: JSON.stringify({ state: 'disconnected' })

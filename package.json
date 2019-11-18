@@ -13,6 +13,7 @@
     "src",
     "dist"
   ],
+  "typings": "dist/src/client.d.ts",
   "pre-push": [
     "test"
   ],
@@ -66,7 +67,6 @@
     "@types/uuid": "^3.4.5",
     "@types/webrtc": "0.0.25",
     "@types/ws": "^6.0.1",
-    "awesome-typescript-loader": "^5.2.1",
     "babel-jest": "^24.8.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.4",
@@ -81,6 +81,7 @@
     "semistandard": "^13.0.1",
     "stupid-server": "^0.2.5",
     "ts-jest": "^24.0.2",
+    "ts-loader": "^6.2.1",
     "tslint": "^5.18.0",
     "tslint-config-semistandard": "^8.0.1",
     "typescript": "^3.5.3",

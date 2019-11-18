@@ -1,4 +1,4 @@
-import { LogLevels } from "./enums";
+import { LogLevels } from './enums';
 
 export interface ISdkConstructOptions {
   environment: string;

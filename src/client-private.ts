@@ -188,20 +188,41 @@ function startAudioMedia (this: PureCloudWebrtcSdk): Promise<MediaStream> {
     : window.navigator.mediaDevices.getUserMedia({ audio: true });
 }
 
+function getSafeIdentifier (identifier: string): string {
+  return `sid-${identifier}`;
+}
+
+function getAudioElement (sid: string): HTMLAudioElement {
+  const safeIdentifier = getSafeIdentifier(sid);
+  return document.querySelector(`.${PC_AUDIO_EL_CLASS}.${safeIdentifier}`);
+}
+
 /**
- * Select or create the `audio.__pc-webrtc-inbound` element
+ * Select or create the `audio.__pc-webrtc-inbound.sid-{sessionId}` element
  */
-function createAudioMediaElement (): HTMLAudioElement {
-  const existing = document.querySelector(`audio.${PC_AUDIO_EL_CLASS}`);
+function createAudioMediaElement (identifier): HTMLAudioElement {
+  const existing = getAudioElement(identifier);
   if (existing) {
-    return existing as HTMLAudioElement;
+    return existing;
   }
   const audio = document.createElement('audio');
-  audio.classList.add(PC_AUDIO_EL_CLASS);
+  audio.classList.add(PC_AUDIO_EL_CLASS, getSafeIdentifier(identifier));
   (audio.style as any) = 'visibility: hidden';
 
   document.body.append(audio);
   return audio;
+}
+
+function cleanupMediaElement (identifier: string) {
+  const elem = getAudioElement(identifier);
+  if (!elem) {
+    log.call(this, LogLevels.info, 'failed to find audio element for removal', { identifier });
+    return;
+  }
+
+  log.call(this, LogLevels.info, 'Removing media element', { identifier });
+
+  elem.parentNode.removeChild(elem);
 }
 
 /**
@@ -209,13 +230,18 @@ function createAudioMediaElement (): HTMLAudioElement {
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  * @param stream audio stream to attach
  */
-function attachAudioMedia (this: PureCloudWebrtcSdk, stream: MediaStream) {
+function attachAudioMedia (this: PureCloudWebrtcSdk, stream: MediaStream, sessionId: string) {
   let audioElement: HTMLAudioElement;
   if (this._pendingAudioElement) {
     audioElement = this._pendingAudioElement;
   } else {
-    audioElement = createAudioMediaElement();
+    audioElement = createAudioMediaElement(sessionId);
   }
+
+  if (audioElement.srcObject) {
+    log.call(this, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
+  }
+
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
 }
@@ -267,10 +293,10 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
     session._outboundStream = stream;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      attachAudioMedia.call(this, session.streams[0]);
+      attachAudioMedia.call(this, session.streams[0], session.sid);
     } else {
-      session.on('peerStreamAdded', (session, stream) => {
-        attachAudioMedia.call(this, stream);
+      session.on('peerStreamAdded', (session, stream: MediaStream) => {
+        attachAudioMedia.call(this, stream, session.sid);
       });
     }
   } else { /* unauthenitcated user */
@@ -321,6 +347,7 @@ async function onSession (this: PureCloudWebrtcSdk, session): Promise<void> {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     }
     this.emit('sessionEnded', session, reason);
+    cleanupMediaElement.call(this, session.sid);
   });
   this.emit('sessionStarted', session);
 }
