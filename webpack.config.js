@@ -53,7 +53,7 @@ module.exports = (env) => {
         {
           test: /\.ts$/,
           exclude: /(node_modules|bower_components)/,
-          loader: 'awesome-typescript-loader'
+          loader: 'ts-loader'
         }
       ]
     }

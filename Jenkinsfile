@@ -9,7 +9,7 @@ webappPipeline {
         sh('node ./create-manifest.js')
         readJSON(file: 'dist/manifest.json')
     }
-    buildType = { (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'release') ? 'MAINLINE' : 'FEATURE' }
+    buildType = { (env.BRANCH_NAME == 'master' || env.BRANCH_NAME.startsWith('release/')) ? 'MAINLINE' : 'FEATURE' }
     publishPackage = { 'prod' }
     testJob = 'valve-webrtcsdk-tests'
 

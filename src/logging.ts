@@ -20,7 +20,7 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
   APP_VERSION = require('../package.json').version;
 }
 
-export function log (this: PureCloudWebrtcSdk, level: LogLevels, message: any, details?: any) {
+export const log = function (this: PureCloudWebrtcSdk, level: LogLevels, message: any, details?: any) {
   level = (level || LogLevels.log).toString().toLowerCase() as LogLevels;
 
   if (message instanceof Error) {
@@ -53,7 +53,7 @@ export function log (this: PureCloudWebrtcSdk, level: LogLevels, message: any, d
   };
   this._logBuffer.push(logContainer);
   notifyLogs.call(this); // debounced sendLogs
-}
+};
 
 export function setupLogging (this: PureCloudWebrtcSdk, logger: ILogger, logLevel: LogLevels) {
   this._logBuffer = [];

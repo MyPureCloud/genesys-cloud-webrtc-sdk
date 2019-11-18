@@ -74,6 +74,7 @@ interface MockApiOptions {
   withLogs?: boolean;
   guestSdk?: boolean;
   withCustomerData?: boolean;
+  conversation?: MockConversation;
 }
 
 interface MockApiReturns {
@@ -89,6 +90,18 @@ interface MockApiReturns {
   mockCustomerData: ICustomerData;
 }
 
+interface MockParticipant {
+  id: string;
+  state?: string;
+  user?: {
+    id: string
+  };
+}
+
+interface MockConversation {
+  participants: MockParticipant[];
+}
+
 let wss: WebSocket.Server;
 let ws: WebSocket;
 
@@ -102,6 +115,7 @@ function timeout (n: number): Promise<void> {
 
 const USER_ID = random();
 const PARTICIPANT_ID = random();
+const PARTICIPANT_ID_2 = random();
 
 const MOCK_USER = {
   id: USER_ID,
@@ -120,10 +134,11 @@ const MOCK_ORG = {
   thirdPartyOrgId: '3000'
 };
 
-const MOCK_CONVERSATION = {
+const MOCK_CONVERSATION: MockConversation = {
   participants: [
     {
       id: PARTICIPANT_ID,
+      state: 'connected',
       user: {
         id: USER_ID
       }
@@ -147,6 +162,10 @@ function closeWebSocketServer (): Promise<void> {
   return Promise.resolve();
 }
 
+function getMockConversation (): MockConversation {
+  return JSON.parse(JSON.stringify(MOCK_CONVERSATION));
+}
+
 function mockApis (options: MockApiOptions = {}): MockApiReturns {
   const {
     failSecurityCode,
@@ -161,7 +180,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     participantId,
     withLogs,
     guestSdk,
-    withCustomerData
+    withCustomerData,
+    conversation
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
@@ -182,6 +202,11 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     } else {
       getJwt = api.post('/api/v2/conversations/codes').reply(200, MOCK_CUSTOMER_DATA);
     }
+
+    // getChannel = api
+    //   .post('/api/v2/stream/jwt')
+    //   .reply(200, { id: 'someguestchangeid' });
+
   } else {
     if (failOrg) {
       getOrg = api.get('/api/v2/organizations/me').reply(401);
@@ -205,7 +230,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   if (conversationId) {
     getConversation = conversationsApi
       .get(`/api/v2/conversations/calls/${conversationId}`)
-      .reply(200, MOCK_CONVERSATION);
+      .reply(200, conversation || MOCK_CONVERSATION);
   }
 
   let patchConversation: nock.Scope;
@@ -312,6 +337,10 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
         } else {
           send(`<iq xmlns="jabber:client" type="result" to="${MOCK_USER.chat.jabberId}" id="${id}"><services xmlns="urn:xmpp:extdisco:1"><service transport="udp" port="3456" type="stun" host="turn.us-east-1.mypurecloud.com"/></services></iq>`);
         }
+      } else if (msg.indexOf('<close') === 0) {
+        send(`<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" version="1.0"></close>`);
+      } else {
+        console.warn('Incoming stanza that does not have a test handler to send a response', msg);
       }
     });
   });
@@ -328,7 +357,9 @@ export {
   random,
   timeout,
   closeWebSocketServer,
+  getMockConversation,
   PARTICIPANT_ID,
+  PARTICIPANT_ID_2,
   MockSession,
   MockStream,
   MockTrack

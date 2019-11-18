@@ -2,6 +2,7 @@ declare module 'wildemitter' {
   export default class WildEmitter {
     constructor ();
     on (event: string, ...args: any[]): void;
+    once (event: string, ...args: any[]): void;
     off (event: string, ...args: any[]): void;
     emit (event: string, message?: any, details?: any): void;
   }
