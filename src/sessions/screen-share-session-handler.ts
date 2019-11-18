@@ -1,8 +1,8 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, ISessionInfo, IStartSessionParams } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
-import { hasAllTracksEnded, startDisplayMedia } from '../media-utils';
-import { throwSdkError, parseJwt } from '../utils';
+import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
+import { throwSdkError, parseJwt, isAcdJid } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
   private temporaryOutboundStream: MediaStream;
@@ -11,12 +11,8 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     return SessionTypes.acdScreenShare;
   }
 
-  shouldHandleSession ({ sessionInfo, sessionType }: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes }): boolean {
-    if (sessionInfo) {
-      return sessionInfo.fromJid.includes('@gjoll');
-    }
-
-    return sessionType === SessionTypes.acdScreenShare;
+  shouldHandleSessionByJid (jid: string): boolean {
+    return isAcdJid(jid);
   }
 
   async startSession (startParams: IStartSessionParams): Promise<any> {
@@ -53,7 +49,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       this.temporaryOutboundStream.getTracks().forEach((track: MediaStreamTrack) => {
         track.addEventListener('ended', () => {
           this.log(LogLevels.debug, 'Track ended');
-          if (hasAllTracksEnded(session._outboundStream)) {
+          if (checkAllTracksHaveEnded(session._outboundStream)) {
             session.end();
           }
         });

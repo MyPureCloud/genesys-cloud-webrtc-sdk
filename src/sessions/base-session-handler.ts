@@ -16,7 +16,13 @@ export default abstract class BaseSessionHandler {
     log.call(this.sdk, level, message, details);
   }
 
-  abstract shouldHandleSession ({ sessionInfo, sessionType }: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes }): boolean;
+  abstract shouldHandleSessionByJid (jid: string): boolean;
+
+  shouldHandleSessionByType (sessionType: SessionTypes): boolean {
+    return this.getSessionType() === sessionType;
+  }
+
+  handleConversationUpdate (update: { session: any, update: any }) { }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
     throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the purecloud api`, { sessionStartParams });

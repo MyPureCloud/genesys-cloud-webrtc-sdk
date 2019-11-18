@@ -48,7 +48,8 @@ export class SessionManager {
     if (params.sessionType) {
       handler = this.sessionHandlers.find((handler) => handler.getSessionType() === params.sessionType);
     } else {
-      handler = this.sessionHandlers.find((handler) => handler.shouldHandleSession(params));
+      const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
+      handler = this.sessionHandlers.find((handler) => handler.shouldHandleSessionByJid(fromJid));
     }
 
     if (!handler) {

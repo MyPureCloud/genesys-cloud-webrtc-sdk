@@ -52,3 +52,22 @@ export function parseJwt (token: string): any {
 
   return JSON.parse(jsonPayload);
 }
+
+export function isAcdJid (jid: string): boolean {
+  return jid.startsWith('acd-');
+}
+
+export function isScreenRecordingJid (jid: string): boolean {
+  return jid.startsWith('screenrecording-');
+}
+
+export function isSoftphoneJid (jid: string): boolean {
+  if (!jid) {
+    return false;
+  }
+  return !!jid.match(/.*@.*gjoll.*/i);
+}
+
+export function isVideoJid (jid: string): boolean {
+  return jid && !!jid.match(/@conference/);
+}

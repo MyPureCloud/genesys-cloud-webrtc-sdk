@@ -82,12 +82,12 @@ export function checkHasTransceiverFunctionality (): boolean {
   return _hasTransceiverFunctionality;
 }
 
-export function hasAllTracksEnded (stream: MediaStream): boolean {
-  let hasAllTracksEnded = true;
+export function checkAllTracksHaveEnded (stream: MediaStream): boolean {
+  let allTracksHaveEnded = true;
   stream.getTracks().forEach(function (t) {
-    hasAllTracksEnded = t.readyState === 'ended' && hasAllTracksEnded;
+    allTracksHaveEnded = t.readyState === 'ended' && allTracksHaveEnded;
   });
-  return hasAllTracksEnded;
+  return allTracksHaveEnded;
 }
 
 function hasGetDisplayMedia (): boolean {

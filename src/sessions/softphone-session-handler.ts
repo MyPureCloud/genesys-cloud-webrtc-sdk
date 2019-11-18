@@ -2,7 +2,7 @@ import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest, IStartSessionParams } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { startAudioMedia, attachAudioMedia } from '../media-utils';
-import { requestApi, throwSdkError } from '../utils';
+import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   private pendingMedia: MediaStream;
@@ -12,11 +12,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return SessionTypes.softphone;
   }
 
-  shouldHandleSession ({ sessionInfo, jingleSession }: { sessionInfo?: ISessionInfo, jingleSession: any }): boolean {
-    const fromJid = (sessionInfo && sessionInfo.fromJid) || (jingleSession && jingleSession.peerID);
-    if (fromJid) {
-      return fromJid.includes('@gjoll');
-    }
+  shouldHandleSessionByJid (jid: string): boolean {
+    return isSoftphoneJid(jid);
   }
 
   handlePropose (pendingSession: IPendingSession) {

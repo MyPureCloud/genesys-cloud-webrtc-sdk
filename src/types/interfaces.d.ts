@@ -59,7 +59,6 @@ export interface IAcceptPendingSessionRequest {
   id: string;
   mediaStream?: MediaStream;
   audioElement?: HTMLAudioElement;
-  videoElement?: HTMLVideoElement;
 }
 
 export interface IEndSessionRequest {
@@ -68,5 +67,7 @@ export interface IEndSessionRequest {
 }
 
 export interface IStartSessionParams {
-  sessionType: SessionTypes
+  sessionType: SessionTypes;
+  jid?: string;
+}
 }
