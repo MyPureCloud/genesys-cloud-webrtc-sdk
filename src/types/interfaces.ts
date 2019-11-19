@@ -14,12 +14,18 @@ export interface ISdkConstructOptions {
   disableAutoAnswer?: boolean;
 }
 
+/**
+ * if defaultAudioElement is provided, it will be used to play incoming call audio *unless* it already has a source in which case the sdk will create a temporary audio element for the call.
+ * defaultAudioStream is the outgoing mediaStream for softphone calls. If not provided, one will be created during `acceptSession`. the sdk will not clean up provided streams
+ */
 export interface ISdkConfig {
   environment: string;
   accessToken: string;
   wsHost: string;
   disableAutoAnswer: boolean;
   autoConnectSessions: boolean;
+  defaultAudioElement?: HTMLAudioElement;
+  defaultAudioStream?: MediaStream;
   iceTransportPolicy: RTCIceTransportPolicy;
   logLevel: LogLevels;
   optOutOfTelemetry: boolean;
@@ -55,7 +61,7 @@ export interface ISessionInfo {
   conversationId: string;
 }
 
-export interface IAcceptPendingSessionRequest {
+export interface IAcceptSessionRequest {
   id: string;
   mediaStream?: MediaStream;
   audioElement?: HTMLAudioElement;

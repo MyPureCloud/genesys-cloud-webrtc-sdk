@@ -3,7 +3,7 @@ import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest, IEndSessionRequest, IStartSessionParams } from '../types/interfaces';
+import { IPendingSession, ISessionInfo, IEndSessionRequest, IStartSessionParams, IAcceptSessionRequest } from '../types/interfaces';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 
@@ -39,6 +39,19 @@ export class SessionManager {
       return this.pendingSessions[params.sessionId];
     }
     return Object.values(this.pendingSessions).find((session) => session.conversationId === params.conversationId);
+  }
+
+  getSession (params: { id?: string, conversationId?: string }): any {
+    let session: any;
+    if (params.id) {
+      session = this.jingle.sessions[params.id];
+    } else {
+      session = Object.values(this.jingle.sessions).find((s: any) => s.conversationId === params.conversationId);
+    }
+
+    if (!session) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
+    }
   }
 
   removePendingSession (sessionId: string) {
@@ -101,16 +114,16 @@ export class SessionManager {
     handler.handlePropose(pendingSession);
   }
 
-  async acceptPendingSession (params: IAcceptPendingSessionRequest) {
-    const pendingSession = this.getPendingSession({ sessionId: params.id });
+  async proceedWithSession (sessionId: string) {
+    const pendingSession = this.getPendingSession({ sessionId });
 
     if (!pendingSession) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { params });
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
 
-    return sessionHandler.acceptPendingSession(pendingSession, params);
+    return sessionHandler.proceedWithSession(pendingSession);
   }
 
   async onSessionInit (session: any) {
@@ -119,27 +132,18 @@ export class SessionManager {
     return sessionHandler.handleSessionInit(session);
   }
 
+  async acceptSession (params: IAcceptSessionRequest): Promise<any> {
+    const session = this.getSession({ id: params.id });
+    const sessionHandler = this.getSessionHandler({ jingleSession: session });
+    return sessionHandler.acceptSession(session, params);
+  }
+
   async endSession (params: IEndSessionRequest) {
     if (!params.id && !params.conversationId) {
       throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
     }
 
-    let session: any;
-    if (params.id) {
-      session = this.jingle.sessions[params.id];
-    } else {
-      session = Object.values(this.jingle.sessions).find((s: any) => s.conversationId === params.conversationId);
-    }
-
-    if (!session) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: session not connected.');
-    }
-
-    if (!session.conversationId) {
-      this.log(LogLevels.warn, 'Session has no conversationId. Terminating session.');
-      session.end();
-      return;
-    }
+    const session = this.getSession(params);
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.endSession(session);

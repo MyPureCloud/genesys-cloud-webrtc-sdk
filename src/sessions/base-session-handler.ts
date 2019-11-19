@@ -3,7 +3,7 @@ import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IAcceptPendingSessionRequest, IStartSessionParams } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest } from '../types/interfaces';
 import { checkHasTransceiverFunctionality } from '../media-utils';
 import { throwSdkError } from '../utils';
 
@@ -36,7 +36,7 @@ export default abstract class BaseSessionHandler {
     }, 1000);
   }
 
-  acceptPendingSession (session: IPendingSession, params?: IAcceptPendingSessionRequest) {
+  proceedWithSession (session: IPendingSession) {
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
@@ -84,6 +84,10 @@ export default abstract class BaseSessionHandler {
       this.sdk.emit('sessionEnded', session, reason);
     });
     this.sdk.emit('sessionStarted', session);
+  }
+
+  async acceptSession (session: any, params: IAcceptSessionRequest): Promise<any> {
+    return session.accept();
   }
 
   async endSession (session: any) {

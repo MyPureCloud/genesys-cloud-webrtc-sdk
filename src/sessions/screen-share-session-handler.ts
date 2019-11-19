@@ -34,7 +34,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
 
   handlePropose (pendingSession: IPendingSession) {
     super.handlePropose(pendingSession);
-    this.acceptPendingSession(pendingSession);
+    this.proceedWithSession(pendingSession);
   }
 
   async handleSessionInit (session: any) {

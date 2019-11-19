@@ -1,4 +1,7 @@
 import browserama from 'browserama';
+import { PureCloudWebrtcSdk } from './client';
+import { log } from './logging';
+import { LogLevels } from './types/enums';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 let _hasTransceiverFunctionality: boolean | null = null;
@@ -54,12 +57,16 @@ export function createAudioMediaElement (): HTMLAudioElement {
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  * @param stream audio stream to attach
  */
-export function attachAudioMedia (stream: MediaStream, audioElement?: HTMLAudioElement): void {
+export function attachAudioMedia (sdk: PureCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement): void {
   if (!audioElement) {
     audioElement = createAudioMediaElement();
   }
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
+
+  if (audioElement.srcObject) {
+    log.call(sdk, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
+  }
 }
 
 export function checkHasTransceiverFunctionality (): boolean {

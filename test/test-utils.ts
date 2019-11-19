@@ -2,8 +2,9 @@ import WebSocket from 'ws';
 import nock from 'nock';
 import WildEmitter from 'wildemitter';
 import { PureCloudWebrtcSdk } from '../src/client';
-import { ISdkConstructOptions, ICustomerData } from '../src/types/interfaces';
+import { ISdkConstructOptions, ICustomerData, IPendingSession } from '../src/types/interfaces';
 import crypto from 'crypto';
+import { SessionTypes } from '../src/types/enums';
 
 declare var global: {
   window: any,
@@ -22,6 +23,19 @@ Object.defineProperty(global, 'crypto', {
     }
   }
 });
+
+export class SimpleMockSdk extends WildEmitter {
+  _config = {};
+  jingle = {
+
+  };
+  _streamingConnection = {
+    webrtcSessions: {
+      initiateRtcSession: jest.fn(),
+      acceptRtcSession: jest.fn()
+    }
+  };
+}
 
 class MockSession extends WildEmitter {
   streams: any[];
@@ -148,6 +162,27 @@ const MOCK_CONVERSATION: MockConversation = {
     }
   ]
 };
+
+export function createPendingSession (type: SessionTypes = SessionTypes.softphone): IPendingSession {
+  const base = {
+    id: random(),
+    conversationId: random(),
+    autoAnswer: false,
+    sessionType: type
+  };
+
+  let specifics;
+  switch (type) {
+    case SessionTypes.acdScreenShare: {
+      specifics = { address: `acd-${random()}@org.com` };
+      break;
+    }
+    default: {
+      specifics = { address: `${random()}@gjoll.com` };
+    }
+  }
+  return Object.assign(base, specifics);
+}
 
 function closeWebSocketServer (): Promise<void> {
   if (wss) {

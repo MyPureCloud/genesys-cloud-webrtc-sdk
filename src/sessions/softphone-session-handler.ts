@@ -1,13 +1,10 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, ISessionInfo, IAcceptPendingSessionRequest } from '../types/interfaces';
+import { IPendingSession, IAcceptSessionRequest } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { startAudioMedia, attachAudioMedia } from '../media-utils';
 import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
-  private pendingMedia: MediaStream;
-  private pendingAudioElement: HTMLAudioElement;
-
   getSessionType () {
     return SessionTypes.softphone;
   }
@@ -19,43 +16,44 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   handlePropose (pendingSession: IPendingSession) {
     super.handlePropose(pendingSession);
 
-    // this needs to change once we can distinguish what type of session it is
     if ((pendingSession.autoAnswer && !this.sdk._config.disableAutoAnswer) || this.sdk.isGuest) {
-      this.acceptPendingSession(pendingSession);
+      this.proceedWithSession(pendingSession);
     }
-  }
-
-  acceptPendingSession (session: IPendingSession, params?: IAcceptPendingSessionRequest) {
-    if (params && params.mediaStream) {
-      this.pendingMedia = params.mediaStream;
-    }
-    if (params && params.audioElement) {
-      this.pendingAudioElement = params.audioElement;
-    }
-
-    super.acceptPendingSession(session, params);
   }
 
   async handleSessionInit (session: any) {
     await super.handleSessionInit(session);
-    const stream = await this.getAudioMedia();
-    this.log(LogLevels.debug, 'onAudioMediaStarted');
+    if (this.sdk._config.autoConnectSessions) {
+      return this.acceptSession(session, { id: session.id });
+    }
+
+    // todo: will need to update this to call streamingClient.rtcSessionAccepted
+  }
+
+  async acceptSession (session: any, params: IAcceptSessionRequest): Promise<any> {
+    let stream: MediaStream;
+    if (params.mediaStream) {
+      stream = params.mediaStream || this.sdk._config.defaultAudioStream;
+    } else {
+      this.log(LogLevels.debug, 'No mediaStream provided, starting media');
+      stream = await startAudioMedia();
+      this.log(LogLevels.debug, 'Media start');
+    }
+    this.log(LogLevels.debug, 'Adding media to session');
     this.addMediaToSession(session, stream);
     session._outboundStream = stream;
 
+    const element = params.audioElement || this.sdk._config.defaultAudioElement;
+
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      attachAudioMedia(session.streams[0], this.pendingAudioElement);
+      attachAudioMedia(this.sdk, session.streams[0], element);
     } else {
       session.on('peerStreamAdded', (session, stream: MediaStream) => {
-        attachAudioMedia(stream, this.pendingAudioElement);
+        attachAudioMedia(this.sdk, stream, element);
       });
     }
 
-    this.pendingAudioElement = null;
-
-    if (this.sdk._config.autoConnectSessions) {
-      session.accept();
-    }
+    session.accept();
   }
 
   async endSession (session: any) {
@@ -72,13 +70,5 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       session.end();
       throwSdkError.call(this.sdk, SdkErrorTypes.http, err.message, err);
     }
-  }
-
-  private async getAudioMedia (): Promise<MediaStream> {
-    if (this.pendingMedia) {
-      return this.pendingMedia;
-    }
-
-    return startAudioMedia();
   }
 }

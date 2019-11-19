@@ -6,7 +6,7 @@ import {
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IAcceptPendingSessionRequest, IEndSessionRequest } from './types/interfaces';
+import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest } from './types/interfaces';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 
