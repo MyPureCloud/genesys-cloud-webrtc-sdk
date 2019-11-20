@@ -35,14 +35,10 @@ webappPipeline {
 
     postReleaseStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
-            if (env.BRANCH_NAME == 'master') {
-                sh("""
-                    # patch to prep for the next version
-                    npm version patch --no-git-tag-version
-                    git commit -am "Prep next version"
-                    git push origin HEAD:master
-                """)
-            }
+            sh("""
+                git tag v${version}
+                git push origin --tags
+            """)
         }
     }
 }
