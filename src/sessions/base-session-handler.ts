@@ -8,9 +8,11 @@ import { checkHasTransceiverFunctionality } from '../media-utils';
 import { throwSdkError } from '../utils';
 
 export default abstract class BaseSessionHandler {
+  removePendingSessionDelay = 1000;
+
   constructor (protected sdk: PureCloudWebrtcSdk, protected sessionManager: SessionManager) {}
 
-  abstract getSessionType (): SessionTypes;
+  abstract sessionType: SessionTypes;
 
   protected log (level: LogLevels, message: any, details?: any): void {
     log.call(this.sdk, level, message, details);
@@ -18,22 +20,12 @@ export default abstract class BaseSessionHandler {
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
-  shouldHandleSessionByType (sessionType: SessionTypes): boolean {
-    return this.getSessionType() === sessionType;
-  }
-
-  handleConversationUpdate (update: { session: any, update: any }) { }
-
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
     throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the purecloud api`, { sessionStartParams });
   }
 
   handlePropose (pendingSession: IPendingSession) {
     this.sdk.emit('pendingSession', pendingSession);
-
-    setTimeout(() => {
-      this.sessionManager.removePendingSession(pendingSession.id);
-    }, 1000);
   }
 
   proceedWithSession (session: IPendingSession) {
@@ -59,31 +51,33 @@ export default abstract class BaseSessionHandler {
       conference: session.conversationId
     });
 
-    session._statsGatherer.on('stats', (data) => {
+    session._statsGatherer.on('stats', (data: any) => {
       data.conversationId = session.conversationId;
       this.log(LogLevels.info, 'session:stats', data);
     });
 
-    session._statsGatherer.on('traces', (data) => {
+    session._statsGatherer.on('traces', (data: any) => {
       data.conversationId = session.conversationId;
       this.log(LogLevels.warn, 'session:trace', data);
     });
 
-    session.on('change:active', (session, active) => {
+    session.on('change:active', (session: any, active: boolean) => {
       if (active) {
         session._statsGatherer.collectInitialConnectionStats();
       }
       this.log(LogLevels.info, 'change:active', { active, conversationId: session.conversationId, sid: session.sid });
     });
 
-    session.on('terminated', (session, reason) => {
-      this.log(LogLevels.info, 'onSessionTerminated', { conversationId: session.conversationId, reason });
-      if (session._outboundStream) {
-        session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-      }
-      this.sdk.emit('sessionEnded', session, reason);
-    });
+    session.on('terminated', this.onSessionTerminated.bind(this));
     this.sdk.emit('sessionStarted', session);
+  }
+
+  onSessionTerminated (session: any, reason: any): void {
+    this.log(LogLevels.info, 'onSessionTerminated', { conversationId: session.conversationId, reason });
+    if (session._outboundStream) {
+      session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    }
+    this.sdk.emit('sessionEnded', session, reason);
   }
 
   async acceptSession (session: any, params: IAcceptSessionRequest): Promise<any> {

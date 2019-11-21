@@ -86,7 +86,7 @@ function answerCall () {
     return;
   }
 
-  webrtcSdk.acceptPendingSession({ id: currentSessionId });
+  webrtcSdk.acceptPendingSession(currentSessionId);
   currentSessionId = null;
 }
 

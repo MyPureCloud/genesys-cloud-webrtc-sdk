@@ -5,17 +5,16 @@ import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
 import { throwSdkError, parseJwt, isAcdJid } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
-  private temporaryOutboundStream: MediaStream;
+  temporaryOutboundStream: MediaStream;
 
-  getSessionType () {
-    return SessionTypes.acdScreenShare;
-  }
+  sessionType = SessionTypes.acdScreenShare;
 
   shouldHandleSessionByJid (jid: string): boolean {
     return isAcdJid(jid);
   }
 
-  async startSession (startParams: IStartSessionParams): Promise<any> {
+  // TODO: someday we should do media right before the session accept once we get away from media presence
+  async startSession (startParams: IStartSessionParams): Promise<void> {
     const { jwt, conversation, sourceCommunicationId } = this.sdk._customerData;
 
     const stream = await startDisplayMedia();
@@ -37,6 +36,13 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     this.proceedWithSession(pendingSession);
   }
 
+  onTrackEnd (session: any) {
+    this.log(LogLevels.debug, 'Track ended');
+    if (checkAllTracksHaveEnded(session._outboundStream)) {
+      session.end();
+    }
+  }
+
   async handleSessionInit (session: any) {
     await super.handleSessionInit(session);
 
@@ -44,15 +50,9 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
     }
 
-    this.log(LogLevels.debug, 'user is a guest');
     if (this.temporaryOutboundStream) {
       this.temporaryOutboundStream.getTracks().forEach((track: MediaStreamTrack) => {
-        track.addEventListener('ended', () => {
-          this.log(LogLevels.debug, 'Track ended');
-          if (checkAllTracksHaveEnded(session._outboundStream)) {
-            session.end();
-          }
-        });
+        track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
       this.log(LogLevels.debug, 'temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
 
@@ -72,6 +72,6 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg);
     }
 
-    session.accept();
+    return this.acceptSession(session, { id: session.id });
   }
 }

@@ -22,12 +22,12 @@ export class SessionManager {
     log.call(this.sdk, level, message, details);
   }
 
-  get jingle () {
-    return this.sdk._streamingConnection._webrtcSessions.jingleJs;
-  }
-
   get webrtcSessions () {
     return this.sdk._streamingConnection.webrtcSessions;
+  }
+
+  get jingle () {
+    return this.sdk._streamingConnection._webrtcSessions.jingleJs;
   }
 
   initSessionHandlers (): void {
@@ -52,6 +52,8 @@ export class SessionManager {
     if (!session) {
       throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
     }
+
+    return session;
   }
 
   removePendingSession (sessionId: string) {
@@ -61,9 +63,14 @@ export class SessionManager {
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
-      handler = this.sessionHandlers.find((handler) => handler.getSessionType() === params.sessionType);
+      handler = this.sessionHandlers.find((handler) => handler.sessionType === params.sessionType);
     } else {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
+
+      if (!fromJid) {
+        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'getSessionHandler was called without any identifying information', params);
+      }
+
       handler = this.sessionHandlers.find((handler) => handler.shouldHandleSessionByJid(fromJid));
     }
 
@@ -97,16 +104,12 @@ export class SessionManager {
 
     const handler = this.getSessionHandler({ sessionInfo });
 
-    if (!handler) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Session handler for pending session could not be identified', sessionInfo);
-    }
-
     const pendingSession: IPendingSession = {
       id: sessionInfo.sessionId,
       autoAnswer: sessionInfo.autoAnswer,
       address: sessionInfo.fromJid.split('@')[0],
       conversationId: sessionInfo.conversationId,
-      sessionType: handler.getSessionType()
+      sessionType: handler.sessionType
     };
 
     this.pendingSessions[pendingSession.id] = pendingSession;
@@ -128,7 +131,7 @@ export class SessionManager {
 
   async onSessionInit (session: any) {
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
-    session.sessionType = sessionHandler.getSessionType();
+    session.sessionType = sessionHandler.sessionType;
     return sessionHandler.handleSessionInit(session);
   }
 

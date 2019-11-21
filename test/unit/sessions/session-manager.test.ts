@@ -1,124 +1,279 @@
-describe('endSession', () => {
-  test('rejects if not provided either an id or a conversationId', async () => {
-    const { sdk } = mockApis();
-    await sdk.initialize();
-    try {
-      await sdk.endSession({});
-      fail();
-    } catch (e) {
-      expect(e).toEqual(new SdkError(SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.'));
-    }
-    await sdk.disconnect();
+import { PureCloudWebrtcSdk } from '../../../src/client';
+import { SessionManager } from '../../../src/sessions/session-manager';
+import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo } from '../../test-utils';
+import { SessionTypes } from '../../../src/types/enums';
+
+let mockSdk: PureCloudWebrtcSdk;
+let sessionManager: SessionManager;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockSdk = (new SimpleMockSdk() as any);
+  (mockSdk as any).isGuest = true;
+  mockSdk._config.autoConnectSessions = true;
+
+  sessionManager = new SessionManager(mockSdk);
+});
+
+it('should initSessionHandlers', () => {
+  expect(sessionManager.sessionHandlers).toBeUndefined();
+  sessionManager.initSessionHandlers();
+  expect(sessionManager.sessionHandlers.length).toBe(2);
+});
+
+it('webrtcSessions should map to the sdk webrtcSession', () => {
+  const webrtcSessions = mockSdk._streamingConnection.webrtcSessions;
+
+  expect(sessionManager.webrtcSessions).toBe(webrtcSessions);
+});
+
+describe('getPendingSession', () => {
+  it('should find session by sessionId', () => {
+    const pendingSession1 = createPendingSession();
+    const pendingSession2 = createPendingSession();
+    sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
+    sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
+
+    expect(sessionManager.getPendingSession({ sessionId: pendingSession1.id })).toBe(pendingSession1);
+    expect(sessionManager.getPendingSession({ sessionId: pendingSession2.id })).toBe(pendingSession2);
   });
 
-  test('should throw if it cannot find the session', async () => {
-    const { sdk } = mockApis({});
-    const sessionId = random();
-    await sdk.initialize();
-    try {
-      await sdk.endSession({ id: sessionId });
-    } catch (e) {
-      expect(e).toEqual(new SdkError(SdkErrorTypes.session, 'Unable to end session: session not connected.'));
-    }
-    await sdk.disconnect();
+  it('should get pending session by conversationId', () => {
+    const pendingSession1 = createPendingSession();
+    const pendingSession2 = createPendingSession();
+    sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
+    sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
+
+    expect(sessionManager.getPendingSession({ conversationId: pendingSession1.conversationId })).toBe(pendingSession1);
+    expect(sessionManager.getPendingSession({ conversationId: pendingSession2.conversationId })).toBe(pendingSession2);
   });
 });
 
-describe('handlePropose', () => {
-  test('should handles double pending sessions', async () => {
-    const { sdk } = mockApis();
-    await sdk.initialize();
+describe('getSession', () => {
+  let session1: any;
+  let session2: any;
 
-    jest.spyOn(sdk, 'acceptPendingSession').mockImplementation();
-    const pendingSession = new Promise(resolve => {
-      sdk.on('pendingSession', resolve);
-    });
+  beforeEach(() => {
+    session1 = new MockSession();
+    session2 = new MockSession();
 
-    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-      sessionId: '1077',
-      autoAnswer: true,
-      conversationId: 'deadbeef-guid',
-      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-    });
-
-    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-      sessionId: '1078',
-      autoAnswer: true,
-      conversationId: 'deadbeef-guid',
-      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-    });
-
-    const sessionInfo: any = await pendingSession;
-    expect(sessionInfo.id).toBe('1077');
-    expect(sessionInfo.conversationId).toBe('deadbeef-guid');
-    expect(sessionInfo.address).toBe('+15558675309');
-    expect(sessionInfo.autoAnswer).toBe(true);
-    expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(1);
-    expect(sdk.acceptPendingSession).toHaveBeenCalledWith('1077');
-    await sdk.disconnect();
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = {
+      sessions: { [session1.sid]: session1, [session2.sid]: session2 }
+    };
   });
 
-  test('should allow double pending sessions after 10 seconds', async () => {
-    const { sdk } = mockApis();
-    await sdk.initialize();
-    jest.spyOn(sdk, 'acceptPendingSession').mockImplementation();
-    const pendingSession = new Promise(resolve => {
-      const done = function () {
-        sdk.off('pendingSession', done);
-        resolve(...arguments);
-      };
-      sdk.on('pendingSession', done);
-    });
+  it('should get session by sessionId', () => {
+    expect(sessionManager.getSession({ id: session1.id })).toBe(session1);
+    expect(sessionManager.getSession({ id: session2.id })).toBe(session2);
+  });
 
-    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-      sessionId: '1077',
-      autoAnswer: true,
-      conversationId: 'deadbeef-guid',
-      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-    });
+  it('should get session by conversationId', () => {
+    expect(sessionManager.getSession({ conversationId: session1.conversationId })).toBe(session1);
+    expect(sessionManager.getSession({ conversationId: session2.conversationId })).toBe(session2);
+  });
 
-    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-      sessionId: '1078',
-      autoAnswer: true,
-      conversationId: 'deadbeef-guid',
-      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-    });
+  it('should throw is no session is found', () => {
+    expect(() => sessionManager.getSession({ id: 'fakeId' })).toThrowError(/Unable to find session/);
+  });
+});
 
-    const sessionInfo: any = await pendingSession;
-    expect(sessionInfo.id).toBe('1077');
-    expect(sessionInfo.conversationId).toBe('deadbeef-guid');
-    expect(sessionInfo.address).toBe('+15558675309');
-    expect(sessionInfo.autoAnswer).toBe(true);
-    expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(1);
-    expect(sdk.acceptPendingSession).toHaveBeenCalledWith('1077');
+describe('removePendingSession', () => {
+  it('should remove pending session by sessionId', () => {
+    const pendingSession1 = createPendingSession();
+    const pendingSession2 = createPendingSession();
+    sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
+    sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
 
-    await timeout(1100);
+    expect(Object.values(sessionManager.pendingSessions).length).toBe(2);
 
-    const pendingSession2 = new Promise(resolve => {
-      const done = function () {
-        sdk.off('pendingSession', done);
-        resolve(...arguments);
-      };
-      sdk.on('pendingSession', done);
-    });
+    sessionManager.removePendingSession(pendingSession1.id);
 
-    sdk._streamingConnection._webrtcSessions.emit('requestIncomingRtcSession', {
-      sessionId: '1078',
-      autoAnswer: true,
-      conversationId: 'deadbeef-guid',
-      fromJid: '+15558675309@gjoll.mypurecloud.com/instance-id'
-    });
+    expect(Object.values(sessionManager.pendingSessions).length).toBe(1);
+    expect(sessionManager.pendingSessions[pendingSession1.id]).toBeUndefined();
+  });
+});
 
-    const sessionInfo2: any = await pendingSession2;
-    expect(sessionInfo2.id).toBe('1078');
-    expect(sessionInfo2.conversationId).toBe('deadbeef-guid');
-    expect(sessionInfo2.address).toBe('+15558675309');
-    expect(sessionInfo2.autoAnswer).toBe(true);
-    expect(sdk.acceptPendingSession).toHaveBeenCalledTimes(2);
-    await sdk.disconnect();
+describe('getSessionHandler', () => {
+  let mockHandler: any;
+  beforeEach(() => {
+    mockHandler = {
+      shouldHandleSessionByJid: jest.fn()
+    };
+
+    sessionManager.sessionHandlers = [mockHandler];
+  });
+
+  it('should get by sessionType', () => {
+    mockHandler.sessionType = SessionTypes.softphone;
+    const handler = sessionManager.getSessionHandler({ sessionType: SessionTypes.softphone });
+    expect(handler).toBe(mockHandler);
+  });
+
+  it('should get by sessionInfo jid', () => {
+    (mockHandler.shouldHandleSessionByJid as jest.Mock).mockReturnValue(true);
+    const jid = 'lsdkfjsdjk';
+    const sessionInfo: any = {
+      fromJid: jid
+    };
+    const handler = sessionManager.getSessionHandler({ sessionInfo });
+
+    expect(handler).toBe(mockHandler);
+    expect(mockHandler.shouldHandleSessionByJid).toHaveBeenCalledWith(jid);
+  });
+
+  it('should get by jingleSession peerID', () => {
+    (mockHandler.shouldHandleSessionByJid as jest.Mock).mockReturnValue(true);
+    const jid = '555kjsdjf';
+    const jingleSession: any = {
+      peerID: jid
+    };
+    const handler = sessionManager.getSessionHandler({ jingleSession });
+
+    expect(handler).toBe(mockHandler);
+    expect(mockHandler.shouldHandleSessionByJid).toHaveBeenCalledWith(jid);
+  });
+
+  it('should throw if no identifying params provided', () => {
+    expect(() => sessionManager.getSessionHandler({})).toThrowError(/getSessionHandler was called/);
+  });
+
+  it('should throw if handler not found', () => {
+    (mockHandler.shouldHandleSessionByJid as jest.Mock).mockReturnValue(false);
+    const jid = '555kjsdjf';
+    const jingleSession: any = {
+      peerID: jid
+    };
+
+    expect(() => sessionManager.getSessionHandler({ jingleSession })).toThrowError(/Failed to find/);
+  });
+});
+
+describe('startSession', () => {
+  it('should call startSession on the session handler', async () => {
+    const mockHandler: any = {
+      startSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const mockParams = { sessionType: SessionTypes.softphone };
+    await sessionManager.startSession(mockParams);
+    expect(mockHandler.startSession).toHaveBeenCalledWith(mockParams);
+  });
+});
+
+describe('onPropose', () => {
+  it('should add pendingSession and call handlePropose on session handler with pending session', () => {
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(null);
+
+    const mockHandler: any = {
+      handlePropose: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const sessionInfo = createSessionInfo();
+    sessionManager.onPropose(sessionInfo);
+
+    expect(mockHandler.handlePropose).toHaveBeenCalled();
+    expect(sessionManager.pendingSessions[sessionInfo.sessionId]).toBeTruthy();
+  });
+
+  it('should ignore if pendingSession already exists', () => {
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue({} as any);
+
+    const mockHandler: any = {
+      handlePropose: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const sessionInfo = createSessionInfo();
+
+    sessionManager.onPropose(sessionInfo);
+
+    expect(mockHandler.handlePropose).not.toHaveBeenCalled();
+  });
+});
+
+describe('proceedWithSession', () => {
+  it('should throw if no pending session', async () => {
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(null);
+
+    const mockHandler: any = {
+      proceedWithSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const sessionInfo = createSessionInfo();
+    await expect(sessionManager.proceedWithSession(sessionInfo.sessionId)).rejects.toThrowError(/Could not find a pendingSession/);
+
+    expect(mockHandler.proceedWithSession).not.toHaveBeenCalled();
+  });
+
+  it('should call proceedWithSession on the session handler', async () => {
+    const pendingSession: any = {};
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(pendingSession);
+
+    const mockHandler: any = {
+      proceedWithSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    await sessionManager.proceedWithSession('asldkfj');
+
+    expect(mockHandler.proceedWithSession).toHaveBeenCalled();
   });
 });
 
 describe('onSessionInit', () => {
+  it('should call handleSessionInit for the session handler and set the sessionType on the session', async () => {
+    const session: any = {};
 
+    const mockHandler: any = {
+      sessionType: SessionTypes.acdScreenShare,
+      handleSessionInit: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    await sessionManager.onSessionInit(session);
+
+    expect(mockHandler.handleSessionInit).toHaveBeenCalled();
+    expect(session.sessionType).toEqual(SessionTypes.acdScreenShare);
+  });
+});
+
+describe('acceptSession', () => {
+  it('should call acceptSession for the session handler and set the sessionType on the session', async () => {
+    const session: any = {};
+
+    const mockHandler: any = {
+      sessionType: SessionTypes.acdScreenShare,
+      acceptSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+    jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
+
+    await sessionManager.acceptSession(session);
+
+    expect(mockHandler.acceptSession).toHaveBeenCalled();
+  });
+});
+
+describe('endSession', () => {
+  it('should call acceptSession for the session handler and set the sessionType on the session', async () => {
+    const session: any = {};
+
+    const mockHandler: any = {
+      sessionType: SessionTypes.acdScreenShare,
+      endSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+    jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
+
+    await sessionManager.endSession({ id: '123' });
+
+    expect(mockHandler.endSession).toHaveBeenCalled();
+  });
+
+  it('should throw if no id or conversationId in params', async () => {
+    await expect(sessionManager.endSession({})).rejects.toThrowError(/must provide session id or conversationId/);
+  });
 });

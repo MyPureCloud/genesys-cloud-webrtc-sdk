@@ -212,15 +212,15 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    * Accept a pending session based on the passed in ID.
    * @param opts object with mediaStream and/or audioElement to attach to session
    */
-  public async acceptPendingSession (opts: IAcceptPendingSessionRequest): Promise<void> {
-    await this.sessionManager.acceptPendingSession(opts);
+  public async acceptPendingSession (sessionId: string): Promise<void> {
+    await this.sessionManager.proceedWithSession(sessionId);
   }
 
   /**
    * End an active session based on the session ID _or_ conversation ID (one is required)
    * @param opts object with session ID _or_ conversation ID
    */
-  public async endSession (opts: IEndSessionRequest = {}): Promise<void> {
+  public async endSession (opts: IEndSessionRequest): Promise<void> {
     return this.sessionManager.endSession(opts);
   }
 

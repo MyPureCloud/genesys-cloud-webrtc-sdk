@@ -4,7 +4,7 @@ import { log } from './logging';
 import { LogLevels } from './types/enums';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
-let _hasTransceiverFunctionality: boolean | null = null;
+export let _hasTransceiverFunctionality: boolean | null = null;
 
 declare var window: {
   navigator: {
@@ -18,7 +18,7 @@ declare var window: {
  * Get the screen media
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  */
-export function startDisplayMedia (): Promise<MediaStream> {
+export const startDisplayMedia = function (): Promise<MediaStream> {
   const constraints = getScreenShareConstraints();
 
   if (hasGetDisplayMedia()) {
@@ -26,20 +26,20 @@ export function startDisplayMedia (): Promise<MediaStream> {
   }
 
   return window.navigator.mediaDevices.getUserMedia(constraints);
-}
+};
 
 /**
  * Get the audio media
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  */
-export function startAudioMedia (): Promise<MediaStream> {
+export const startAudioMedia = function (): Promise<MediaStream> {
   return window.navigator.mediaDevices.getUserMedia({ audio: true });
-}
+};
 
 /**
  * Select or create the `audio.__pc-webrtc-inbound` element
  */
-export function createAudioMediaElement (): HTMLAudioElement {
+export const createAudioMediaElement = function (): HTMLAudioElement {
   const existing = document.querySelector(`audio.${PC_AUDIO_EL_CLASS}`);
   if (existing) {
     return existing as HTMLAudioElement;
@@ -50,26 +50,27 @@ export function createAudioMediaElement (): HTMLAudioElement {
 
   document.body.append(audio);
   return audio;
-}
+};
 
 /**
  * Attach an audio stream to the audio element
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  * @param stream audio stream to attach
  */
-export function attachAudioMedia (sdk: PureCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement): void {
+export const attachAudioMedia = function (sdk: PureCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement): void {
   if (!audioElement) {
     audioElement = createAudioMediaElement();
   }
-  audioElement.autoplay = true;
-  audioElement.srcObject = stream;
 
   if (audioElement.srcObject) {
     log.call(sdk, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
   }
-}
 
-export function checkHasTransceiverFunctionality (): boolean {
+  audioElement.autoplay = true;
+  audioElement.srcObject = stream;
+};
+
+export const checkHasTransceiverFunctionality = function (): boolean {
   if (_hasTransceiverFunctionality !== null) {
     return _hasTransceiverFunctionality;
   }
@@ -83,15 +84,15 @@ export function checkHasTransceiverFunctionality (): boolean {
     _hasTransceiverFunctionality = false;
   }
   return _hasTransceiverFunctionality;
-}
+};
 
-export function checkAllTracksHaveEnded (stream: MediaStream): boolean {
+export const checkAllTracksHaveEnded = function (stream: MediaStream): boolean {
   let allTracksHaveEnded = true;
   stream.getTracks().forEach(function (t) {
     allTracksHaveEnded = t.readyState === 'ended' && allTracksHaveEnded;
   });
   return allTracksHaveEnded;
-}
+};
 
 function hasGetDisplayMedia (): boolean {
   return !!(window.navigator && window.navigator.mediaDevices && window.navigator.mediaDevices.getDisplayMedia);

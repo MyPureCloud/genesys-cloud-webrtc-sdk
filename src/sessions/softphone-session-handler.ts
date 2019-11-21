@@ -5,9 +5,7 @@ import { startAudioMedia, attachAudioMedia } from '../media-utils';
 import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
-  getSessionType () {
-    return SessionTypes.softphone;
-  }
+  sessionType = SessionTypes.softphone;
 
   shouldHandleSessionByJid (jid: string): boolean {
     return isSoftphoneJid(jid);
@@ -16,7 +14,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   handlePropose (pendingSession: IPendingSession) {
     super.handlePropose(pendingSession);
 
-    if ((pendingSession.autoAnswer && !this.sdk._config.disableAutoAnswer) || this.sdk.isGuest) {
+    if (pendingSession.autoAnswer && !this.sdk._config.disableAutoAnswer) {
       this.proceedWithSession(pendingSession);
     }
   }
@@ -31,10 +29,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSession (session: any, params: IAcceptSessionRequest): Promise<any> {
-    let stream: MediaStream;
-    if (params.mediaStream) {
-      stream = params.mediaStream || this.sdk._config.defaultAudioStream;
-    } else {
+    let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
+    if (!stream) {
       this.log(LogLevels.debug, 'No mediaStream provided, starting media');
       stream = await startAudioMedia();
       this.log(LogLevels.debug, 'Media start');
@@ -48,12 +44,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
       attachAudioMedia(this.sdk, session.streams[0], element);
     } else {
-      session.on('peerStreamAdded', (session, stream: MediaStream) => {
-        attachAudioMedia(this.sdk, stream, element);
+      session.on('peerStreamAdded', (session, peerStream: MediaStream) => {
+        attachAudioMedia(this.sdk, peerStream, element);
       });
     }
 
-    session.accept();
+    return super.acceptSession(session, params);
   }
 
   async endSession (session: any) {

@@ -1,5 +1,5 @@
-import { log } from '../../src/logging';
-import { mockApis } from '../test-utils';
+import { log, setupLogging } from '../../src/logging';
+import { mockApis, SimpleMockSdk } from '../test-utils';
 import { LogLevels } from '../../src/types/enums';
 
 let { timeout, wss, ws, closeWebSocketServer } = require('../test-utils');
@@ -25,6 +25,12 @@ describe('Logging', () => {
   });
 
   describe('_log()', () => {
+    it('should use default log level', () => {
+      const mockSdk = new SimpleMockSdk();
+      log.call(mockSdk as any, undefined, 'test');
+      expect(mockSdk.logger.log).toHaveBeenLastCalledWith('[webrtc-sdk] test', undefined);
+    });
+
     test('will not notify logs if the logLevel is lower than configured', async () => {
       const { sdk } = mockApis({ withLogs: true });
       sdk._config.logLevel = LogLevels.warn;
@@ -378,5 +384,18 @@ describe('Logging', () => {
       expect(sdk._logBuffer).toEqual([]);
     });
   });
+});
 
+describe('setupLogging', () => {
+  it('should warn about invalid log level', () => {
+    const mockSdk = new SimpleMockSdk();
+    setupLogging.call(mockSdk as any, mockSdk.logger as any, 'lskdfjjs' as any);
+
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid log level'));
+  });
+
+  it('should not blow up if log level not provided', () => {
+    const mockSdk = new SimpleMockSdk();
+    expect(() => setupLogging.call(mockSdk as any, mockSdk.logger as any, undefined)).not.toThrow();
+  });
 });

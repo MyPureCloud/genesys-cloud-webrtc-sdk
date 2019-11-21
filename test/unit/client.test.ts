@@ -11,7 +11,10 @@ import {
   PARTICIPANT_ID,
   PARTICIPANT_ID_2,
   closeWebSocketServer,
-  getMockConversation
+  getMockConversation,
+  mockGetUserApi,
+  mockGetOrgApi,
+  mockGetChannelApi
 } from '../test-utils';
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
@@ -138,6 +141,22 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
       sdk._config.optOutOfTelemetry = true;
+      await sdk.disconnect();
+    });
+
+    it('should disconnect if initialize is called again', async () => {
+      const { getOrg, getUser, getChannel, sdk } = mockApis();
+      await sdk.initialize();
+      expect(sdk._streamingConnection).toBeTruthy();
+      sdk._logBuffer = [];
+      sdk._config.optOutOfTelemetry = true;
+      expect(sdk.isInitialized).toBeTruthy();
+      const disconnectSpy = jest.spyOn(sdk._streamingConnection, 'disconnect');
+      mockGetOrgApi({ nockScope: getOrg });
+      mockGetUserApi({ nockScope: getUser });
+      mockGetChannelApi({ nockScope: getChannel });
+      await sdk.initialize();
+      expect(disconnectSpy).toHaveBeenCalled();
       await sdk.disconnect();
     });
 
@@ -286,8 +305,9 @@ describe('Client', () => {
       const media = new MockStream();
       const { sdk } = mockApis({ guestSdk: true, withMedia: media });
 
-      jest.spyOn(sdk.sessionManager, 'startSession').mockImplementation(() => Promise.resolve());
       await sdk.initialize({ securityCode: '123454' });
+      jest.spyOn(sdk.sessionManager, 'startSession').mockResolvedValue({});
+      await sdk.startScreenShare();
       expect(sdk.sessionManager.startSession).toBeCalledWith({ sessionType: SessionTypes.acdScreenShare });
     });
   });
@@ -305,16 +325,16 @@ describe('Client', () => {
     });
   });
 
-  describe('acceptPendingSession()', () => {
+  describe('proceedWithSession()', () => {
     test('proxies the call to the sessionManager', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
-      jest.spyOn(sdk.sessionManager, 'acceptPendingSession').mockImplementation(() => Promise.resolve());
+      jest.spyOn(sdk.sessionManager, 'proceedWithSession').mockImplementation(() => Promise.resolve());
 
-      const opts = { id: '4321' };
-      await sdk.acceptPendingSession(opts);
-      expect(sdk.sessionManager.acceptPendingSession).toBeCalledWith(opts);
+      const sessionId = '5512551';
+      await sdk.acceptPendingSession(sessionId);
+      expect(sdk.sessionManager.proceedWithSession).toBeCalledWith(sessionId);
       await sdk.disconnect();
     });
   });
@@ -324,12 +344,12 @@ describe('Client', () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
-      jest.spyOn(sdk.sessionManager, 'endSession').mockImplementation(() => Promise.resolve());
+      jest.spyOn(sdk.sessionManager, 'endSession').mockResolvedValue();
       const sessionId = random();
       const conversationId = random();
-      const opts = { id: sessionId };
-      await sdk.acceptPendingSession(opts);
-      expect(sdk.sessionManager.endSession).toBeCalledWith(opts);
+      const params = { id: sessionId };
+      await sdk.endSession(params);
+      expect(sdk.sessionManager.endSession).toBeCalledWith(params);
       await sdk.disconnect();
     });
   });

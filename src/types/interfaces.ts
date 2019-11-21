@@ -19,17 +19,17 @@ export interface ISdkConstructOptions {
  * defaultAudioStream is the outgoing mediaStream for softphone calls. If not provided, one will be created during `acceptSession`. the sdk will not clean up provided streams
  */
 export interface ISdkConfig {
-  environment: string;
-  accessToken: string;
+  environment?: string;
+  accessToken?: string;
   wsHost: string;
-  disableAutoAnswer: boolean;
-  autoConnectSessions: boolean;
+  disableAutoAnswer?: boolean;
+  autoConnectSessions?: boolean;
   defaultAudioElement?: HTMLAudioElement;
   defaultAudioStream?: MediaStream;
-  iceTransportPolicy: RTCIceTransportPolicy;
-  logLevel: LogLevels;
-  optOutOfTelemetry: boolean;
-  customIceServersConfig: RTCConfiguration;
+  iceTransportPolicy?: RTCIceTransportPolicy;
+  logLevel?: LogLevels;
+  optOutOfTelemetry?: boolean;
+  customIceServersConfig?: RTCConfiguration;
 }
 
 export interface ILogger {
