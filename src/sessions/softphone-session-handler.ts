@@ -11,15 +11,15 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return isSoftphoneJid(jid);
   }
 
-  handlePropose (pendingSession: IPendingSession) {
-    super.handlePropose(pendingSession);
+  async handlePropose (pendingSession: IPendingSession): Promise<void> {
+    await super.handlePropose(pendingSession);
 
     if (pendingSession.autoAnswer && !this.sdk._config.disableAutoAnswer) {
-      this.proceedWithSession(pendingSession);
+      await this.proceedWithSession(pendingSession);
     }
   }
 
-  async handleSessionInit (session: any) {
+  async handleSessionInit (session: any): Promise<void> {
     await super.handleSessionInit(session);
     if (this.sdk._config.autoConnectSessions) {
       return this.acceptSession(session, { id: session.id });
@@ -52,19 +52,39 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return super.acceptSession(session, params);
   }
 
-  async endSession (session: any) {
+  async endSession (session: any): Promise<void> {
     try {
       const { body } = await requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}`);
       const participant = body.participants
         .find((p: { user?: { id?: string } }) => p.user && p.user.id === this.sdk._personDetails.id);
 
-      await requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
+      const patchPromise = requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
         method: 'patch',
         data: JSON.stringify({ state: 'disconnected' })
       });
+
+      const terminatedPromise = new Promise<void>((resolve, reject) => {
+        session.once('terminated', (reason) => {
+          return resolve(reason);
+        });
+        session.once('error', error => {
+          return reject(error);
+        });
+      });
+
+      await Promise.all([patchPromise, terminatedPromise]);
     } catch (err) {
-      session.end();
-      throwSdkError.call(this.sdk, SdkErrorTypes.http, err.message, err);
+      this.log(LogLevels.error, 'Failed to end session gracefully', err);
+      return this.endSessionFallback(session);
+    }
+  }
+
+  async endSessionFallback (session: any): Promise<void> {
+    this.log(LogLevels.info, 'Attempting to end session directly', { sessionId: session.id });
+    try {
+      await super.endSession(session);
+    } catch (err) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', err);
     }
   }
 }

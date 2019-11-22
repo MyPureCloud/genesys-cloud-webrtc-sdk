@@ -44,7 +44,7 @@ describe('handlePropose', () => {
 
     const pendingSession = createPendingSession(SessionTypes.softphone);
     pendingSession.autoAnswer = true;
-    handler.handlePropose(pendingSession);
+    await handler.handlePropose(pendingSession);
 
     expect(spy).toHaveBeenCalled();
     expect(superSpyHandlePropose).toHaveBeenCalled();
@@ -62,14 +62,14 @@ describe('handlePropose', () => {
 
     const pendingSession = createPendingSession(SessionTypes.softphone);
     pendingSession.autoAnswer = false;
-    handler.handlePropose(pendingSession);
+    await handler.handlePropose(pendingSession);
 
     expect(spy).toHaveBeenCalled();
     expect(superSpyHandlePropose).toHaveBeenCalled();
     expect(superSpyProceed).not.toHaveBeenCalled();
   });
 
-  it('should not autoAnswer if disableAutoAnswer', () => {
+  it('should not autoAnswer if disableAutoAnswer', async () => {
     const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
     const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
 
@@ -80,7 +80,7 @@ describe('handlePropose', () => {
 
     const pendingSession = createPendingSession(SessionTypes.softphone);
     pendingSession.autoAnswer = true;
-    handler.handlePropose(pendingSession);
+    await handler.handlePropose(pendingSession);
 
     expect(spy).toHaveBeenCalled();
     expect(superSpyHandlePropose).toHaveBeenCalled();
@@ -224,6 +224,7 @@ describe('endSession', () => {
     const session = new MockSession();
     const conversationId = (session as any).conversationId = random();
     const participantId = PARTICIPANT_ID;
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
 
     mockSdk._personDetails = {
       id: USER_ID
@@ -233,11 +234,16 @@ describe('endSession', () => {
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
     const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
 
-    await handler.endSession(session);
+    const promise = handler.endSession(session);
+    // need to wait for requests to "process" before triggering session terminate
+    await new Promise(resolve => setTimeout(resolve, 10));
+    session.emit('terminated');
+    await promise;
 
     expect(getConversation.isDone()).toBeTruthy();
     expect(patchConversation.isDone()).toBeTruthy();
     expect(session.end).not.toHaveBeenCalled();
+    expect(superSpy).not.toHaveBeenCalled();
   });
 
   it('should manually end the session if fetch conversation fails', async () => {
@@ -251,9 +257,12 @@ describe('endSession', () => {
     const scope = createNock();
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, shouldFail: true });
 
-    await expect(handler.endSession(session)).rejects.toThrow();
+    jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+
+    await handler.endSession(session);
     expect(getConversation.isDone()).toBeTruthy();
-    expect(session.end).toHaveBeenCalled();
+    expect(handler.endSessionFallback).toHaveBeenCalled();
+    expect(session.end).not.toHaveBeenCalled();
   });
 
   it('should manually end the session if the patch fails', async () => {
@@ -269,9 +278,56 @@ describe('endSession', () => {
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
     const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
 
-    await expect(handler.endSession(session)).rejects.toThrow();
+    jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+
+    await handler.endSession(session);
     expect(getConversation.isDone()).toBeTruthy();
     expect(patchConversation.isDone()).toBeTruthy();
-    expect(session.end).toHaveBeenCalled();
+    expect(handler.endSessionFallback).toHaveBeenCalled();
+    expect(session.end).not.toHaveBeenCalled();
+  });
+
+  it('should call the fallback if session end fails', async () => {
+    const session = new MockSession();
+    const conversationId = (session as any).conversationId = random();
+    const participantId = PARTICIPANT_ID;
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
+    const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+
+    mockSdk._personDetails = {
+      id: USER_ID
+    };
+
+    const scope = createNock();
+    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
+    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
+
+    const promise = handler.endSession(session);
+    // need to wait for requests to "process" before triggering session terminate
+    await new Promise(resolve => setTimeout(resolve, 10));
+    session.emit('error', 'fake error');
+    await promise;
+
+    expect(getConversation.isDone()).toBeTruthy();
+    expect(patchConversation.isDone()).toBeTruthy();
+    expect(session.end).not.toHaveBeenCalled();
+    expect(superSpy).not.toHaveBeenCalled();
+    expect(fallbackSpy).toHaveBeenCalled();
+  });
+});
+
+describe('endSessionFallback', () => {
+  it('should call supers endSession', async () => {
+    const session = new MockSession();
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockResolvedValue();
+    await handler.endSessionFallback(session);
+    expect(superSpy).toHaveBeenCalled();
+  });
+
+  it('should throw error if call to super fails', async () => {
+    const session = new MockSession();
+    const error = new Error('fake');
+    jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockRejectedValue(error);
+    await expect(handler.endSessionFallback(session)).rejects.toThrowError(/Failed to end session directly/);
   });
 });

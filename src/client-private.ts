@@ -57,7 +57,6 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
  */
 export function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
   this.sessionManager = new SessionManager(this);
-  this.sessionManager.initSessionHandlers();
 
   // webrtc events
   const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);

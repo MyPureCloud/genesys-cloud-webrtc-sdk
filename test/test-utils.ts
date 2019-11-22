@@ -185,9 +185,9 @@ const MOCK_CONVERSATION: MockConversation = {
 export function createSessionInfo (): ISessionInfo {
   return {
     autoAnswer: true,
-    conversationId: random.toString(),
-    fromJid: `${random}@${random}.com`,
-    sessionId: random.toString()
+    conversationId: random().toString(),
+    fromJid: `${random()}@${random()}.com`,
+    sessionId: random().toString()
   };
 }
 

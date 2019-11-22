@@ -68,7 +68,7 @@ describe('handlePropose', () => {
     mockSdk.on('pendingSession', spy);
 
     const pendingSession = createPendingSession(SessionTypes.acdScreenShare);
-    handler.handlePropose(pendingSession);
+    await handler.handlePropose(pendingSession);
 
     expect(spy).toHaveBeenCalled();
     expect(superSpyHandlePropose).toHaveBeenCalled();
@@ -129,16 +129,17 @@ describe('handleSessionInit', () => {
 
 describe('onTrackEnd', () => {
   it('should end session if all tracks have ended', async () => {
+    jest.spyOn(handler, 'endSession').mockResolvedValue();
     jest.spyOn(mediaUtils, 'checkAllTracksHaveEnded')
       .mockReturnValueOnce(false)
       .mockReturnValueOnce(true);
 
     const mockSession = new MockSession();
-    handler.onTrackEnd(mockSession);
+    await handler.onTrackEnd(mockSession);
 
-    expect(mockSession.end).not.toHaveBeenCalled();
+    expect(handler.endSession).not.toHaveBeenCalled();
 
-    handler.onTrackEnd(mockSession);
-    expect(mockSession.end).toHaveBeenCalled();
+    await handler.onTrackEnd(mockSession);
+    expect(handler.endSession).toHaveBeenCalled();
   });
 });

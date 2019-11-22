@@ -51,7 +51,6 @@ function validateOptions (options: ISdkConstructOptions): string | null {
 export class PureCloudWebrtcSdk extends WildEmitter {
 
   public logger: ILogger;
-  public pendingStream: MediaStream;
 
   readonly VERSION = '[AIV]{version}[/AIV]';
 
@@ -60,7 +59,6 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _logTimer: NodeJS.Timeout | null;
   _connected: boolean;
   _streamingConnection: any;
-  _pendingSessions: any[];
   _backoffActive: boolean;
   _failedLogAttempts: number;
   _backoff: any;
@@ -70,7 +68,6 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _customerData: ICustomerData;
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
-  _pendingAudioElement: any;
   _config: ISdkConfig;
   sessionManager: SessionManager;
 
@@ -125,7 +122,6 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     this._connected = false;
     this._streamingConnection = null;
-    this._pendingSessions = [];
   }
 
   /**

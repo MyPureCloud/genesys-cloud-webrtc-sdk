@@ -14,21 +14,21 @@ export default abstract class BaseSessionHandler {
 
   abstract sessionType: SessionTypes;
 
+  abstract shouldHandleSessionByJid (jid: string): boolean;
+
   protected log (level: LogLevels, message: any, details?: any): void {
     log.call(this.sdk, level, message, details);
   }
-
-  abstract shouldHandleSessionByJid (jid: string): boolean;
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
     throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the purecloud api`, { sessionStartParams });
   }
 
-  handlePropose (pendingSession: IPendingSession) {
+  async handlePropose (pendingSession: IPendingSession): Promise<any> {
     this.sdk.emit('pendingSession', pendingSession);
   }
 
-  proceedWithSession (session: IPendingSession) {
+  async proceedWithSession (session: IPendingSession): Promise<any> {
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
@@ -85,7 +85,13 @@ export default abstract class BaseSessionHandler {
   }
 
   async endSession (session: any) {
-    session.end();
+    return new Promise<void>((resolve, reject) => {
+      session.once('terminated', (reason) => {
+        resolve(reason);
+      });
+      session.once('error', error => reject(error));
+      session.end();
+    });
   }
 
   /**

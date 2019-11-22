@@ -31,19 +31,19 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     this.temporaryOutboundStream = stream;
   }
 
-  handlePropose (pendingSession: IPendingSession) {
-    super.handlePropose(pendingSession);
-    this.proceedWithSession(pendingSession);
+  async handlePropose (pendingSession: IPendingSession): Promise<void> {
+    await super.handlePropose(pendingSession);
+    await this.proceedWithSession(pendingSession);
   }
 
   onTrackEnd (session: any) {
     this.log(LogLevels.debug, 'Track ended');
     if (checkAllTracksHaveEnded(session._outboundStream)) {
-      session.end();
+      return this.endSession(session);
     }
   }
 
-  async handleSessionInit (session: any) {
+  async handleSessionInit (session: any): Promise<void> {
     await super.handleSessionInit(session);
 
     if (!this.sdk.isGuest) {
@@ -72,6 +72,6 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg);
     }
 
-    return this.acceptSession(session, { id: session.id });
+    await this.acceptSession(session, { id: session.id });
   }
 }

@@ -15,12 +15,6 @@ beforeEach(() => {
   sessionManager = new SessionManager(mockSdk);
 });
 
-it('should initSessionHandlers', () => {
-  expect(sessionManager.sessionHandlers).toBeUndefined();
-  sessionManager.initSessionHandlers();
-  expect(sessionManager.sessionHandlers.length).toBe(2);
-});
-
 it('webrtcSessions should map to the sdk webrtcSession', () => {
   const webrtcSessions = mockSdk._streamingConnection.webrtcSessions;
 
@@ -34,18 +28,8 @@ describe('getPendingSession', () => {
     sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
     sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
 
-    expect(sessionManager.getPendingSession({ sessionId: pendingSession1.id })).toBe(pendingSession1);
-    expect(sessionManager.getPendingSession({ sessionId: pendingSession2.id })).toBe(pendingSession2);
-  });
-
-  it('should get pending session by conversationId', () => {
-    const pendingSession1 = createPendingSession();
-    const pendingSession2 = createPendingSession();
-    sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
-    sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
-
-    expect(sessionManager.getPendingSession({ conversationId: pendingSession1.conversationId })).toBe(pendingSession1);
-    expect(sessionManager.getPendingSession({ conversationId: pendingSession2.conversationId })).toBe(pendingSession2);
+    expect(sessionManager.getPendingSession(pendingSession1.id)).toBe(pendingSession1);
+    expect(sessionManager.getPendingSession(pendingSession2.id)).toBe(pendingSession2);
   });
 });
 
@@ -162,7 +146,7 @@ describe('startSession', () => {
 });
 
 describe('onPropose', () => {
-  it('should add pendingSession and call handlePropose on session handler with pending session', () => {
+  it('should add pendingSession and call handlePropose on session handler with pending session', async () => {
     jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(null);
 
     const mockHandler: any = {
@@ -171,13 +155,13 @@ describe('onPropose', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const sessionInfo = createSessionInfo();
-    sessionManager.onPropose(sessionInfo);
+    await sessionManager.onPropose(sessionInfo);
 
     expect(mockHandler.handlePropose).toHaveBeenCalled();
     expect(sessionManager.pendingSessions[sessionInfo.sessionId]).toBeTruthy();
   });
 
-  it('should ignore if pendingSession already exists', () => {
+  it('should ignore if pendingSession already exists', async () => {
     jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue({} as any);
 
     const mockHandler: any = {
@@ -187,7 +171,7 @@ describe('onPropose', () => {
 
     const sessionInfo = createSessionInfo();
 
-    sessionManager.onPropose(sessionInfo);
+    await sessionManager.onPropose(sessionInfo);
 
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
   });

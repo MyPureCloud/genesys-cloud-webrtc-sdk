@@ -38,16 +38,16 @@ describe('handlePropose', () => {
     mockSdk.on('pendingSession', spy);
 
     const pendingSession = createPendingSession(SessionTypes.acdScreenShare);
-    handler.handlePropose(pendingSession);
+    await handler.handlePropose(pendingSession);
 
     expect(spy).toHaveBeenCalled();
   });
 });
 
 describe('proceedWithSession', () => {
-  it('should call acceptRtcSession', () => {
+  it('should call acceptRtcSession', async () => {
     const pendingSession = createPendingSession();
-    handler.proceedWithSession(pendingSession);
+    await handler.proceedWithSession(pendingSession);
 
     expect(mockSessionManager.webrtcSessions.acceptRtcSession).toHaveBeenCalledWith(pendingSession.id);
   });
@@ -194,7 +194,18 @@ describe('acceptSession', () => {
 describe('endSession', () => {
   it('should call session.end', async () => {
     const session = new MockSession();
-    await handler.endSession(session);
+    const promise = handler.endSession(session);
+    session.emit('terminated');
+    await promise;
+    expect(session.end).toHaveBeenCalled();
+  });
+
+  it('should reject with error', async () => {
+    const session = new MockSession();
+    const promise = handler.endSession(session);
+    const fakeErr = new Error('fake');
+    session.emit('error', fakeErr);
+    await expect(promise).rejects.toThrow();
     expect(session.end).toHaveBeenCalled();
   });
 });

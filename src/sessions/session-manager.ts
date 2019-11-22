@@ -16,7 +16,9 @@ export class SessionManager {
   sessionHandlers: BaseSessionHandler[];
   pendingSessions: { [sessionId: string]: IPendingSession } = {};
 
-  constructor (private sdk: PureCloudWebrtcSdk) { }
+  constructor (private sdk: PureCloudWebrtcSdk) {
+    this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
+  }
 
   private log (level: LogLevels, message: any, details?: any): void {
     log.call(this.sdk, level, message, details);
@@ -30,15 +32,12 @@ export class SessionManager {
     return this.sdk._streamingConnection._webrtcSessions.jingleJs;
   }
 
-  initSessionHandlers (): void {
-    this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
+  getPendingSession (sessionId: string): IPendingSession | undefined {
+    return this.pendingSessions[sessionId];
   }
 
-  getPendingSession (params: {sessionId?: string, jid?: string, conversationId?: string, sessionType?: SessionTypes}): IPendingSession {
-    if (params.sessionId) {
-      return this.pendingSessions[params.sessionId];
-    }
-    return Object.values(this.pendingSessions).find((session) => session.conversationId === params.conversationId);
+  removePendingSession (sessionId: string) {
+    delete this.pendingSessions[sessionId];
   }
 
   getSession (params: { id?: string, conversationId?: string }): any {
@@ -54,10 +53,6 @@ export class SessionManager {
     }
 
     return session;
-  }
-
-  removePendingSession (sessionId: string) {
-    delete this.pendingSessions[sessionId];
   }
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
@@ -92,10 +87,10 @@ export class SessionManager {
    * @param this must be called with a PureCloudWebrtcSdk as `this`
    * @param sessionInfo pending webrtc-session info
    */
-  onPropose (sessionInfo: ISessionInfo) {
+  async onPropose (sessionInfo: ISessionInfo): Promise<void> {
     this.log(LogLevels.info, 'onPendingSession', sessionInfo);
 
-    const existingSession = this.getPendingSession({ conversationId: sessionInfo.conversationId });
+    const existingSession = this.getPendingSession(sessionInfo.sessionId);
 
     if (existingSession) {
       this.log(LogLevels.info, 'duplicate session invitation, ignoring', sessionInfo);
@@ -114,11 +109,11 @@ export class SessionManager {
 
     this.pendingSessions[pendingSession.id] = pendingSession;
 
-    handler.handlePropose(pendingSession);
+    await handler.handlePropose(pendingSession);
   }
 
-  async proceedWithSession (sessionId: string) {
-    const pendingSession = this.getPendingSession({ sessionId });
+  async proceedWithSession (sessionId: string): Promise<void> {
+    const pendingSession = this.getPendingSession(sessionId);
 
     if (!pendingSession) {
       throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
@@ -126,7 +121,7 @@ export class SessionManager {
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
 
-    return sessionHandler.proceedWithSession(pendingSession);
+    await sessionHandler.proceedWithSession(pendingSession);
   }
 
   async onSessionInit (session: any) {
