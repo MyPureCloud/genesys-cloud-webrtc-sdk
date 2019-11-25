@@ -10,7 +10,6 @@ function initControls () {
   document.getElementById('outbound-call-end').addEventListener('click', sdkHandler.endCall);
   document.getElementById('answer-inbound-call').addEventListener('click', sdkHandler.answerCall);
   document.getElementById('inbound-call-end').addEventListener('click', sdkHandler.endCall);
-  document.getElementById('reject-inbound-call').addEventListener('click', sdkHandler.rejectCall);
   document.getElementById('disconnect-sdk').addEventListener('click', disconnect);
   document.getElementById('clear-log').addEventListener('click', clearLog);
 }

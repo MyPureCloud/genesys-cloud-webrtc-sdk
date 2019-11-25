@@ -1,5 +1,6 @@
 const platformClient = require('platformClient');
 const client = platformClient.ApiClient.instance;
+const persitentName = 'sdk_test';
 
 (function () {
   function getInputValue (inputId) {
@@ -7,7 +8,7 @@ const client = platformClient.ApiClient.instance;
   }
 
   function initClientEnvironment (environment) {
-    client.setPersistSettings(true, 'sdk-test');
+    client.setPersistSettings(true, persitentName);
     client.setEnvironment(window.environments[environment].uri);
   }
 
@@ -23,7 +24,7 @@ const client = platformClient.ApiClient.instance;
 
     client.loginImplicitGrant(clientId, window.location.href)
       .then(() => {
-        const authInfo = JSON.parse(window.localStorage.getItem('sdk_test_auth_data'));
+        const authInfo = JSON.parse(window.localStorage.getItem(`${persitentName}_auth_data`));
         platformClient.ApiClient.instance.authentications['PureCloud Auth'].accessToken = authInfo.accessToken;
 
         window.conversationsAPI = new platformClient.ConversationsApi();
@@ -34,18 +35,40 @@ const client = platformClient.ApiClient.instance;
       });
   }
 
+  function authenticateFromToken (token) {
+    const environment = getInputValue('environment');
+    initClientEnvironment(environment);
+
+    window.localStorage.setItem(`${persitentName}_auth_data`, JSON.stringify({ accessToken: token }));
+    platformClient.ApiClient.instance.authentications['PureCloud Auth'].accessToken = token;
+    window.conversationsAPI = new platformClient.ConversationsApi();
+
+    setAuthTextVisible(true);
+  }
+
   function authenticateFromUrlToken () {
     const urlParams = window.getCurrentUrlParams();
     if (urlParams) {
-      const environment = getInputValue('environment');
-      initClientEnvironment(environment);
-
-      platformClient.ApiClient.instance.authentications['PureCloud Auth'].accessToken = urlParams.access_token;
-      window.conversationsAPI = new platformClient.ConversationsApi();
-
-      setAuthTextVisible(true);
+      authenticateFromToken(urlParams.access_token);
+      manualAuthInput.value = urlParams.access_token;
     }
   }
+
+  function addTokenToUrl (submitEvent) {
+    submitEvent.preventDefault();
+
+    const token = manualAuthInput.value;
+
+    if (!token) {
+      console.error('No token found');
+      return;
+    }
+
+    window.location.hash = `#access_token=${token}`;
+    window.location.reload(true);
+  }
+  const form = this.document.getElementById('manual-form');
+  const manualAuthInput = this.document.getElementById('manual-auth');
 
   // Check if there is auth info on the URL from a redirect
   const url = window.location.href;
@@ -53,5 +76,10 @@ const client = platformClient.ApiClient.instance;
     authenticateFromUrlToken();
   }
 
+  if (form.attachEvent) {
+    form.attachEvent('submit', addTokenToUrl);
+  } else {
+    form.addEventListener('submit', addTokenToUrl);
+  }
   this.document.getElementById('auth-button').addEventListener('click', authenticate);
 })();

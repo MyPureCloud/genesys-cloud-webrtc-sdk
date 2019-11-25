@@ -14,7 +14,7 @@ declare module 'purecloud-streaming-client' {
     connect (): Promise<any>;
     webrtcSessions: {
       refreshIceServers (): Promise<any>;
-    }
+    };
   }
 }
 
@@ -35,7 +35,7 @@ declare module 'browserama' {
     readonly isEdge: boolean;
     readonly isIE: boolean;
     readonly isBlink: boolean;
-  }
+  };
 
   export default broswerama;
 }

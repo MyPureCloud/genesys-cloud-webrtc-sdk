@@ -57,12 +57,21 @@
   </div>
 
   <div>
-    <label for="environment">Select Environment:</label>
-    <select id="environment" name="environment">
-      <option value="dca">dca</option>
-      <option value="pca-us">pca-us</option>
-    </select>
-    <button id="auth-button" type="button">Authenticate</button>
+    <div>
+      <label for="environment">Select Environment:</label>
+      <select id="environment" name="environment">
+        <option value="dca">dca</option>
+        <option value="pca-us">pca-us</option>
+      </select>
+    </div>
+    <div>
+      <button id="auth-button" type="button">Use Implicit Auth</button>
+      <span>or</span>
+      <form id="manual-form">
+        <input id="manual-auth" placeholder="Use custom access token">
+        <button type="submit">Use manual auth token</button>
+      </form>
+    </div>
     <button id="start-app-button" type="button">Start App</button>
   </div>
   <div id="auth-text" class="auth-text">Authenticated</div>
@@ -88,7 +97,6 @@
         <div class="control-section">
           <button id="answer-inbound-call">Answer</button>
           <button id="inbound-call-end">End Call</button>
-          <button id="reject-inbound-call">Reject</button>
         </div>
 
         <!-- Disconnect -->

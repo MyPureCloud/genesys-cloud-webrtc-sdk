@@ -1,10 +1,14 @@
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
-import { setupStreamingClient, proxyStreamingClientEvents, startGuestScreenShare } from './client-private';
+import {
+  setupStreamingClient,
+  proxyStreamingClientEvents
+} from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig } from './types/interfaces';
-import { SdkErrorTypes, LogLevels } from './types/enums';
+import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest } from './types/interfaces';
+import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
+import { SessionManager } from './sessions/session-manager';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -47,7 +51,6 @@ function validateOptions (options: ISdkConstructOptions): string | null {
 export class PureCloudWebrtcSdk extends WildEmitter {
 
   public logger: ILogger;
-  public pendingStream: MediaStream;
 
   readonly VERSION = '[AIV]{version}[/AIV]';
 
@@ -56,7 +59,6 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _logTimer: NodeJS.Timeout | null;
   _connected: boolean;
   _streamingConnection: any;
-  _pendingSessions: any[];
   _backoffActive: boolean;
   _failedLogAttempts: number;
   _backoff: any;
@@ -66,8 +68,8 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _customerData: ICustomerData;
   _hasConnected: boolean;
   _refreshTurnServersInterval: NodeJS.Timeout;
-  _pendingAudioElement: any;
   _config: ISdkConfig;
+  sessionManager: SessionManager;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -75,10 +77,6 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
   get connected (): boolean {
     return !!this._streamingConnection.connected;
-  }
-
-  get _sessionManager () {
-    return this._streamingConnection._webrtcSessions.jingleJs;
   }
 
   get isGuest (): boolean {
@@ -97,6 +95,8 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       accessToken: options.accessToken,
       autoConnectSessions: options.autoConnectSessions !== false, // default true
       customIceServersConfig: options.iceServers,
+      defaultAudioElement: options.defaultAudioElement,
+      defaultAudioStream: options.defaultAudioStream,
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
@@ -124,7 +124,6 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     this._connected = false;
     this._streamingConnection = null;
-    this._pendingSessions = [];
   }
 
   /**
@@ -201,7 +200,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    */
   public async startScreenShare (): Promise<void> {
     if (this.isGuest) {
-      await startGuestScreenShare.call(this);
+      await this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
@@ -209,63 +208,26 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
   /**
    * Accept a pending session based on the passed in ID.
-   * @param id string ID of the pending session
    * @param opts object with mediaStream and/or audioElement to attach to session
    */
-  public acceptPendingSession (id: string, opts?: { mediaStream?: MediaStream, audioElement?: HTMLAudioElement }): void {
-    if (opts && opts.mediaStream) {
-      this.pendingStream = opts.mediaStream;
-    }
-    if (opts && opts.audioElement) {
-      this._pendingAudioElement = opts.audioElement;
-    }
-    this._streamingConnection.webrtcSessions.acceptRtcSession(id);
+  public async acceptPendingSession (sessionId: string): Promise<void> {
+    await this.sessionManager.proceedWithSession(sessionId);
+  }
+
+  /**
+   * Accept a pending session based on the passed in ID.
+   * @param opts object with mediaStream and/or audioElement to attach to session
+   */
+  public async acceptSession (opts: IAcceptSessionRequest): Promise<void> {
+    await this.sessionManager.acceptSession(opts);
   }
 
   /**
    * End an active session based on the session ID _or_ conversation ID (one is required)
    * @param opts object with session ID _or_ conversation ID
    */
-  public async endSession (opts: { id?: string, conversationId?: string } = {}): Promise<void> {
-    if (!opts.id && !opts.conversationId) {
-      throwSdkError.call(this, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
-    }
-    let session;
-    if (opts.id) {
-      session = this._sessionManager.sessions[opts.id];
-    } else {
-      const sessions = Object.keys(this._sessionManager.sessions).map(k => this._sessionManager.sessions[k]);
-      session = sessions.find(s => s.conversationId === opts.conversationId);
-    }
-
-    if (!session) {
-      throwSdkError.call(this, SdkErrorTypes.session, 'Unable to end session: session not connected.');
-    }
-
-    if (!session.conversationId) {
-      log.call(this, LogLevels.warn, 'Session has no conversationId. Terminating session.');
-      session.end();
-      return;
-    }
-
-    if (this.isGuest) {
-      session.end();
-      return;
-    }
-
-    try {
-      const { body } = await requestApi.call(this, `/conversations/calls/${session.conversationId}`);
-      const participant = body.participants
-        .find((p: { user?: { id?: string }, state?: string }) => p.user && p.user.id === this._personDetails.id && p.state === 'connected');
-      await requestApi.call(this, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
-        method: 'patch',
-        data: JSON.stringify({ state: 'disconnected' })
-      });
-    } catch (err) {
-      session.end();
-      throwSdkError.call(this, SdkErrorTypes.http, err.message, err);
-    }
-
+  public async endSession (opts: IEndSessionRequest): Promise<void> {
+    return this.sessionManager.endSession(opts);
   }
 
   /**

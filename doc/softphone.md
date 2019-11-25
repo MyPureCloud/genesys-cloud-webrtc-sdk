@@ -104,6 +104,6 @@ can be correlated by conversationId together, and should not be expected to
 arrive in a guaranteed order.
 
 - If you wish to control the MediaStream settings (i.e., input device) you can
-provide it as an option to `acceptPendingSession`. Note that to do this for outbound
+provide it as an option to `acceptSession` or as a default in the sdk's constructor. Note that to call `acceptSession` on outbound
 calls, you'll have to disable `autoAnswerOutboundCalls` and answer them yourself
-when the event is triggered
+when the event is triggered.

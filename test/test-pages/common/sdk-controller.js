@@ -100,11 +100,6 @@ function disconnectSdk () {
   utils.writeToLog('Disconnected -- Reauthenticate to reconnect');
 }
 
-function rejectCall () {
-  utils.writeToLog(`rejecting sessionId: ${currentSessionId}`);
-  webrtcSdk.rejectPendingSession(currentSessionId);
-}
-
 function getInputValue (inputId) {
   return document.getElementById(inputId).value;
 }
@@ -231,6 +226,5 @@ export default {
   endCall,
   answerCall,
   disconnectSdk,
-  rejectCall,
   initWebrtcSDK
 };

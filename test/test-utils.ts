@@ -1,9 +1,10 @@
 import WebSocket from 'ws';
-import nock from 'nock';
+import nock, { NockBack } from 'nock';
 import WildEmitter from 'wildemitter';
 import { PureCloudWebrtcSdk } from '../src/client';
-import { ISdkConstructOptions, ICustomerData } from '../src/types/interfaces';
+import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
 import crypto from 'crypto';
+import { SessionTypes, LogLevels } from '../src/types/enums';
 
 declare var global: {
   window: any,
@@ -23,38 +24,62 @@ Object.defineProperty(global, 'crypto', {
   }
 });
 
+export class SimpleMockSdk extends WildEmitter {
+  _config: ISdkConfig = {
+    environment: 'mypurecloud.com',
+    logLevel: LogLevels.debug,
+    wsHost: 'wshost'
+  };
+  _logBuffer = [];
+  logger = {
+    debug: jest.fn(),
+    log: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  };
+  _streamingConnection = {
+    webrtcSessions: {
+      initiateRtcSession: jest.fn(),
+      acceptRtcSession: jest.fn()
+    },
+    _webrtcSessions: {
+      refreshIceServers: jest.fn()
+    }
+  };
+}
+
 class MockSession extends WildEmitter {
-  streams: any[];
-  sid: any;
-  pc: any;
+  streams: any[] = [];
+  id: any;
+  sid = random().toString();
+  conversationId = random().toString();
+  pc = new WildEmitter();
   _statsGatherer: any;
   _outboundStream: any;
+  accept = jest.fn();
+  addStream = jest.fn();
+  end = jest.fn();
+
   constructor () {
     super();
-    this.streams = [];
-    this.sid = random();
-    this.pc = new WildEmitter();
+    this.id = this.sid;
   }
-  accept () { }
-  addStream () { }
-  end () { }
 }
 
 class MockTrack {
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
   kind = 'video';
-  stop () { }
+  stop = jest.fn();
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
   }
 }
 
 class MockStream {
-  _tracks: MockTrack[];
-  constructor () {
-    this._tracks = [new MockTrack()];
-  }
+  id = random();
+  _tracks: MockTrack[] = [ new MockTrack() ];
   getTracks () {
     return this._tracks;
   }
@@ -75,6 +100,14 @@ interface MockApiOptions {
   guestSdk?: boolean;
   withCustomerData?: boolean;
   conversation?: MockConversation;
+}
+
+interface MockSingleApiOptions {
+  nockScope: nock.Scope;
+  response?: any;
+  conversationId?: string;
+  participantId?: string;
+  shouldFail?: Boolean;
 }
 
 interface MockApiReturns {
@@ -122,7 +155,7 @@ const MOCK_USER = {
   chat: { jabberId: 'hubert.j.farnsworth@planetexpress.mypurecloud.com' }
 };
 
-const MOCK_CUSTOMER_DATA = {
+export const MOCK_CUSTOMER_DATA = {
   sourceCommunicationId: 'source-123567-1234',
   conversation: {
     id: 'conversation-aedvi38t5nbia-123'
@@ -149,6 +182,36 @@ const MOCK_CONVERSATION: MockConversation = {
   ]
 };
 
+export function createSessionInfo (): ISessionInfo {
+  return {
+    autoAnswer: true,
+    conversationId: random().toString(),
+    fromJid: `${random()}@${random()}.com`,
+    sessionId: random().toString()
+  };
+}
+
+export function createPendingSession (type: SessionTypes = SessionTypes.softphone): IPendingSession {
+  const base = {
+    id: random(),
+    conversationId: random(),
+    autoAnswer: false,
+    sessionType: type
+  };
+
+  let specifics;
+  switch (type) {
+    case SessionTypes.acdScreenShare: {
+      specifics = { address: `acd-${random()}@org.com` };
+      break;
+    }
+    default: {
+      specifics = { address: `${random()}@gjoll.com` };
+    }
+  }
+  return Object.assign(base, specifics);
+}
+
 function closeWebSocketServer (): Promise<void> {
   if (wss) {
     return new Promise(resolve => {
@@ -164,6 +227,57 @@ function closeWebSocketServer (): Promise<void> {
 
 function getMockConversation (): MockConversation {
   return JSON.parse(JSON.stringify(MOCK_CONVERSATION));
+}
+
+export function createNock (hostUri?: string): nock.Scope {
+  return nock(hostUri || 'https://api.mypurecloud.com');
+}
+
+export function mockGetConversationApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.get(`/api/v2/conversations/calls/${params.conversationId}`);
+
+  if (params.shouldFail) {
+    return intercept.reply(500, params.response);
+  }
+
+  return intercept.reply(200, params.response || getMockConversation());
+}
+
+export function mockPatchConversationApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.patch(`/api/v2/conversations/calls/${params.conversationId}/participants/${params.participantId}`);
+
+  if (params.shouldFail) {
+    return intercept.reply(401);
+  }
+
+  return intercept.reply(202, {});
+}
+
+export function mockGetOrgApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.get(`/api/v2/organizations/me`);
+
+  if (params.shouldFail) {
+    return intercept.reply(401);
+  }
+  return intercept.reply(200, MOCK_ORG);
+}
+
+export function mockGetUserApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.get(`/api/v2/users/me`);
+
+  if (params.shouldFail) {
+    return intercept.reply(401);
+  }
+  return intercept.reply(200, MOCK_USER);
+}
+
+export function mockGetChannelApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.post(`/api/v2/notifications/channels?connectionType=streaming`);
+
+  if (params.shouldFail) {
+    return intercept.reply(401);
+  }
+  return intercept.reply(200, { id: 'somechannelid' });
 }
 
 function mockApis (options: MockApiOptions = {}): MockApiReturns {
@@ -208,42 +322,20 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     //   .reply(200, { id: 'someguestchangeid' });
 
   } else {
-    if (failOrg) {
-      getOrg = api.get('/api/v2/organizations/me').reply(401);
-    } else {
-      getOrg = api.get('/api/v2/organizations/me').reply(200, MOCK_ORG);
-    }
-
-    if (failUser) {
-      getUser = api.get('/api/v2/users/me').reply(401);
-    } else {
-      getUser = api.get('/api/v2/users/me').reply(200, MOCK_USER);
-    }
-
-    getChannel = api
-      .post('/api/v2/notifications/channels?connectionType=streaming')
-      .reply(200, { id: 'somechannelid' });
+    getOrg = mockGetOrgApi({ nockScope: api, shouldFail: failOrg });
+    getUser = mockGetUserApi({ nockScope: api, shouldFail: failUser });
+    getChannel = mockGetChannelApi({ nockScope: api });
   }
 
   const conversationsApi = nock('https://api.mypurecloud.com');
   let getConversation: nock.Scope;
   if (conversationId) {
-    getConversation = conversationsApi
-      .get(`/api/v2/conversations/calls/${conversationId}`)
-      .reply(200, conversation || MOCK_CONVERSATION);
+    getConversation = mockGetConversationApi({ conversationId, response: conversation, nockScope: conversationsApi });
   }
 
   let patchConversation: nock.Scope;
   if (conversationId && participantId) {
-    if (failConversationPatch) {
-      patchConversation = conversationsApi
-        .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
-        .reply(401);
-    } else {
-      patchConversation = conversationsApi
-        .patch(`/api/v2/conversations/calls/${conversationId}/participants/${participantId}`)
-        .reply(202, {});
-    }
+    patchConversation = mockPatchConversationApi({ conversationId, nockScope: conversationsApi, participantId, shouldFail: failConversationPatch });
   }
 
   Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
@@ -358,6 +450,7 @@ export {
   timeout,
   closeWebSocketServer,
   getMockConversation,
+  USER_ID,
   PARTICIPANT_ID,
   PARTICIPANT_ID_2,
   MockSession,

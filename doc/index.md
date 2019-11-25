@@ -45,6 +45,8 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
         the SDK should auto connect the sessions.
     - `Array[IceServerConfiguration] iceServers`: Custom ICE server configuration.
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
+    - `Boolean defaultAudioElement`: Optional, default element to which inbound audio is attached to.
+    - `Boolean defaultAudioStream`: Optional, audio stream to be used for outbound calls
     - `RTCConfiguration iceTransportPolicy`: Set the ICE transport policy
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
     - `String logLevel`: Optional, desired log level. Available options: `debug`, `log`, `info`, `warn`, `error`
@@ -62,30 +64,16 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 
 `sdk.startScreenShare() : Promise<void>` - Start sharing the guest user's screen.
 
-`sdk.acceptPendingSession(id, opts) : void` - Accept an incoming RTC session proposal.
+`sdk.acceptPendingSession(id) : void` - Accept an incoming RTC session proposal.
 Should be called automatically for outbound calls.
 
+`sdk.acceptSession(options) : void` - Accept an incoming session. Happens automatically when `autoConnectSessions` is not `false` in which case this will need to be called manually after the `sessionStarted` event.
 - parameters
-  - `String id`: the id from the `pendingSession` event
-  - `Object opts`: **not yet supported**; with properties:
-    - `MediaStream mediaStream`: Optional; stream to use for input audio. If not
-        provided, the SDK will start media capture for a default stream.
-    - `HTMLAudioElement audioElement`: Optional; the audio tag to use for attaching
-        audio. If not provided, an `<audio>` element will be created and appended
-        to the `<body>`. This element will be hidden.
+  - `String id`: Required, id representing the sessionId
 
-
-- Examples:
-  - `sdk.acceptPendingSession(id)`
-    - SDK will start media, attach it to the session, and connect
-
-  Not yet supported:
-  - `sdk.acceptPendingSession(id, { autoStartMedia: false, autoConnectSession: false })`
-    - handle all media and session events yourself
-  - `sdk.acceptPendingSession(id, { mediaStream: stream, autoConnectSession: true })`
-    - SDK will attach your MediaStream to the session, and connect
-  - `sdk.acceptPendingSession(id, { autoStartMedia: true })`
-    - SDK will start media, attach it to the session, but not connect
+  Advanced options:
+  - `MediaStream mediaStream`: Optional, outgoing MediaStream. If not provided a MediaStream will be created automatically.
+  - `HTMLAudioElement audioElement`: Optional, element to which incoming media will be attached. If not provided, a unique element will be created automatically, then cleaned up afterwards.
 
 
 `sdk.endSession(opts) : Promise<void>` - Disconnect an active session

@@ -40,7 +40,7 @@ client.loginImplicitGrant(clientId, window.location.href)
     webrtcSdk = new WebrtcSdk({ accessToken: client.authData.accessToken });
     webrtcSdk.on('pendingSession', data => {
       t('WebRTC SDK', 'onPendingSession');
-      webrtcSdk.acceptPendingSession(data.id);
+      webrtcSdk.acceptPendingSession({ id: data.id });
     });
     t('Initializing WebRTC SDK', 'starting');
     return webrtcSdk.initialize()
