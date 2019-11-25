@@ -236,7 +236,7 @@ describe('endSession', () => {
 
     const promise = handler.endSession(session);
     // need to wait for requests to "process" before triggering session terminate
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 50));
     session.emit('terminated');
     await promise;
 
