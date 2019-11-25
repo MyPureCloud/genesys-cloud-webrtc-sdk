@@ -235,9 +235,13 @@ describe('acceptSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.acceptSession(session);
+    await sessionManager.acceptSession({ id: 'asdf' });
 
     expect(mockHandler.acceptSession).toHaveBeenCalled();
+  });
+
+  it('should throw if called without a sessionId', async () => {
+    await expect(sessionManager.acceptSession({ } as any)).rejects.toThrowError(/sessionId is required/);
   });
 });
 

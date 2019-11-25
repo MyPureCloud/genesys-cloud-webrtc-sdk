@@ -6,7 +6,7 @@ import {
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest } from './types/interfaces';
+import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest } from './types/interfaces';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 
@@ -95,6 +95,8 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       accessToken: options.accessToken,
       autoConnectSessions: options.autoConnectSessions !== false, // default true
       customIceServersConfig: options.iceServers,
+      defaultAudioElement: options.defaultAudioElement,
+      defaultAudioStream: options.defaultAudioStream,
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
@@ -210,6 +212,14 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    */
   public async acceptPendingSession (sessionId: string): Promise<void> {
     await this.sessionManager.proceedWithSession(sessionId);
+  }
+
+  /**
+   * Accept a pending session based on the passed in ID.
+   * @param opts object with mediaStream and/or audioElement to attach to session
+   */
+  public async acceptSession (opts: IAcceptSessionRequest): Promise<void> {
+    await this.sessionManager.acceptSession(opts);
   }
 
   /**

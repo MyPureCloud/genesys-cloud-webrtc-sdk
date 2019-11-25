@@ -12,6 +12,8 @@ export interface ISdkConstructOptions {
   logger?: ILogger;
   optOutOfTelemetry?: boolean;
   disableAutoAnswer?: boolean;
+  defaultAudioElement?: HTMLAudioElement;
+  defaultAudioStream?: MediaStream;
 }
 
 /**

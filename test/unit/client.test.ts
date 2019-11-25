@@ -339,6 +339,20 @@ describe('Client', () => {
     });
   });
 
+  describe('acceptSession()', () => {
+    test('proxies the call to the sessionManager', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'acceptSession').mockImplementation(() => Promise.resolve());
+
+      const params = { id: '5512551' };
+      await sdk.acceptSession(params);
+      expect(sdk.sessionManager.acceptSession).toBeCalledWith(params);
+      await sdk.disconnect();
+    });
+  });
+
   describe('endSession()', () => {
     it('should proxy to sessionManager', async () => {
       const { sdk } = mockApis();
