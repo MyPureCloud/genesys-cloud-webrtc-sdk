@@ -66,6 +66,7 @@ describe('handleSessionInit', () => {
 
     await handler.handleSessionInit(session);
 
+    expect(mockSdk._streamingConnection.webrtcSessions.rtcSessionAccepted).toHaveBeenCalled();
     expect(session.conversationId).toEqual(pendingSession.conversationId);
     expect(eventSpy).toHaveBeenCalled();
     expect(session._statsGatherer).toBeTruthy();

@@ -40,6 +40,7 @@ export default abstract class BaseSessionHandler {
     }
 
     session.id = session.sid;
+    this.sdk._streamingConnection.webrtcSessions.rtcSessionAccepted(session.id);
     const pendingSession = this.sessionManager.getPendingSession(session.id);
     if (pendingSession) {
       session.conversationId = pendingSession.conversationId;

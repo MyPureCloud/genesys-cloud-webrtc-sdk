@@ -41,7 +41,8 @@ export class SimpleMockSdk extends WildEmitter {
   _streamingConnection = {
     webrtcSessions: {
       initiateRtcSession: jest.fn(),
-      acceptRtcSession: jest.fn()
+      acceptRtcSession: jest.fn(),
+      rtcSessionAccepted: jest.fn()
     },
     _webrtcSessions: {
       refreshIceServers: jest.fn()

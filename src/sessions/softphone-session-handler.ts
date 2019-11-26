@@ -24,8 +24,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (this.sdk._config.autoConnectSessions) {
       return this.acceptSession(session, { id: session.id });
     }
-
-    // todo: will need to update this to call streamingClient.rtcSessionAccepted
   }
 
   async acceptSession (session: any, params: IAcceptSessionRequest): Promise<any> {
