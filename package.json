@@ -7,10 +7,9 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "dist/purecloud-webrtc-sdk.min.cjs",
+  "main": "dist/purecloud-webrtc-sdk.min.js",
   "browser": "dist/purecloud-webrtc-sdk.min.js",
   "files": [
-    "src",
     "dist"
   ],
   "typings": "dist/src/client.d.ts",
@@ -18,9 +17,7 @@
     "test"
   ],
   "scripts": {
-    "build": "npm run build-umd && npm run build-cjs",
-    "build-umd": "webpack && webpack --env.production",
-    "build-cjs": "webpack --env.node && webpack --env.node --env.production",
+    "build": "tsc -p . && webpack && webpack --env.production",
     "build-sample": "./test/test-pages/build.sh",
     "unit-test": "NODE_ENV=test jest --runInBand",
     "build-run-local": "./test/test-pages/build-dev.sh && npm start",
