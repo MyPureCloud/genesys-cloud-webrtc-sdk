@@ -3,17 +3,13 @@ const WebpackAutoInject = require('webpack-auto-inject-version');
 
 module.exports = (env) => {
   const minimize = env && env.production;
-  const node = env && env.node;
-  const file = `purecloud-webrtc-sdk${minimize ? '.min' : ''}`;
-  const extension = node ? '.cjs' : '.js';
-  const filename = file + extension;
-
+  const filename = `purecloud-webrtc-sdk${minimize ? '.min' : ''}.js`;
   const mode = minimize ? 'production' : 'development';
 
   console.log(`build mode: ${mode}`);
 
   return {
-    target: node ? 'node' : 'web',
+    target: 'web',
     entry: './src/client.ts',
     mode,
     optimization: {
