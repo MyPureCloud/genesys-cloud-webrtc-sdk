@@ -3,6 +3,7 @@ import StreamingClient from 'purecloud-streaming-client';
 import { log } from './logging';
 import { LogLevels } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
+import { IJingleSession } from './types/interfaces';
 
 /**
  * Establish the connection with the streaming client.
@@ -55,16 +56,20 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
  * Set up proxy for streaming client events
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  */
-export function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
+export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
   this.sessionManager = new SessionManager(this);
+
+  if (this._personDetails) {
+    await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, this.sessionManager.handleConversationUpdate.bind(this.sessionManager));
+  }
 
   // webrtc events
   const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);
   on('requestIncomingRtcSession', this.sessionManager.onPropose.bind(this.sessionManager));
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
   on('rtcSessionError', this.emit.bind(this, 'error'));
-  on('cancelIncomingRtcSession', (session: any) => this.emit('cancelPendingSession', session));
-  on('handledIncomingRtcSession', (session: any) => this.emit('handledPendingSession', session));
+  on('cancelIncomingRtcSession', (session: IJingleSession) => this.emit('cancelPendingSession', session));
+  on('handledIncomingRtcSession', (session: IJingleSession) => this.emit('handledPendingSession', session));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
   // other events

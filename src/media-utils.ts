@@ -28,12 +28,14 @@ export const startDisplayMedia = function (): Promise<MediaStream> {
   return window.navigator.mediaDevices.getUserMedia(constraints);
 };
 
-/**
- * Get the audio media
- * @param this must be called with a PureCloudWebrtcSdk as `this`
- */
-export const startAudioMedia = function (): Promise<MediaStream> {
-  return window.navigator.mediaDevices.getUserMedia({ audio: true });
+export const startMedia = function (opts: { video?: boolean, audio?: boolean } = { video: true, audio: true }): Promise<MediaStream> {
+  let constraints: any = { audio: true };
+
+  if (opts.video) {
+    constraints = getVideoConstraints(!opts.audio);
+  }
+
+  return window.navigator.mediaDevices.getUserMedia(constraints);
 };
 
 /**
@@ -94,6 +96,12 @@ export const checkAllTracksHaveEnded = function (stream: MediaStream): boolean {
   return allTracksHaveEnded;
 };
 
+export const createNewStreamWithTrack = function (track: MediaStreamTrack): MediaStream {
+  const newStream = new MediaStream();
+  newStream.addTrack(track);
+  return newStream;
+};
+
 function hasGetDisplayMedia (): boolean {
   return !!(window.navigator && window.navigator.mediaDevices && window.navigator.mediaDevices.getDisplayMedia);
 }
@@ -126,4 +134,29 @@ function getScreenShareConstraints (): MediaStreamConstraints {
       } as MediaTrackConstraints
     };
   }
+}
+
+function getVideoConstraints (cameraOnly: boolean): MediaStreamConstraints {
+  const constraints: any = {
+    video: {},
+    audio: {}
+  };
+
+  if (browserama.isChromeOrChromium) {
+    constraints.video.googNoiseReduction = true;
+    constraints.audio = {
+      googAudioMirroring: false,
+      autoGainControl: true,
+      echoCancellation: true,
+      noiseSuppression: true,
+      googDucking: false,
+      googHighpassFilter: true
+    };
+  }
+
+  if (cameraOnly) {
+    constraints.audio = false;
+  }
+
+  return constraints;
 }

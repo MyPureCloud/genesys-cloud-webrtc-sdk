@@ -32,14 +32,25 @@ body {
 }
 
 .app-content {
+  padding: 10px;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.app-content .top {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  padding: 10px;
 }
 
 .app-controls {
   visibility: hidden;
+}
+
+#video-controls {
+  display: flex;
 }
 
 .log-data {

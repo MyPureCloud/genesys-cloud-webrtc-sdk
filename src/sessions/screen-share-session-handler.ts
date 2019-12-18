@@ -1,5 +1,5 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IJingleSession } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
 import { throwSdkError, parseJwt, isAcdJid } from '../utils';
@@ -36,14 +36,14 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     await this.proceedWithSession(pendingSession);
   }
 
-  onTrackEnd (session: any) {
+  onTrackEnd (session: IJingleSession) {
     this.log(LogLevels.debug, 'Track ended');
-    if (checkAllTracksHaveEnded(session._outboundStream)) {
+    if (checkAllTracksHaveEnded(session._screenShareStream)) {
       return this.endSession(session);
     }
   }
 
-  async handleSessionInit (session: any): Promise<void> {
+  async handleSessionInit (session: IJingleSession): Promise<void> {
     await super.handleSessionInit(session);
 
     if (!this.sdk.isGuest) {
@@ -54,11 +54,11 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       this.temporaryOutboundStream.getTracks().forEach((track: MediaStreamTrack) => {
         track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
-      this.log(LogLevels.debug, 'temporaryOutboundStream exists. Adding stream to the session and setting it to _outboundStream');
+      this.log(LogLevels.debug, 'temporaryOutboundStream exists. Adding stream to the session and setting it to _screenShareStream');
 
-      this.addMediaToSession(session, this.temporaryOutboundStream);
+      await this.addMediaToSession(session, this.temporaryOutboundStream);
 
-      session._outboundStream = this.temporaryOutboundStream;
+      session._screenShareStream = this.temporaryOutboundStream;
       this.temporaryOutboundStream = null;
     } else {
       this.log(LogLevels.warn, 'There is no `temporaryOutboundStream` for guest user');
