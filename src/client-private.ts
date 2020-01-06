@@ -56,7 +56,7 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
  * Set up proxy for streaming client events
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  */
-export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk) {
+export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk): Promise<void> {
   this.sessionManager = new SessionManager(this);
 
   if (this._personDetails) {
