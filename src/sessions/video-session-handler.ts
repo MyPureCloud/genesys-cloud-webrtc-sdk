@@ -208,7 +208,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       stream = await startMedia();
     }
 
-    this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
+    await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
 
     await this.addMediaToSession(session, stream, false);
 

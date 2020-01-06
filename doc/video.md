@@ -67,7 +67,7 @@ interface IParticipantUpdate {
 the server switches who is visible on the screen. This will likely happen every time someone new speaks.
 
 *Note: this user may not be providing video or that video could be muted. It is up to the
-implementing party to show somethis else such as an avatar or profile picture in such instances.*
+implementing party to show something else such as an avatar or profile picture in such instances.*
 ```
 interface IOnScreenParticipantsUpdate {
   participantsOnScreen: [
@@ -97,6 +97,6 @@ participants upon confirmation.
 *Note: at this time, screen sharing while also sending video with the camera is not supported.
 If you are sending video with the camera when you `startScreenShare`, the camera track will
 be cleaned up and replaced with a track presenting your screen. When ending screen share, if
-a camera track was cleaned up during `startScreenShare` a new one will be created replace the screen share track.*
+a camera track was cleaned up during `startScreenShare` a new one will be created to replace the screen share track.*
 
 `session.stopScreenShare()` - Ends the active outgoing screen share.
