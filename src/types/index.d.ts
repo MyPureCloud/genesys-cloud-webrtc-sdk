@@ -12,6 +12,9 @@ declare module 'purecloud-streaming-client' {
   export default class StreamingClient {
     constructor (options: any);
     connect (): Promise<any>;
+    notifications: {
+      subscribe (topic: string, handler: (data: any) => {}): Promise<void>
+    };
     webrtcSessions: {
       refreshIceServers (): Promise<any>;
     };
@@ -21,6 +24,8 @@ declare module 'purecloud-streaming-client' {
 declare module 'webrtc-stats-gatherer' {
   export default class WebrtcStatsGatherer {
     constructor (pc: any, options: any);
+    collectInitialConnectionStats: () => void;
+    on: (key, fn) => void;
   }
 }
 

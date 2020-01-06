@@ -14,11 +14,12 @@ import {
   getMockConversation,
   mockGetUserApi,
   mockGetOrgApi,
-  mockGetChannelApi
+  mockGetChannelApi,
+  mockNotificationSubscription
 } from '../test-utils';
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
-import * as logging from '../../src/logging';
+import * as mediaUtils from '../../src/media-utils';
 
 declare var global: {
   window: any,
@@ -133,11 +134,12 @@ describe('Client', () => {
 
   describe('initialize()', () => {
     test('fetches org and person details, sets up the streaming connection', async () => {
-      const { getOrg, getUser, getChannel, sdk } = mockApis();
+      const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       getOrg.done();
       getUser.done();
       getChannel.done();
+      notificationSubscription.done();
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
       sdk._config.optOutOfTelemetry = true;
@@ -145,7 +147,7 @@ describe('Client', () => {
     });
 
     it('should disconnect if initialize is called again', async () => {
-      const { getOrg, getUser, getChannel, sdk } = mockApis();
+      const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
@@ -155,6 +157,7 @@ describe('Client', () => {
       mockGetOrgApi({ nockScope: getOrg });
       mockGetUserApi({ nockScope: getUser });
       mockGetChannelApi({ nockScope: getChannel });
+      mockNotificationSubscription({ nockScope: notificationSubscription });
       await sdk.initialize();
       expect(disconnectSpy).toHaveBeenCalled();
       await sdk.disconnect();
@@ -312,6 +315,30 @@ describe('Client', () => {
     });
   });
 
+  describe('startVideoConference()', () => {
+    it('should call session manager to start screenshare', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+      jest.spyOn(sdk.sessionManager, 'startSession').mockResolvedValue({});
+      await sdk.startVideoConference('123');
+      expect(sdk.sessionManager.startSession).toBeCalledWith({ jid: '123', sessionType: SessionTypes.collaborateVideo });
+    });
+
+    it('should throw if guest user', async () => {
+      const { sdk } = mockApis({ guestSdk: true });
+
+      await sdk.initialize({ securityCode: '123454' });
+      jest.spyOn(sdk.sessionManager, 'startSession');
+      try {
+        await sdk.startVideoConference('123');
+        fail('should have failed');
+      } catch (e) {
+        expect(e).toEqual(new Error('video conferencing not supported for guests'));
+        expect(sdk.sessionManager.startSession).not.toHaveBeenCalled();
+      }
+    });
+  });
+
   describe('connected()', () => {
     test('returns the streaming client connection status', async () => {
       const { sdk } = mockApis();
@@ -349,6 +376,62 @@ describe('Client', () => {
       const params = { id: '5512551' };
       await sdk.acceptSession(params);
       expect(sdk.sessionManager.acceptSession).toBeCalledWith(params);
+      await sdk.disconnect();
+    });
+  });
+
+  describe('setAudioMute()', () => {
+    it('proxies the call to the sessionManager', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'setAudioMute').mockImplementation(() => Promise.resolve());
+
+      const params = { id: '5512551', mute: true };
+      await sdk.setAudioMute(params);
+      expect(sdk.sessionManager.setAudioMute).toBeCalledWith(params);
+      await sdk.disconnect();
+    });
+  });
+
+  describe('setVideoMute()', () => {
+    it('proxies the call to the sessionManager', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'setVideoMute').mockImplementation(() => Promise.resolve());
+
+      const params = { id: '5512551', mute: true };
+      await sdk.setVideoMute(params);
+      expect(sdk.sessionManager.setVideoMute).toBeCalledWith(params);
+      await sdk.disconnect();
+    });
+  });
+
+  describe('createMedia', () => {
+    it('should throw if no media requested', async () => {
+      const spy = jest.spyOn(mediaUtils, 'startMedia');
+
+      const { sdk } = mockApis();
+      await expect(sdk.createMedia({} as any)).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
+
+      await expect((sdk.createMedia as any)()).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
+
+      await expect(sdk.createMedia({ video: false, audio: false })).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('proxies the call to the mediaUtils', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue({} as any);
+
+      const params = { video: true };
+      await sdk.createMedia(params);
+      expect(mediaUtils.startMedia).toBeCalledWith(params);
       await sdk.disconnect();
     });
   });

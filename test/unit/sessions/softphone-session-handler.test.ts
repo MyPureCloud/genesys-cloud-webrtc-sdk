@@ -94,7 +94,7 @@ describe('handleSessionInit', () => {
     const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
     mockSdk._config.autoConnectSessions = true;
 
-    const session = new MockSession();
+    const session: any = new MockSession();
     await handler.handleSessionInit(session);
 
     expect(superInit).toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe('handleSessionInit', () => {
     const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
     mockSdk._config.autoConnectSessions = false;
 
-    const session = new MockSession();
+    const session: any = new MockSession();
     await handler.handleSessionInit(session);
 
     expect(superInit).toHaveBeenCalled();
@@ -119,13 +119,13 @@ describe('acceptSesion', () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-    const startMediaSpy = jest.spyOn(mediaUtils, 'startAudioMedia');
+    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia');
 
     const element = {};
     const mockOutgoingStream = new MockStream();
     const mockIncomingStream = new MockStream();
 
-    const session = new MockSession();
+    const session: any = new MockSession();
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
@@ -146,7 +146,7 @@ describe('acceptSesion', () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-    const startMediaSpy = jest.spyOn(mediaUtils, 'startAudioMedia');
+    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia');
 
     const defaultElement = {};
     const defaultStream = new MockStream();
@@ -155,7 +155,7 @@ describe('acceptSesion', () => {
     mockSdk._config.defaultAudioStream = defaultStream as any;
     const mockIncomingStream = new MockStream();
 
-    const session = new MockSession();
+    const session: any = new MockSession();
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
@@ -176,11 +176,11 @@ describe('acceptSesion', () => {
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     const createdStream = new MockStream();
-    const startMediaSpy = jest.spyOn(mediaUtils, 'startAudioMedia').mockResolvedValue(createdStream as any);
+    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(createdStream as any);
 
     const mockIncomingStream = new MockStream();
 
-    const session = new MockSession();
+    const session: any = new MockSession();
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
@@ -200,7 +200,7 @@ describe('acceptSesion', () => {
 
     const element = {};
 
-    const session = new MockSession();
+    const session: any = new MockSession();
 
     const params: IAcceptSessionRequest = {
       id: session.sid,
@@ -219,16 +219,43 @@ describe('acceptSesion', () => {
   });
 });
 
+describe('getParticipantForSession', () => {
+  it('should throw if participant is not found', async () => {
+    const response = getMockConversation();
+    response.participants = [];
+    const scope = createNock();
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
+    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, response });
+
+    await expect(handler.getParticipantForSession(session)).rejects.toThrowError(/Failed to find a participant/);
+    expect(getConversation.isDone()).toBeTruthy();
+  });
+
+  it('should not request participant if cached locally', async () => {
+    jest.spyOn(utils, 'requestApi');
+
+    const mockParticipant = {};
+    const session = {
+      pcParticipant: mockParticipant
+    };
+
+    expect(await handler.getParticipantForSession(session as any)).toBe(mockParticipant);
+
+    expect(utils.requestApi).not.toHaveBeenCalled();
+  });
+});
+
 describe('endSession', () => {
   it('should fetch conversation and patch participant', async () => {
-    const session = new MockSession();
-    const conversationId = (session as any).conversationId = random();
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
     const participantId = PARTICIPANT_ID;
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
 
     mockSdk._personDetails = {
       id: USER_ID
-    };
+    } as any;
 
     const scope = createNock();
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
@@ -247,12 +274,12 @@ describe('endSession', () => {
   });
 
   it('should manually end the session if fetch conversation fails', async () => {
-    const session = new MockSession();
-    const conversationId = (session as any).conversationId = random();
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
 
     mockSdk._personDetails = {
       id: USER_ID
-    };
+    } as any;
 
     const scope = createNock();
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, shouldFail: true });
@@ -266,13 +293,13 @@ describe('endSession', () => {
   });
 
   it('should manually end the session if the patch fails', async () => {
-    const session = new MockSession();
-    const conversationId = (session as any).conversationId = random();
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
     const participantId = PARTICIPANT_ID;
 
     mockSdk._personDetails = {
       id: USER_ID
-    };
+    } as any;
 
     const scope = createNock();
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
@@ -288,15 +315,15 @@ describe('endSession', () => {
   });
 
   it('should call the fallback if session end fails', async () => {
-    const session = new MockSession();
-    const conversationId = (session as any).conversationId = random();
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
     const participantId = PARTICIPANT_ID;
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
     const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
 
     mockSdk._personDetails = {
       id: USER_ID
-    };
+    } as any;
 
     const scope = createNock();
     const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
@@ -318,16 +345,46 @@ describe('endSession', () => {
 
 describe('endSessionFallback', () => {
   it('should call supers endSession', async () => {
-    const session = new MockSession();
+    const session: any = new MockSession();
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockResolvedValue();
     await handler.endSessionFallback(session);
     expect(superSpy).toHaveBeenCalled();
   });
 
   it('should throw error if call to super fails', async () => {
-    const session = new MockSession();
+    const session: any = new MockSession();
     const error = new Error('fake');
     jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockRejectedValue(error);
     await expect(handler.endSessionFallback(session)).rejects.toThrowError(/Failed to end session directly/);
+  });
+});
+
+describe('setAudioMute', () => {
+  it('should patch a mute for the participant', async () => {
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
+    const participantId = PARTICIPANT_ID;
+    const scope = createNock();
+
+    jest.spyOn(handler, 'getParticipantForSession').mockResolvedValue({ id: participantId } as any);
+
+    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
+
+    await handler.setAudioMute(session, { id: session.id, mute: true });
+
+    expect(patchConversation.isDone).toBeTruthy();
+  });
+
+  it('should log failure', async () => {
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
+    const participantId = PARTICIPANT_ID;
+    const scope = createNock();
+
+    jest.spyOn(handler, 'getParticipantForSession').mockResolvedValue({ id: participantId } as any);
+
+    mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
+
+    await expect(handler.setAudioMute(session, { id: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
   });
 });

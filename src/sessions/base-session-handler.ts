@@ -3,7 +3,7 @@ import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate } from '../types/interfaces';
 import { checkHasTransceiverFunctionality } from '../media-utils';
 import { throwSdkError } from '../utils';
 
@@ -20,6 +20,11 @@ export default abstract class BaseSessionHandler {
     log.call(this.sdk, level, message, details);
   }
 
+  // by default, do nothing
+  handleConversationUpdate (session: IJingleSession, update: IConversationUpdate) {
+
+  }
+
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
     throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the purecloud api`, { sessionStartParams });
   }
@@ -32,7 +37,7 @@ export default abstract class BaseSessionHandler {
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
-  async handleSessionInit (session: any) {
+  async handleSessionInit (session: IJingleSession): Promise<any> {
     try {
       this.log(LogLevels.info, 'onSession', session);
     } catch (e) {
@@ -40,6 +45,7 @@ export default abstract class BaseSessionHandler {
     }
 
     session.id = session.sid;
+    this.sdk._streamingConnection.webrtcSessions.rtcSessionAccepted(session.id);
     const pendingSession = this.sessionManager.getPendingSession(session.id);
     if (pendingSession) {
       session.conversationId = pendingSession.conversationId;
@@ -61,7 +67,7 @@ export default abstract class BaseSessionHandler {
       this.log(LogLevels.warn, 'session:trace', data);
     });
 
-    session.on('change:active', (session: any, active: boolean) => {
+    session.on('change:active', (session: IJingleSession, active: boolean) => {
       if (active) {
         session._statsGatherer.collectInitialConnectionStats();
       }
@@ -72,7 +78,7 @@ export default abstract class BaseSessionHandler {
     this.sdk.emit('sessionStarted', session);
   }
 
-  onSessionTerminated (session: any, reason: any): void {
+  onSessionTerminated (session: IJingleSession, reason: any): void {
     this.log(LogLevels.info, 'onSessionTerminated', { conversationId: session.conversationId, reason });
     if (session._outboundStream) {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
@@ -80,11 +86,11 @@ export default abstract class BaseSessionHandler {
     this.sdk.emit('sessionEnded', session, reason);
   }
 
-  async acceptSession (session: any, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: IJingleSession, params: IAcceptSessionRequest): Promise<any> {
     return session.accept();
   }
 
-  async endSession (session: any) {
+  async endSession (session: IJingleSession) {
     return new Promise<void>((resolve, reject) => {
       session.once('terminated', (reason) => {
         resolve(reason);
@@ -94,26 +100,41 @@ export default abstract class BaseSessionHandler {
     });
   }
 
+  async setVideoMute (session: IJingleSession, params: ISessionMuteRequest): Promise<any> {
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, { params });
+  }
+
+  async setAudioMute (session: IJingleSession, params: ISessionMuteRequest): Promise<any> {
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, { params });
+  }
+
   /**
    * Add new media to a session. Will attempt to use tracksBasedActions if possible.
    * @param session jingle media session
    * @param stream local MediaStream to add to session
    * @param allowLegacyStreamBasedActionsFallback if false, an error will be thrown if track based actions are not supported
    */
-  addMediaToSession (session, stream: MediaStream, allowLegacyStreamBasedActionsFallback: boolean = true) {
+  async addMediaToSession (session: IJingleSession, stream: MediaStream, allowLegacyStreamBasedActionsFallback: boolean = true): Promise<void> {
+    const promises: any[] = [];
     if (checkHasTransceiverFunctionality()) {
       this.log(LogLevels.info, 'Using track based actions');
       stream.getTracks().forEach(t => {
         this.log(LogLevels.debug, 'Adding track to session', t);
-        session.addTrack(t);
+        promises.push(session.addTrack(t));
       });
     } else if (allowLegacyStreamBasedActionsFallback) {
       this.log(LogLevels.info, 'Using stream based actions.');
       this.log(LogLevels.debug, 'Adding stream to session', stream);
-      session.addStream(stream);
+      promises.push(session.addStream(stream));
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
       throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg);
     }
+
+    await Promise.all(promises);
+  }
+
+  removeMediaFromSession (session: IJingleSession, track: MediaStreamTrack): Promise<void> {
+    return session.removeTrack(track);
   }
 }

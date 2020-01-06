@@ -6,6 +6,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
+import { IJingleSession } from '../../../src/types/interfaces';
 
 let handler: ScreenShareSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
@@ -85,10 +86,10 @@ describe('handleSessionInit', () => {
     jest.spyOn((mockStream as MockStream)._tracks[0], 'addEventListener');
     handler.temporaryOutboundStream = mockStream;
 
-    const session = new MockSession();
+    const session: IJingleSession = new MockSession() as any;
     await handler.handleSessionInit(session);
 
-    expect(session._outboundStream).toBe(mockStream);
+    expect(session._screenShareStream).toBe(mockStream);
     expect((mockStream as MockStream)._tracks[0].addEventListener).toHaveBeenCalled();
     expect(acceptSpy).toHaveBeenCalled();
   });
@@ -98,7 +99,7 @@ describe('handleSessionInit', () => {
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     jest.spyOn(mockSdk.logger, 'warn');
-    const session = new MockSession();
+    const session: any = new MockSession();
     await handler.handleSessionInit(session);
 
     expect(handler.addMediaToSession).not.toHaveBeenCalled();
@@ -111,7 +112,7 @@ describe('handleSessionInit', () => {
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     jest.spyOn(mockSdk.logger, 'warn');
-    const session = new MockSession();
+    const session: any = new MockSession();
 
     await expect(handler.handleSessionInit(session)).rejects.toThrow();
   });
@@ -121,7 +122,7 @@ describe('handleSessionInit', () => {
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     jest.spyOn(mockSdk.logger, 'warn');
-    const session = new MockSession();
+    const session: any = new MockSession();
 
     await expect(handler.handleSessionInit(session)).rejects.toThrow();
   });
@@ -134,7 +135,7 @@ describe('onTrackEnd', () => {
       .mockReturnValueOnce(false)
       .mockReturnValueOnce(true);
 
-    const mockSession = new MockSession();
+    const mockSession: any = new MockSession();
     await handler.onTrackEnd(mockSession);
 
     expect(handler.endSession).not.toHaveBeenCalled();

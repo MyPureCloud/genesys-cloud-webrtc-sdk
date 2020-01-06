@@ -4,6 +4,7 @@
 
 - [WebRTC SoftPhone](softphone.md)
 - [WebRTC Screen Share](screenshare.md)
+- [WebRTC Video Conferencing](video.md)
 
 ## API
 
@@ -47,6 +48,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
     - `Boolean defaultAudioElement`: Optional, default element to which inbound audio is attached to.
     - `Boolean defaultAudioStream`: Optional, audio stream to be used for outbound calls
+    - `Boolean defaultVideoElement`: Optional, default element to which inbound video is attached to.
     - `RTCConfiguration iceTransportPolicy`: Set the ICE transport policy
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
     - `String logLevel`: Optional, desired log level. Available options: `debug`, `log`, `info`, `warn`, `error`
@@ -58,30 +60,54 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
 
 `sdk.intialize(options) : Promise<void>` - Initialize the WebSocket connection for streaming
 connectivity with PureCloud. Initialize must be called before any events will trigger.
-  - paramaters
+  - parameters
     - `Object options`: Optional; with properties
       - `String securityCode`: Optional; one-time security code used to authenticate guest users
 
 `sdk.startScreenShare() : Promise<void>` - Start sharing the guest user's screen.
 
-`sdk.acceptPendingSession(id) : void` - Accept an incoming RTC session proposal.
-Should be called automatically for outbound calls.
+`sdk.startVideoConference(roomJid) : Promise<void>` - Start or join a video conference
+  - parameters
+    - `String roomJid`: Required; the id or jid of the room where the conference will take place.
 
-`sdk.acceptSession(options) : void` - Accept an incoming session. Happens automatically when `autoConnectSessions` is not `false` in which case this will need to be called manually after the `sessionStarted` event.
+`sdk.createMedia(options) : Promise<MediaStream>` - Creates a media stream with audio, video, or both.
+  - parameters
+    - `Object options`: Required
+      - `Boolean video`: Optional; the returned stream will a video track.
+      - `Boolean audio`: Optional; the returned stream will have an audio track.
+
+`sdk.setVideoMute(options) : Promise<void>` - Mute or unmute outgoing video on a session. *Note: this will only work on video sessions and does not affect screen sharing.*
 - parameters
-  - `String id`: Required, id representing the sessionId
+  - `Object options`: Required
+    - `String id`: Required; The id of the session for which you would like to mute or unmute video.
+    - `Boolean mute`: Required; If true, outgoing video track will be cleaned up. If there are no other tracks using the camera, the camera will be turned off. If false, a new video track will be created an send to the other participants. This will reactivate the camera if it is not already in use.
 
-  Advanced options:
-  - `MediaStream mediaStream`: Optional, outgoing MediaStream. If not provided a MediaStream will be created automatically.
-  - `HTMLAudioElement audioElement`: Optional, element to which incoming media will be attached. If not provided, a unique element will be created automatically, then cleaned up afterwards.
+`sdk.setAudioMute(options) : Promise<void>` - Mute or unmute going audio on a session.
+- parameters
+  - `Object options`: Required
+    - `String id`: Required; The id of the session for which you would like to mute or unmute audio.
+    - `Boolean mute`: Required; If true, outgoing audio will not be heard by other participants. If false, outgoing audio will be re-enabled.
+
+`sdk.acceptPendingSession(id) : void` - Accept an incoming RTC session proposal. Should be called automatically for outbound calls.
+- parameters
+  - `String id`: Required; The id of the pending session you would like to accept.
+
+`sdk.acceptSession(options) : void` - Accept an incoming session. This happens automatically for softphone and screen share sessions when `autoConnectSessions` is not `false`. For video sessions you must call this manually.
+- parameters
+  - `Object options`
+    - `String id`: Required, id representing the sessionId
+
+    Advanced options:
+    - `MediaStream mediaStream`: Optional, outgoing MediaStream. If not provided a MediaStream will be created automatically.
+    - `HTMLAudioElement audioElement`: Optional, element to which incoming audio will be attached. Except for video sessions, a unique element will be created automatically if one is not provided, then cleaned up afterwards.
+    - `HTMLVideoElement videoElement`: Optional/Required, element to which incoming video will be attached. This is optional if you provide a default video element in the config, otherwise this is required.
 
 
 `sdk.endSession(opts) : Promise<void>` - Disconnect an active session
-
 - parameters
-    - `Object opts`: object with one of the following properties set:
-      - `String id`: the id of the session to disconnect
-      - `String conversationId`: the conversationId of the session to disconnect
+  - `Object opts`: object with one of the following properties set:
+    - `String id`: the id of the session to disconnect
+    - `String conversationId`: the conversationId of the session to disconnect
 
 `sdk.disconnect() : void` - Tear down the WebSocket connection to PureCloud.
 This does not hangup or disconnect active WebRTC Session calls.
@@ -187,5 +213,9 @@ has changed
 
 `session.on('endOfCandidates' () => {})` - signals the end of candidate gathering; used to check for
 potential connection issues
+
+#### Video-specific session level events
+
+See [WebRTC Video Conferencing](video.md)
 
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html

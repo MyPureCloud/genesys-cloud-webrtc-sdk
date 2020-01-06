@@ -2,6 +2,7 @@ import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
+import { IJingleSession } from '../../../src/types/interfaces';
 
 let mockSdk: PureCloudWebrtcSdk;
 let sessionManager: SessionManager;
@@ -30,6 +31,43 @@ describe('getPendingSession', () => {
 
     expect(sessionManager.getPendingSession(pendingSession1.id)).toBe(pendingSession1);
     expect(sessionManager.getPendingSession(pendingSession2.id)).toBe(pendingSession2);
+  });
+});
+
+describe('handleConversationUpdate', () => {
+  it('should find all session that match the conversationId and call the associated handlers', () => {
+    const conversationId = 'convoid123';
+    const session1 = {
+      conversationId
+    };
+
+    const session2 = {
+      conversationId: 'not this one'
+    };
+
+    const session3 = {
+      conversationId
+    };
+
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = {
+      sessions: {
+        1: session1,
+        2: session2,
+        3: session3
+      }
+    };
+
+    const spy = jest.fn();
+    const fakeHandler = { handleConversationUpdate: spy };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+
+    const fakeUpdate = {
+      id: conversationId
+    };
+    sessionManager.handleConversationUpdate({ eventBody: fakeUpdate } as any);
+    expect(spy).toBeCalledTimes(2);
+    expect(spy).toHaveBeenCalledWith(session1, fakeUpdate);
+    expect(spy).toHaveBeenCalledWith(session3, fakeUpdate);
   });
 });
 
@@ -263,5 +301,37 @@ describe('endSession', () => {
 
   it('should throw if no id or conversationId in params', async () => {
     await expect(sessionManager.endSession({})).rejects.toThrowError(/must provide session id or conversationId/);
+  });
+});
+
+describe('setVideoMute', () => {
+  it('should proxy to handler', async () => {
+    const spy = jest.fn();
+    const fakeHandler = { setVideoMute: spy };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+
+    const fakeSession = {} as any;
+    jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
+
+    const params = { id: '1', mute: true };
+    await sessionManager.setVideoMute(params);
+
+    expect(spy).toHaveBeenCalledWith(fakeSession, params);
+  });
+});
+
+describe('setAudioMute', () => {
+  it('should proxy to handler', async () => {
+    const spy = jest.fn();
+    const fakeHandler = { setAudioMute: spy };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+
+    const fakeSession = {} as any;
+    jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
+
+    const params = { id: '1', mute: true };
+    await sessionManager.setAudioMute(params);
+
+    expect(spy).toHaveBeenCalledWith(fakeSession, params);
   });
 });

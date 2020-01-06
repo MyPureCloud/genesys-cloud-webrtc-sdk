@@ -6,9 +6,10 @@ import {
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest } from './types/interfaces';
+import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest, ISessionMuteRequest, IPersonDetails } from './types/interfaces';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
+import { startMedia } from './media-utils';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -63,7 +64,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _failedLogAttempts: number;
   _backoff: any;
   _orgDetails: any;
-  _personDetails: any;
+  _personDetails: IPersonDetails;
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
@@ -97,6 +98,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       customIceServersConfig: options.iceServers,
       defaultAudioElement: options.defaultAudioElement,
       defaultAudioStream: options.defaultAudioStream,
+      defaultVideoElement: options.defaultVideoElement,
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
@@ -187,7 +189,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     try {
       await setupStreamingClient.call(this);
-      proxyStreamingClientEvents.call(this);
+      await proxyStreamingClientEvents.call(this);
       this.emit('ready');
     } catch (err) {
       throwSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
@@ -204,6 +206,42 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
+  }
+
+  /**
+   * Start a video conference. Not supported for guests.
+   *  `initialize()` must be called first.
+   */
+  public async startVideoConference (roomJid: string): Promise<void> {
+    if (!this.isGuest) {
+      await this.sessionManager.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
+    } else {
+      throwSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
+    }
+  }
+
+  public async createMedia (opts: { video?: boolean, audio?: boolean }): Promise<MediaStream> {
+    if (!opts || (!opts.video && !opts.audio)) {
+      throwSdkError.call(this, SdkErrorTypes.invalid_options, 'createMedia must be called with at least one media type request');
+    }
+
+    return startMedia(opts);
+  }
+
+  /**
+   * Mutes/Unmutes video/camera for a session and updates the conversation accordingly. Will fail if the session is not found.
+   * Incoming video is unaffected
+   */
+  public async setVideoMute (muteOptions: ISessionMuteRequest): Promise<void> {
+    await this.sessionManager.setVideoMute(muteOptions);
+  }
+
+  /**
+   * Mutes/Unmutes audio/mic for a session and updates the conversation accordingly. Will fail if the session is not found.
+   * Incoming audio is unaffected
+   */
+  public async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
+    await this.sessionManager.setAudioMute(muteOptions);
   }
 
   /**

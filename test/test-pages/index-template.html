@@ -79,7 +79,8 @@
   <hr />
 
   <div id="app-content" class="app-content">
-    <div id="app-controls" class="app-controls">
+    <div class="top">
+      <div id="app-controls" class="app-controls">
 
         <!-- outbound call -->
         <div class="control-title">Outbound phone call</div>
@@ -99,25 +100,68 @@
           <button id="inbound-call-end">End Call</button>
         </div>
 
+        <!-- video -->
+        <div class="control-title">Video conference</div>
+        <div class="control-section">
+          <label>Enter room jid:</label>
+          <input id="video-jid" type="text" class="text-input">
+          <div>
+            <span id="start-controls">
+              <button id="video-start">Start</button>
+              <button id="video-start-no-video">Start - No Video</button>
+              <button id="video-start-no-audio">Start - No Audio</button>
+              <button id="video-start-no-audio-video">Start - No Audio/Video</button>
+            </span>
+
+            <div id="video-controls" class="hidden">
+              <div>
+                <button id="start-screen-share">Start screen share</button>
+                <br />
+                <button id="stop-screen-share">Stop screen share</button>
+              </div>
+              <div>
+                <button id="audio-mute">Mute mic</button>
+                <br />
+                <button id="audio-unmute">Unmute mic</button>
+              </div>
+              <div>
+                <button id="video-mute">Mute camera</button>
+                <br />
+                <button id="video-unmute">Unmute camera</button>
+              </div>
+
+              <button id="video-end">End Call</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Disconnect -->
         <div class="control-title">
           <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
         </div>
+      </div>
+
+      <div class="output-container">
+        <div class="log-header">
+          <span>Log:</span>
+          <span>
+            <input name="log-traces-check" type="checkbox" id="log-traces-check"/>
+            <label for="log-traces-check">Log trace events</label>
+          </span>
+        </div>
+        <textarea id="log-data" class="log-data" readonly="true"></textarea>
+        <div>
+          <button type="button" id="clear-log">Clear Log</button>
+        </div>
+      </div>
     </div>
 
-    <div class="output-container">
-      <div class="log-header">
-        <span>Log:</span>
-        <span>
-          <input name="log-traces-check" type="checkbox" id="log-traces-check"/>
-          <label for="log-traces-check">Log trace events</label>
-        </span>
-      </div>
-      <textarea id="log-data" class="log-data" readonly="true"></textarea>
-      <div>
-        <button type="button" id="clear-log">Clear Log</button>
-      </div>
+    <div>
+      <div id="waiting-for-media" class="hidden">Waiting for incoming media</div>
+      <audio id="vid-audio"></audio>
+      <video id="vid-video"></video>
     </div>
+
   </div>
 
   <div class="footer">

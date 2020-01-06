@@ -39,9 +39,16 @@ export class SimpleMockSdk extends WildEmitter {
     error: jest.fn()
   };
   _streamingConnection = {
+    notifications: {
+      subscribe: jest.fn(),
+      unsubscribe: jest.fn()
+    },
     webrtcSessions: {
       initiateRtcSession: jest.fn(),
-      acceptRtcSession: jest.fn()
+      acceptRtcSession: jest.fn(),
+      rtcSessionAccepted: jest.fn(),
+      notifyScreenShareStart: jest.fn(),
+      notifyScreenShareStop: jest.fn()
     },
     _webrtcSessions: {
       refreshIceServers: jest.fn()
@@ -51,6 +58,7 @@ export class SimpleMockSdk extends WildEmitter {
 
 class MockSession extends WildEmitter {
   streams: any[] = [];
+  tracks: any[] = [];
   id: any;
   sid = random().toString();
   conversationId = random().toString();
@@ -60,6 +68,8 @@ class MockSession extends WildEmitter {
   accept = jest.fn();
   addStream = jest.fn();
   end = jest.fn();
+  mute = jest.fn();
+  unmute = jest.fn();
 
   constructor () {
     super();
@@ -70,6 +80,7 @@ class MockSession extends WildEmitter {
 class MockTrack {
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
+  id = random();
   kind = 'video';
   stop = jest.fn();
   addEventListener (event: string, callback: Function) {
@@ -115,6 +126,7 @@ interface MockApiReturns {
   getUser: nock.Scope;
   getConversation: nock.Scope;
   getChannel: nock.Scope;
+  notificationSubscription: nock.Scope;
   getJwt: nock.Scope;
   sendLogs: nock.Scope;
   patchConversation: nock.Scope;
@@ -280,6 +292,11 @@ export function mockGetChannelApi (params: MockSingleApiOptions): nock.Scope {
   return intercept.reply(200, { id: 'somechannelid' });
 }
 
+export function mockNotificationSubscription (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.put(`/api/v2/notifications/channels/somechannelid/subscriptions`);
+  return intercept.reply(200);
+}
+
 function mockApis (options: MockApiOptions = {}): MockApiReturns {
   const {
     failSecurityCode,
@@ -309,6 +326,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   let getOrg: nock.Scope;
   let getUser: nock.Scope;
   let getChannel: nock.Scope;
+  let notificationSubscription: nock.Scope;
 
   if (guestSdk) {
     if (failSecurityCode) {
@@ -325,6 +343,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     getOrg = mockGetOrgApi({ nockScope: api, shouldFail: failOrg });
     getUser = mockGetUserApi({ nockScope: api, shouldFail: failUser });
     getChannel = mockGetChannelApi({ nockScope: api });
+    notificationSubscription = mockNotificationSubscription({ nockScope: api });
   }
 
   const conversationsApi = nock('https://api.mypurecloud.com');
@@ -439,7 +458,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
   ws = websocket;
 
-  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket, mockCustomerData };
+  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket, mockCustomerData, notificationSubscription };
 }
 
 export {

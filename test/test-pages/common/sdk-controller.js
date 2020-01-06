@@ -1,7 +1,10 @@
+/* global MediaStream */
+
 import { getSdk, PureCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
 
-let currentConversationId;
+let currentSession;
+let startVideoOpts;
 let currentSessionId;
 let webrtcSdk;
 let conversationsApi;
@@ -60,24 +63,28 @@ function makeOutboundCall () {
 
   let body = { phoneNumber: numberToCall };
   conversationsApi.postConversationsCalls(body)
-    .then((data) => {
-      currentConversationId = data.id;
-    })
     .catch(err => console.log(err));
 }
 
-function endCall () {
-  if (!currentConversationId) {
-    utils.writeToLog('No currently active conversation');
+async function endSession () {
+  if (!currentSessionId) {
+    utils.writeToLog('No active session');
     return;
   }
 
-  conversationsApi.postConversationDisconnect(currentConversationId)
-    .then(() => {
-      utils.writeToLog('Call ended');
-      currentConversationId = null;
-    })
-    .catch(err => console.log(err));
+  try {
+    await webrtcSdk.endSession({ id: currentSessionId });
+
+    const controls = document.getElementById('video-controls');
+    controls.classList.add('hidden');
+
+    const startControls = document.getElementById('start-controls');
+    startControls.classList.remove('hidden');
+
+    utils.writeToLog('Call ended');
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 function answerCall () {
@@ -121,7 +128,6 @@ function pendingSession (options) {
     autoAnswer: ${JSON.stringify(options.autoAnswer)}`;
 
   currentSessionId = options.id;
-  currentConversationId = options.conversationId;
 
   utils.writeToLog(output);
 }
@@ -130,7 +136,6 @@ function cancelPendingSession (id) {
   let output = `${_getLogHeader('cancelPendingSession')}
     id: ${id}`;
 
-  currentConversationId = null;
   currentSessionId = null;
   utils.writeToLog(output);
 }
@@ -143,12 +148,39 @@ function handledPendingSession (id) {
   utils.writeToLog(output);
 }
 
-function sessionStarted (session) {
+async function sessionStarted (session) {
   let output = `${_getLogHeader('sessionStarted')}
     sessionId: ${session.sid}`;
 
   currentSessionId = session.sid;
+  currentSession = session;
   utils.writeToLog(output);
+
+  if (session.sessionType === 'collaborateVideo') {
+    const audioElement = document.getElementById('vid-audio');
+    const videoElement = document.getElementById('vid-video');
+    session.once('incomingMedia', () => {
+      const element = document.getElementById('waiting-for-media');
+      element.classList.add('hidden');
+
+      const controls = document.getElementById('video-controls');
+      controls.classList.remove('hidden');
+    });
+
+    let mediaStream;
+
+    if (!startVideoOpts.video && !startVideoOpts.audio) {
+      mediaStream = new MediaStream();
+    } else if (!startVideoOpts.video || !startVideoOpts.audio) {
+      mediaStream = await webrtcSdk.createMedia(startVideoOpts);
+    }
+
+    const sessionEventsToLog = [ 'participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate' ];
+    sessionEventsToLog.forEach((eventName) => {
+      session.on(eventName, (e) => console.info(eventName, e));
+    });
+    webrtcSdk.acceptSession({ id: session.id, audioElement, videoElement, mediaStream });
+  }
 }
 
 function sessionEnded (session, reason) {
@@ -221,9 +253,47 @@ function connected (e) {
   utils.writeToLog('connected event', e);
 }
 
+async function startVideoConference ({ noAudio, noVideo } = {}) {
+  const roomJid = getInputValue('video-jid');
+  if (!roomJid) {
+    document.getElementById('output-data').value += 'Phone Number is required to place an outbound call\n';
+    return;
+  }
+
+  startVideoOpts = { video: !noVideo, audio: !noAudio };
+
+  webrtcSdk.startVideoConference(roomJid);
+  const element = document.getElementById('waiting-for-media');
+  element.classList.remove('hidden');
+
+  const startControls = document.getElementById('start-controls');
+  startControls.classList.add('hidden');
+}
+
+function setVideoMute (mute) {
+  webrtcSdk.setVideoMute({ id: currentSessionId, mute });
+}
+
+function setAudioMute (mute) {
+  webrtcSdk.setAudioMute({ id: currentSessionId, mute });
+}
+
+function startScreenShare () {
+  currentSession.startScreenShare();
+}
+
+function stopScreenShare () {
+  currentSession.stopScreenShare();
+}
+
 export default {
   makeOutboundCall,
-  endCall,
+  startVideoConference,
+  setVideoMute,
+  setAudioMute,
+  startScreenShare,
+  stopScreenShare,
+  endSession,
   answerCall,
   disconnectSdk,
   initWebrtcSDK

@@ -20,3 +20,9 @@ export enum SessionTypes {
   collaborateVideo = 'collaborateVideo',
   acdScreenShare = 'screenShare'
 }
+
+export enum CommunicationStates {
+  contacting = 'contacting',
+  connected = 'connected',
+  disconnected = 'disconnected'
+}

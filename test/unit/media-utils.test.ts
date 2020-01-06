@@ -1,3 +1,5 @@
+/* global MediaStream */
+
 import * as mediaUtils from '../../src/media-utils';
 import { PureCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack } from '../test-utils';
@@ -84,11 +86,50 @@ describe('startDisplayMedia', () => {
   });
 });
 
-describe('startAudioMedia', () => {
+describe('startMedia', () => {
   it('should request audio only', async () => {
-    await mediaUtils.startAudioMedia();
+    await mediaUtils.startMedia({ audio: true });
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ audio: true });
+  });
+
+  it('should request video only', async () => {
+    await mediaUtils.startMedia({ video: true });
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: {}, audio: false });
+  });
+
+  it('should request audio and video', async () => {
+    await mediaUtils.startMedia();
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: {}, audio: {} });
+  });
+
+  it('should request audio and video in chrome', async () => {
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+
+    const expectedAudioConstraints = {
+      googAudioMirroring: false,
+      autoGainControl: true,
+      echoCancellation: true,
+      noiseSuppression: true,
+      googDucking: false,
+      googHighpassFilter: true
+    };
+    await mediaUtils.startMedia();
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: { googNoiseReduction: true }, audio: expectedAudioConstraints });
+  });
+});
+
+describe('createNewStreamWithTrack', () => {
+  it('should create a new stream and add the track to it', () => {
+    const track = {} as any;
+    (window as any).MediaStream = function () {};
+    MediaStream.prototype.addTrack = jest.fn();
+    const spy = jest.spyOn(MediaStream.prototype, 'addTrack').mockImplementation();
+    const stream = mediaUtils.createNewStreamWithTrack(track);
+    expect(spy).toHaveBeenCalledWith(track);
   });
 });
 

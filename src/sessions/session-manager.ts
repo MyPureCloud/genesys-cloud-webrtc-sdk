@@ -3,12 +3,14 @@ import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import { IPendingSession, ISessionInfo, IEndSessionRequest, IStartSessionParams, IAcceptSessionRequest } from '../types/interfaces';
+import { IPendingSession, ISessionInfo, IEndSessionRequest, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IConversationUpdateEvent } from '../types/interfaces';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
+import VideoSessionHandler from './video-session-handler';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
+  VideoSessionHandler,
   ScreenShareSessionHandler
 ];
 
@@ -32,6 +34,17 @@ export class SessionManager {
     return this.sdk._streamingConnection._webrtcSessions.jingleJs;
   }
 
+  handleConversationUpdate ({ eventBody }: IConversationUpdateEvent) {
+    // only handle a conversation update if we can associate it with a session
+    const sessions = Object.values(this.jingle.sessions);
+    (sessions as any).forEach((session: IJingleSession) => {
+      if (session.conversationId === eventBody.id) {
+        const handler = this.getSessionHandler({ sessionType: session.sessionType });
+        handler.handleConversationUpdate(session, eventBody);
+      }
+    });
+  }
+
   getPendingSession (sessionId: string): IPendingSession | undefined {
     return this.pendingSessions[sessionId];
   }
@@ -40,12 +53,12 @@ export class SessionManager {
     delete this.pendingSessions[sessionId];
   }
 
-  getSession (params: { id?: string, conversationId?: string }): any {
-    let session: any;
+  getSession (params: { id?: string, conversationId?: string }): IJingleSession {
+    let session: IJingleSession;
     if (params.id) {
       session = this.jingle.sessions[params.id];
     } else {
-      session = Object.values(this.jingle.sessions).find((s: any) => s.conversationId === params.conversationId);
+      session = Object.values(this.jingle.sessions as IJingleSession[]).find((s: IJingleSession) => s.conversationId === params.conversationId);
     }
 
     if (!session) {
@@ -84,7 +97,6 @@ export class SessionManager {
 
   /**
    * Event handler for pending webrtc-sessions.
-   * @param this must be called with a PureCloudWebrtcSdk as `this`
    * @param sessionInfo pending webrtc-session info
    */
   async onPropose (sessionInfo: ISessionInfo): Promise<void> {
@@ -102,7 +114,7 @@ export class SessionManager {
     const pendingSession: IPendingSession = {
       id: sessionInfo.sessionId,
       autoAnswer: sessionInfo.autoAnswer,
-      address: sessionInfo.fromJid.split('@')[0],
+      address: sessionInfo.fromJid,
       conversationId: sessionInfo.conversationId,
       sessionType: handler.sessionType
     };
@@ -124,7 +136,7 @@ export class SessionManager {
     await sessionHandler.proceedWithSession(pendingSession);
   }
 
-  async onSessionInit (session: any) {
+  async onSessionInit (session: IJingleSession) {
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     session.sessionType = sessionHandler.sessionType;
     return sessionHandler.handleSessionInit(session);
@@ -149,5 +161,19 @@ export class SessionManager {
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.endSession(session);
+  }
+
+  async setVideoMute (params: ISessionMuteRequest): Promise<void> {
+    const session = this.getSession({ id: params.id });
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    await handler.setVideoMute(session, params);
+  }
+
+  async setAudioMute (params: ISessionMuteRequest): Promise<void> {
+    const session = this.getSession({ id: params.id });
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    await handler.setAudioMute(session, params);
   }
 }
