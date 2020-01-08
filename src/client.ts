@@ -1,3 +1,5 @@
+/// <reference path="types/libs.ts" />
+
 import WildEmitter from 'wildemitter';
 import uuidv4 from 'uuid/v4';
 import {
