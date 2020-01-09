@@ -71,5 +71,5 @@ export const isSoftphoneJid = function (jid: string): boolean {
 };
 
 export const isVideoJid = function (jid: string): boolean {
-  return jid && !!jid.match(/@conference/);
+  return jid && !!jid.match(/@conference/) && !isAcdJid(jid);
 };
