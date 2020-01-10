@@ -89,7 +89,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (!session.pcParticipant) {
       const { body } = await requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}`);
       const participants: IConversationParticipant[] = body.participants.map((p: any) => {
-        const participant = pick(p, ['id', 'address', 'purpose', 'state', 'direction', 'muted', 'confined']);
+        const participant: IConversationParticipant = pick(p, ['id', 'address', 'purpose', 'state', 'direction', 'muted', 'confined']);
         participant.userId = p.user && p.user.id;
         return participant;
       });
