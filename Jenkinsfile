@@ -18,8 +18,7 @@ webappPipeline {
             export CDN_URL="$(npx cdn --ecosystem pc --name $APP_NAME --build $BUILD_ID --version $VERSION)"
             echo "CDN_URL $CDN_URL"
             npm i && npm test && npm run build
-            # TODO: reenable this. unstable right now
-            # npm run build-sample
+            npm run build-sample
         ''')
     }
 
