@@ -33,3 +33,5 @@ rm -rf gulp/common
 echo "Gulp sample built successfully\n\n"
 
 popd
+
+cp -r test/test-pages dist/demo
