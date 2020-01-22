@@ -2,16 +2,10 @@ import { PureCloudWebrtcSdk } from '../../src/client';
 import { ISdkConstructOptions, ICustomerData } from '../../src/types/interfaces';
 import {
   MockStream,
-  MockSession,
   mockApis,
-  timeout,
-  MockTrack,
   wss,
   random,
-  PARTICIPANT_ID,
-  PARTICIPANT_ID_2,
   closeWebSocketServer,
-  getMockConversation,
   mockGetUserApi,
   mockGetOrgApi,
   mockGetChannelApi,
@@ -21,10 +15,6 @@ import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
 import * as mediaUtils from '../../src/media-utils';
 
-declare var global: {
-  window: any,
-  document: any
-} & NodeJS.Global;
 
 let { ws } = require('../test-utils');
 
@@ -443,7 +433,6 @@ describe('Client', () => {
 
       jest.spyOn(sdk.sessionManager, 'endSession').mockResolvedValue();
       const sessionId = random();
-      const conversationId = random();
       const params = { id: sessionId };
       await sdk.endSession(params);
       expect(sdk.sessionManager.endSession).toBeCalledWith(params);
