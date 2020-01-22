@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
 
@@ -35,7 +35,7 @@ export interface IMediaChangeEventParticipant {
 }
 
 export default class VideoSessionHandler extends BaseSessionHandler {
-  requestedSessions: {[roomJid: string]: boolean} = {};
+  requestedSessions: { [roomJid: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
 
@@ -66,7 +66,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         return participantUpdate;
       });
 
-    const lastUpdate: IParticipantsUpdate = session._lastParticipantsUpdate || { } as any;
+    const lastUpdate: IParticipantsUpdate = session._lastParticipantsUpdate || {} as any;
     const lastActiveParticipants = lastUpdate.activeParticipants || [];
 
     const addedParticipants = differenceBy(activeVideoParticipants, lastActiveParticipants, 'participantId');
@@ -387,6 +387,11 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       if (!session.videoMuted) {
         await this.setVideoMute(session, { id: session.id, mute: true }, true);
       }
+
+      stream.getTracks().forEach((track: MediaStreamTrack) => {
+        track.addEventListener('ended', this.stopScreenShare.bind(this, session));
+      });
+
       session._screenShareStream = stream;
       await this.addMediaToSession(session, stream, false);
       this.sessionManager.webrtcSessions.notifyScreenShareStart(session);
@@ -417,7 +422,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
   }
 
-  attachIncomingTrackToElement (track: MediaStreamTrack, { audioElement, videoElement }: {audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement}) {
+  attachIncomingTrackToElement (track: MediaStreamTrack, { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }) {
     let element = audioElement;
 
     if (track.kind === 'video') {

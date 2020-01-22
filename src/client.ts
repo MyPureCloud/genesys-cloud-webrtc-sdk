@@ -11,7 +11,7 @@ import { log, setupLogging } from './logging';
 import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest, ISessionMuteRequest, IPersonDetails } from './types/interfaces';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
-import { startMedia } from './media-utils';
+import { startMedia, startDisplayMedia } from './media-utils';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -228,6 +228,10 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     }
 
     return startMedia(opts);
+  }
+
+  public getDisplayMedia (): Promise<MediaStream> {
+    return startDisplayMedia();
   }
 
   /**

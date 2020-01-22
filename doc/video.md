@@ -63,7 +63,7 @@ interface IParticipantUpdate {
 ```
 
 
-`session.on('activeVideoParticipantsUpdate', (IActiveVideoParticipantsUpdateEvent) => {})` - This event will happen when
+`session.on('activeVideoParticipantsUpdate', (IOnScreenParticipantsUpdate) => {})` - This event will happen when
 the server switches who is visible on the screen. This will likely happen every time someone new speaks.
 
 *Note: this user may not be providing video or that video could be muted. It is up to the
@@ -78,9 +78,9 @@ interface IOnScreenParticipantsUpdate {
 }
 ```
 
-`session.on('speakersUpdate', (ISpeakersUpdateEvent) => {}))` - This event tells who is making noise in the conference.
+`session.on('speakersUpdate', (ISpeakersUpdate) => {}))` - This event tells who is making noise in the conference.
 ```
-interface ISpeakersUpdateEvent {
+interface ISpeakersUpdate {
   speakers: [
     {
       userId: string;
