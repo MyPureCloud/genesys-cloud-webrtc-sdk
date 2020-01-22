@@ -46,6 +46,10 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IJingleSession): Promise<void> {
     await super.handleSessionInit(session);
 
+    session.on('terminated', (session: IJingleSession) => {
+      session._screenShareStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    });
+
     if (!this.sdk.isGuest) {
       throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
     }

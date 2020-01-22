@@ -1,4 +1,4 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack } from '../../test-utils';
+import { SimpleMockSdk, MockSession, createPendingSession, MockStream } from '../../test-utils';
 import ScreenShareSessionHandler from '../../../src/sessions/screen-share-session-handler';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -93,6 +93,26 @@ describe('handleSessionInit', () => {
     expect((mockStream as MockStream)._tracks[0].addEventListener).toHaveBeenCalled();
     expect(acceptSpy).toHaveBeenCalled();
   });
+
+  test('should setup a terminated listener to stop _screenShareStream', async () => {
+    const session: any = new MockSession();
+    const stream: MediaStream = new MockStream() as any;
+    console.log({ session })
+    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+    handler.temporaryOutboundStream = stream;
+
+    session.emit.bind(session);
+    await handler.handleSessionInit(session);
+
+
+    session.emit('terminated', session, true);
+    const sessionTerminated = new Promise(res => session.once('terminated', res()));
+
+    await sessionTerminated;
+    expect(session._screenShareStream).toBe(stream);
+    expect((stream as any)._tracks[0].stop).toHaveBeenCalled();
+  });
+
 
   it('should warn if there is no outboundStream', async () => {
     const acceptSpy = jest.spyOn(handler, 'acceptSession');

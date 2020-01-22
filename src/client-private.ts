@@ -11,7 +11,7 @@ import { IJingleSession } from './types/interfaces';
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  */
 export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<void> {
-  if (this._streamingConnection) {
+  if (this.isInitialized && this.connected) {
     this.logger.warn('Existing streaming connection detected. Disconnecting and creating a new connection.');
     await this._streamingConnection.disconnect();
   }
