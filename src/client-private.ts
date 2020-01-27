@@ -47,8 +47,8 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
   log.call(this, LogLevels.info, 'PureCloud streaming client connected', { reconnect: this._hasConnected });
   this._hasConnected = true;
   // refresh turn servers every 6 hours
-  this._refreshTurnServersInterval = setInterval(this._refreshTurnServers.bind(this), 6 * 60 * 60 * 1000);
-  await connection.webrtcSessions.refreshIceServers();
+  this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
+  await this._refreshIceServers();
   log.call(this, LogLevels.info, 'PureCloud streaming client ready for use');
 }
 

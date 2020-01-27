@@ -70,7 +70,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
-  _refreshTurnServersInterval: NodeJS.Timeout;
+  _refreshIceServersInterval: NodeJS.Timeout;
   _config: ISdkConfig;
   sessionManager: SessionManager;
 
@@ -117,6 +117,10 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     });
 
     setupLogging.call(this, options.logger, this._config.logLevel);
+
+    if (options.iceTransportPolicy) {
+      this.logger.warn('Setting iceTransportPolicy manually is deprecated and will be removed soon.');
+    }
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
@@ -284,10 +288,18 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     return this._streamingConnection.reconnect();
   }
 
-  _refreshTurnServers () {
+  _refreshIceServers () {
     return this._streamingConnection._webrtcSessions.refreshIceServers()
       .then(services => {
-        this.logger.debug('PureCloud SDK refreshed TURN credentials successfully');
+        this.logger.debug('PureCloud SDK refreshed ice servers successfully');
+
+        services = services || [];
+
+        const stunServers = services.filter((service) => service.type === 'stun');
+        if (!stunServers.length) {
+          this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
+          this._streamingConnection.webrtcSessions.config.iceTransportPolicy = 'relay';
+        }
       }).catch(err => {
         const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
         this.logger.warn(errorMessage, err);
