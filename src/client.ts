@@ -288,23 +288,25 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     return this._streamingConnection.reconnect();
   }
 
-  _refreshIceServers () {
-    return this._streamingConnection._webrtcSessions.refreshIceServers()
-      .then(services => {
-        this.logger.debug('PureCloud SDK refreshed ice servers successfully');
+  async _refreshIceServers () {
+    if (!this._streamingConnection.connected) {
+      this.logger.warn('Tried to refreshIceServers but streamingConnection is not connected');
+      return;
+    }
 
-        services = services || [];
+    try {
+      const services = (await this._streamingConnection._webrtcSessions.refreshIceServers()) || [];
 
-        const stunServers = services.filter((service) => service.type === 'stun');
-        if (!stunServers.length) {
-          this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
-          this._streamingConnection.webrtcSessions.config.iceTransportPolicy = 'relay';
-        }
-      }).catch(err => {
-        const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
-        this.logger.warn(errorMessage, err);
-        throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
-      });
+      const stunServers = services.filter((service) => service.type === 'stun');
+      if (!stunServers.length) {
+        this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
+        this._streamingConnection.webrtcSessions.config.iceTransportPolicy = 'relay';
+      }
+    } catch (err) {
+      const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
+      this.logger.warn(errorMessage, err);
+      throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
+    }
   }
 
   private isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {

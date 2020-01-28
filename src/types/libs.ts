@@ -12,6 +12,7 @@ declare module 'purecloud-streaming-client' {
   export default class StreamingClient {
     constructor (options: any);
     connect (): Promise<any>;
+    on (name: string, fn: any): void;
     notifications: {
       subscribe (topic: string, handler: (data: any) => {}): Promise<void>
     };

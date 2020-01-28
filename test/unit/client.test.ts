@@ -560,6 +560,19 @@ describe('Client', () => {
       await promise;
       await sdk.disconnect();
     });
+
+    test('should not get iceServers if not connected', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      sdk._streamingConnection.connected = false;
+      expect(sdk.connected).toBe(false);
+
+      sdk._streamingConnection._webrtcSessions.refreshIceServers = jest.fn();
+      await sdk._refreshIceServers();
+      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
+      await sdk.disconnect();
+    });
   });
 
   describe('isCustomerData()', () => {
