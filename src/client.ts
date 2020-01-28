@@ -297,6 +297,11 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     try {
       const services = (await this._streamingConnection._webrtcSessions.refreshIceServers()) || [];
 
+      if (!services.length) {
+        this.logger.error(new Error('refreshIceServers yielded no results'));
+        return;
+      }
+
       const stunServers = services.filter((service) => service.type === 'stun');
       if (!stunServers.length) {
         this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
