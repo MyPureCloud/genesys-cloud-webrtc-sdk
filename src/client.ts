@@ -70,7 +70,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
-  _refreshTurnServersInterval: NodeJS.Timeout;
+  _refreshIceServersInterval: NodeJS.Timeout;
   _config: ISdkConfig;
   sessionManager: SessionManager;
 
@@ -117,6 +117,10 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     });
 
     setupLogging.call(this, options.logger, this._config.logLevel);
+
+    if (options.iceTransportPolicy) {
+      this.logger.warn('Setting iceTransportPolicy manually is deprecated and will be removed soon.');
+    }
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
@@ -284,15 +288,30 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     return this._streamingConnection.reconnect();
   }
 
-  _refreshTurnServers () {
-    return this._streamingConnection._webrtcSessions.refreshIceServers()
-      .then(services => {
-        this.logger.debug('PureCloud SDK refreshed TURN credentials successfully');
-      }).catch(err => {
-        const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
-        this.logger.warn(errorMessage, err);
-        throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
-      });
+  async _refreshIceServers () {
+    if (!this._streamingConnection.connected) {
+      this.logger.warn('Tried to refreshIceServers but streamingConnection is not connected');
+      return;
+    }
+
+    try {
+      const services = (await this._streamingConnection._webrtcSessions.refreshIceServers()) || [];
+
+      if (!services.length) {
+        this.logger.error(new Error('refreshIceServers yielded no results'));
+        return;
+      }
+
+      const stunServers = services.filter((service) => service.type === 'stun');
+      if (!stunServers.length) {
+        this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
+        this._streamingConnection.webrtcSessions.config.iceTransportPolicy = 'relay';
+      }
+    } catch (err) {
+      const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
+      this.logger.warn(errorMessage, err);
+      throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
+    }
   }
 
   private isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {

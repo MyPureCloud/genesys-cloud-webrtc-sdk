@@ -101,7 +101,7 @@ describe('Client', () => {
     });
 
     test('sets up options when provided', () => {
-      const logger = { debug: jest.fn() };
+      const logger = { debug: jest.fn(), warn: jest.fn() };
       const iceServers = [];
       const sdk = new PureCloudWebrtcSdk({
         accessToken: '1234',
@@ -491,7 +491,7 @@ describe('Client', () => {
     });
   });
 
-  describe('_refreshTurnServers()', () => {
+  describe('_refreshIceServers()', () => {
     test('refreshes the turn servers', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
@@ -500,9 +500,44 @@ describe('Client', () => {
       expect(sdk.connected).toBe(true);
 
       jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve());
-      await sdk._refreshTurnServers();
+      await sdk._refreshIceServers();
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
-      expect(sdk._refreshTurnServersInterval).toBeTruthy();
+      expect(sdk._refreshIceServersInterval).toBeTruthy();
+      await sdk.disconnect();
+    });
+
+    it('should set icePolicy to relay if only relay candidates are returned', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      sdk._streamingConnection.connected = true;
+      expect(sdk.connected).toBe(true);
+      expect(sdk._streamingConnection.webrtcSessions.config.iceTransportPolicy).toEqual('all');
+
+      jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(
+        [
+          {
+            'host': 'turn.use1.dev-pure.cloud',
+            'password': 'pw',
+            'port': '3478',
+            'transport': 'udp',
+            'type': 'turn',
+            'username': 'user'
+          },
+          {
+            'host': 'turn.use1.dev-pure.cloud',
+            'password': 'pass',
+            'port': '3478',
+            'transport': 'udp',
+            'type': 'turn',
+            'username': 'u2'
+          }
+        ]
+      ));
+      await sdk._refreshIceServers();
+      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
+      expect(sdk._refreshIceServersInterval).toBeTruthy();
+      expect(sdk._streamingConnection.webrtcSessions.config.iceTransportPolicy).toEqual('relay');
       await sdk.disconnect();
     });
 
@@ -516,13 +551,26 @@ describe('Client', () => {
       const promise = new Promise(resolve => sdk.on('error', resolve));
       jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.reject(new Error('fail')));
       try {
-        await sdk._refreshTurnServers();
+        await sdk._refreshIceServers();
         fail('should have thrown');
       } catch (e) {
         expect(e).toBeTruthy();
       }
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       await promise;
+      await sdk.disconnect();
+    });
+
+    test('should not get iceServers if not connected', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      sdk._streamingConnection.connected = false;
+      expect(sdk.connected).toBe(false);
+
+      sdk._streamingConnection._webrtcSessions.refreshIceServers = jest.fn();
+      await sdk._refreshIceServers();
+      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
       await sdk.disconnect();
     });
   });

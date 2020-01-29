@@ -49,7 +49,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
     - `Boolean defaultAudioElement`: Optional, default element to which inbound audio is attached to.
     - `Boolean defaultAudioStream`: Optional, audio stream to be used for outbound calls
     - `Boolean defaultVideoElement`: Optional, default element to which inbound video is attached to.
-    - `RTCConfiguration iceTransportPolicy`: Set the ICE transport policy
+    - `RTCConfiguration iceTransportPolicy`: [DEPRECATED in 3.0.1, to be removed soon] Set the ICE transport policy
         See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
     - `String logLevel`: Optional, desired log level. Available options: `debug`, `log`, `info`, `warn`, `error`
     - `Object logger`: Optional, desired logger. Default, `console`. Must contain methods: `debug`, `log`, `info`, `warn`, `error`
