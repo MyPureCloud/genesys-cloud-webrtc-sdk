@@ -91,6 +91,9 @@ class MockTrack {
 class MockStream {
   id = random();
   _tracks: MockTrack[] = [ new MockTrack() ];
+  getVideoTracks () {
+    return this.getTracks().filter((t) => t.kind === 'video');
+  }
   getTracks () {
     return this._tracks;
   }
