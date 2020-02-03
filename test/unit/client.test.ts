@@ -426,6 +426,15 @@ describe('Client', () => {
     });
   });
 
+  describe('getDisplayMedia()', () => {
+    test('should call through to startDisplayMedia', async () => {
+      const { sdk } = mockApis();
+      const spy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue({} as any);
+      await sdk.getDisplayMedia();
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
   describe('endSession()', () => {
     it('should proxy to sessionManager', async () => {
       const { sdk } = mockApis();

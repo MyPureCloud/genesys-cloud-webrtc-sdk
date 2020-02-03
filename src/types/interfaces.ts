@@ -124,6 +124,7 @@ export interface IConversationParticipant {
 export interface IJingleSession extends WildEmitter {
   id: string;
   sid: string;
+  peerID: string;
   conversationId: string;
   sessionType: SessionTypes;
   streams: MediaStream[];

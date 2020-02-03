@@ -1,10 +1,34 @@
 declare module 'wildemitter' {
   export default class WildEmitter {
     constructor ();
-    on (event: string, ...args: any[]): void;
-    once (event: string, ...args: any[]): void;
-    off (event: string, ...args: any[]): void;
-    emit (event: string, message?: any, details?: any): void;
+    /* on */
+    on<P1 = any> (event: string, callback: (arg1: P1) => void): void;
+    on<P1 = any, P2 = any> (event: string, callback: (arg1: P1, arg2: P2) => void): void;
+    on<P1 = any, P2 = any, P3 = any> (event: string, callback: (arg1: P1, arg2: P2, arg3: P3) => void): void;
+    on<P1 = any> (event: string, groupName: string, callback: (arg1: P1) => void): void;
+    on<P1 = any, P2 = any> (event: string, groupName: string, callback: (arg1: P1, arg2: P2) => void): void;
+    on<P1 = any, P2 = any, P3 = any> (event: string, groupName: string, callback: (arg1: P1, arg2: P2, arg3: P3) => void): void;
+
+    /* once */
+    once<P1 = any> (event: string, callback: (arg1: P1) => void): void;
+    once<P1 = any, P2 = any> (event: string, callback: (arg1: P1, arg2: P2) => void): void;
+    once<P1 = any, P2 = any, P3 = any> (event: string, callback: (arg1: P1, arg2: P2, arg3: P3) => void): void;
+    once<P1 = any> (event: string, groupName: string, callback: (arg1: P1) => void): void;
+    once<P1 = any, P2 = any> (event: string, groupName: string, callback: (arg1: P1, arg2: P2) => void): void;
+    once<P1 = any, P2 = any, P3 = any> (event: string, groupName: string, callback: (arg1: P1, arg2: P2, arg3: P3) => void): void;
+
+    /* off */
+    off (event: string): void;
+    off<P1 = any> (event: string, callback: (arg1: P1) => void): void;
+    off<P1 = any, P2 = any> (event: string, callback: (arg1: P1, arg2: P2) => void): void;
+    off<P1 = any, P2 = any, P3 = any> (event: string, callback: (arg1: P1, arg2: P2, arg3: P3) => void): void;
+
+    /* emit */
+    emit (event: string, ...args: any[]): void;
+
+    /* utils */
+    releaseGroup (groupName?: string): void;
+    getWildcardCallbacks (): (...args: any[]) => void;
   }
 }
 

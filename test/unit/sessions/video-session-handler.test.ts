@@ -1,14 +1,13 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, random, getMockConversation, PARTICIPANT_ID, USER_ID, mockGetConversationApi, mockPatchConversationApi, createNock } from '../../test-utils';
+import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
-import { IAcceptSessionRequest, IConversationUpdateEvent, IConversationUpdate, IParticipantsUpdate, IConversationParticipant, IJingleSession } from '../../../src/types/interfaces';
+import { IConversationUpdate, IParticipantsUpdate, IJingleSession } from '../../../src/types/interfaces';
 import nock = require('nock');
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import WildEmitter from 'wildemitter';
 
 let handler: VideoSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
@@ -61,7 +60,7 @@ describe('handleConversationUpdate', () => {
 
     conversationUpdate = {
       id: 'ff5a3ba2-373b-42c7-912a-5309a2656095',
-      participants: [ participant1 ]
+      participants: [participant1]
     };
   });
 
@@ -178,12 +177,12 @@ describe('mediaUpdateEvent', () => {
               {
                 id: 'fc61add6-8934-4e97-ac17-9f715ab16449',
                 mediaType: 'audio',
-                sinks: [ incomingAudioId ]
+                sinks: [incomingAudioId]
               },
               {
                 id: '30f1b98c-b272-4df1-bb90-4a91a8db85ec',
                 mediaType: 'video',
-                sinks: [ incomingVideoId ]
+                sinks: [incomingVideoId]
               }
             ]
           },
@@ -199,12 +198,12 @@ describe('mediaUpdateEvent', () => {
               {
                 id: '46b8b64f-4743-4f2c-b91f-00bbe680a37f',
                 mediaType: 'video',
-                sinks: [ '52b2fd95-6c13-4e4b-aea9-99eaf7f4661b' ]
+                sinks: ['52b2fd95-6c13-4e4b-aea9-99eaf7f4661b']
               }
             ]
           }
         ],
-        speakers: [ 'fc61add6-8934-4e97-ac17-9f715ab16449' ]
+        speakers: ['fc61add6-8934-4e97-ac17-9f715ab16449']
       }
     };
 
@@ -258,7 +257,7 @@ describe('mediaUpdateEvent', () => {
       videoInfo.sinks = [];
 
       const otherVideo = mediaEvent.eventBody.participants[1].tracks[1];
-      otherVideo.sinks = [ incomingVideoId ];
+      otherVideo.sinks = [incomingVideoId];
 
       handler.updateParticipantsOnScreen(session, mediaEvent);
       expect(session.emit).toHaveBeenCalledWith('activeVideoParticipantsUpdate', expected2);
@@ -269,7 +268,7 @@ describe('mediaUpdateEvent', () => {
   describe('updateSpeakers', () => {
     it('should send out speaker update', () => {
       handler.updateSpeakers(session, mediaEvent);
-      expect(session.emit).toHaveBeenCalledWith('speakersUpdate', { speakers: [ { userId: sendingUser } ] });
+      expect(session.emit).toHaveBeenCalledWith('speakersUpdate', { speakers: [{ userId: sendingUser }] });
     });
   });
 });
@@ -371,16 +370,16 @@ describe('handleSessionInit', () => {
 });
 
 describe('acceptSession', () => {
-  let parentHandlerSpy;
-  let addMediaToSessionSpy;
-  let attachIncomingTrackToElementSpy;
-  let initialMutesSpy;
+  let parentHandlerSpy: jest.SpyInstance<Promise<any>>;
+  let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
+  let attachIncomingTrackToElementSpy: jest.SpyInstance<void>;;
+  let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
+  let initialMutesSpy: jest.SpyInstance<void>;
   let session: IJingleSession;
-  let startMediaSpy;
-  let media;
+  let media: MediaStream;
 
   beforeEach(() => {
-    media = new MockStream();
+    media = new MockStream() as any;
     parentHandlerSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
     addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
     attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue(null);
@@ -402,8 +401,8 @@ describe('acceptSession', () => {
     const audio = mockSdk._config.defaultAudioElement = document.createElement('audio');
     const video = mockSdk._config.defaultVideoElement = document.createElement('video');
 
-    const incomingTrack = { } as any;
-    session.tracks = [ incomingTrack ];
+    const incomingTrack = {} as any;
+    session.tracks = [incomingTrack];
 
     await handler.acceptSession(session, { id: session.id });
 
@@ -416,8 +415,8 @@ describe('acceptSession', () => {
     const video = document.createElement('video');
     const stream = new MockStream() as any;
 
-    const incomingTrack = { } as any;
-    session.tracks = [ incomingTrack ];
+    const incomingTrack = {} as any;
+    session.tracks = [incomingTrack];
 
     session.emit = jest.fn();
 
@@ -457,7 +456,7 @@ describe('acceptSession', () => {
     expect(parentHandlerSpy).toHaveBeenCalled();
     expect(startMediaSpy).toHaveBeenCalled();
 
-    const incomingTrack = { } as any;
+    const incomingTrack = {} as any;
     session.emit('peerTrackAdded', session, incomingTrack);
 
     expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
@@ -475,7 +474,7 @@ describe('setInitialMuteStates', () => {
   });
 
   it('should mute video', () => {
-    session.pc.getSenders = jest.fn().mockReturnValue([ audioSender, videoSender ]);
+    session.pc.getSenders = jest.fn().mockReturnValue([audioSender, videoSender]);
     videoSender.track.enabled = false;
 
     handler.setInitialMuteStates(session);
@@ -493,7 +492,7 @@ describe('setInitialMuteStates', () => {
 
     (session.mute as jest.Mock).mockReset();
 
-    (session.pc.getSenders as jest.Mock).mockReturnValue([ audioSender ]);
+    (session.pc.getSenders as jest.Mock).mockReturnValue([audioSender]);
     handler.setInitialMuteStates(session);
 
     expect(session.mute).toHaveBeenCalledTimes(1);
@@ -501,7 +500,7 @@ describe('setInitialMuteStates', () => {
   });
 
   it('should mute audio', () => {
-    session.pc.getSenders = jest.fn().mockReturnValue([ audioSender, videoSender ]);
+    session.pc.getSenders = jest.fn().mockReturnValue([audioSender, videoSender]);
     audioSender.track.enabled = false;
 
     handler.setInitialMuteStates(session);
@@ -519,7 +518,7 @@ describe('setInitialMuteStates', () => {
 
     (session.mute as jest.Mock).mockReset();
 
-    (session.pc.getSenders as jest.Mock).mockReturnValue([ videoSender ]);
+    (session.pc.getSenders as jest.Mock).mockReturnValue([videoSender]);
     handler.setInitialMuteStates(session);
 
     expect(session.mute).toHaveBeenCalledTimes(1);
@@ -527,7 +526,7 @@ describe('setInitialMuteStates', () => {
   });
 
   it('should mute audio and video', () => {
-    session.pc.getSenders = jest.fn().mockReturnValue([ audioSender, videoSender ]);
+    session.pc.getSenders = jest.fn().mockReturnValue([audioSender, videoSender]);
     audioSender.track.enabled = false;
     videoSender.track.enabled = false;
 
@@ -539,7 +538,7 @@ describe('setInitialMuteStates', () => {
   });
 
   it('should not mute audio or video', () => {
-    session.pc.getSenders = jest.fn().mockReturnValue([ audioSender, videoSender ]);
+    session.pc.getSenders = jest.fn().mockReturnValue([audioSender, videoSender]);
     handler.setInitialMuteStates(session);
     expect(session.mute).not.toHaveBeenCalled();
   });
@@ -599,7 +598,7 @@ describe('setupTransceivers', () => {
   });
 
   it('should add video transceiver', () => {
-    getTransceiversSpy.mockReturnValue([ audioTransceiver ]);
+    getTransceiversSpy.mockReturnValue([audioTransceiver]);
     handler.setupTransceivers(session);
 
     expect(addTransceiverSpy).toHaveBeenCalledWith('video', { direction: 'sendrecv' });
@@ -607,7 +606,7 @@ describe('setupTransceivers', () => {
   });
 
   it('should add audio transceiver', () => {
-    getTransceiversSpy.mockReturnValue([ videoTransceiver ]);
+    getTransceiversSpy.mockReturnValue([videoTransceiver]);
     handler.setupTransceivers(session);
 
     expect(addTransceiverSpy).toHaveBeenCalledWith('audio', { direction: 'sendrecv' });
@@ -624,7 +623,7 @@ describe('endSession', () => {
     const track1 = new MockTrack();
     const track2 = new MockTrack();
 
-    session.pc.getSenders = () => [ { track: track1 }, { track: track2 }, { track: null } ];
+    session.pc.getSenders = () => [{ track: track1 }, { track: track2 }, { track: null }];
 
     await handler.endSession(session);
 
@@ -793,7 +792,7 @@ describe('setAudioMute', () => {
   });
 
   it('should create media when unmuting if audio does not exist', async () => {
-    jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([ ] as any);
+    jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([] as any);
 
     const media = {} as any;
     jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(media);
@@ -842,16 +841,16 @@ describe('getSendersByTrackType', () => {
 });
 
 describe('startScreenShare', () => {
-  let displayMediaSpy;
-  let videoMuteSpy;
-  let addMediaToSessionSpy;
-  let session;
+  let displayMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
+  let videoMuteSpy: jest.SpyInstance<Promise<void>>;
+  let addMediaToSessionSpy: jest.SpyInstance<Promise<any>>;
+  let session: IJingleSession;
 
   beforeEach(() => {
-    displayMediaSpy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue({} as any);
+    displayMediaSpy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue(new MockStream() as any);
     videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockResolvedValue();
     addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
-    session = new MockSession();
+    session = new MockSession() as any;
   });
 
   it('should start media and mute video if it is not already muted', async () => {
@@ -859,6 +858,7 @@ describe('startScreenShare', () => {
 
     expect(displayMediaSpy).toHaveBeenCalled();
     expect(videoMuteSpy).toHaveBeenCalled();
+    expect(addMediaToSessionSpy).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStart).toHaveBeenCalled();
   });
 
@@ -868,6 +868,7 @@ describe('startScreenShare', () => {
 
     expect(displayMediaSpy).toHaveBeenCalled();
     expect(videoMuteSpy).not.toHaveBeenCalled();
+    expect(addMediaToSessionSpy).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStart).toHaveBeenCalled();
   });
 
