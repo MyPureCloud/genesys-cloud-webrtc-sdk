@@ -208,6 +208,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       stream = await startMedia();
     }
 
+    session._outboundStream = stream;
+
     await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
 
     await this.addMediaToSession(session, stream, false);
@@ -305,11 +307,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         return;
       }
 
+      // remove track from sender and outbound stream referrence
       const promises = [];
       senders.forEach((sender) => {
         this.log(LogLevels.info, 'Ending track because of video mute request', { trackId: sender.track.id });
         sender.track.stop();
         promises.push(this.removeMediaFromSession(session, sender.track));
+        session._outboundStream.removeTrack(sender.track);
       });
 
       await Promise.all(promises);
@@ -321,7 +325,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
       const stream = await startMedia({ video: true });
+
+      // add track to session
       await this.addMediaToSession(session, stream, false);
+
+      // add sync track to local outbound referrence
+      session._outboundStream.addTrack(stream.getVideoTracks()[0]);
 
       if (!skipServerUpdate) {
         session.unmute(userId, 'video');
