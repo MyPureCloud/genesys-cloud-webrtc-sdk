@@ -2,16 +2,10 @@ import { PureCloudWebrtcSdk } from '../../src/client';
 import { ISdkConstructOptions, ICustomerData } from '../../src/types/interfaces';
 import {
   MockStream,
-  MockSession,
   mockApis,
-  timeout,
-  MockTrack,
   wss,
   random,
-  PARTICIPANT_ID,
-  PARTICIPANT_ID_2,
   closeWebSocketServer,
-  getMockConversation,
   mockGetUserApi,
   mockGetOrgApi,
   mockGetChannelApi,
@@ -433,6 +427,15 @@ describe('Client', () => {
       await sdk.createMedia(params);
       expect(mediaUtils.startMedia).toBeCalledWith(params);
       await sdk.disconnect();
+    });
+  });
+
+  describe('getDisplayMedia()', () => {
+    test('should call through to startDisplayMedia', async () => {
+      const { sdk } = mockApis();
+      const spy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue({} as any);
+      await sdk.getDisplayMedia();
+      expect(spy).toHaveBeenCalled();
     });
   });
 
