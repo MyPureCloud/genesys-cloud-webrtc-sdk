@@ -79,12 +79,12 @@ below. Most call control actions, however, should be done via the PureCloud Publ
 API (or the Public API javascript SDK).
 
 Once the client has a session, it can add event handlers for lower level control
-over sessions. `terminated` is an example of a session event; all session events
-are detailed [here](index.md#session-level-events).
+over sessions. `terminated` is an example of a session event;
+[all session events are detailed here].
 
 ## API
 
-See the full list of the [APIs](index.md#api), [methods](index.md#methods), and [events](index.md#events).
+See the full list of the [APIs], [methods], and [events].
 
 #### Softphone behavior notes
 
@@ -107,3 +107,8 @@ arrive in a guaranteed order.
 provide it as an option to `acceptSession` or as a default in the sdk's constructor. Note that to call `acceptSession` on outbound
 calls, you'll have to disable `autoAnswerOutboundCalls` and answer them yourself
 when the event is triggered.
+
+[APIs]: index.md#api
+[methods]: index.md#methods
+[events]: index.md#events
+[all session events are detailed here]: index.md#session-level-events.

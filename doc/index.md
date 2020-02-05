@@ -2,9 +2,9 @@
 
 ## Feature Index
 
-- [WebRTC SoftPhone](softphone.md)
-- [WebRTC Screen Share](screenshare.md)
-- [WebRTC Video Conferencing](video.md)
+- [WebRTC SoftPhone]
+- [WebRTC Screen Share]
+- [WebRTC Video Conferencing]
 
 ## API
 
@@ -33,7 +33,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
 - parameters
   - `Object options` with properties:
     - `String environment`: Required; `mypurecloud.com || mypurecloud.ie ||
-        mypurecloud.jp || mypurecloud.de || mypurecloud.com.au`
+        mypurecloud.jp || mypurecloud.de || mypurecloud.com.au || usw2.pure.cloud`
     - One of the following is required:
       - `String accessToken`: access token for the authenticated user
       - `String organizationId`: organization ID (used for unauthenticated user)
@@ -41,7 +41,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
     Advanced options:
     - `Boolean sessionSurvivability`: **not yet supported**: Optional, default true; see Behavior Notes
         above
-    - `Boolean autoAnswerOutboundCalls`: **not yet supported**: Optional, default true; See [softphone behavior notes](softphone.md#softphone-behavior-notes)
+    - `Boolean autoAnswerOutboundCalls`: **not yet supported**: Optional, default true; See [softphone behavior notes]
     - `Boolean autoConnectSessions`: Optional, default true; whether or not
         the SDK should auto connect the sessions.
     - `Array[IceServerConfiguration] iceServers`: Custom ICE server configuration.
@@ -216,6 +216,9 @@ potential connection issues
 
 #### Video-specific session level events
 
-See [WebRTC Video Conferencing](video.md)
+See [WebRTC Video Conferencing].
 
-[1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html
+[WebRTC SoftPhone]: softphone.md
+[WebRTC Screen Share]: screenshare.md
+[WebRTC Video Conferencing]: video.md
+[softphone behavior notes]: softphone.md#softphone-behavior-notes
