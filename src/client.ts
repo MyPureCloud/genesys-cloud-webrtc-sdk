@@ -8,10 +8,22 @@ import {
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest, ISessionMuteRequest, IPersonDetails } from './types/interfaces';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { startMedia, startDisplayMedia } from './media-utils';
+import {
+  ISdkConstructOptions,
+  ILogger,
+  ICustomerData,
+  ISdkConfig,
+  IEndSessionRequest,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IPersonDetails,
+  IMediaRequestOptions,
+  IMediaDeviceIds,
+  IUpdateOutgoingMedia
+} from './types/interfaces';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -101,6 +113,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       defaultAudioElement: options.defaultAudioElement,
       defaultAudioStream: options.defaultAudioStream,
       defaultVideoElement: options.defaultVideoElement,
+      defaultVideoDeviceId: options.defaultVideoDeviceId || 'default',
+      defaultAudioDeviceId: options.defaultAudioDeviceId || 'default',
+      defaultOutputDeviceId: options.defaultOutputDeviceId || 'default',
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
@@ -226,16 +241,55 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     }
   }
 
-  public async createMedia (opts: { video?: boolean, audio?: boolean }): Promise<MediaStream> {
+  public async createMedia (opts: IMediaRequestOptions): Promise<MediaStream> {
     if (!opts || (!opts.video && !opts.audio)) {
       throwSdkError.call(this, SdkErrorTypes.invalid_options, 'createMedia must be called with at least one media type request');
     }
 
-    return startMedia(opts);
+    return startMedia(this, opts);
   }
 
+  // TODO: doc
   public getDisplayMedia (): Promise<MediaStream> {
     return startDisplayMedia();
+  }
+
+  // TODO: doc
+  public updateOutputDevice (deviceId: string): Promise<void> {
+    return this.sessionManager.updateAutioOutputDeviceForAllSessions(deviceId);
+  }
+
+  // TODO: doc
+  public updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void> {
+    if (!updateOptions ||
+      (!updateOptions.stream && !updateOptions.videoDeviceId && !updateOptions.audioDeviceId)) {
+      throwSdkError.call(this, SdkErrorTypes.invalid_options, 'updateOutgoingMedia must be called with a MediaStream, a videoDeviceId, or an audioDeviceId');
+    }
+    return this.sessionManager.updateOutgoingMedia(updateOptions);
+  }
+
+  // TODO: doc
+  public async updateDefaultDevices (devices: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<void> {
+    const options = Object.assign({
+      videoDeviceId: 'default',
+      audioDeviceId: 'default',
+      outputDeviceId: 'default',
+      updateActiveSessions: false
+    }, devices);
+
+    this._config.defaultVideoDeviceId = options.videoDeviceId;
+    this._config.defaultAudioDeviceId = options.audioDeviceId;
+    this._config.defaultOutputDeviceId = options.outputDeviceId;
+
+    if (options.updateActiveSessions) {
+      await Promise.all([
+        this.sessionManager.updateAutioOutputDeviceForAllSessions(this._config.defaultOutputDeviceId),
+        this.sessionManager.updateOutgoingMediaForAllSessions({
+          videoDeviceId: this._config.defaultVideoDeviceId,
+          audioDeviceId: this._config.defaultAudioDeviceId
+        })
+      ]);
+    }
   }
 
   /**

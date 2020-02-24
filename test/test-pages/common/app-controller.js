@@ -23,6 +23,50 @@ function initControls () {
   document.getElementById('inbound-call-end').addEventListener('click', sdkHandler.endSession);
   document.getElementById('disconnect-sdk').addEventListener('click', disconnect);
   document.getElementById('clear-log').addEventListener('click', clearLog);
+  document.getElementById('update-outgoing-media').addEventListener('click', sdkHandler.updateOutgoingMediaDevices);
+  document.getElementById('update-output-media').addEventListener('click', sdkHandler.updateOutputediaDevice);
+}
+
+/*
+adhoc-878d4f0a-a882-4fe4-87ec-e2605e3a69ca@conference.test-valve-1ym37mj1kao.orgspan.com
+*/
+function initDevices () {
+  window.navigator.mediaDevices.enumerateDevices()
+    .then(devices => {
+      const video = [];
+      const audio = [];
+      const output = [];
+
+      devices.forEach((device) => {
+        switch (device.kind) {
+          case 'videoinput': {
+            video.push(device);
+            break;
+          }
+          case 'audioinput': {
+            audio.push(device);
+            break;
+          }
+          case 'audiooutput': {
+            output.push(device);
+            break;
+          }
+        }
+      });
+
+      const addOptions = (elId, options) => {
+        const element = document.querySelector('select#' + elId);
+        let innerHtml = '<option value="">Default</option>';
+        const newOpts = options.map(opt => `<option value="${opt.deviceId}">${opt.label}</option>`);
+        innerHtml += newOpts.join('\n');
+        element.innerHTML = innerHtml;
+      };
+
+      addOptions('audio-devices', audio);
+      addOptions('video-devices', video);
+      addOptions('output-devices', output);
+    })
+    .catch(e => utils.writeToLog(e));
 }
 
 function setAppControlVisiblity (visible) {
@@ -40,6 +84,9 @@ function initialize (environmentData, conversationsApi) {
   setInitTextVisibility(true);
 
   initControls();
+  initDevices();
+
+  window.navigator.mediaDevices.ondevicechange = initDevices;
 
   sdkHandler.initWebrtcSDK(environmentData, conversationsApi)
     .then(() => {

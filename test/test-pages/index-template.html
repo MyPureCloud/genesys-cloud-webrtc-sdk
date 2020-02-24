@@ -1,4 +1,5 @@
 <html>
+
 <head>
   <title>Test Page</title>
   <script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
@@ -50,10 +51,12 @@
   </script>
   <link rel="stylesheet" type="text/css" href="../common/main.css">
 </head>
+
 <body>
   <div class="app-header">
     <div class="title">PureCoud WebRTC SDK Sample</div>
-    <div class="subtitle">Choose and environment to authenticate with, then click 'Start App' to initialize the SDK</div>
+    <div class="subtitle">Choose and environment to authenticate with, then click 'Start App' to initialize the SDK
+    </div>
   </div>
 
   <div>
@@ -135,6 +138,30 @@
           </div>
         </div>
 
+        <!-- devices -->
+        <div class="control-title">Media Devices</div>
+        <div class="control-section">
+          <label for="audio-devices">Mic Device</label>
+          <select name="audioDevices" id="audio-devices">
+            <option value="">Default</option>
+          </select>
+          <br>
+          <label for="video-devices">Video Device</label>
+          <select name="videoDevices" id="video-devices">
+            <option value="">Default</option>
+          </select>
+          <br>
+          <button id="update-outgoing-media">Update Outgoing Media</button>
+          <hr>
+          <label for="output-devices">Output Device</label>
+          <br>
+          <select name="outputDevices" id="output-devices">
+            <option value="">Default</option>
+          </select>
+          <br>
+          <button id="update-output-media">Update Output Media</button>
+        </div>
+
         <!-- Disconnect -->
         <div class="control-title">
           <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
@@ -145,7 +172,7 @@
         <div class="log-header">
           <span>Log:</span>
           <span>
-            <input name="log-traces-check" type="checkbox" id="log-traces-check"/>
+            <input name="log-traces-check" type="checkbox" id="log-traces-check" />
             <label for="log-traces-check">Log trace events</label>
           </span>
         </div>

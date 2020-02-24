@@ -172,15 +172,46 @@ async function sessionStarted (session) {
     if (!startVideoOpts.video && !startVideoOpts.audio) {
       mediaStream = new MediaStream();
     } else if (!startVideoOpts.video || !startVideoOpts.audio) {
+      if (startVideoOpts.video) {
+        startVideoOpts.video = document.querySelector('select#video-device').value || true;
+      }
+
+      if (startVideoOpts.audio) {
+        startVideoOpts.audio = document.querySelector('select#audio-device').value || true;
+      }
+
+      console.log({ startVideoOpts });
       mediaStream = await webrtcSdk.createMedia(startVideoOpts);
     }
 
-    const sessionEventsToLog = [ 'participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate' ];
+    const sessionEventsToLog = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
     sessionEventsToLog.forEach((eventName) => {
       session.on(eventName, (e) => console.info(eventName, e));
     });
     webrtcSdk.acceptSession({ id: session.id, audioElement, videoElement, mediaStream });
   }
+}
+
+function updateOutgoingMediaDevices () {
+  if (!currentSessionId) {
+    utils.writeToLog('No active session');
+    return;
+  }
+
+  // TODO: I broke the "start-without-..." buttons because this element does not exist yet
+  //   fix, should probably just show these buttons because we want to be able to start
+  //   with desired media
+  const audioDeviceId = document.querySelector('select#audio-devices').value || true;
+  const videoDeviceId = (currentSession.sessionType === 'collaborateVideo')
+    ? document.querySelector('select#video-devices').value || true
+    : false;
+
+  webrtcSdk.updateOutgoingMedia({ sessionId: currentSessionId, videoDeviceId, audioDeviceId });
+}
+
+function updateOutputMediaDevice () {
+  const audioOutputDeviceId = document.querySelector('select#output-devices').value;
+  webrtcSdk.updateOutputDevice(audioOutputDeviceId);
 }
 
 function sessionEnded (session, reason) {
@@ -294,6 +325,8 @@ export default {
   startScreenShare,
   stopScreenShare,
   endSession,
+  updateOutgoingMediaDevices,
+  updateOutputediaDevice: updateOutputMediaDevice,
   answerCall,
   disconnectSdk,
   initWebrtcSDK

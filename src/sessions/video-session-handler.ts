@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
 
@@ -205,7 +205,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream;
     if (!stream) {
-      stream = await startMedia();
+      stream = await startMedia(this.sdk);
     }
 
     session._outboundStream = stream;
@@ -220,12 +220,14 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const attachParams = { audioElement, videoElement };
     if (session.tracks.length) {
       session.tracks.forEach((track) => {
-        this.attachIncomingTrackToElement(track, attachParams);
+        const el = this.attachIncomingTrackToElement(track, attachParams);
+        if (el instanceof HTMLAudioElement) session._outputAudioElement = el;
       });
       session.emit('incomingMedia');
     } else {
       session.on('peerTrackAdded', (session: IJingleSession, track: MediaStreamTrack) => {
-        this.attachIncomingTrackToElement(track, attachParams);
+        const el = this.attachIncomingTrackToElement(track, attachParams);
+        if (el instanceof HTMLAudioElement) session._outputAudioElement = el;
         session.emit('incomingMedia');
       });
     }
@@ -292,7 +294,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const userId = this.sdk._personDetails.id;
 
     // if we are going to mute, we need to remove/end the existing camera track
-    if (params.mute) {
+    if (params.mute && typeof params.mute !== 'string') {
       // we don't want videoMute to affect screen share so we need to ignore senders that contain a screen share track
       const trackIdsToIgnore = [];
       if (session._screenShareStream) {
@@ -324,7 +326,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      const stream = await startMedia({ video: true });
+      // TODO: this will use sdk default... need it to use something else
+      const stream = await startMedia(this.sdk, { video: typeof params.mute !== 'string' ? params.mute : true });
 
       // add track to session
       await this.addMediaToSession(session, stream, false);
@@ -353,11 +356,11 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const outgoingTracks = this.getSendersByTrackType(session, 'audio').map(sender => sender.track);
 
     outgoingTracks.forEach((track) => {
-      this.log(LogLevels.info, 'Muting audio track', { trackId: track.id });
+      this.log(LogLevels.info, `${params.mute ? 'Muting' : 'Unmuting'} audio track`, { trackId: track.id });
       track.enabled = !params.mute;
     });
 
-    if (params.mute) {
+    if (params.mute && typeof params.mute !== 'string') {
       if (!outgoingTracks.length) {
         this.log(LogLevels.warn, 'Unable to find any outgoing audio tracks to mute', { sessionId: session.id });
       } else {
@@ -368,7 +371,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       if (!outgoingTracks.length) {
         this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id });
 
-        const stream = await startMedia({ audio: true });
+        const stream = await startMedia(this.sdk, { audio: typeof params.mute !== 'string' ? params.mute : true });
         await this.addMediaToSession(session, stream, false);
       }
 
@@ -431,7 +434,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
   }
 
-  attachIncomingTrackToElement (track: MediaStreamTrack, { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }) {
+  attachIncomingTrackToElement (
+    track: MediaStreamTrack,
+    { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }
+  ): HTMLAudioElement | HTMLVideoElement {
     let element = audioElement;
 
     if (track.kind === 'video') {
@@ -441,5 +447,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     element.autoplay = true;
     element.srcObject = createNewStreamWithTrack(track);
+    return element;
   }
 }
