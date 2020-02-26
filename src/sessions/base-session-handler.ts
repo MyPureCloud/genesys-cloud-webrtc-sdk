@@ -9,7 +9,7 @@ import { throwSdkError } from '../utils';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
-}
+};
 
 export default abstract class BaseSessionHandler {
   removePendingSessionDelay = 1000;
@@ -113,31 +113,51 @@ export default abstract class BaseSessionHandler {
   }
 
   // TODO: doc
+  //  this functionality needs to be similar to client.updateDefaultDevices
+  //  `null` === system default
+  //  {string} === deviceId
   async updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): Promise<any> {
-    if (session.sessionType === SessionTypes.acdScreenShare) {
-      this.log(LogLevels.warn, 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
-      return;
+
+    if (typeof options.videoDeviceId === undefined && typeof options.audioDeviceId === undefined) {
+      this.log(LogLevels.warn, 'Options are not valid to update outgoing media', { videoDeviceId: options.videoDeviceId, audioDeviceId: options.audioDeviceId });
+      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options not valid to update outgoing media');
     }
+    // if they provide a stream, we kill all media and use their stream's tracks
+    // if they provide a videoDeviceId (string|null), then we update the video track(s)
+    //  same for audio
 
-    const stream: MediaStream = options.stream || await startMedia(this.sdk, { audio: options.audioDeviceId, video: options.videoDeviceId });
+    const updateVideo = options.stream || options.videoDeviceId !== undefined;
+    const updateAudio = options.stream || options.audioDeviceId !== undefined;
+
+    const stream: MediaStream = options.stream || await startMedia(this.sdk, {
+      audio: options.audioDeviceId === null ? true : options.audioDeviceId,
+      video: options.videoDeviceId === null ? true : options.videoDeviceId
+    });
+
     const outboundStream = session._outboundStream;
-
     const destroyMediaPromises: Promise<any>[] = [];
     const trackIdsToIgnore = [];
+    const trackKindsToIgnore = [(!updateVideo && 'video'), (!updateAudio && 'audio')].filter(Boolean);
 
     /* if we have a video session */
     if (session._screenShareStream) {
       trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
     }
+    // if we aren't updating a media type, leave the existing track alone
+    if (!updateAudio) trackKindsToIgnore.push('audio');
+    if (!updateVideo) trackKindsToIgnore.push('video');
 
     const senders = session.pc.getSenders()
-      .filter((sender) => !trackIdsToIgnore.includes(sender.track.id));
+      .filter((sender) =>
+        !trackIdsToIgnore.includes(sender.track.id) ||
+        !trackKindsToIgnore.includes(sender.track.kind)
+      );
 
-    senders.forEach(s => {
-      s.track.stop();
-      destroyMediaPromises.push(s.replaceTrack(null));
+    senders.forEach(sender => {
+      sender.track.stop();
+      destroyMediaPromises.push(sender.replaceTrack(null));
       if (outboundStream) {
-        outboundStream.removeTrack(s.track);
+        outboundStream.removeTrack(sender.track);
       }
     });
 
@@ -147,14 +167,14 @@ export default abstract class BaseSessionHandler {
     stream.getTracks().forEach(track => {
       newMediaPromises.push(session.addTrack(track));
       if (outboundStream) {
-        outboundStream.removeTrack
+        outboundStream.addTrack(track);
       }
     });
 
     return Promise.all(newMediaPromises);
   }
 
-  async updateAudioOutputMedia (session: IJingleSession, deviceId: string): Promise<undefined> {
+  async updateOutputDevice (session: IJingleSession, deviceId: string): Promise<undefined> {
     const el: ExtendedHTMLAudioElement = session._outputAudioElement as ExtendedHTMLAudioElement;
 
     if (!el) {

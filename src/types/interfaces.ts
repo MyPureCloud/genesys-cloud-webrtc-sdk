@@ -19,9 +19,9 @@ export interface ISdkConstructOptions {
   defaultAudioElement?: HTMLAudioElement;
   defaultAudioStream?: MediaStream;
   defaultVideoElement?: HTMLVideoElement;
-  defaultVideoDeviceId?: string;
-  defaultAudioDeviceId?: string;
-  defaultOutputDeviceId?: string;
+  defaultVideoDeviceId?: string | null;
+  defaultAudioDeviceId?: string | null;
+  defaultOutputDeviceId?: string | null;
 }
 
 /**
@@ -37,9 +37,9 @@ export interface ISdkConfig {
   defaultAudioElement?: HTMLAudioElement;
   defaultAudioStream?: MediaStream;
   defaultVideoElement?: HTMLVideoElement;
-  defaultVideoDeviceId?: string;
-  defaultAudioDeviceId?: string;
-  defaultOutputDeviceId?: string;
+  defaultVideoDeviceId?: string | null;
+  defaultAudioDeviceId?: string | null;
+  defaultOutputDeviceId?: string | null;
   iceTransportPolicy?: RTCIceTransportPolicy;
   logLevel?: LogLevels;
   optOutOfTelemetry?: boolean;
@@ -54,10 +54,10 @@ export interface IMediaRequestOptions {
 }
 
 export interface IMediaDeviceIds {
-  /** `deviceId` for video camera */
-  videoDeviceId?: string;
-  /** `deviceId` for microphone */
-  audioDeviceId?: string;
+  /** `deviceId` for video camera (`null` for system default) */
+  videoDeviceId?: string | null;
+  /** `deviceId` for microphone (`null` for system default) */
+  audioDeviceId?: string | null;
   /** `deviceId` for audio output (speakers) */
   outputDeviceId?: string;
 }
@@ -75,10 +75,10 @@ export interface IUpdateOutgoingMedia {
   session?: IJingleSession;
   /* stream with desired media */
   stream?: MediaStream;
-  /** `deviceId` for video camera */
-  videoDeviceId?: string;
-  /** `deviceId` for microphone */
-  audioDeviceId?: string;
+  /** `deviceId` for video camera (`null` for system default) */
+  videoDeviceId?: string | null;
+  /** `deviceId` for microphone (`null` for system default) */
+  audioDeviceId?: string | null;
 }
 
 /**
@@ -126,6 +126,8 @@ export interface IAcceptSessionRequest {
   mediaStream?: MediaStream;
   audioElement?: HTMLAudioElement;
   videoElement?: HTMLVideoElement;
+  videoDeviceId?: string;
+  audioDeviceId?: string;
 }
 
 export interface IEndSessionRequest {
@@ -145,8 +147,10 @@ export interface IStartSessionParams {
 export interface ISessionMuteRequest {
   /** session id */
   id: string;
-  /** `true` to mute, `false` to unmute using default device, `{deviceId}` to unmute to specified deviceId */
-  mute: boolean | string;
+  /** `true` to mute, `false` to unmute using default device */
+  mute: boolean;
+  /** the desired deviceId to use when unmuting */
+  unmuteDeviceId?: string;
 }
 
 /**
@@ -171,6 +175,7 @@ export interface IJingleSession extends WildEmitter {
   sid: string;
   peerID: string;
   conversationId: string;
+  active: boolean;
   sessionType: SessionTypes;
   streams: MediaStream[];
   tracks: MediaStreamTrack[];

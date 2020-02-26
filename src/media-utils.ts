@@ -32,6 +32,14 @@ export const startDisplayMedia = function (): Promise<MediaStream> {
 export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
   const constraints: any = getStandardConstraints(opts);
 
+  /**
+   * Look for the desired deviceId
+   *  if found, use it
+   *    not found OR mediaType === true, find sdk default
+   *      if found, use it
+   *      not found, just use `true` for system default
+   */
+
   // if we are requesting video
   if (opts.video) {
     const videoDeviceId = await getDeviceByKindAndId(sdk, 'videoinput', opts.video);
@@ -40,7 +48,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
       log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId });
       constraints.video.deviceId = {
         exact: videoDeviceId
-      }
+      };
     } else {
       log.call(sdk, LogLevels.info, 'Unable to find a video deviceId. Using system defaults');
     }
@@ -54,7 +62,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
       log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId });
       constraints.audio.deviceId = {
         exact: audioDeviceId
-      }
+      };
     } else {
       log.call(sdk, LogLevels.info, 'Unable to find an audio deviceId. Using system defaults');
     }
@@ -233,53 +241,48 @@ async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumerat
       }
     });
   } catch (e) {
-    throwSdkError.call(sdk, SdkErrorTypes.generic, 'Error enumerating devices', e)
+    throwSdkError.call(sdk, SdkErrorTypes.generic, 'Error enumerating devices', e);
   }
 
   return enumeratedDevices;
 }
 
-export async function getDeviceByKindAndId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: boolean | string): Promise<string | undefined> {
-
-  if (deviceId === false) {
-    return;
-  }
-
+// TODO: doc
+//  behavior, look for requested deviceId - if found return it
+//   if not found, look for the sdk default device id - if found return it
+//   if not found, return `undefined`
+export async function getDeviceByKindAndId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | true): Promise<undefined | string> {
   const devices = await getEnumeratedDevices(sdk);
 
-  const enumProp: KeyFrom<IEnumeratedDevices, 'videoDeviceIds' | 'audioDeviceIds' | 'outputDeviceIds'> =
-    kind === 'videoinput'
-      ? 'videoDeviceIds'
-      : kind === 'audioinput'
-        ? 'audioDeviceIds'
-        : 'outputDeviceIds';
-
-  const configProp: KeyFrom<ISdkConfig, 'defaultVideoDeviceId' | 'defaultAudioDeviceId' | 'defaultOutputDeviceId'> =
-    kind === 'videoinput'
-      ? 'defaultVideoDeviceId'
-      : kind === 'audioinput'
-        ? 'defaultAudioDeviceId'
-        : 'defaultOutputDeviceId';
-
+  let availableDevices: string[];
+  let sdkConfigDefault: string | null;
   let foundDeviceId: string | undefined;
 
-  // if a deviceId was passed in, try to use it
-  if (typeof deviceId === 'string') {
-    foundDeviceId = devices[enumProp].find((d: string) => d === deviceId);
-
-    // log if we didn't find the requested deviceId
-    if (!foundDeviceId) {
-      log.call(sdk, LogLevels.warn, `Unable to find requested ${kind} deviceId`, { deviceId });
-    }
+  if (kind === 'videoinput') {
+    availableDevices = devices.videoDeviceIds.slice();
+    sdkConfigDefault = sdk._config.defaultVideoDeviceId;
+  } else if (kind === 'audioinput') {
+    availableDevices = devices.audioDeviceIds.slice();
+    sdkConfigDefault = sdk._config.defaultAudioDeviceId;
+  } else {
+    availableDevices = devices.outputDeviceIds.slice();
+    sdkConfigDefault = sdk._config.defaultOutputDeviceId;
   }
 
-  // if we don't have a deviceId, look up the sdk default
-  if (!foundDeviceId) {
-    foundDeviceId = devices[enumProp].find((d: string) => d === sdk._config[configProp]);
+  // if a deviceId was passed in, try to use it
+  foundDeviceId = availableDevices.find((d: string) => d === deviceId);
 
-    // if we don't have the deviceId just use system default
-    if (!foundDeviceId) {
-      log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId });
+  // log if we didn't find the requested deviceId
+  if (!foundDeviceId) {
+    log.call(sdk, LogLevels.warn, `Unable to find requested ${kind} deviceId`, { deviceId });
+
+    // then try to find the sdk default device (if it is not `null`)
+    if (sdkConfigDefault !== null) {
+      foundDeviceId = availableDevices.find((d: string) => d === sdkConfigDefault);
+      // log if we couldn't find the sdk default device
+      if (!foundDeviceId) {
+        log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId });
+      }
     }
   }
 

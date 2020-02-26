@@ -1,5 +1,5 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams, IJingleSession } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
 import { throwSdkError, parseJwt, isAcdJid } from '../utils';
@@ -77,5 +77,10 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     }
 
     await this.acceptSession(session, { id: session.id });
+  }
+
+  public updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): never {
+    this.log(LogLevels.warn, 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
+    throw throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }
 }

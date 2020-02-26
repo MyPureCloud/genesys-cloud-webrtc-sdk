@@ -205,7 +205,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream;
     if (!stream) {
-      stream = await startMedia(this.sdk);
+      stream = await startMedia(this.sdk, {
+        audio: params.audioDeviceId || true,
+        video: params.videoDeviceId || true
+      });
     }
 
     session._outboundStream = stream;
@@ -294,7 +297,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const userId = this.sdk._personDetails.id;
 
     // if we are going to mute, we need to remove/end the existing camera track
-    if (params.mute && typeof params.mute !== 'string') {
+    if (params.mute) {
       // we don't want videoMute to affect screen share so we need to ignore senders that contain a screen share track
       const trackIdsToIgnore = [];
       if (session._screenShareStream) {
@@ -326,8 +329,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      // TODO: this will use sdk default... need it to use something else
-      const stream = await startMedia(this.sdk, { video: typeof params.mute !== 'string' ? params.mute : true });
+      // if they passed in a deviceId, we will use that
+      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId || true });
 
       // add track to session
       await this.addMediaToSession(session, stream, false);
@@ -371,7 +374,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       if (!outgoingTracks.length) {
         this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id });
 
-        const stream = await startMedia(this.sdk, { audio: typeof params.mute !== 'string' ? params.mute : true });
+        // if they passed in a deviceId, we will use that
+        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId || true });
         await this.addMediaToSession(session, stream, false);
       }
 

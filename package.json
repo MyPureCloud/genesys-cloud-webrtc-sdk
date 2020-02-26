@@ -30,7 +30,9 @@
     "test:watch": "npm run watch-tests",
     "watch-tests": "jest --watch --collectCoverage=false --runInBand",
     "lint": "npm run semistandard && npm run tslint",
+    "lint:fix": "npm run semistandard:fix && npm run tslint:fix",
     "tslint": "tslint --project . --config tslint.json",
+    "tslint:fix": "tslint --project . --config tslint.json --fix",
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix",
     "greenkeep": "npx npm-check --update"

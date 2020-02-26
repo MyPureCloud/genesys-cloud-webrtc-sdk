@@ -113,9 +113,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       defaultAudioElement: options.defaultAudioElement,
       defaultAudioStream: options.defaultAudioStream,
       defaultVideoElement: options.defaultVideoElement,
-      defaultVideoDeviceId: options.defaultVideoDeviceId || 'default',
-      defaultAudioDeviceId: options.defaultAudioDeviceId || 'default',
-      defaultOutputDeviceId: options.defaultOutputDeviceId || 'default',
+      defaultVideoDeviceId: options.defaultVideoDeviceId || null,
+      defaultAudioDeviceId: options.defaultAudioDeviceId || null,
+      defaultOutputDeviceId: options.defaultOutputDeviceId || null,
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
@@ -254,9 +254,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     return startDisplayMedia();
   }
 
-  // TODO: doc
+  // TODO: doc - updates all active sessions
   public updateOutputDevice (deviceId: string): Promise<void> {
-    return this.sessionManager.updateAutioOutputDeviceForAllSessions(deviceId);
+    return this.sessionManager.updateAudioOutputDeviceForAllSessions(deviceId);
   }
 
   // TODO: doc
@@ -269,26 +269,50 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   // TODO: doc
-  public async updateDefaultDevices (devices: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<void> {
-    const options = Object.assign({
-      videoDeviceId: 'default',
-      audioDeviceId: 'default',
-      outputDeviceId: 'default',
-      updateActiveSessions: false
-    }, devices);
+  //  if `null` is passed in, we will update to system default device
+  //  if property is undefined, then we will not update that device
+  public async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
+    const updateVideo = options.videoDeviceId !== undefined;
+    const updateAudio = options.audioDeviceId !== undefined;
+    const updateOutput = options.outputDeviceId !== undefined;
 
-    this._config.defaultVideoDeviceId = options.videoDeviceId;
-    this._config.defaultAudioDeviceId = options.audioDeviceId;
-    this._config.defaultOutputDeviceId = options.outputDeviceId;
+    if (updateVideo) {
+      log.call(this, LogLevels.info, 'Updating defaultVideoDeviceId', { defaultVideoDeviceId: options.videoDeviceId });
+      this._config.defaultVideoDeviceId = options.videoDeviceId;
+    }
 
-    if (options.updateActiveSessions) {
-      await Promise.all([
-        this.sessionManager.updateAutioOutputDeviceForAllSessions(this._config.defaultOutputDeviceId),
-        this.sessionManager.updateOutgoingMediaForAllSessions({
-          videoDeviceId: this._config.defaultVideoDeviceId,
-          audioDeviceId: this._config.defaultAudioDeviceId
-        })
-      ]);
+    if (updateAudio) {
+      log.call(this, LogLevels.info, 'Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
+      this._config.defaultAudioDeviceId = options.audioDeviceId;
+    }
+
+    if (updateOutput) {
+      log.call(this, LogLevels.info, 'Updating defaultOutputDeviceId', { defaultOutputDeviceId: options.outputDeviceId });
+      this._config.defaultOutputDeviceId = options.outputDeviceId;
+    }
+
+    if (typeof options.updateActiveSessions === 'boolean' && options.updateActiveSessions) {
+      const promises = [];
+      log.call(this, LogLevels.info, 'Updating devices for all active session', { defaultOutputDeviceId: options.outputDeviceId });
+
+      if (updateVideo || updateAudio) {
+        const opts = {
+          videoDeviceId: updateVideo ? this._config.defaultVideoDeviceId : undefined,
+          audioDeviceId: updateAudio ? this._config.defaultAudioDeviceId : undefined
+        };
+
+        promises.push(
+          this.sessionManager.updateOutgoingMediaForAllSessions(opts)
+        );
+      }
+
+      if (updateOutput) {
+        promises.push(
+          this.sessionManager.updateAudioOutputDeviceForAllSessions(this._config.defaultOutputDeviceId)
+        );
+      }
+
+      return Promise.all(promises);
     }
   }
 

@@ -80,16 +80,8 @@ export class SessionManager {
   }
 
   getAllActiveSessions (): IJingleSession[] {
-    const sessions = [];
-
-    Object.keys(this.jingle.sessions).forEach(key => {
-      const session = this.jingle.sessions[key];
-      if (session.active) {
-        sessions.push(session);
-      }
-    });
-
-    return sessions;
+    return Object.values<IJingleSession>(this.jingle.sessions)
+      .filter((session: IJingleSession) => session.active);
   }
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
@@ -130,16 +122,20 @@ export class SessionManager {
 
   async updateOutgoingMediaForAllSessions (options: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
     const { videoDeviceId, audioDeviceId } = options;
-    const promises = this.getAllActiveSessions().map(session => {
+    const sessions = this.getAllActiveSessions();
+
+    this.log(LogLevels.info, 'Updating outgoing deviceId(s) for all active sessions', { sessions: sessions.map(s => s.id), videoDeviceId, audioDeviceId });
+
+    const promises = sessions.map(session => {
       return this.updateOutgoingMedia({ session, videoDeviceId, audioDeviceId });
     });
     return Promise.all(promises);
   }
 
-  async updateAutioOutputDeviceForAllSessions (outputDeviceId: string): Promise<any> {
-    const videoDeviceId = getDeviceByKindAndId(this.sdk, 'audiooutput', outputDeviceId);
+  async updateAudioOutputDeviceForAllSessions (outputDeviceId: string): Promise<any> {
+    const _outputDeviceId = await getDeviceByKindAndId(this.sdk, 'audiooutput', outputDeviceId);
 
-    if (!videoDeviceId) {
+    if (!_outputDeviceId) {
       this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
       return;
     }
@@ -149,7 +145,7 @@ export class SessionManager {
 
     const promises = sessions.map(session => {
       const handler = this.getSessionHandler({ jingleSession: session });
-      return handler.updateAudioOutputMedia(session, outputDeviceId);
+      return handler.updateOutputDevice(session, outputDeviceId);
     });
 
     return Promise.all(promises);

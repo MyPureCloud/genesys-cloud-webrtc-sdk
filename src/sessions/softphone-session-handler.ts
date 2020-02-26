@@ -31,7 +31,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
     if (!stream) {
       this.log(LogLevels.debug, 'No mediaStream provided, starting media');
-      stream = await startMedia(this.sdk, { audio: true });
+      stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true });
       this.log(LogLevels.debug, 'Media start');
     }
     this.log(LogLevels.debug, 'Adding media to session');
