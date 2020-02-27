@@ -149,8 +149,9 @@ export default abstract class BaseSessionHandler {
 
     const senders = session.pc.getSenders()
       .filter((sender) =>
-        !trackIdsToIgnore.includes(sender.track.id) ||
-        !trackKindsToIgnore.includes(sender.track.kind)
+        sender.track &&
+        (!trackIdsToIgnore.includes(sender.track.id) ||
+          !trackKindsToIgnore.includes(sender.track.kind))
       );
 
     senders.forEach(sender => {
