@@ -16,6 +16,7 @@
   "devDependencies": {},
   "scripts": {
     "test": "SINGLE_RUN=true node index.js",
+    "test:ci": "CI_MODE=true node index.js",
     "test:watch": "node index.js"
   },
   "keywords": [],
