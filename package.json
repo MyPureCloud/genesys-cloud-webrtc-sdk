@@ -37,7 +37,7 @@
     "ignore": [
       "/.coverage",
       "/dist",
-      "/node_modules",
+      "**/node_modules",
       "/test/test-pages/sdk-sample.js"
     ]
   },

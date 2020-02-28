@@ -1,0 +1,25 @@
+{
+  "name": "spigot-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "@types/chai": "^4.2.9",
+    "chai": "^4.2.0",
+    "purecloud-spigot": "^1.0.0",
+    "purecloud-streaming-client": "^11.0.2",
+    "uuid": "^7.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha",
+    "start": "SINGLE_RUN=true node index.js",
+    "watch": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
