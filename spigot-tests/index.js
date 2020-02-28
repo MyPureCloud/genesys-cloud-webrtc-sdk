@@ -33,7 +33,7 @@ const config = {
     username: envConfig.USERNAME,
     password: envConfig.PASSWORD
   },
-  headless: !!process.env.SINGLE_RUN,
+  headless: !!process.env.SINGLE_RUN || process.env.CI_MODE,
   testPort: '8443',
   envHost: envConfig.ENV_HOST,
   outboundNumber: '3172222222',

@@ -1,0 +1,63 @@
+#!groovy
+
+final def EXECUTOR_MAP = [
+    'dca': 'dev_mesos',
+    'tca': 'test_mesos',
+    'prod': 'dev_mesos',
+    'prod-apse2': 'dev_mesos',
+    'prod-euw1': 'dev_mesos',
+    'prod-apne1': 'dev_mesos',
+]
+final def env = ENVIRONMENT
+
+pipeline {
+    agent none
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '30', daysToKeepStr: '30'))
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
+    }
+    stages {
+        stage('Test') {
+            agent { node EXECUTOR_MAP[env] }
+            steps {
+                script {
+                    currentBuild.description = "${ENVIRONMENT}"
+                }
+                sh """
+                    # Check out the latest npm-utils
+                    rm -rf ./npm-utils && git clone --depth=1 git@bitbucket.org:inindca/npm-utils.git ./npm-utils
+                    # Set up node with the provided version and generate a .npmrc file for our private npm repo
+                    source ./npm-utils/scripts/jenkins-pre-build.sh 12.16.1 &> jenkins-pre.log
+                    mv .npmrc spigot-tests/
+
+                    npm install -g npm
+                    npm install --silent
+                    npm run build
+
+                    cd spigot-tests
+
+                    echo "installing spigot dependencies"
+                    npm install
+
+                    echo "starting tests"
+                    npm run test:ci
+                """
+            }
+            post {
+                always {
+                    junit 'spigot-tests/reports/xunit-0.xml'
+                    sh """
+                        # Record results in TCDB
+                        source ./npm-utils/scripts/jenkins-pre-build.sh 12.16.1 &> jenkins-pre.log
+                        rm -rf xunit-to-tcdb
+                        git clone git@bitbucket.org:inindca/xunit-to-tcdb.git
+                        cd xunit-to-tcdb
+                        npm install --silent
+                        npm start -- -f ../spigot-tests/reports/xunit-0.xml -a ${ENVIRONMENT} -s
+                    """
+                }
+            }
+        }
+    }
+}
