@@ -9,15 +9,14 @@
   "dependencies": {
     "@types/chai": "^4.2.9",
     "chai": "^4.2.0",
-    "purecloud-spigot": "^1.0.0",
+    "genesyscloud-spigot": "^1.0.0",
     "purecloud-streaming-client": "^11.0.2",
     "uuid": "^7.0.1"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "mocha",
-    "start": "SINGLE_RUN=true node index.js",
-    "watch": "node index.js"
+    "test": "SINGLE_RUN=true node index.js",
+    "test:watch": "node index.js"
   },
   "keywords": [],
   "author": "",

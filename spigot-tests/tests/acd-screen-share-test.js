@@ -1,6 +1,6 @@
 /* global describe, it, before, afterEach, after */
 import { PureCloudWebrtcSdk } from '../../dist/purecloud-webrtc-sdk';
-import { testUtils, callUtils } from 'purecloud-spigot';
+import { testUtils, callUtils } from 'genesyscloud-spigot';
 import * as utils from '../utils/utils';
 
 describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]', function () {
