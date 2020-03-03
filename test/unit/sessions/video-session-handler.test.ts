@@ -5,9 +5,10 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
-import { IConversationUpdate, IParticipantsUpdate, IJingleSession } from '../../../src/types/interfaces';
+import { IConversationUpdate, IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
 import nock = require('nock');
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
+import uuid = require('uuid');
 
 let handler: VideoSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
@@ -33,6 +34,69 @@ describe('shouldHandleSessionByJid', () => {
     jest.spyOn(utils, 'isVideoJid').mockReturnValueOnce(false).mockReturnValueOnce(true);
     expect(handler.shouldHandleSessionByJid('sdlkf')).toBeFalsy();
     expect(handler.shouldHandleSessionByJid('sdlfk')).toBeTruthy();
+  });
+});
+
+describe('findLocalParticipantInConversationUpdate', () => {
+  it('should return null if not found', () => {
+    expect(handler.findLocalParticipantInConversationUpdate({ id: '1231', participants: [] })).toBe(null);
+  });
+
+  it('should return the user', () => {
+    const userId = '444kjskdk';
+    mockSdk._personDetails = { id: userId } as any;
+    const participant1 = {
+      id: '7b809e10-fb79-4420-9d5f-69d232ddf490',
+      userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf',
+      purpose: 'user',
+      videos: [
+        {
+          state: CommunicationStates.connected,
+          id: '5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5',
+          context: '5d1130ff978496186c5ce304@conference.test-valve-1ym37mj1kao.orgspan.com',
+          audioMuted: false,
+          videoMuted: true,
+          sharingScreen: false,
+          peerCount: 0
+        }
+      ]
+    };
+
+    const local = {
+      id: '7sdffs-4420-9d5f-69d232ddf490',
+      userId,
+      purpose: 'user',
+      videos: [
+        {
+          state: CommunicationStates.connected,
+          id: '5e2bf9b855125-b89b-756b6bd0b3d5',
+          context: '5d1130ff978496186c5ce304@conference.test-valve-1ym37mj1kao.orgspan.com',
+          audioMuted: false,
+          videoMuted: true,
+          sharingScreen: false,
+          peerCount: 0
+        }
+      ]
+    };
+
+    const conversationUpdate = {
+      id: 'ff5a3ba2-373b-42c7-912a-5309a2656095',
+      participants: [participant1, local]
+    };
+
+    const expected = {
+      address: null,
+      confined: null,
+      direction: null,
+      id: local.id,
+      state: local.videos[0].state,
+      purpose: local.purpose,
+      userId: local.userId,
+      muted: local.videos[0].audioMuted,
+      videoMuted: local.videos[0].videoMuted
+    };
+
+    expect(handler.findLocalParticipantInConversationUpdate(conversationUpdate)).toEqual(expected);
   });
 });
 
@@ -62,6 +126,21 @@ describe('handleConversationUpdate', () => {
       id: 'ff5a3ba2-373b-42c7-912a-5309a2656095',
       participants: [participant1]
     };
+
+    jest.spyOn(handler, 'findLocalParticipantInConversationUpdate').mockReturnValue(null);
+  });
+
+  it('should set the localParticipant on the session', () => {
+    const localParticipant = {} as any;
+    (handler.findLocalParticipantInConversationUpdate as jest.Mock).mockReturnValue(localParticipant);
+
+    const session = {
+      emit: jest.fn()
+    };
+
+    handler.handleConversationUpdate(session as any, conversationUpdate);
+
+    expect((session as any).pcParticipant).toBe(localParticipant);
   });
 
   it('activeParticipants should only include participants with video communications', () => {
@@ -372,7 +451,7 @@ describe('handleSessionInit', () => {
 describe('acceptSession', () => {
   let parentHandlerSpy: jest.SpyInstance<Promise<any>>;
   let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
-  let attachIncomingTrackToElementSpy: jest.SpyInstance<void>;;
+  let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLAudioElement>;
   let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
   let initialMutesSpy: jest.SpyInstance<void>;
   let session: IJingleSession;
@@ -382,7 +461,7 @@ describe('acceptSession', () => {
     media = new MockStream() as any;
     parentHandlerSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
     addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
-    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue(null);
+    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue(document.createElement('audio'));
     startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(media);
     initialMutesSpy = jest.spyOn(handler, 'setInitialMuteStates').mockReturnValue();
     session = new MockSession() as any;
@@ -969,5 +1048,63 @@ describe('attachIncomingTrackToElement', () => {
     expect(audio.srcObject).toBeUndefined();
     expect(video.autoplay).toBeTruthy();
     expect(video.muted).toBeTruthy();
+  });
+});
+
+describe('pinParticipantVideo', () => {
+  let videoMuteSpy;
+  let removeMediaSpy;
+  let session;
+  let localParticipant: IConversationParticipant;
+
+  beforeEach(() => {
+    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockResolvedValue();
+    removeMediaSpy = jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue();
+    session = new MockSession();
+    localParticipant = {
+      address: null,
+      confined: null,
+      direction: null,
+      id: uuid(),
+      state: CommunicationStates.connected,
+      purpose: 'user',
+      userId: uuid(),
+      muted: false,
+      videoMuted: false
+    };
+  });
+
+  it('should throw if no local participant', async () => {
+    await expect(handler.pinParticipantVideo(session, '123')).rejects.toThrowError(/Unable to pin participant video/);
+  });
+
+  it('should pin participant', async () => {
+    const targetParticipcant = '123jid';
+    session.pcParticipant = localParticipant;
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({});
+    const eventSpy = jest.fn();
+    session.on('pinnedParticipant', eventSpy);
+    await handler.pinParticipantVideo(session, targetParticipcant);
+
+    const expectedParams = {
+      data: JSON.stringify({ targetParticipantId: targetParticipcant, streamType: 'video' }),
+      method: 'post'
+    };
+    expect(utils.requestApi).toHaveBeenCalledWith(expect.anything(), expectedParams);
+    expect(eventSpy).toHaveBeenCalledWith({ participantId: targetParticipcant });
+  });
+
+  it('should unpin participant', async () => {
+    session.pcParticipant = localParticipant;
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({});
+    const eventSpy = jest.fn();
+    session.on('pinnedParticipant', eventSpy);
+    await handler.pinParticipantVideo(session, null);
+
+    const expectedParams = {
+      method: 'delete'
+    };
+    expect(utils.requestApi).toHaveBeenCalledWith(expect.anything(), expectedParams);
+    expect(eventSpy).toHaveBeenCalledWith({ participantId: null });
   });
 });

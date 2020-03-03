@@ -75,7 +75,7 @@ async function endSession () {
   try {
     await webrtcSdk.endSession({ id: currentSessionId });
 
-    const controls = document.getElementById('video-controls');
+    const controls = document.getElementById('video-actions');
     controls.classList.add('hidden');
 
     const startControls = document.getElementById('start-controls');
@@ -169,7 +169,7 @@ async function sessionStarted (session) {
       const element = document.getElementById('waiting-for-media');
       element.classList.add('hidden');
 
-      const controls = document.getElementById('video-controls');
+      const controls = document.getElementById('video-actions');
       controls.classList.remove('hidden');
     });
 
@@ -192,7 +192,10 @@ async function sessionStarted (session) {
 
     const sessionEventsToLog = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
     sessionEventsToLog.forEach((eventName) => {
-      session.on(eventName, (e) => console.info(eventName, e));
+      session.on(eventName, (e) => {
+        console.info(eventName, e);
+        utils.writeToLog(JSON.stringify({ eventName, details: e }, null, 2));
+      });
     });
     webrtcSdk.acceptSession({ id: session.id, audioElement, videoElement, mediaStream });
   }
@@ -361,6 +364,10 @@ function stopScreenShare () {
   currentSession.stopScreenShare();
 }
 
+function pinParticipantVideo () {
+  currentSession.pinParticipantVideo(getInputValue('participant-pin'));
+}
+
 export default {
   makeOutboundCall,
   startVideoConference,
@@ -374,5 +381,6 @@ export default {
   updateDefaultDevices,
   answerCall,
   disconnectSdk,
-  initWebrtcSDK
+  initWebrtcSDK,
+  pinParticipantVideo
 };

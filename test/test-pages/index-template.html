@@ -121,26 +121,33 @@
                 Audio/Video</button>
             </span>
 
-            <div id="video-controls" class="hidden">
-              <div class="d-flex flex-column p-1">
-                <span>Screen share</span>
-                <button type="button" class="btn btn-primary btn-sm mb-1" id="start-screen-share">Start screen
-                  share</button>
-                <button type="button" class="btn btn-primary btn-sm" id="stop-screen-share">Stop screen share</button>
+            <div id="video-actions" class="hidden">
+              <div id="video-controls">
+                <div class="d-flex flex-column p-1">
+                  <span>Screen share</span>
+                  <button type="button" class="btn btn-primary btn-sm mb-1" id="start-screen-share">Start screen
+                    share</button>
+                  <button type="button" class="btn btn-primary btn-sm" id="stop-screen-share">Stop screen share</button>
+                </div>
+                <div class="d-flex flex-column p-1">
+                  <span>Mic</span>
+                  <button type="button" class="btn btn-primary btn-sm mb-1" id="audio-mute">Mute mic</button>
+                  <button type="button" class="btn btn-primary btn-sm" id="audio-unmute">Unmute mic</button>
+                </div>
+                <div class="d-flex flex-column p-1">
+                  <span>Camera</span>
+                  <button type="button" class="btn btn-primary btn-sm mb-1" id="video-mute">Mute camera</button>
+                  <button type="button" class="btn btn-primary btn-sm" id="video-unmute">Unmute camera</button>
+                </div>
+                <div class="d-flex flex-column p-1">
+                  <span>End</span>
+                  <button type="button" class="h-100 btn btn-danger" id="video-end">End Call</button>
+                </div>
               </div>
-              <div class="d-flex flex-column p-1">
-                <span>Mic</span>
-                <button type="button" class="btn btn-primary btn-sm mb-1" id="audio-mute">Mute mic</button>
-                <button type="button" class="btn btn-primary btn-sm" id="audio-unmute">Unmute mic</button>
-              </div>
-              <div class="d-flex flex-column p-1">
-                <span>Camera</span>
-                <button type="button" class="btn btn-primary btn-sm mb-1" id="video-mute">Mute camera</button>
-                <button type="button" class="btn btn-primary btn-sm" id="video-unmute">Unmute camera</button>
-              </div>
-              <div class="d-flex flex-column p-1">
-                <span>End</span>
-                <button type="button" class="h-100 btn btn-danger" id="video-end">End Call</button>
+              <div>
+                <label>Participant to pin (empty to unpin)</label>
+                <input id="participant-pin" type="text" class="text-input" value="">
+                <button type="button" class="btn btn-primary" id="participant-pin-btn">Pin/Unpin</button>
               </div>
             </div>
           </div>

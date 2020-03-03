@@ -21,6 +21,7 @@ function initControls () {
   document.getElementById('video-unmute').addEventListener('click', () => sdkHandler.setVideoMute(false));
   document.getElementById('audio-mute').addEventListener('click', () => sdkHandler.setAudioMute(true));
   document.getElementById('audio-unmute').addEventListener('click', () => sdkHandler.setAudioMute(false));
+  document.getElementById('participant-pin-btn').addEventListener('click', () => sdkHandler.pinParticipantVideo());
   document.getElementById('video-end').addEventListener('click', sdkHandler.endSession);
   document.getElementById('start-screen-share').addEventListener('click', sdkHandler.startScreenShare);
   document.getElementById('stop-screen-share').addEventListener('click', sdkHandler.stopScreenShare);
