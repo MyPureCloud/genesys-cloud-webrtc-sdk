@@ -241,7 +241,13 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     }
   }
 
-  // TODO: doc
+  /**
+   * Create media with video and/or audio
+   *  `{ video?: boolean | string, audio: boolean | string }`
+   *  `true` will use the sdk default device id (or system default if no sdk default)
+   *  `string` (for deviceId) will attempt to use that deviceId and fallback to sdk default
+   * @param opts video and/or audio default device or deviceId
+   */
   public async createMedia (opts: IMediaRequestOptions): Promise<MediaStream> {
     if (!opts || (!opts.video && !opts.audio)) {
       throwSdkError.call(this, SdkErrorTypes.invalid_options, 'createMedia must be called with at least one media type request');
@@ -250,17 +256,37 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     return startMedia(this, opts);
   }
 
-  // TODO: doc
+  /**
+   * Creates a media stream from the screen (this will prompt for user screen selection)
+   */
   public getDisplayMedia (): Promise<MediaStream> {
     return startDisplayMedia();
   }
 
-  // TODO: doc - updates all active sessions
+  /**
+   * Update the output device
+   *  NOTES:
+   *    - This will attempt to update all active sessions
+   *    - This does _not_ update the sdk `defaultOutputDeviceId`
+   * @param deviceId output device id
+   */
   public updateOutputDevice (deviceId: string): Promise<void> {
     return this.sessionManager.updateOutputDeviceForAllSessions(deviceId);
   }
 
-  // TODO: doc
+  /**
+   * Update outgoing media for a session
+   *  - `sessionId` _or_ `session` is required to find the session to update
+   *  - `stream`: if a stream is passed in, the session media will be
+   *    updated to use the media on the stream. This supercedes deviceId(s)
+   *  - `videoDeviceId` & `audioDeviceId` (superceded by `stream`)
+   *    - `undefined`: the sdk will not touch the `video|audio` media
+   *    - `null`: the sdk will update the `video|audio` media to system default
+   *    - `string`: the sdk will attempt to update the `video|audio` media
+   *        to the passed in deviceId
+   *
+   * @param updateOptions device(s) to update
+   */
   public updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void> {
     if (!updateOptions ||
       (!updateOptions.stream && !updateOptions.videoDeviceId && !updateOptions.audioDeviceId)) {
@@ -269,9 +295,23 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     return this.sessionManager.updateOutgoingMedia(updateOptions);
   }
 
-  // TODO: doc
-  //  if `null` is passed in, we will update to system default device
-  //  if property is undefined, then we will not update that device
+  /**
+   * Update the default device(s) for the sdk.
+   *  Pass in the following:
+   *  - `string`: sdk will update to the deviceId
+   *  - `null`: sdk will update to system default device (`outputDeviceId` cannot be `null`)
+   *  - `undefined`: sdk will not update that media deviceId
+   *
+   * If `updateActiveSessions` is `true`, any active sessions will
+   *  have their media devices updated.
+   * Else, only the sdk defaults will be updated and active sessions
+   *  will not be touched.
+   *
+   * NOTE: `outputDeviceId` _must_ be a `string` or `undefined` -
+   *  system default is not supported for output devices
+   *
+   * @param options default device(s) to update
+   */
   public async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
     const updateVideo = options.videoDeviceId !== undefined;
     const updateAudio = options.audioDeviceId !== undefined;
@@ -318,16 +358,25 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   }
 
   /**
-   * Mutes/Unmutes video/camera for a session and updates the conversation accordingly. Will fail if the session is not found.
-   * Incoming video is unaffected
+   * Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
+   * Will fail if the session is not found.
+   * Incoming video is unaffected.
+   *
+   * NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
+   *  attempt to use the sdk `defaultVideoDeviceId` as the device
    */
   public async setVideoMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setVideoMute(muteOptions);
   }
 
   /**
-   * Mutes/Unmutes audio/mic for a session and updates the conversation accordingly. Will fail if the session is not found.
-   * Incoming audio is unaffected
+   * Mutes/Unmutes audio/mic for a session and updates the conversation accordingly.
+   * Will fail if the session is not found.
+   * Incoming audio is unaffected.
+   *
+   * NOTE: if no `unmuteDeviceId` is provided when unmuting _AND_ there is no active
+   *  audio stream, it will unmute and attempt to use the sdk `defaultAudioDeviceId`
+   *  at the device
    */
   public async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setAudioMute(muteOptions);
