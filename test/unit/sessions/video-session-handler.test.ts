@@ -372,7 +372,7 @@ describe('handleSessionInit', () => {
 describe('acceptSession', () => {
   let parentHandlerSpy: jest.SpyInstance<Promise<any>>;
   let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
-  let attachIncomingTrackToElementSpy: jest.SpyInstance<void>;;
+  let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLMediaElement>;
   let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
   let initialMutesSpy: jest.SpyInstance<void>;
   let session: IJingleSession;
@@ -382,7 +382,7 @@ describe('acceptSession', () => {
     media = new MockStream() as any;
     parentHandlerSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
     addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
-    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue(null);
+    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue({} as HTMLMediaElement);
     startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(media);
     initialMutesSpy = jest.spyOn(handler, 'setInitialMuteStates').mockReturnValue();
     session = new MockSession() as any;
@@ -404,10 +404,13 @@ describe('acceptSession', () => {
     const incomingTrack = {} as any;
     session.tracks = [incomingTrack];
 
+    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+
     await handler.acceptSession(session, { id: session.id });
 
     expect(parentHandlerSpy).toHaveBeenCalled();
     expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
+    expect(session._outputAudioElement).toBe(audio);
   });
 
   it('should use provided stream and elements', async () => {
@@ -451,6 +454,27 @@ describe('acceptSession', () => {
     const audio = document.createElement('audio');
     const video = document.createElement('video');
 
+    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
+    expect(parentHandlerSpy).toHaveBeenCalled();
+    expect(startMediaSpy).toHaveBeenCalled();
+
+    const incomingTrack = {} as any;
+
+    session.emit('peerTrackAdded', session, incomingTrack);
+
+    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
+    expect(session._outputAudioElement).toBe(audio);
+  });
+
+  it('should not attach the _outputAudioElement if it is not of type HTMLAudioElement', async () => {
+    const audio = document.createElement('audio');
+    const video = document.createElement('video');
+
+    attachIncomingTrackToElementSpy.mockReturnValue(video);
+
     await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
     expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
     expect(parentHandlerSpy).toHaveBeenCalled();
@@ -460,6 +484,7 @@ describe('acceptSession', () => {
     session.emit('peerTrackAdded', session, incomingTrack);
 
     expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
+    expect(session._outputAudioElement).toBe(undefined);
   });
 });
 

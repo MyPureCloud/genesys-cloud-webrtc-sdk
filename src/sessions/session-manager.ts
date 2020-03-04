@@ -6,7 +6,7 @@ import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
-import { getDeviceByKindAndId } from '../media-utils';
+import { getDeviceIdByKindAndId } from '../media-utils';
 import {
   IPendingSession,
   ISessionInfo,
@@ -116,7 +116,6 @@ export class SessionManager {
     const session = options.session || this.getSession({ id: options.sessionId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
-    // const stream = options.stream
     return handler.updateOutgoingMedia(session, options);
   }
 
@@ -132,15 +131,15 @@ export class SessionManager {
     return Promise.all(promises);
   }
 
-  async updateAudioOutputDeviceForAllSessions (outputDeviceId: string): Promise<any> {
-    const _outputDeviceId = await getDeviceByKindAndId(this.sdk, 'audiooutput', outputDeviceId);
+  async updateOutputDeviceForAllSessions (outputDeviceId: string): Promise<any> {
+    const _outputDeviceId = await getDeviceIdByKindAndId(this.sdk, 'audiooutput', outputDeviceId);
 
     if (!_outputDeviceId) {
       this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
       return;
     }
 
-    const sessions = this.getAllActiveSessions();
+    const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
     this.log(LogLevels.info, 'Updating output deviceId for all active sessions', { sessions: sessions.map(s => s.id), outputDeviceId });
 
     const promises = sessions.map(session => {

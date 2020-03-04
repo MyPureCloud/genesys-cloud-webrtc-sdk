@@ -1,4 +1,6 @@
-## PureCloud WebRTC SDK
+[![Build Status](https://travis-ci.com/MyPureCloud/purecloud-webrtc-sdk.svg?branch=master)](https://travis-ci.com/MyPureCloud/purecloud-webrtc-sdk)
+
+# PureCloud WebRTC SDK
 
 ### Overview
 The PureCloud WebRTC SDK is a client library for connecting to PureCloud WebRTC

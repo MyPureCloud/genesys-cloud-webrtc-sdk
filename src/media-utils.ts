@@ -2,7 +2,7 @@ import browserama from 'browserama';
 import { PureCloudWebrtcSdk } from './client';
 import { log } from './logging';
 import { LogLevels, SdkErrorTypes } from './types/enums';
-import { IMediaRequestOptions, IEnumeratedDevices, ISdkConfig, KeyFrom } from './types/interfaces';
+import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
 import { throwSdkError } from './utils';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
@@ -39,11 +39,9 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
    *      if found, use it
    *      not found, just use `true` for system default
    */
-
   // if we are requesting video
   if (opts.video) {
-    const videoDeviceId = await getDeviceByKindAndId(sdk, 'videoinput', opts.video);
-
+    const videoDeviceId = await getDeviceIdByKindAndId(sdk, 'videoinput', opts.video);
     if (videoDeviceId) {
       log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId });
       constraints.video.deviceId = {
@@ -56,7 +54,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
 
   // if we are requesting audio
   if (opts.audio) {
-    const audioDeviceId = await getDeviceByKindAndId(sdk, 'audioinput', opts.audio);
+    const audioDeviceId = await getDeviceIdByKindAndId(sdk, 'audioinput', opts.audio);
 
     if (audioDeviceId) {
       log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId });
@@ -206,9 +204,12 @@ const enumeratedDevices: IEnumeratedDevices = {
   outputDeviceIds: []
 };
 
-async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDevices> {
+export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDevices> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
     log.call(sdk, LogLevels.warn, 'Unable to enumerate devices');
+    enumeratedDevices.videoDeviceIds = [];
+    enumeratedDevices.audioDeviceIds = [];
+    enumeratedDevices.outputDeviceIds = [];
     return enumeratedDevices;
   }
 
@@ -221,6 +222,7 @@ async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumerat
 
   // if devices haven't changed since last time we called this
   if (!refreshDevices) {
+    log.call(sdk, LogLevels.debug, 'Returning cached enumerated devices');
     return enumeratedDevices;
   }
 
@@ -236,7 +238,7 @@ async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumerat
         enumeratedDevices.videoDeviceIds.push(device.deviceId);
       } else if (device.kind === 'audioinput') {
         enumeratedDevices.audioDeviceIds.push(device.deviceId);
-      } else if (device.kind === 'audiooutput') {
+      } else /* if (device.kind === 'audiooutput') */ {
         enumeratedDevices.outputDeviceIds.push(device.deviceId);
       }
     });
@@ -251,7 +253,7 @@ async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumerat
 //  behavior, look for requested deviceId - if found return it
 //   if not found, look for the sdk default device id - if found return it
 //   if not found, return `undefined`
-export async function getDeviceByKindAndId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | true): Promise<undefined | string> {
+export async function getDeviceIdByKindAndId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | true): Promise<undefined | string> {
   const devices = await getEnumeratedDevices(sdk);
 
   let availableDevices: string[];

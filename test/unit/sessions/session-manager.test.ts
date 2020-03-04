@@ -2,7 +2,8 @@ import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IJingleSession } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia } from '../../../src/types/interfaces';
+import * as mediaUtils from '../../../src/media-utils';
 
 let mockSdk: PureCloudWebrtcSdk;
 let sessionManager: SessionManager;
@@ -279,7 +280,7 @@ describe('acceptSession', () => {
   });
 
   it('should throw if called without a sessionId', async () => {
-    await expect(sessionManager.acceptSession({ } as any)).rejects.toThrowError(/sessionId is required/);
+    await expect(sessionManager.acceptSession({} as any)).rejects.toThrowError(/sessionId is required/);
   });
 });
 
@@ -333,5 +334,116 @@ describe('setAudioMute', () => {
     await sessionManager.setAudioMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
+  });
+});
+
+describe('getAllActiveSessions()', () => {
+  test('should return all active sessions as an array', () => {
+    const sessionsObject = {
+      'session-1': { id: 'session-1', active: true },
+      'session-2': { id: 'session-2', active: true },
+      'session-3': { id: 'session-3', active: false },
+    };
+    const expectedArray = [sessionsObject['session-1'], sessionsObject['session-2']];
+
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject };
+    expect(sessionManager.getAllActiveSessions()).toEqual(expectedArray);
+  });
+});
+
+describe('updateOutgoingMedia()', () => {
+  test('should call the handler to updateOutgoingMedia with the passed in session', async () => {
+    const session = {} as any;
+    const options: IUpdateOutgoingMedia = { session, videoDeviceId: 'deviceId' };
+
+    const getSessionSpy = jest.spyOn(sessionManager, 'getSession');
+    const mockSessionHandler = { updateOutgoingMedia: jest.fn() };
+    const getSessionHandlerSpy = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+
+    await sessionManager.updateOutgoingMedia(options);
+
+    expect(getSessionSpy).not.toHaveBeenCalled();
+    expect(getSessionHandlerSpy).toHaveBeenCalledWith({ jingleSession: session });
+    expect(mockSessionHandler.updateOutgoingMedia).toHaveBeenCalledWith(session, options);
+  });
+
+  test('should find the session by id and call the handler to updateOutgoingMedia', async () => {
+    const session = {} as any;
+    const options: IUpdateOutgoingMedia = { sessionId: 'abc123', videoDeviceId: 'deviceId' };
+
+    const getSessionSpy = jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
+    const mockSessionHandler = { updateOutgoingMedia: jest.fn() };
+    const getSessionHandlerSpy = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+
+    await sessionManager.updateOutgoingMedia(options);
+
+    expect(getSessionSpy).toHaveBeenCalledWith({ id: 'abc123' });
+    expect(getSessionHandlerSpy).toHaveBeenCalledWith({ jingleSession: session });
+    expect(mockSessionHandler.updateOutgoingMedia).toHaveBeenCalledWith(session, options);
+  });
+});
+
+describe('updateOutgoingMediaForAllSessions()', () => {
+  test('should call the handler to updateOutgoingMedia for all sessions', async () => {
+    const sessions = [{ id: '1' }, { id: '2' }, { id: '3' }];
+    const videoDeviceId = 'video-device';
+    const audioDeviceId = 'audio-device';
+
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+    jest.spyOn(sessionManager, 'updateOutgoingMedia').mockResolvedValue(undefined);
+
+    await sessionManager.updateOutgoingMediaForAllSessions({ videoDeviceId, audioDeviceId });
+
+    expect(sessionManager.getAllActiveSessions).toHaveBeenCalled();
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Updating outgoing deviceId(s) for all active sessions'),
+      expect.any(Object));
+
+    sessions.forEach(session => {
+      expect(sessionManager.updateOutgoingMedia).toHaveBeenCalledWith({ session, videoDeviceId, audioDeviceId });
+    });
+  });
+});
+
+describe('updateOutputDeviceForAllSessions()', () => {
+  test('should log and return if outputDeviceId cannot be found', async () => {
+    const outputDeviceId = 'device-id';
+    jest.spyOn(mediaUtils, 'getDeviceIdByKindAndId').mockResolvedValue(undefined);
+    jest.spyOn(sessionManager, 'getAllActiveSessions');
+
+    await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
+
+    expect(mediaUtils.getDeviceIdByKindAndId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
+    expect(sessionManager.getAllActiveSessions).not.toHaveBeenCalled();
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Output deviceId not found. Not updating output media'),
+      { outputDeviceId }
+    );
+  });
+
+  test('should call the handler to update all active, non-screenshare sessions', async () => {
+    const outputDeviceId = 'device-id';
+    const sessions = [
+      { id: '1', sessionType: SessionTypes.collaborateVideo },
+      { id: '2', sessionType: SessionTypes.softphone },
+      { id: '3', sessionType: SessionTypes.acdScreenShare }
+    ];
+    const mockSessionHandler = { updateOutputDevice: jest.fn() };
+
+    jest.spyOn(mediaUtils, 'getDeviceIdByKindAndId').mockResolvedValue(outputDeviceId);
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+
+    await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
+
+    expect(mediaUtils.getDeviceIdByKindAndId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
+    expect(sessionManager.getAllActiveSessions).toHaveBeenCalled();
+
+    sessions
+      .filter(session => session.sessionType !== SessionTypes.acdScreenShare)
+      .forEach(session => {
+        expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ jingleSession: session });
+        expect(mockSessionHandler.updateOutputDevice).toHaveBeenCalledWith(session, outputDeviceId);
+      });
   });
 });

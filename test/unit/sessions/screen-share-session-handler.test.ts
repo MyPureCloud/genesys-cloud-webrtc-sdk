@@ -3,7 +3,7 @@ import ScreenShareSessionHandler from '../../../src/sessions/screen-share-sessio
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes } from '../../../src/types/enums';
+import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
 import { IJingleSession } from '../../../src/types/interfaces';
@@ -97,7 +97,6 @@ describe('handleSessionInit', () => {
   test('should setup a terminated listener to stop _screenShareStream', async () => {
     const session: any = new MockSession();
     const stream: MediaStream = new MockStream() as any;
-    console.log({ session })
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
     handler.temporaryOutboundStream = stream;
 
@@ -162,5 +161,20 @@ describe('onTrackEnd', () => {
 
     await handler.onTrackEnd(mockSession);
     expect(handler.endSession).toHaveBeenCalled();
+  });
+});
+
+describe('updateOutgoingMedia()', () => {
+  test('should throw because updating outgoing media is not supported for screen share', async () => {
+    try {
+      handler.updateOutgoingMedia({} as any, {} as any);
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.type).toBe(SdkErrorTypes.not_supported);
+      expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Cannot update outgoing media for acd screen share sessions'),
+        expect.any(Object)
+      );
+    }
   });
 });

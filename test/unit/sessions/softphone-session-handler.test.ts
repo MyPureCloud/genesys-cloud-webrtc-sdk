@@ -1,4 +1,16 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, random, getMockConversation, PARTICIPANT_ID, USER_ID, mockGetConversationApi, mockPatchConversationApi, createNock } from '../../test-utils';
+import {
+  SimpleMockSdk,
+  MockSession,
+  createPendingSession,
+  MockStream,
+  random,
+  getMockConversation,
+  PARTICIPANT_ID,
+  USER_ID,
+  mockGetConversationApi,
+  mockPatchConversationApi,
+  createNock
+} from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';

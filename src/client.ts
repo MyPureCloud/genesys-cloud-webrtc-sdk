@@ -241,6 +241,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     }
   }
 
+  // TODO: doc
   public async createMedia (opts: IMediaRequestOptions): Promise<MediaStream> {
     if (!opts || (!opts.video && !opts.audio)) {
       throwSdkError.call(this, SdkErrorTypes.invalid_options, 'createMedia must be called with at least one media type request');
@@ -256,7 +257,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
   // TODO: doc - updates all active sessions
   public updateOutputDevice (deviceId: string): Promise<void> {
-    return this.sessionManager.updateAudioOutputDeviceForAllSessions(deviceId);
+    return this.sessionManager.updateOutputDeviceForAllSessions(deviceId);
   }
 
   // TODO: doc
@@ -308,7 +309,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
       if (updateOutput) {
         promises.push(
-          this.sessionManager.updateAudioOutputDeviceForAllSessions(this._config.defaultOutputDeviceId)
+          this.sessionManager.updateOutputDeviceForAllSessions(this._config.defaultOutputDeviceId)
         );
       }
 
