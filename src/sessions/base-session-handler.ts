@@ -170,16 +170,15 @@ export default abstract class BaseSessionHandler {
 
     await Promise.all(destroyMediaPromises);
 
-    const newMediaPromises: Promise<any>[] = [];
-    stream.getTracks().forEach((track: MediaStreamTrack) => {
-      newMediaPromises.push(session.addTrack(track));
+    const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
+      await session.addTrack(track);
       if (outboundStream) {
         outboundStream.addTrack(track);
       }
 
       /* if we are switching audio elements, we need to check mute state (video is checked earlier) */
       if (track.kind === 'audio' || session.audioMuted) {
-        this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId || null });
+        await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId || null });
       }
     });
 
