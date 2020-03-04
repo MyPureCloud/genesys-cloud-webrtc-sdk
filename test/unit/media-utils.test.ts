@@ -425,18 +425,18 @@ describe('getEnumeratedDevices()', () => {
   });
 });
 
-describe('getDeviceIdByKindAndId()', () => {
+describe('getValidDeviceId()', () => {
   test('should return the found deviceId for specific kinds', async () => {
     /* audio device */
-    let result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'audioinput', mockAudioDevice1.deviceId);
+    let result = await mediaUtils.getValidDeviceId(mockSdk, 'audioinput', mockAudioDevice1.deviceId);
     expect(result).toBe(mockAudioDevice1.deviceId);
 
     /* video device */
-    result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'videoinput', mockVideoDevice1.deviceId);
+    result = await mediaUtils.getValidDeviceId(mockSdk, 'videoinput', mockVideoDevice1.deviceId);
     expect(result).toBe(mockVideoDevice1.deviceId);
 
     /* output device */
-    result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'audiooutput', mockOutputDevice1.deviceId);
+    result = await mediaUtils.getValidDeviceId(mockSdk, 'audiooutput', mockOutputDevice1.deviceId);
     expect(result).toBe(mockOutputDevice1.deviceId);
   });
 
@@ -446,33 +446,35 @@ describe('getDeviceIdByKindAndId()', () => {
     mockSdk._config.defaultOutputDeviceId = mockOutputDevice1.deviceId;
 
     /* audio device */
-    let result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'audioinput', 'non-existent-device-id');
+    let result = await mediaUtils.getValidDeviceId(mockSdk, 'audioinput', 'non-existent-device-id');
     expect(result).toBe(mockAudioDevice1.deviceId);
 
     /* video device */
-    result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'videoinput', 'non-existent-device-id');
+    result = await mediaUtils.getValidDeviceId(mockSdk, 'videoinput', 'non-existent-device-id');
     expect(result).toBe(mockVideoDevice1.deviceId);
 
     /* output device */
-    result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'audiooutput', 'non-existent-device-id');
+    result = await mediaUtils.getValidDeviceId(mockSdk, 'audiooutput', 'non-existent-device-id');
     expect(result).toBe(mockOutputDevice1.deviceId);
   });
 
   test('should return `undefined` if no deviceId can be found', async () => {
     mockSdk._config.defaultAudioDeviceId = null;
     mockSdk._config.defaultVideoDeviceId = null;
-    mockSdk._config.defaultOutputDeviceId = null;
 
     /* audio device */
-    let result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'audioinput', 'non-existent-device-id');
+    let result = await mediaUtils.getValidDeviceId(mockSdk, 'audioinput', 'non-existent-device-id');
     expect(result).toBe(undefined);
 
     /* video device */
-    result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'videoinput', 'non-existent-device-id');
+    result = await mediaUtils.getValidDeviceId(mockSdk, 'videoinput', 'non-existent-device-id');
     expect(result).toBe(undefined);
+  });
 
+  test("should return default 'audiooutput' device if no deviceId can be found", async () => {
+    mockSdk._config.defaultOutputDeviceId = null;
     /* output device */
-    result = await mediaUtils.getDeviceIdByKindAndId(mockSdk, 'audiooutput', 'non-existent-device-id');
-    expect(result).toBe(undefined);
+    const result = await mediaUtils.getValidDeviceId(mockSdk, 'audiooutput', 'non-existent-device-id');
+    expect(result).toBe(mockOutputDevice1.deviceId);
   });
 });

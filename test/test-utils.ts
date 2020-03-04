@@ -153,7 +153,10 @@ class MockStream {
     this._tracks.push(track);
   }
 
-  removeTrack = jest.fn();
+  removeTrack (track: MockTrack): void {
+    const index = this._tracks.findIndex(t => t.id === track.id);
+    this._tracks.splice(index, 1);
+  }
 }
 
 export function addTrackToMockStream (stream: MockStream, trackKind: 'video' | 'audio'): string {

@@ -15,7 +15,7 @@ import {
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
 import * as mediaUtils from '../../src/media-utils';
-import { IJingleSession } from '../../dist/src/types/interfaces';
+import { IJingleSession } from '../../src/types/interfaces';
 
 let { ws } = require('../test-utils');
 
@@ -439,6 +439,12 @@ describe('Client', () => {
       expect(spy).not.toHaveBeenCalled();
 
       await expect(sdk.createMedia({ video: false, audio: false })).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
+
+      await expect(sdk.createMedia({ video: undefined, audio: false })).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
+
+      await expect(sdk.createMedia({ video: false, audio: undefined })).rejects.toThrowError(/called with at least one media type/);
       expect(spy).not.toHaveBeenCalled();
     });
 

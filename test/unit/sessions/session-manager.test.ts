@@ -408,12 +408,12 @@ describe('updateOutgoingMediaForAllSessions()', () => {
 describe('updateOutputDeviceForAllSessions()', () => {
   test('should log and return if outputDeviceId cannot be found', async () => {
     const outputDeviceId = 'device-id';
-    jest.spyOn(mediaUtils, 'getDeviceIdByKindAndId').mockResolvedValue(undefined);
+    jest.spyOn(mediaUtils, 'getValidDeviceId').mockResolvedValue(undefined);
     jest.spyOn(sessionManager, 'getAllActiveSessions');
 
     await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
 
-    expect(mediaUtils.getDeviceIdByKindAndId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
+    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
     expect(sessionManager.getAllActiveSessions).not.toHaveBeenCalled();
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Output deviceId not found. Not updating output media'),
@@ -430,13 +430,13 @@ describe('updateOutputDeviceForAllSessions()', () => {
     ];
     const mockSessionHandler = { updateOutputDevice: jest.fn() };
 
-    jest.spyOn(mediaUtils, 'getDeviceIdByKindAndId').mockResolvedValue(outputDeviceId);
+    jest.spyOn(mediaUtils, 'getValidDeviceId').mockResolvedValue(outputDeviceId);
     jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
 
     await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
 
-    expect(mediaUtils.getDeviceIdByKindAndId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
+    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
     expect(sessionManager.getAllActiveSessions).toHaveBeenCalled();
 
     sessions

@@ -32,16 +32,9 @@ export const startDisplayMedia = function (): Promise<MediaStream> {
 export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
   const constraints: any = getStandardConstraints(opts);
 
-  /**
-   * Look for the desired deviceId
-   *  if found, use it
-   *    not found OR mediaType === true, find sdk default
-   *      if found, use it
-   *      not found, just use `true` for system default
-   */
   // if we are requesting video
-  if (opts.video) {
-    const videoDeviceId = await getDeviceIdByKindAndId(sdk, 'videoinput', opts.video);
+  if (opts.video || opts.video === null) {
+    const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video);
     if (videoDeviceId) {
       log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId });
       constraints.video.deviceId = {
@@ -53,8 +46,8 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   }
 
   // if we are requesting audio
-  if (opts.audio) {
-    const audioDeviceId = await getDeviceIdByKindAndId(sdk, 'audioinput', opts.audio);
+  if (opts.audio || opts.audio === null) {
+    const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio);
 
     if (audioDeviceId) {
       log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId });
@@ -186,11 +179,11 @@ function getStandardConstraints (opts: IMediaRequestOptions): MediaStreamConstra
     };
   }
 
-  if (!opts.video) {
+  if (opts.video === false || opts.video === undefined) {
     constraints.video = false;
   }
 
-  if (!opts.audio) {
+  if (opts.audio === false || opts.audio === undefined) {
     constraints.audio = false;
   }
 
@@ -249,11 +242,22 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
   return enumeratedDevices;
 }
 
-// TODO: doc
-//  behavior, look for requested deviceId - if found return it
-//   if not found, look for the sdk default device id - if found return it
-//   if not found, return `undefined`
-export async function getDeviceIdByKindAndId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | true): Promise<undefined | string> {
+/**
+ * Get a valid deviceId (`undefined` is returned if none was found)
+ *
+ * This will follow the steps looking for a device:
+ *  1. If `deviceId` is a `string`, it will look for that device and return it
+ *  2. If device could not be found _or_ `deviceId` was `true`,
+ *      it will look for the sdk default device
+ *  3. If device could not be found _or_ `deviceId` was `null`,
+ *      it will look for the system default device
+ *  4. If no device was found, return `undefined`
+ *
+ * @param sdk purecloud sdk instance
+ * @param kind desired device kind
+ * @param deviceId `deviceId` for specific device, `true` for sdk default device, or `null` for system default
+ */
+export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null): Promise<undefined | string> {
   const devices = await getEnumeratedDevices(sdk);
 
   let availableDevices: string[];
@@ -272,7 +276,9 @@ export async function getDeviceIdByKindAndId (sdk: PureCloudWebrtcSdk, kind: Med
   }
 
   // if a deviceId was passed in, try to use it
-  foundDeviceId = availableDevices.find((d: string) => d === deviceId);
+  if (typeof deviceId === 'string') {
+    foundDeviceId = availableDevices.find((d: string) => d === deviceId);
+  }
 
   // log if we didn't find the requested deviceId
   if (!foundDeviceId) {
@@ -286,6 +292,13 @@ export async function getDeviceIdByKindAndId (sdk: PureCloudWebrtcSdk, kind: Med
         log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId });
       }
     }
+  }
+
+  /* if we are requesting 'audiooutput' and haven't found a device yet,
+    use the first output device in the list as it's the default. */
+  if (!foundDeviceId && kind === 'audiooutput') {
+    foundDeviceId = availableDevices[0];
+    log.call(sdk, LogLevels.info, `Using the system default 'audiooutput' device`, { deviceId: foundDeviceId });
   }
 
   return foundDeviceId;

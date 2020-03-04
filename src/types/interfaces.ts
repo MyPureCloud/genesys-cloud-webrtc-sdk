@@ -47,19 +47,29 @@ export interface ISdkConfig {
 }
 
 export interface IMediaRequestOptions {
-  /** `true` to request video camera from the default device _OR_ `{deviceId}` for video camera from specified deviceId */
-  video?: boolean | string;
-  /** `true` to request microphone from the default device _OR_ `{deviceId}` for microphone from specified deviceId */
-  audio?: boolean | string;
+  /**
+   * - `string` to request media from device
+   * - `true` to request media from sdk default device
+   * - `null` to request media from system default device
+   * - `false` | `undefined` to not request/update this type of media
+   */
+  video?: boolean | string | null;
+  /**
+   * - `string` to request media from device
+   * - `true` to request media from sdk default device
+   * - `null` to request media from system default device
+   * - `false` | `undefined` to not request/update this type of media
+   */
+  audio?: boolean | string | null;
 }
 
 export interface IMediaDeviceIds {
-  /** `deviceId` for video camera (`null` for system default) */
+  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
   videoDeviceId?: string | null;
-  /** `deviceId` for microphone (`null` for system default) */
+  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
   audioDeviceId?: string | null;
-  /** `deviceId` for audio output (speakers) */
-  outputDeviceId?: string;
+  /** `deviceId` for audio output, `true` for sdk default output, or `null` for system default */
+  outputDeviceId?: string | null;
 }
 
 export interface IEnumeratedDevices {
@@ -75,10 +85,10 @@ export interface IUpdateOutgoingMedia {
   session?: IJingleSession;
   /* stream with desired media */
   stream?: MediaStream;
-  /** `deviceId` for video camera (`null` for system default) */
-  videoDeviceId?: string | null;
-  /** `deviceId` for microphone (`null` for system default) */
-  audioDeviceId?: string | null;
+  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
+  videoDeviceId?: string | true | null;
+  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
+  audioDeviceId?: string | true | null;
 }
 
 /**
@@ -149,8 +159,8 @@ export interface ISessionMuteRequest {
   id: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
-  /** the desired deviceId to use when unmuting */
-  unmuteDeviceId?: string;
+  /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
+  unmuteDeviceId?: string | boolean | null;
 }
 
 /**

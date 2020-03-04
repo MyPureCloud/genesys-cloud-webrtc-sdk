@@ -6,7 +6,7 @@ import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
-import { getDeviceIdByKindAndId } from '../media-utils';
+import { getValidDeviceId } from '../media-utils';
 import {
   IPendingSession,
   ISessionInfo,
@@ -111,7 +111,11 @@ export class SessionManager {
     return handler.startSession(startSessionParams);
   }
 
-  // TODO: doc
+  /**
+   * Update the outgoing media for a session.
+   *
+   * @param options for updating outgoing media
+   */
   async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
     const session = options.session || this.getSession({ id: options.sessionId });
     const handler = this.getSessionHandler({ jingleSession: session });
@@ -131,8 +135,8 @@ export class SessionManager {
     return Promise.all(promises);
   }
 
-  async updateOutputDeviceForAllSessions (outputDeviceId: string): Promise<any> {
-    const _outputDeviceId = await getDeviceIdByKindAndId(this.sdk, 'audiooutput', outputDeviceId);
+  async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
+    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId);
 
     if (!_outputDeviceId) {
       this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
@@ -140,11 +144,11 @@ export class SessionManager {
     }
 
     const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
-    this.log(LogLevels.info, 'Updating output deviceId for all active sessions', { sessions: sessions.map(s => s.id), outputDeviceId });
+    this.log(LogLevels.info, 'Updating output deviceId for all active sessions', { sessions: sessions.map(s => s.id), outputDeviceId: _outputDeviceId });
 
     const promises = sessions.map(session => {
       const handler = this.getSessionHandler({ jingleSession: session });
-      return handler.updateOutputDevice(session, outputDeviceId);
+      return handler.updateOutputDevice(session, _outputDeviceId);
     });
 
     return Promise.all(promises);

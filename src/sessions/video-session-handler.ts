@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getValidDeviceId } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
 
@@ -329,8 +329,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      // if they passed in a deviceId, we will use that
-      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId || true });
+      // look for a device to use, else use default
+      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
 
       // add track to session
       await this.addMediaToSession(session, stream, false);
@@ -374,8 +374,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       if (!outgoingTracks.length) {
         this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id });
 
-        // if they passed in a deviceId, we will use that
-        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId || true });
+        // if params.unmuteDeviceId is `undefined`, use sdk defaults
+        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
         await this.addMediaToSession(session, stream, false);
       }
 
