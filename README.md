@@ -1,4 +1,9 @@
-## PureCloud WebRTC SDK
+[![Build Status](https://travis-ci.com/MyPureCloud/purecloud-webrtc-sdk.svg?branch=master)](https://travis-ci.com/MyPureCloud/purecloud-webrtc-sdk)
+[![npm version](https://badge.fury.io/js/purecloud-webrtc-sdk.svg)](https://badge.fury.io/js/purecloud-webrtc-sdk)
+[![codecov](https://codecov.io/gh/djhouseknecht/purecloud-webrtc-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/MyPureCloud/purecloud-webrtc-sdk)
+[![dependabot-status](https://flat.badgen.net/dependabot/MyPureCloud/purecloud-webrtc-sdk/?icon=dependabot)](https://dependabot.com)
+
+# PureCloud WebRTC SDK
 
 ### Overview
 The PureCloud WebRTC SDK is a client library for connecting to PureCloud WebRTC
