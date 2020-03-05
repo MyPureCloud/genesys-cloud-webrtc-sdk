@@ -38,7 +38,7 @@ const config = {
   envHost: envConfig.ENV_HOST,
   outboundNumber: '3172222222',
   filter: '',
-  validationTimeout: '8000',
+  validationTimeout: '15000',
   iceTransportPolicy: 'all',
   testGlob: 'tests/*'
 };
