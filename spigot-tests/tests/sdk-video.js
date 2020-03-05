@@ -9,13 +9,13 @@ let context;
 
 describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
   beforeEach(async function () {
-    this.timeout(5000);
+    this.timeout(10000);
     context = testUtils.getContext();
     sdk = await getNewSdkConnection();
   });
 
   afterEach(async function () {
-    this.timeout(5000);
+    this.timeout(10000);
     if (sdk) {
       sdk.off('sessionStarted');
       sdk.off('cancelPendingSession');
