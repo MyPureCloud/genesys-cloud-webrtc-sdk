@@ -1,15 +1,5 @@
 #!groovy
 
-final def EXECUTOR_MAP = [
-    'dca': 'dev_mesos',
-    'tca': 'test_mesos',
-    'prod': 'dev_mesos',
-    'prod-apse2': 'dev_mesos',
-    'prod-euw1': 'dev_mesos',
-    'prod-apne1': 'dev_mesos',
-]
-final def env = ENVIRONMENT
-
 pipeline {
     agent none
     options {
@@ -19,11 +9,8 @@ pipeline {
     }
     stages {
         stage('Test') {
-            agent { node EXECUTOR_MAP[env] }
+            agent { node 'dev_mesos' }
             steps {
-                script {
-                    currentBuild.description = "${ENVIRONMENT}"
-                }
                 sh """
                     # Check out the latest npm-utils
                     rm -rf ./npm-utils && git clone --depth=1 git@bitbucket.org:inindca/npm-utils.git ./npm-utils
