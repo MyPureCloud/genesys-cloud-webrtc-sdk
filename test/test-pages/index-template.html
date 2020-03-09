@@ -1,6 +1,10 @@
 <html>
+
 <head>
   <title>Test Page</title>
+  <!-- bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
   <script src="https://localhost:8444/index.js"></script>
   <script>
@@ -50,10 +54,12 @@
   </script>
   <link rel="stylesheet" type="text/css" href="../common/main.css">
 </head>
+
 <body>
   <div class="app-header">
     <div class="title">PureCoud WebRTC SDK Sample</div>
-    <div class="subtitle">Choose and environment to authenticate with, then click 'Start App' to initialize the SDK</div>
+    <div class="subtitle">Choose and environment to authenticate with, then click 'Start App' to initialize the SDK
+    </div>
   </div>
 
   <div>
@@ -72,7 +78,7 @@
         <button type="submit">Use manual auth token</button>
       </form>
     </div>
-    <button id="start-app-button" type="button">Start App</button>
+    <button id="start-app-button" type="button" class="btn btn-success">Start App</button>
   </div>
   <div id="auth-text" class="auth-text">Authenticated</div>
   <div id="init-text" class="init-text">Initializing SDK...</div>
@@ -83,86 +89,149 @@
       <div id="app-controls" class="app-controls">
 
         <!-- outbound call -->
-        <div class="control-title">Outbound phone call</div>
+        <h5>Outbound phone call</h5>
         <div class="control-section">
           <label>Enter phone number:</label>
           <input id="outbound-phone-number" type="text" class="text-input">
           <div>
-            <button id="outbound-call-start">Start Call</button>
-            <button id="outbound-call-end">End Call</button>
+            <button type="button" class="btn btn-success" id="outbound-call-start">Start Call</button>
+            <button type="button" class="btn btn-danger" id="outbound-call-end">End Call</button>
           </div>
         </div>
 
         <!-- inbound call -->
-        <div class="control-title">Inbound phone call</div>
+        <h5>Inbound phone call</h5>
         <div class="control-section">
-          <button id="answer-inbound-call">Answer</button>
-          <button id="inbound-call-end">End Call</button>
+          <button type="button" class="btn btn-success" id="answer-inbound-call">Answer</button>
+          <button type="button" class="btn btn-danger" id="inbound-call-end">End Call</button>
         </div>
 
         <!-- video -->
-        <div class="control-title">Video conference</div>
+        <h5>Video conference</h5>
         <div class="control-section">
           <label>Enter room jid:</label>
-          <input id="video-jid" type="text" class="text-input">
+          <input id="video-jid" type="text" class="text-input"
+            value="adhoc-878d4f0a-a882-4fe4-87ec-e2605e3a69ca@conference.test-valve-1ym37mj1kao.orgspan.com">
           <div>
             <span id="start-controls">
-              <button id="video-start">Start</button>
-              <button id="video-start-no-video">Start - No Video</button>
-              <button id="video-start-no-audio">Start - No Audio</button>
-              <button id="video-start-no-audio-video">Start - No Audio/Video</button>
+              <button type="button" class="btn btn-success" id="video-start">Start</button>
+              <button type="button" class="btn btn-info btn-sm" id="video-start-no-video">Start - No Video</button>
+              <button type="button" class="btn btn-info btn-sm" id="video-start-no-audio">Start - No Audio</button>
+              <button type="button" class="btn btn-info btn-sm" id="video-start-no-audio-video">Start - No
+                Audio/Video</button>
             </span>
 
             <div id="video-controls" class="hidden">
-              <div>
-                <button id="start-screen-share">Start screen share</button>
-                <br />
-                <button id="stop-screen-share">Stop screen share</button>
+              <div class="d-flex flex-column p-1">
+                <span>Screen share</span>
+                <button type="button" class="btn btn-primary btn-sm mb-1" id="start-screen-share">Start screen
+                  share</button>
+                <button type="button" class="btn btn-primary btn-sm" id="stop-screen-share">Stop screen share</button>
               </div>
-              <div>
-                <button id="audio-mute">Mute mic</button>
-                <br />
-                <button id="audio-unmute">Unmute mic</button>
+              <div class="d-flex flex-column p-1">
+                <span>Mic</span>
+                <button type="button" class="btn btn-primary btn-sm mb-1" id="audio-mute">Mute mic</button>
+                <button type="button" class="btn btn-primary btn-sm" id="audio-unmute">Unmute mic</button>
               </div>
-              <div>
-                <button id="video-mute">Mute camera</button>
-                <br />
-                <button id="video-unmute">Unmute camera</button>
+              <div class="d-flex flex-column p-1">
+                <span>Camera</span>
+                <button type="button" class="btn btn-primary btn-sm mb-1" id="video-mute">Mute camera</button>
+                <button type="button" class="btn btn-primary btn-sm" id="video-unmute">Unmute camera</button>
               </div>
-
-              <button id="video-end">End Call</button>
+              <div class="d-flex flex-column p-1">
+                <span>End</span>
+                <button type="button" class="h-100 btn btn-danger" id="video-end">End Call</button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Disconnect -->
-        <div class="control-title">
-          <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
+        <!-- devices -->
+        <h5 id="media-devices-header" class="clickable">Media Devices <span class="fs-med">(toggle)</span></h5>
+        <div class="control-section d-none" id="media-devices">
+          <!-- audio -->
+          <label for="audio-devices" class="d-block">Mic Device</label>
+          <select name="audioDevices" id="audio-devices" class="d-inline"></select>
+          <button id="update-audio-media" class="d-inline btn btn-info btn-sm">Update Mic Device</button>
+          <br>
+
+          <!-- video -->
+          <label for="video-devices" class="d-block">Video Device</label>
+          <select name="videoDevices" id="video-devices" class="d-inline mb-1"></select>
+          <button id="update-video-media" class="d-inline btn btn-info btn-sm">Update Video Device</button>
+          <br>
+          <button id="update-outgoing-media" class="d-inline btn btn-primary btn-sm">Update Outgoing Media</button>
+          <hr>
+
+          <!-- output -->
+          <label for="output-devices">Output Device</label>
+          <br>
+          <select name="outputDevices" id="output-devices" class="d-block mb-1"></select>
+          <button id="update-output-media" class="btn btn-primary btn-sm">Update Output Media</button>
+          <hr>
+
+          <!-- defaults -->
+          <h6>Set Default Devices</h6>
+
+          <div class="d-flex flex-row m-1">
+            <div class="d-flex flex-column mx-3">
+              <div>Defaults to Update</div>
+              <div>
+                <input type="checkbox" name="videoDeviceCheckbox" id="video-device-check-box" checked>
+                <label for="video-device-check-box">Video</label>
+              </div>
+              <div>
+                <input type="checkbox" name="audioDeviceCheckbox" id="audio-device-check-box" checked>
+                <label for="audio-device-check-box">Audio</label>
+              </div>
+              <div>
+                <input type="checkbox" name="outputDeviceCheckbox" id="output-device-check-box" checked>
+                <label for="output-device-check-box">Output</label>
+              </div>
+            </div>
+
+            <div>
+              <div>Update active sessions</div>
+              <input type="radio" name="updateActiveSessionsWithDefault" id="update-active-sessions-with-default-yes"
+                value="true" checked>
+              <label class="mr-2" for="update-active-sessions-with-default-yes">Yes</label>
+              <input type="radio" name="updateActiveSessionsWithDefault" id="update-active-sessions-with-default-no"
+                value="false">
+              <label for="update-active-sessions-with-default-no">No</label>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="update-defaults">Set Defaults</button>
+
         </div>
+
+        <!-- Disconnect -->
+        <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
       </div>
 
-      <div class="output-container">
+      <div class="log-output">
         <div class="log-header">
-          <span>Log:</span>
+          <h5 class="clickable mr-3" id="log-header">Log: <span class="fs-med">(toggle)</span></h5>
           <span>
-            <input name="log-traces-check" type="checkbox" id="log-traces-check"/>
+            <input name="log-traces-check" type="checkbox" id="log-traces-check" />
             <label for="log-traces-check">Log trace events</label>
           </span>
         </div>
-        <textarea id="log-data" class="log-data" readonly="true"></textarea>
-        <div>
+        <div id="log-body">
+          <textarea id="log-data" class="log-data" readonly="true"></textarea>
           <button type="button" id="clear-log">Clear Log</button>
         </div>
       </div>
     </div>
-
-    <div>
-      <div id="waiting-for-media" class="hidden">Waiting for incoming media</div>
-      <audio id="vid-audio"></audio>
-      <video id="vid-video"></video>
-    </div>
-
   </div>
+
+
+
+  <div>
+    <div id="waiting-for-media" class="hidden">Waiting for incoming media</div>
+    <audio id="vid-audio"></audio>
+    <video id="vid-video"></video>
+  </div>
+
 
   <div class="footer">
     <a href="https://help.mypurecloud.com/articles/purecloud-privacy-policy/">Genesys Privacy Policy</a>

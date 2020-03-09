@@ -148,6 +148,12 @@ function handledPendingSession (id) {
   utils.writeToLog(output);
 }
 
+function getDeviceId (type) {
+  const el = document.querySelector(`select#${type}-devices`);
+  const value = el ? el.value : '';
+  return value || true;
+}
+
 async function sessionStarted (session) {
   let output = `${_getLogHeader('sessionStarted')}
     sessionId: ${session.sid}`;
@@ -172,15 +178,84 @@ async function sessionStarted (session) {
     if (!startVideoOpts.video && !startVideoOpts.audio) {
       mediaStream = new MediaStream();
     } else if (!startVideoOpts.video || !startVideoOpts.audio) {
+      if (startVideoOpts.video) {
+        startVideoOpts.video = getDeviceId('video');
+      }
+
+      if (startVideoOpts.audio) {
+        startVideoOpts.audio = getDeviceId('audio');
+      }
+
+      console.log({ startVideoOpts });
       mediaStream = await webrtcSdk.createMedia(startVideoOpts);
     }
 
-    const sessionEventsToLog = [ 'participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate' ];
+    const sessionEventsToLog = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
     sessionEventsToLog.forEach((eventName) => {
       session.on(eventName, (e) => console.info(eventName, e));
     });
     webrtcSdk.acceptSession({ id: session.id, audioElement, videoElement, mediaStream });
   }
+}
+
+function updateOutgoingMediaDevices (type = 'both'/* 'video' | 'audio' | 'both' */) {
+  if (!currentSessionId) {
+    utils.writeToLog('No active session');
+    return;
+  }
+  let audioDeviceId;
+  let videoDeviceId;
+
+  if (type === 'both' || type === 'video') {
+    videoDeviceId = getDeviceId('video');
+  }
+
+  if (type === 'both' || type === 'audio') {
+    audioDeviceId = getDeviceId('audio');
+  }
+
+  // let videoDeviceId = (currentSession.sessionType === 'collaborateVideo')
+  //   ? document.querySelector('select#video-devices').value || true
+  //   : false;
+
+  webrtcSdk.updateOutgoingMedia({ sessionId: currentSessionId, videoDeviceId, audioDeviceId });
+}
+
+function updateOutputMediaDevice () {
+  const audioOutputDeviceId = getDeviceId('output');
+  webrtcSdk.updateOutputDevice(audioOutputDeviceId);
+}
+
+function updateDefaultDevices (options) {
+  /* options = {
+    updateVideoDefault: boolean;
+    updateAudioDefault: boolean;
+    updateOutputDefault: boolean;
+    updateActiveSessions: boolean;
+  }*/
+  const sdkOpts = {
+    videoDeviceId: undefined, // `undefined` will not change that device | `null` will reset to system default
+    audioDeviceId: undefined,
+    outputDeviceId: undefined,
+    updateActiveSessions: options.updateActiveSessions
+  };
+
+  if (options.updateVideoDefault) {
+    const value = getDeviceId('video');
+    sdkOpts.videoDeviceId = value !== false ? value : null; // `null` resets to sys default
+  }
+
+  if (options.updateAudioDefault) {
+    const value = getDeviceId('audio');
+    sdkOpts.audioDeviceId = value !== false ? value : null; // `null` resets to sys default
+  }
+
+  if (options.updateOutputDefault) {
+    const value = getDeviceId('output');
+    sdkOpts.outputDeviceId = value; // defaults are not allowed for output
+  }
+
+  webrtcSdk.updateDefaultDevices(sdkOpts);
 }
 
 function sessionEnded (session, reason) {
@@ -294,6 +369,9 @@ export default {
   startScreenShare,
   stopScreenShare,
   endSession,
+  updateOutgoingMediaDevices,
+  updateOutputMediaDevice,
+  updateDefaultDevices,
   answerCall,
   disconnectSdk,
   initWebrtcSDK

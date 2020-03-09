@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getValidDeviceId } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
 
@@ -205,7 +205,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream;
     if (!stream) {
-      stream = await startMedia();
+      stream = await startMedia(this.sdk, {
+        audio: params.audioDeviceId || true,
+        video: params.videoDeviceId || true
+      });
     }
 
     session._outboundStream = stream;
@@ -220,12 +223,14 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const attachParams = { audioElement, videoElement };
     if (session.tracks.length) {
       session.tracks.forEach((track) => {
-        this.attachIncomingTrackToElement(track, attachParams);
+        const el = this.attachIncomingTrackToElement(track, attachParams);
+        if (el instanceof HTMLAudioElement) session._outputAudioElement = el;
       });
       session.emit('incomingMedia');
     } else {
       session.on('peerTrackAdded', (session: IJingleSession, track: MediaStreamTrack) => {
-        this.attachIncomingTrackToElement(track, attachParams);
+        const el = this.attachIncomingTrackToElement(track, attachParams);
+        if (el instanceof HTMLAudioElement) session._outputAudioElement = el;
         session.emit('incomingMedia');
       });
     }
@@ -324,7 +329,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      const stream = await startMedia({ video: true });
+      // look for a device to use, else use default
+      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
 
       // add track to session
       await this.addMediaToSession(session, stream, false);
@@ -353,7 +359,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const outgoingTracks = this.getSendersByTrackType(session, 'audio').map(sender => sender.track);
 
     outgoingTracks.forEach((track) => {
-      this.log(LogLevels.info, 'Muting audio track', { trackId: track.id });
+      this.log(LogLevels.info, `${params.mute ? 'Muting' : 'Unmuting'} audio track`, { trackId: track.id });
       track.enabled = !params.mute;
     });
 
@@ -368,7 +374,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       if (!outgoingTracks.length) {
         this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id });
 
-        const stream = await startMedia({ audio: true });
+        // if params.unmuteDeviceId is `undefined`, use sdk defaults
+        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
         await this.addMediaToSession(session, stream, false);
       }
 
@@ -376,6 +383,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session.audioMuted = !!params.mute;
+
+    // if they passed in an unmute device id, we will switch to that device (if we unmuted audio)
+    if (params.unmuteDeviceId !== undefined && !session.audioMuted) {
+      this.log(LogLevels.info, 'switching audio device', { sessionId: session.id });
+
+      await this.sdk.updateOutgoingMedia({ audioDeviceId: params.unmuteDeviceId });
+    }
   }
 
   handleMediaChangeEvent (session: IJingleSession, event: IMediaChangeEvent) {
@@ -431,7 +445,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
   }
 
-  attachIncomingTrackToElement (track: MediaStreamTrack, { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }) {
+  attachIncomingTrackToElement (
+    track: MediaStreamTrack,
+    { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }
+  ): HTMLAudioElement | HTMLVideoElement {
     let element = audioElement;
 
     if (track.kind === 'video') {
@@ -441,5 +458,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     element.autoplay = true;
     element.srcObject = createNewStreamWithTrack(track);
+    return element;
   }
 }

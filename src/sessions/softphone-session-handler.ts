@@ -31,7 +31,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
     if (!stream) {
       this.log(LogLevels.debug, 'No mediaStream provided, starting media');
-      stream = await startMedia({ audio: true });
+      stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true });
       this.log(LogLevels.debug, 'Media start');
     }
     this.log(LogLevels.debug, 'Adding media to session');
@@ -41,10 +41,10 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     const element = params.audioElement || this.sdk._config.defaultAudioElement;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      attachAudioMedia(this.sdk, session.streams[0], element);
+      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element);
     } else {
-      session.on('peerStreamAdded', (session, peerStream: MediaStream) => {
-        attachAudioMedia(this.sdk, peerStream, element);
+      session.on('peerStreamAdded', (session: IJingleSession, peerStream: MediaStream) => {
+        session._outputAudioElement = attachAudioMedia(this.sdk, peerStream, element);
       });
     }
 
