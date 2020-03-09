@@ -1,0 +1,26 @@
+{
+  "name": "spigot-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "@types/chai": "^4.2.9",
+    "chai": "^4.2.0",
+    "genesyscloud-spigot": "^1.1.1",
+    "purecloud-streaming-client": "^11.0.2",
+    "uuid": "^7.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "pretest": "cd ../ && npm run build && cd -",
+    "test": "SINGLE_RUN=true node index.js",
+    "test:ci": "CI_MODE=true node index.js",
+    "test:watch": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

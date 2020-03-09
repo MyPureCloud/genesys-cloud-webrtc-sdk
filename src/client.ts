@@ -31,7 +31,10 @@ const ENVIRONMENTS = [
   'mypurecloud.jp',
   'mypurecloud.de',
   'mypurecloud.ie',
-  'usw2.pure.cloud'
+  'usw2.pure.cloud',
+  'cac1.pure.cloud',
+  'euw2.pure.cloud',
+  'apne2.pure.cloud'
 ];
 
 /**
