@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate, IConversationParticipant } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getValidDeviceId } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
 
@@ -496,7 +496,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await requestApi.call(this.sdk, uri, { method, data });
       session.emit('pinnedParticipant', { participantId: participantId || null });
     } catch (err) {
-      this.log(LogLevels.error, 'Request to pin video failed', err);
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', err);
     }
   }
 

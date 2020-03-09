@@ -2,7 +2,7 @@ import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../..
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes, CommunicationStates } from '../../../src/types/enums';
+import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
 import { IConversationUpdate, IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
@@ -1137,6 +1137,21 @@ describe('pinParticipantVideo', () => {
 
   it('should throw if no local participant', async () => {
     await expect(handler.pinParticipantVideo(session, '123')).rejects.toThrowError(/Unable to pin participant video/);
+  });
+
+  it('should throw if request fails', async () => {
+    const errorSpy = jest.spyOn(utils, 'throwSdkError');
+    const fakeErr = { message: 'someError' };
+    jest.spyOn(utils, 'requestApi').mockRejectedValue(fakeErr);
+
+    const eventSpy = jest.fn();
+    session.on('pinnedParticipant', eventSpy);
+    session.pcParticipant = { id: 'fake' };
+    const targetParticipcant = '123jid';
+    await expect(handler.pinParticipantVideo(session, targetParticipcant)).rejects.toThrowError();
+
+    expect(eventSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(SdkErrorTypes.generic, 'Request to pin video failed', fakeErr);
   });
 
   it('should pin participant', async () => {
