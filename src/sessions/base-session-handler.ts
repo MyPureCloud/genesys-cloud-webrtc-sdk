@@ -4,7 +4,7 @@ import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IUpdateOutgoingMedia } from '../types/interfaces';
-import { checkHasTransceiverFunctionality, startMedia, getValidDeviceId } from '../media-utils';
+import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
 import { throwSdkError } from '../utils';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -187,8 +187,8 @@ export default abstract class BaseSessionHandler {
       }
 
       /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
-      if (track.kind === 'audio' || session.audioMuted) {
-        await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId === undefined ? true : options.audioDeviceId });
+      if (track.kind === 'audio' && session.audioMuted) {
+        await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
       }
     });
 

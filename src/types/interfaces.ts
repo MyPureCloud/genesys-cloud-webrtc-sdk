@@ -86,9 +86,9 @@ export interface IUpdateOutgoingMedia {
   /* stream with desired media */
   stream?: MediaStream;
   /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
-  videoDeviceId?: string | true | null;
+  videoDeviceId?: string | boolean | null;
   /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
-  audioDeviceId?: string | true | null;
+  audioDeviceId?: string | boolean | null;
 }
 
 /**

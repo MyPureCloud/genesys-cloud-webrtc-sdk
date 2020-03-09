@@ -363,7 +363,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       track.enabled = !params.mute;
     });
 
-    if (params.mute && typeof params.mute !== 'string') {
+    if (params.mute) {
       if (!outgoingTracks.length) {
         this.log(LogLevels.warn, 'Unable to find any outgoing audio tracks to mute', { sessionId: session.id });
       } else {
@@ -383,6 +383,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session.audioMuted = !!params.mute;
+
+    // if they passed in an unmute device id, we will switch to that device (if we unmuted audio)
+    if (params.unmuteDeviceId !== undefined && !session.audioMuted) {
+      this.log(LogLevels.info, 'switching audio device', { sessionId: session.id });
+
+      await this.sdk.updateOutgoingMedia({ audioDeviceId: params.unmuteDeviceId });
+    }
   }
 
   handleMediaChangeEvent (session: IJingleSession, event: IMediaChangeEvent) {

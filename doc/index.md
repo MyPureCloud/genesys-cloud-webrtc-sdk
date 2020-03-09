@@ -75,12 +75,12 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 `sdk.createMedia(options) : Promise<MediaStream>` - Creates a media stream with audio, video, or both.
   - parameters
     - `Object options`: Required
-      - `Boolean | String video`: Optional; the returned stream will a video track (`true` will use the sdk default device)\*.
-      - `Boolean | String audio`: Optional; the returned stream will have an audio track (`true` will use the sdk default device)\*.
+      - `String | Boolean | Null video`: Optional; the returned stream will a video track (`string` for desired device ID,`true` will use the sdk default device, `null` will use system default, `false | undefined` will not create this type of media)\*.
+      - `String | Boolean | Null audio`: Optional; the returned stream will have an audio track (`string` for desired device ID,`true` will use the sdk default device, `null` will use system default, `false | undefined` will not create this type of media)\*.
 
 `sdk.getDisplayMedia() | Promise<MediaStream>` - Creates a media stream from the screen (this will prompt for user screen selection)
 
-`sdk.updateOutputDevice(deviceId) : Promise<void>` - Update the output device for _all active sessions_
+`sdk.updateOutputDevice(deviceId) : Promise<void>` - Update the output device for _all active sessions_ (dependent on browser capabilities).
   - parameters
     - `String deviceId`: Required; the desired output device ID\*
 
@@ -90,31 +90,30 @@ connectivity with PureCloud. Initialize must be called before any events will tr
       - `String sessionId`: Optional; ID of the session to be updated (this or _session_ is required)
       - `Session session`: Optional; session to be updated (this or _sessionId_ is required)
       - `MediaStream stream`: Optional; media stream to update the session's outgoing media to (this supercedes deviceId(s))
-      - `String | Null videoDeviceId`: Optional; `string` for desired device ID, `null` for system default, `undefined` will not touch this media type on the session (superceded by `stream` option)\*
-      - `String | Null audioDeviceId`: Optional; `string` for desired device ID, `null` for system default, `undefined` will not touch this media type on the session (superceded by `stream` option)\*
+      - `String | True | Null videoDeviceId`: Optional; `string` for desired device ID, `true` for sdk default, `null` for system default, `undefined` will not touch this media type on the session (superceded by `stream` option)\*
+      - `String | True | Null audioDeviceId`: Optional; `string` for desired device ID, `true` for sdk default, `null` for system default, `undefined` will not touch this media type on the session (superceded by `stream` option)\*
 
 `sdk.updateDefaultDevices(options)` - Update the SDK's default device IDs
   - parameters
     - `Object options`: Optional
       - `String | Null videoDeviceId`: Optional; Set the default video device ID. `string` for desired device ID, `null` for system default, `undefined` will not update the video device ID\*
       - `String | Null audioDeviceId`: Optional; Set the default audio device ID. `string` for desired device ID, `null` for system default, `undefined` will not update the audio device ID\*
-      - `String outputDeviceId`: Optional; Set the default output device ID. `string` for desired device ID, `undefined` will not update the output device ID. NOTE: system default output devices are _not supported_. A valid `outputDeviceId` must be passed in to avoid errors\*
+      - `String | Null outputDeviceId`: Optional; Set the default output device ID. `string` for desired device ID, `null` for system default, `undefined` will not update the output device ID\*
       - `Boolean updateAcitveSessions`: Optional; If set to `true`, all active sessions will have their media updated to match the new defaults (if provided)\*
 
 `sdk.setVideoMute(options) : Promise<void>` - Mute or unmute outgoing video on a session. *Note: this will only work on video sessions and does not affect screen sharing.*
 - parameters
   - `Object options`: Required
     - `String id`: Required; The id of the session for which you would like to mute or unmute video.
-    - `Boolean mute`: Required; If true, outgoing video track will be cleaned up. If there are no other tracks using the camera, the camera will be turned off. If false, a new video track will be created an send to the other participants. This will reactivate the camera if it is not already in use.
-    - `String unmuteDeviceId`: Optional; If provided, it will unmute the video and use the camera device passed in. If not provided, it will use the sdk `defaultVideoDeviceId`\*
+    - `Boolean mute`: Required; If true, outgoing video track will be cleaned up. If there are no other tracks using the camera, the camera will be turned off. If false, a new video track will be created and sent to the other participants. This will reactivate the camera if it is not already in use.
+    - `String | True | null unmuteDeviceId`: Optional; If provided, it will unmute the video and use the camera device passed in (`string` for desired device ID, `true` for sdk default, `null` for system default). If not provided, it will use the sdk `defaultVideoDeviceId` and fallback to system default\*. **Note:** if muting, this option is ignored.
 
-`sdk.setAudioMute(options) : Promise<void>` - Mute or unmute going audio on a session.
+`sdk.setAudioMute(options) : Promise<void>` - Mute or unmute outgoing audio on a session.
 - parameters
   - `Object options`: Required
     - `String id`: Required; The id of the session for which you would like to mute or unmute audio.
     - `Boolean mute`: Required; If true, outgoing audio will not be heard by other participants. If false, outgoing audio will be re-enabled.
-    - `String unmuteDeviceId`: Optional; If provided _and_ there is not an active audio stream, it will unmute the audio and use the microphone device passed in. If not provided, it will use the sdk `defaultAudioDeviceId`\*
-
+    - `String | True | null unmuteDeviceId`: Optional; If provided, it will unmute the audio and use the microphone device passed in (`string` for desired device ID, `true` for sdk default, `null` for system default). If not provided, it will unmute the current audio track. If there is not an active audio track, it will use the sdk `defaultAudioDeviceId` and fallback to system default\*. **Note:** if muting, this option is ignored.
 
 `sdk.acceptPendingSession(id) : void` - Accept an incoming RTC session proposal. Should be called automatically for outbound calls.
 - parameters
@@ -143,7 +142,7 @@ This does not hangup or disconnect active WebRTC Session calls.
 `sdk.reconnect() : void` - Tear down the WebSocket connection to PureCloud (if active) and reconnect it.
 This does not hangup or disconnect active WebRTC Session calls.
 
-> \*_See [device support] for expected device lookup behavior_
+> \*_See [Device ID Support] for device lookup behavior_
 
 #### Events
 
@@ -244,7 +243,7 @@ has changed
 `session.on('endOfCandidates' () => {})` - signals the end of candidate gathering; used to check for
 potential connection issues
 
-#### Device Support
+#### Device ID Support
 
 The SDK provides flexibility in choosing device IDs. It will follow these steps when attempting to update a device:
 
@@ -253,18 +252,20 @@ The SDK provides flexibility in choosing device IDs. It will follow these steps 
   - If the device cannot be found, attempt to use the sdk default device for that type (ie. `defaultAudioDeviceId`, etc)
   - If the default device cannot be found, attempt to use the system default
 
+- If `true` is provided
+  - Attempt to use the `sdk`'s default device
+  - If the device cannot be found, attempt to use the system default
+
 - If `null` is provided
   - Attempt to use the system default
-  - See **NOTE** below regarding output devices
 
 - If `undefined` is provided
   - Do not touch that media type (`audio`, `video`, or `output`)
 
-> NOTE: system default _output devices_ are **not supported**. Anytime an _output device ID_ is updated, it must be a valid device ID.
 
 #### Video-specific session level events
 
 See [WebRTC Video Conferencing](video.md)
 
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html
-[device support]: device-support
+[Device ID Support]: device-id-support

@@ -56,7 +56,8 @@ export class SimpleMockSdk extends WildEmitter {
       refreshIceServers: jest.fn()
     }
   };
-  setAudioMute = jest.fn()
+  setAudioMute = jest.fn();
+  updateOutgoingMedia = jest.fn();
 }
 
 class MockSender {
