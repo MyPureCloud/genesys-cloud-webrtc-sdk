@@ -100,3 +100,11 @@ be cleaned up and replaced with a track presenting your screen. When ending scre
 a camera track was cleaned up during `startScreenShare` a new one will be created to replace the screen share track.*
 
 `session.stopScreenShare()` - Ends the active outgoing screen share.
+
+#### Pinning participants video
+
+You can pin a participant's video or screenshare which will disable the video switching when other participants talk.
+
+`session.pinParticipantVideo(participantId: string)` - Locks video to the provided video conference participant. If `participantId` is `null`
+or `undefined`, any currently pinned participants will be removed and will switch automatically when speaking. *Note: participantIds can
+be found in the `participantsUpdate` event.*

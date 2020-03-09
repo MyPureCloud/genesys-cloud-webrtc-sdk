@@ -207,6 +207,7 @@ export interface IJingleSession extends WildEmitter {
   audioMuted?: boolean;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;
+  pinParticipantVideo?: (participantId: string) => Promise<void>;
   _resurrectVideoOnScreenShareEnd?: boolean;
   _outboundStream?: MediaStream;
   _screenShareStream?: MediaStream;
@@ -226,12 +227,12 @@ export interface IConversationUpdateEvent {
 
 export interface IConversationUpdate {
   id: string;
-  participants: [
+  participants: Array<
     {
       id: string;
       purpose: string;
       userId: string;
-      videos: [
+      videos: Array<
         {
           context: string,
           audioMuted: boolean,
@@ -241,9 +242,9 @@ export interface IConversationUpdate {
           peerCount: number,
           sharingScreen: boolean
         }
-      ]
+      >
     }
-  ];
+  >;
 }
 
 export interface IParticipantsUpdate {

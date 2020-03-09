@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate, IConversationParticipant } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getValidDeviceId } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
 
@@ -43,7 +43,30 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return isVideoJid(jid);
   }
 
+  findLocalParticipantInConversationUpdate (conversationUpdate: IConversationUpdate): IConversationParticipant {
+    const participant = conversationUpdate.participants.find((p) => p.userId === this.sdk._personDetails.id);
+
+    if (!participant) {
+      this.log(LogLevels.warn, 'Failed to find current user in the conversation update');
+      return null;
+    }
+
+    return {
+      address: null,
+      confined: null,
+      direction: null,
+      id: participant.id,
+      state: participant.videos[0].state,
+      purpose: participant.purpose,
+      userId: participant.userId,
+      muted: participant.videos[0].audioMuted,
+      videoMuted: participant.videos[0].videoMuted
+    };
+  }
+
   handleConversationUpdate (session: IJingleSession, conversationUpdate: IConversationUpdate): void {
+    session.pcParticipant = this.findLocalParticipantInConversationUpdate(conversationUpdate);
+
     const activeVideoParticipants: IParticipantUpdate[] = conversationUpdate.participants
       .filter((pcParticipant) => {
         if (!pcParticipant.videos || !pcParticipant.videos.length) {
@@ -187,6 +210,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IJingleSession): Promise<any> {
     session.startScreenShare = this.startScreenShare.bind(this, session);
     session.stopScreenShare = this.stopScreenShare.bind(this, session);
+    session.pinParticipantVideo = this.pinParticipantVideo.bind(this, session);
 
     return super.handleSessionInit(session);
   }
@@ -443,6 +467,37 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
 
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
+  }
+
+  async pinParticipantVideo (session: IJingleSession, participantId?: string) {
+    if (!session.pcParticipant) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.');
+    }
+
+    const uri = `/conversations/videos/${session.conversationId}/participants/${session.pcParticipant.id}/pin`;
+
+    // default to unpin
+    let method = 'delete';
+    let data: string;
+
+    if (participantId) {
+      method = 'post';
+      data = JSON.stringify({
+        targetParticipantId: participantId,
+        streamType: 'video'
+      });
+
+      this.log(LogLevels.info, 'Pinning video for participant', { participantId });
+    } else {
+      this.log(LogLevels.info, 'Unpinning all participants', { participantId });
+    }
+
+    try {
+      await requestApi.call(this.sdk, uri, { method, data });
+      session.emit('pinnedParticipant', { participantId: participantId || null });
+    } catch (err) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', err);
+    }
   }
 
   attachIncomingTrackToElement (
