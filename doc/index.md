@@ -75,8 +75,8 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 `sdk.createMedia(options) : Promise<MediaStream>` - Creates a media stream with audio, video, or both.
   - parameters
     - `Object options`: Required
-      - `String | Boolean | Null video`: Optional; the returned stream will a video track (`string` for desired device ID,`true` will use the sdk default device, `null` will use system default, `false | undefined` will not create this type of media)\*.
-      - `String | Boolean | Null audio`: Optional; the returned stream will have an audio track (`string` for desired device ID,`true` will use the sdk default device, `null` will use system default, `false | undefined` will not create this type of media)\*.
+      - `String | Boolean | Null video`: Optional; the returned stream will have a video track (`string` for desired device ID, `true` will use the sdk default device, `null` will use system default, `false | undefined` will not create this type of media)\*.
+      - `String | Boolean | Null audio`: Optional; the returned stream will have an audio track (`string` for desired device ID, `true` will use the sdk default device, `null` will use system default, `false | undefined` will not create this type of media)\*.
 
 `sdk.getDisplayMedia() | Promise<MediaStream>` - Creates a media stream from the screen (this will prompt for user screen selection)
 
