@@ -11,10 +11,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
   let activeConversation;
 
   before(async function () {
-    if (testUtils.checkMultiSession()) {
-      this.skip();
-    }
-
+    this.timeout(10000);
     context = testUtils.getContext();
     client = await utils.getConnectedStreamingClient(context.authToken);
     config = testUtils.getConfig();
@@ -32,7 +29,8 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     console.log('SDK VERSION', sdk.VERSION);
   });
 
-  afterEach(async () => {
+  afterEach(async function () {
+    this.timeout(10000);
     if (activeConversation) {
       console.log(`Active conversation found. Disconnecting call '${activeConversation.id}'.`);
       await callUtils.disconnectCall(activeConversation.id, true);
@@ -43,7 +41,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
   });
 
   after(async function () {
-    this.timeout(5000);
+    this.timeout(10000);
 
     if (sdk) {
       await sdk.disconnect();
