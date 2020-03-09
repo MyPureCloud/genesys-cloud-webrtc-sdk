@@ -1,5 +1,5 @@
 import { PureCloudWebrtcSdk } from '../../src/client';
-import { ISdkConstructOptions, ICustomerData } from '../../src/types/interfaces';
+import { ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
@@ -9,14 +9,26 @@ import {
   mockGetUserApi,
   mockGetOrgApi,
   mockGetChannelApi,
-  mockNotificationSubscription
+  mockNotificationSubscription,
+  wait
 } from '../test-utils';
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
 import * as mediaUtils from '../../src/media-utils';
-
+import { IJingleSession } from '../../src/types/interfaces';
 
 let { ws } = require('../test-utils');
+
+function disconnectSdk (sdk: PureCloudWebrtcSdk): Promise<any> {
+  return new Promise(async res => {
+    // wait and then call disconnect
+    await wait(50);
+    await sdk.disconnect();
+    // wait for a reply from the server
+    await wait(50);
+    res();
+  });
+}
 
 describe('Client', () => {
   // check to make sure the server isn't running
@@ -30,7 +42,7 @@ describe('Client', () => {
 
   afterEach(async () => {
     if (ws) {
-      await Promise.resolve(ws.close());
+      (ws as WebSocket).close()
       ws = null;
     }
     if (wss) {
@@ -133,10 +145,11 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._logBuffer = [];
       sdk._config.optOutOfTelemetry = true;
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
 
-    it('should disconnect if initialize is called again', async () => {
+    test('should disconnect if initialize is called again', async () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       expect(sdk._streamingConnection).toBeTruthy();
@@ -150,7 +163,8 @@ describe('Client', () => {
       mockNotificationSubscription({ nockScope: notificationSubscription });
       await sdk.initialize();
       expect(disconnectSpy).toHaveBeenCalled();
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
 
     test('fetches jwt for guest users, sets up the streaming connection', async () => {
@@ -158,7 +172,8 @@ describe('Client', () => {
       await sdk.initialize({ securityCode: '123456' });
       getJwt.done();
       expect(sdk._streamingConnection).toBeTruthy();
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
 
     test('should use the customerData when passed in', async () => {
@@ -166,7 +181,8 @@ describe('Client', () => {
 
       await sdk.initialize(mockCustomerData);
       expect(sdk._streamingConnection).toBeTruthy();
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
 
     test('should throw if invalid customerData is passed in', async () => {
@@ -231,8 +247,9 @@ describe('Client', () => {
         fail();
       } catch (e) {
         expect(e.type).toBe(SdkErrorTypes.initialization);
+        console.log("THE TEST FINISHED");
       }
-    }, 15 * 1000);
+    }, 12 * 1000);
 
     test('sets up event proxies', async () => {
       const { sdk } = mockApis();
@@ -279,7 +296,8 @@ describe('Client', () => {
       }
 
       await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -302,6 +320,8 @@ describe('Client', () => {
       jest.spyOn(sdk.sessionManager, 'startSession').mockResolvedValue({});
       await sdk.startScreenShare();
       expect(sdk.sessionManager.startSession).toBeCalledWith({ sessionType: SessionTypes.acdScreenShare });
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -312,6 +332,8 @@ describe('Client', () => {
       jest.spyOn(sdk.sessionManager, 'startSession').mockResolvedValue({});
       await sdk.startVideoConference('123');
       expect(sdk.sessionManager.startSession).toBeCalledWith({ jid: '123', sessionType: SessionTypes.collaborateVideo });
+
+      await disconnectSdk(sdk);
     });
 
     it('should throw if guest user', async () => {
@@ -326,6 +348,8 @@ describe('Client', () => {
         expect(e).toEqual(new Error('video conferencing not supported for guests'));
         expect(sdk.sessionManager.startSession).not.toHaveBeenCalled();
       }
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -338,7 +362,8 @@ describe('Client', () => {
       expect(sdk.connected).toBe(true);
       sdk._streamingConnection.connected = false;
       expect(sdk.connected).toBe(false);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -352,7 +377,8 @@ describe('Client', () => {
       const sessionId = '5512551';
       await sdk.acceptPendingSession(sessionId);
       expect(sdk.sessionManager.proceedWithSession).toBeCalledWith(sessionId);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -366,7 +392,8 @@ describe('Client', () => {
       const params = { id: '5512551' };
       await sdk.acceptSession(params);
       expect(sdk.sessionManager.acceptSession).toBeCalledWith(params);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -380,7 +407,8 @@ describe('Client', () => {
       const params = { id: '5512551', mute: true };
       await sdk.setAudioMute(params);
       expect(sdk.sessionManager.setAudioMute).toBeCalledWith(params);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -394,11 +422,12 @@ describe('Client', () => {
       const params = { id: '5512551', mute: true };
       await sdk.setVideoMute(params);
       expect(sdk.sessionManager.setVideoMute).toBeCalledWith(params);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
-  describe('createMedia', () => {
+  describe('createMedia()', () => {
     it('should throw if no media requested', async () => {
       const spy = jest.spyOn(mediaUtils, 'startMedia');
 
@@ -411,6 +440,12 @@ describe('Client', () => {
 
       await expect(sdk.createMedia({ video: false, audio: false })).rejects.toThrowError(/called with at least one media type/);
       expect(spy).not.toHaveBeenCalled();
+
+      await expect(sdk.createMedia({ video: undefined, audio: false })).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
+
+      await expect(sdk.createMedia({ video: false, audio: undefined })).rejects.toThrowError(/called with at least one media type/);
+      expect(spy).not.toHaveBeenCalled();
     });
 
     it('proxies the call to the mediaUtils', async () => {
@@ -421,8 +456,9 @@ describe('Client', () => {
 
       const params = { video: true };
       await sdk.createMedia(params);
-      expect(mediaUtils.startMedia).toBeCalledWith(params);
-      await sdk.disconnect();
+      expect(mediaUtils.startMedia).toHaveBeenCalledWith(sdk, params);
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -432,6 +468,195 @@ describe('Client', () => {
       const spy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue({} as any);
       await sdk.getDisplayMedia();
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateOutputDevice()', () => {
+    test('should call through to the sessionManager', async () => {
+      const { sdk } = mockApis();
+      const deviceId = 'device-id';
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions').mockResolvedValue(undefined);
+
+      await sdk.updateOutputDevice(deviceId);
+      expect(sdk.sessionManager.updateOutputDeviceForAllSessions).toBeCalledWith(deviceId);
+
+      await disconnectSdk(sdk);
+    });
+  });
+
+  describe('updateOutgoingMedia()', () => {
+    test('should throw if invalid options are passed in', async () => {
+      const { sdk } = mockApis();
+      const options: IUpdateOutgoingMedia = {};
+      await sdk.initialize();
+
+      try {
+        await sdk.updateOutgoingMedia(options);
+        fail('it should have failed');
+      } catch (e) {
+        expect(e.type).toBe(SdkErrorTypes.invalid_options);
+      }
+
+      await disconnectSdk(sdk);
+    });
+
+    test('should call through to sessionManager', async () => {
+      const { sdk } = mockApis();
+      const options: IUpdateOutgoingMedia = {
+        sessionId: 'session-id',
+        session: {} as IJingleSession,
+        stream: {} as MediaStream,
+        videoDeviceId: 'video-id',
+        audioDeviceId: 'audio-id'
+      };
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'updateOutgoingMedia').mockResolvedValue(undefined);
+
+      await sdk.updateOutgoingMedia(options);
+
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+
+      await disconnectSdk(sdk);
+    });
+  });
+
+  describe('updateDefaultDevices()', () => {
+    test('should not set defaultDevice Ids if value is not undefined', async () => {
+      const { sdk } = mockApis();
+      const options: IMediaDeviceIds = {};
+
+      await sdk.initialize();
+      await sdk.updateDefaultDevices(options);
+
+      expect(sdk._config.defaultAudioDeviceId).toBe(null);
+      expect(sdk._config.defaultVideoDeviceId).toBe(null);
+      expect(sdk._config.defaultOutputDeviceId).toBe(null);
+
+
+      await disconnectSdk(sdk);
+    });
+
+    test('should set defaultDevice Ids if values are passed in', async () => {
+      const { sdk } = mockApis();
+      const options: IMediaDeviceIds = {
+        videoDeviceId: 'new-video-device',
+        audioDeviceId: 'new-audio-device',
+        outputDeviceId: 'new-output-device',
+      };
+
+      await sdk.initialize();
+      await sdk.updateDefaultDevices(options);
+
+      expect(sdk._config.defaultAudioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk._config.defaultVideoDeviceId).toBe(options.videoDeviceId);
+      expect(sdk._config.defaultOutputDeviceId).toBe(options.outputDeviceId);
+
+
+      await disconnectSdk(sdk);
+    });
+
+    test('should call through to sessionManager to update active sessions', async () => {
+      const { sdk } = mockApis();
+      const options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {
+        videoDeviceId: 'new-video-device',
+        audioDeviceId: 'new-audio-device',
+        outputDeviceId: 'new-output-device',
+        updateActiveSessions: true
+      };
+
+      await sdk.initialize();
+
+      const updateOutgoingMediaForAllSessionsSpy = jest.spyOn(sdk.sessionManager, 'updateOutgoingMediaForAllSessions').mockResolvedValue(undefined);
+      const updateOutputDeviceForAllSessionsSpy = jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions').mockResolvedValue(undefined);
+
+      await sdk.updateDefaultDevices(options);
+
+      expect(updateOutgoingMediaForAllSessionsSpy).toHaveBeenCalledWith({
+        videoDeviceId: options.videoDeviceId,
+        audioDeviceId: options.audioDeviceId
+      });
+      expect(updateOutputDeviceForAllSessionsSpy).toHaveBeenCalledWith(options.outputDeviceId);
+
+
+      await disconnectSdk(sdk);
+    });
+
+    test('should only update media that is changing (video, audio, and/or output)', async () => {
+      const { sdk } = mockApis();
+      const options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {
+        videoDeviceId: 'new-video-device',
+        audioDeviceId: undefined,
+        outputDeviceId: 'new-output-device-id',
+        updateActiveSessions: true
+      };
+
+      await sdk.initialize();
+
+      const updateOutgoingMediaForAllSessionsSpy = jest.spyOn(sdk.sessionManager, 'updateOutgoingMediaForAllSessions')
+        .mockResolvedValue(undefined);
+      const updateOutputDeviceForAllSessionsSpy = jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions')
+        .mockResolvedValue(undefined);
+
+      /* video and output device */
+      await sdk.updateDefaultDevices(options);
+
+      expect(updateOutgoingMediaForAllSessionsSpy).toHaveBeenCalledWith({
+        videoDeviceId: options.videoDeviceId,
+        audioDeviceId: options.audioDeviceId
+      });
+      expect(updateOutputDeviceForAllSessionsSpy).toHaveBeenCalledWith(options.outputDeviceId);
+
+      updateOutgoingMediaForAllSessionsSpy.mockReset();
+      updateOutputDeviceForAllSessionsSpy.mockReset();
+
+      /* audio device */
+      options.videoDeviceId = undefined;
+      options.outputDeviceId = undefined;
+      options.audioDeviceId = 'new-audio-device-id';
+
+      await sdk.updateDefaultDevices(options);
+
+      expect(updateOutgoingMediaForAllSessionsSpy).toHaveBeenCalledWith({
+        videoDeviceId: options.videoDeviceId,
+        audioDeviceId: options.audioDeviceId
+      });
+      expect(updateOutputDeviceForAllSessionsSpy).not.toHaveBeenCalled();
+
+      updateOutgoingMediaForAllSessionsSpy.mockReset();
+      updateOutputDeviceForAllSessionsSpy.mockReset();
+
+      /* no video or audio device */
+      options.videoDeviceId = undefined;
+      options.audioDeviceId = undefined;
+      options.outputDeviceId = 'new-output-device-id';
+
+      await sdk.updateDefaultDevices(options);
+
+      expect(updateOutgoingMediaForAllSessionsSpy).not.toHaveBeenCalled();
+      expect(updateOutputDeviceForAllSessionsSpy).toHaveBeenCalledWith(options.outputDeviceId);
+
+      updateOutgoingMediaForAllSessionsSpy.mockReset();
+      updateOutputDeviceForAllSessionsSpy.mockReset();
+
+      await disconnectSdk(sdk);
+    });
+
+    test('should do nothing if no params are passed in', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      const updateOutgoingMediaForAllSessionsSpy = jest.spyOn(sdk.sessionManager, 'updateOutgoingMediaForAllSessions')
+        .mockResolvedValue(undefined);
+      const updateOutputDeviceForAllSessionsSpy = jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions')
+        .mockResolvedValue(undefined);
+
+      await sdk.updateDefaultDevices();
+
+      expect(updateOutgoingMediaForAllSessionsSpy).not.toHaveBeenCalled();
+      expect(updateOutputDeviceForAllSessionsSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -445,7 +670,8 @@ describe('Client', () => {
       const params = { id: sessionId };
       await sdk.endSession(params);
       expect(sdk.sessionManager.endSession).toBeCalledWith(params);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -458,7 +684,8 @@ describe('Client', () => {
 
       await sdk.reconnect();
       expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -469,8 +696,12 @@ describe('Client', () => {
 
       sdk._streamingConnection.disconnect = jest.fn();
 
+
       await sdk.disconnect();
       expect(sdk._streamingConnection.disconnect).toHaveBeenCalledTimes(1);
+
+      // for for the response for disconnect
+      await wait(50);
     });
 
     test('_config.customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
@@ -496,13 +727,28 @@ describe('Client', () => {
           urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
         }
       ]);
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
   });
 
   describe('_refreshIceServers()', () => {
+    test('should not get iceServers if not connected', async () => {
+      const { sdk } = mockApis({ withIceRefresh: true });
+      await sdk.initialize();
+
+      sdk._streamingConnection.connected = false;
+      expect(sdk.connected).toBe(false);
+
+      sdk._streamingConnection._webrtcSessions.refreshIceServers = jest.fn();
+      await sdk._refreshIceServers();
+      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
+
+      await disconnectSdk(sdk);
+    });
+
     test('refreshes the turn servers', async () => {
-      const { sdk } = mockApis();
+      const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
 
       sdk._streamingConnection.connected = true;
@@ -512,11 +758,12 @@ describe('Client', () => {
       await sdk._refreshIceServers();
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshIceServersInterval).toBeTruthy();
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
 
-    it('should set icePolicy to relay if only relay candidates are returned', async () => {
-      const { sdk } = mockApis();
+    test('should set icePolicy to relay if only relay candidates are returned', async () => {
+      const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
 
       sdk._streamingConnection.connected = true;
@@ -547,11 +794,12 @@ describe('Client', () => {
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshIceServersInterval).toBeTruthy();
       expect(sdk._streamingConnection.webrtcSessions.config.iceTransportPolicy).toEqual('relay');
-      await sdk.disconnect();
+
+      await disconnectSdk(sdk);
     });
 
     test('emits an error if there is an error refreshing turn servers', async () => {
-      const { sdk } = mockApis();
+      const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
 
       sdk._streamingConnection.connected = true;
@@ -567,20 +815,8 @@ describe('Client', () => {
       }
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       await promise;
-      await sdk.disconnect();
-    });
 
-    test('should not get iceServers if not connected', async () => {
-      const { sdk } = mockApis();
-      await sdk.initialize();
-
-      sdk._streamingConnection.connected = false;
-      expect(sdk.connected).toBe(false);
-
-      sdk._streamingConnection._webrtcSessions.refreshIceServers = jest.fn();
-      await sdk._refreshIceServers();
-      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
-      await sdk.disconnect();
+      await disconnectSdk(sdk);
     });
   });
 
