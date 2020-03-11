@@ -105,7 +105,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams) {
+  async startSession (startSessionParams: IStartSessionParams): Promise<any> {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     return handler.startSession(startSessionParams);

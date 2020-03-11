@@ -17,8 +17,8 @@
   "scripts": {
     "pretest": "cd ../ && npm run build && cd -",
     "test": "SINGLE_RUN=true node index.js",
-    "test:ci": "CI_MODE=true node index.js",
-    "test:watch": "node index.js"
+    "test:ci": "npm run pretest && CI_MODE=true node index.js",
+    "test:watch": "npm run pretest && node index.js"
   },
   "keywords": [],
   "author": "",

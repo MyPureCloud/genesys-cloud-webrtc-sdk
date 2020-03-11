@@ -362,7 +362,7 @@ describe('startSession', () => {
       }
     } as any;
 
-    jest.spyOn(utils, 'requestApi').mockResolvedValue({});
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ body: 'sldk' });
     await handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
 
     const expected = JSON.stringify({

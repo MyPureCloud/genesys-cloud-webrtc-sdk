@@ -58,7 +58,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     // create the call to get conversation information
 
     activeConversation = await callUtils.testCall(this, client, { phoneNumber: config.outboundNumber, callFromQueueId: context.userQueues[0].id });
-    console.log('activeConversation', activeConversation);
+    console.log('screen share activeConversation', activeConversation);
 
     const customer = activeConversation.participants.find(p => p.purpose === 'customer' || p.purpose === 'voicemail');
     const codeData = await testUtils.fetchJson(`${config.apiUrl}/conversations/${activeConversation.id}/participants/${customer.id}/codes`, {
@@ -105,10 +105,11 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     await testUtils.timeout(4000);
 
     const peerStreamAdded = new Promise((resolve, reject) => {
-      setTimeout(() => reject(new Error('Timeout waiting for remote stream')), config.validationTimeout);
+      const timer = setTimeout(() => reject(new Error('Timeout waiting for remote stream')), config.validationTimeout);
       const hasIncomingVideo = agentSession.pc.getReceivers().filter((receiver) => receiver.track && receiver.track.kind === 'video');
       if (hasIncomingVideo) {
         return callUtils.attachStream(agentSession.streams[0], false, 'agent received intial customer stream').then(() => {
+          clearTimeout(timer);
           return resolve(agentSession.streams[0]);
         });
       }
@@ -116,6 +117,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
         console.log('peerTrackAdded', { session });
         console.log('peerTrackAdded -> attaching stream');
         await callUtils.attachStream(stream, false, 'agent received customer stream');
+        clearTimeout(timer);
         resolve(stream);
       });
     });

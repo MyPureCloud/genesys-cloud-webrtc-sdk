@@ -14,7 +14,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
   }
 
   // TODO: someday we should do media right before the session accept once we get away from media presence
-  async startSession (startParams: IStartSessionParams): Promise<void> {
+  async startSession (startParams: IStartSessionParams): Promise<{ conversationId: string }> {
     const { jwt, conversation, sourceCommunicationId } = this.sdk._customerData;
 
     const stream = await startDisplayMedia();
@@ -29,6 +29,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
 
     this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
     this.temporaryOutboundStream = stream;
+    return { conversationId: conversation.id };
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {

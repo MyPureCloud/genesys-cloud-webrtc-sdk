@@ -224,9 +224,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    * Start a screen share. Currently, guest is the only supported screen share.
    *  `initialize()` must be called first.
    */
-  public async startScreenShare (): Promise<void> {
+  public async startScreenShare (): Promise<{ conversationId: string }> {
     if (this.isGuest) {
-      await this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
+      return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
@@ -236,9 +236,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    * Start a video conference. Not supported for guests.
    *  `initialize()` must be called first.
    */
-  public async startVideoConference (roomJid: string): Promise<void> {
+  public async startVideoConference (roomJid: string): Promise<{ conversationId: string }> {
     if (!this.isGuest) {
-      await this.sessionManager.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
+      return this.sessionManager.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }

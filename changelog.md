@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * support for input and output devices
 * Screen pinning for video
 
+### Changed
+* sdk.startVideoConference and sdk.startScreenShare now return Promise<{ conversationId: string }>
+
 # [v3.1.0]
 
 ### Deprecated
