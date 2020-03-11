@@ -172,7 +172,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   }
 
   // triggers a propose from the backend
-  async startSession (startParams: IStartSessionParams): Promise<void> {
+  async startSession (startParams: IStartSessionParams): Promise<{ conversationId: string }> {
     const data = JSON.stringify({
       roomId: startParams.jid,
       participant: {
@@ -183,10 +183,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.requestedSessions[startParams.jid] = true;
 
     try {
-      await requestApi.call(this.sdk, `/conversations/videos`, {
+      const response = await requestApi.call(this.sdk, `/conversations/videos`, {
         method: 'post',
         data
       });
+
+      return { conversationId: response.body.conversationId };
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
       this.log(LogLevels.error, 'Failed to request video session', err);

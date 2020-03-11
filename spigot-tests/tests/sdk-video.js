@@ -35,10 +35,9 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
     audioElement.classList.add(randomId + '-audio');
     const videoElement = document.createElement('video');
     videoElement.classList.add(randomId + '-video');
-
     // Convert session events to promise so we can await them
-    const sessionEvents = new Promise((resolve, reject) => {
-      setTimeout(() => reject(new Error(`Timeout waiting for ${options.inbound ? 'inbound' : 'outbound'} call to connect`)), testUtils.getConfig().validationTimeout);
+    const sessionEvents = new Promise(async (resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`Timeout waiting for ${options.inbound ? 'inbound' : 'outbound'} call to connect. conversationId: ${conversationId}`)), testUtils.getConfig().validationTimeout);
 
       // Resolve when the session arrives, short circuiting the timeout/reject
       sdk.on('sessionStarted', async (session) => {
@@ -52,6 +51,7 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
           await sdk.acceptSession({ id: session.id, videoElement, audioElement });
         }
 
+        clearTimeout(timer);
         resolve(session);
       });
     });
@@ -59,12 +59,17 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
     let sessionDisconnected = Promise.resolve();
     if (options.waitForDisconnect) {
       sessionDisconnected = new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error('Timeout waiting for disconnect event')), testUtils.getConfig().validationTimeout * 5);
-        sdk.on('sessionEnded', resolve);
+        const timer = setTimeout(() => reject(new Error('Timeout waiting for disconnect event')), testUtils.getConfig().validationTimeout * 5);
+        sdk.on('sessionEnded', () => {
+          clearTimeout(timer);
+          resolve();
+        });
       });
     }
 
-    await sdk.startVideoConference(roomJid);
+    const info = await sdk.startVideoConference(roomJid);
+    conversationId = info.conversationId;
+    console.log('video conversationId', conversationId);
 
     // wait for the session to arrive
     const session = await sessionEvents;
