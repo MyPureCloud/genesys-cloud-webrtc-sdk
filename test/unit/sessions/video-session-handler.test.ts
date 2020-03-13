@@ -1012,14 +1012,11 @@ describe('startScreenShare', () => {
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStart).toHaveBeenCalled();
   });
 
-  it('should log and error if screen share failed to start', async () => {
+  it('should throw if screen share failed to start', async () => {
     const error = new Error('fake');
     displayMediaSpy.mockRejectedValue(error);
-    const logSpy = jest.spyOn(mockSdk.logger, 'info');
 
-    await expect(handler.startScreenShare(session)).rejects.toThrowError(/fake/);
-
-    expect(logSpy).not.toHaveBeenCalled();
+    await expect(handler.startScreenShare(session)).rejects.toThrowError(/Failed to start screen share/);
   });
 
   it('should log message if rejected and no error', async () => {
@@ -1028,7 +1025,7 @@ describe('startScreenShare', () => {
 
     await handler.startScreenShare(session);
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), undefined);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), { conversationId: session.conversationId });
   });
 });
 
@@ -1151,7 +1148,7 @@ describe('pinParticipantVideo', () => {
     await expect(handler.pinParticipantVideo(session, targetParticipcant)).rejects.toThrowError();
 
     expect(eventSpy).not.toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalledWith(SdkErrorTypes.generic, 'Request to pin video failed', fakeErr);
+    expect(errorSpy).toHaveBeenCalledWith(SdkErrorTypes.generic, 'Request to pin video failed', { conversationId: session.conversationId, error: fakeErr });
   });
 
   it('should pin participant', async () => {

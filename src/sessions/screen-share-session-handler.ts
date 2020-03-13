@@ -27,6 +27,8 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       mediaPurpose: SessionTypes.acdScreenShare
     };
 
+    this.log(LogLevels.info, 'starting acd screen share session', opts);
+
     this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
     this.temporaryOutboundStream = stream;
     return { conversationId: conversation.id };

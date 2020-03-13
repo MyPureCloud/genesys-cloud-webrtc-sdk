@@ -32,6 +32,8 @@ export const startDisplayMedia = function (): Promise<MediaStream> {
 export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
   const constraints: any = getStandardConstraints(opts);
 
+  const conversationId = opts.session && opts.session.conversationId;
+
   // if we are requesting video
   if (opts.video || opts.video === null) {
     const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video);
@@ -41,7 +43,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
         exact: videoDeviceId
       };
     } else {
-      log.call(sdk, LogLevels.info, 'Unable to find a video deviceId. Using system defaults');
+      log.call(sdk, LogLevels.info, 'Unable to find a video deviceId. Using system defaults', { conversationId });
     }
   }
 
@@ -55,7 +57,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
         exact: audioDeviceId
       };
     } else {
-      log.call(sdk, LogLevels.info, 'Unable to find an audio deviceId. Using system defaults');
+      log.call(sdk, LogLevels.info, 'Unable to find an audio deviceId. Using system defaults', { conversationId });
     }
   }
 
@@ -83,13 +85,13 @@ export const createAudioMediaElement = function (): HTMLAudioElement {
  * @param this must be called with a PureCloudWebrtcSdk as `this`
  * @param stream audio stream to attach
  */
-export const attachAudioMedia = function (sdk: PureCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement): HTMLAudioElement {
+export const attachAudioMedia = function (sdk: PureCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement, conversationId?: string): HTMLAudioElement {
   if (!audioElement) {
     audioElement = createAudioMediaElement();
   }
 
   if (audioElement.srcObject) {
-    log.call(sdk, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.');
+    log.call(sdk, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.', { conversationId });
   }
 
   audioElement.autoplay = true;
