@@ -24,9 +24,8 @@ export default abstract class BaseSessionHandler {
     log.call(this.sdk, level, message, details);
   }
 
-  // by default, do nothing
   handleConversationUpdate (session: IJingleSession, update: IConversationUpdate) {
-
+    this.log(LogLevels.info, 'conversation update received', { conversationId: session.conversationId, update });
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
@@ -34,16 +33,18 @@ export default abstract class BaseSessionHandler {
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
+    this.log(LogLevels.info, 'handling propose', { conversationId: pendingSession.conversationId });
     this.sdk.emit('pendingSession', pendingSession);
   }
 
   async proceedWithSession (session: IPendingSession): Promise<any> {
+    this.log(LogLevels.info, 'proceeding with session', { conversationId: session.conversationId });
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
   async handleSessionInit (session: IJingleSession): Promise<any> {
     try {
-      this.log(LogLevels.info, 'onSession', session);
+      this.log(LogLevels.info, 'handling session init', session);
     } catch (e) {
       // don't let log errors ruin a session
     }
@@ -71,6 +72,8 @@ export default abstract class BaseSessionHandler {
       this.log(LogLevels.warn, 'session:trace', data);
     });
 
+    session.pc.pc.onnegotiationneeded = this._warnNegotiationNeeded.bind(this, session);
+
     session.on('change:active', (session: IJingleSession, active: boolean) => {
       if (active) {
         session._statsGatherer.collectInitialConnectionStats();
@@ -83,7 +86,7 @@ export default abstract class BaseSessionHandler {
   }
 
   onSessionTerminated (session: IJingleSession, reason: any): void {
-    this.log(LogLevels.info, 'onSessionTerminated', { conversationId: session.conversationId, reason });
+    this.log(LogLevels.info, 'handling session terminated', { conversationId: session.conversationId, reason });
     if (session._outboundStream) {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     }
@@ -91,25 +94,35 @@ export default abstract class BaseSessionHandler {
   }
 
   async acceptSession (session: IJingleSession, params: IAcceptSessionRequest): Promise<any> {
+    this.log(LogLevels.info, 'accepting session', { conversationId: session.conversationId, params });
     return session.accept();
   }
 
   async endSession (session: IJingleSession) {
+    this.log(LogLevels.info, 'ending session', { conversationId: session.conversationId });
+
     return new Promise<void>((resolve, reject) => {
       session.once('terminated', (reason) => {
         resolve(reason);
       });
-      session.once('error', error => reject(error));
+      session.once('error', error => {
+        try {
+          // this will always throw, but we also want to reject the promise
+          throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to terminate session', { conversationId: session.conversationId, error });
+        } catch (e) {
+          reject(error);
+        }
+      });
       session.end();
     });
   }
 
   async setVideoMute (session: IJingleSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, { params });
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, { conversationId: session.conversationId, params });
   }
 
   async setAudioMute (session: IJingleSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, { params });
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, { conversationId: session.conversationId, params });
   }
 
   /**
@@ -119,9 +132,11 @@ export default abstract class BaseSessionHandler {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): Promise<any> {
+    this.log(LogLevels.info, 'updating outgoing media', { conversationId: session.conversationId, options });
+
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
-      this.log(LogLevels.warn, 'Options are not valid to update outgoing media', { videoDeviceId: options.videoDeviceId, audioDeviceId: options.audioDeviceId });
+      this.log(LogLevels.warn, 'Options are not valid to update outgoing media', { videoDeviceId: options.videoDeviceId, audioDeviceId: options.audioDeviceId, conversationId: session.conversationId });
       throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options not valid to update outgoing media');
     }
 
@@ -140,7 +155,7 @@ export default abstract class BaseSessionHandler {
     /* make sure out stream does not have a video track if our session has video on mute  */
     stream.getTracks().forEach(track => {
       if (session.videoMuted && track.kind === 'video') {
-        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id });
+        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
         stream.removeTrack(track);
       }
     });
@@ -205,11 +220,10 @@ export default abstract class BaseSessionHandler {
 
     if (typeof el.setSinkId === 'undefined') {
       const err = 'Cannot set sink id in unsupported browser';
-      this.log(LogLevels.warn, err);
-      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err);
+      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId });
     }
 
-    this.log(LogLevels.info, 'Setting output deviceId', { deviceId });
+    this.log(LogLevels.info, 'Setting output deviceId', { deviceId, conversationId: session.conversationId });
     return el.setSinkId(deviceId);
   }
 
@@ -222,24 +236,29 @@ export default abstract class BaseSessionHandler {
   async addMediaToSession (session: IJingleSession, stream: MediaStream, allowLegacyStreamBasedActionsFallback: boolean = true): Promise<void> {
     const promises: any[] = [];
     if (checkHasTransceiverFunctionality()) {
-      this.log(LogLevels.info, 'Using track based actions');
+      this.log(LogLevels.info, 'Using track based actions', { conversationId: session.conversationId });
       stream.getTracks().forEach(t => {
-        this.log(LogLevels.debug, 'Adding track to session', t);
+        this.log(LogLevels.debug, 'Adding track to session', { track: t, conversationId: session.conversationId });
         promises.push(session.addTrack(t));
       });
     } else if (allowLegacyStreamBasedActionsFallback) {
-      this.log(LogLevels.info, 'Using stream based actions.');
-      this.log(LogLevels.debug, 'Adding stream to session', stream);
+      this.log(LogLevels.info, 'Using stream based actions.', { conversationId: session.conversationId });
+      this.log(LogLevels.debug, 'Adding stream to session', { stream, conversationId: session.conversationId });
       promises.push(session.addStream(stream));
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg);
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
     }
 
     await Promise.all(promises);
   }
 
+  _warnNegotiationNeeded (session: IJingleSession): void {
+    this.log(LogLevels.error, 'negotiation needed and not supported', { conversationId: session.conversationId });
+  }
+
   removeMediaFromSession (session: IJingleSession, track: MediaStreamTrack): Promise<void> {
+    this.log(LogLevels.debug, 'Removing track from session', { track, conversationId: session.conversationId });
     return session.removeTrack(track);
   }
 }

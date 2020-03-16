@@ -61,6 +61,10 @@ export interface IMediaRequestOptions {
    * - `false` | `undefined` to not request/update this type of media
    */
   audio?: boolean | string | null;
+  /**
+   * This is just to be able to associate logs to a specific session. This is primarily for internal use an not generally needed.
+   */
+  session?: IJingleSession;
 }
 
 export interface IMediaDeviceIds {

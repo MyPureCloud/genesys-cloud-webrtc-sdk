@@ -30,21 +30,20 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   async acceptSession (session: IJingleSession, params: IAcceptSessionRequest): Promise<any> {
     let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
     if (!stream) {
-      this.log(LogLevels.debug, 'No mediaStream provided, starting media');
-      stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true });
-      this.log(LogLevels.debug, 'Media start');
+      this.log(LogLevels.debug, 'No mediaStream provided, starting media', { conversationId: session.conversationId });
+      stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true, session });
+      this.log(LogLevels.debug, 'Media started', { conversationId: session.conversationId });
     }
-    this.log(LogLevels.debug, 'Adding media to session');
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
 
     const element = params.audioElement || this.sdk._config.defaultAudioElement;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element);
+      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, session.conversationId);
     } else {
       session.on('peerStreamAdded', (session: IJingleSession, peerStream: MediaStream) => {
-        session._outputAudioElement = attachAudioMedia(this.sdk, peerStream, element);
+        session._outputAudioElement = attachAudioMedia(this.sdk, peerStream, element, session.conversationId);
       });
     }
 
@@ -71,17 +70,17 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
       await Promise.all([patchPromise, terminatedPromise]);
     } catch (err) {
-      this.log(LogLevels.error, 'Failed to end session gracefully', err);
+      this.log(LogLevels.error, 'Failed to end session gracefully', { conversationId: session.conversationId, error: err });
       return this.endSessionFallback(session);
     }
   }
 
   async endSessionFallback (session: IJingleSession): Promise<void> {
-    this.log(LogLevels.info, 'Attempting to end session directly', { sessionId: session.id });
+    this.log(LogLevels.info, 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId });
     try {
       await super.endSession(session);
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', err);
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, error: err });
     }
   }
 
@@ -97,7 +96,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       const participant = participants.find((p) => p.userId === this.sdk._personDetails.id);
 
       if (!participant) {
-        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { sessionId: session.id, sessionType: this.sessionType });
+        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
       }
 
       session.pcParticipant = participant;
@@ -108,6 +107,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async setAudioMute (session: IJingleSession, params: ISessionMuteRequest) {
     try {
+      this.log(LogLevels.info, 'Muting audio', { conversationId: session.conversationId });
       const participant = await this.getParticipantForSession(session);
 
       await requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {
@@ -115,8 +115,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         data: JSON.stringify({ muted: params.mute })
       });
     } catch (err) {
-      this.log(LogLevels.error, 'Failed to set audioMute', err);
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { params, err });
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId: session.conversationId, params, err });
     }
   }
 }

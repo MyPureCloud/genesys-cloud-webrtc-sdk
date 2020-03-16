@@ -225,7 +225,7 @@ describe('updateOutputDevice()', () => {
       fail('should have thrown');
     } catch (e) {
       expect(e.type).toBe(SdkErrorTypes.not_supported);
-      expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Cannot set sink id in unsupported browser'), undefined);
+      expect(e.message).toEqual(expect.stringContaining('Cannot set sink id in unsupported browser'));
     }
   });
 
@@ -236,7 +236,7 @@ describe('updateOutputDevice()', () => {
     session._outputAudioElement = { setSinkId: spy };
 
     await handler.updateOutputDevice(session as any, deviceId);
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Setting output deviceId'), { deviceId });
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Setting output deviceId'), { deviceId, conversationId: session.conversationId });
     expect(spy).toHaveBeenCalledWith(deviceId);
   });
 });
@@ -483,5 +483,14 @@ describe('removeMediaFromSession', () => {
     await handler.removeMediaFromSession(s as any, track as any);
 
     expect(s.removeTrack).toHaveBeenCalledWith(track);
+  });
+});
+
+describe('_warnNegotiationNeeded', () => {
+  it('should log a message', () => {
+    const session = new MockSession();
+    handler._warnNegotiationNeeded(session as any);
+
+    expect(mockSdk.logger.error).toHaveBeenCalledWith(expect.stringContaining('negotiation needed and not supported'), { conversationId: session.conversationId });
   });
 });

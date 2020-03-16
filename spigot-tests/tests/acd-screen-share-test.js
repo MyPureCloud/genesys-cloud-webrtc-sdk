@@ -57,6 +57,10 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
 
     // create the call to get conversation information
 
+    if (!context.userQueues || !context.userQueues.length) {
+      throw new Error('No user queues configured for this user');
+    }
+
     activeConversation = await callUtils.testCall(this, client, { phoneNumber: config.outboundNumber, callFromQueueId: context.userQueues[0].id });
     console.log('screen share activeConversation', activeConversation);
 

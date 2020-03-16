@@ -73,6 +73,7 @@ class MockSender {
 class MockPC extends WildEmitter {
   _mockSession: MockSession;
   _senders: MockSender[] = [];
+  pc: any = {};
   constructor (session: MockSession) {
     super();
     // this._mockSession = session;

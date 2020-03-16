@@ -110,6 +110,13 @@ describe('startDisplayMedia()', () => {
 });
 
 describe('startMedia()', () => {
+  it('should log with conversationId if session is provided', async () => {
+    const conversationId = '123Convo';
+
+    await mediaUtils.startMedia(mockSdk, { audio: true, session: { conversationId } as any });
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find an audio deviceId'), { conversationId });
+  });
+
   it('should request audio only', async () => {
     await mediaUtils.startMedia(mockSdk, { audio: true });
 
@@ -173,8 +180,8 @@ describe('startMedia()', () => {
     await mediaUtils.startMedia(mockSdk, { video: videoDeviceId, audio: audioDeviceId });
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find an audio deviceId'), undefined);
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find a video deviceId'), undefined);
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find an audio deviceId'), { conversationId: undefined });
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find a video deviceId'), { conversationId: undefined });
 
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
   });
@@ -308,7 +315,7 @@ describe('checkHasTransceiverFunctionality()', () => {
       getTransceivers () {
 
       }
-      constructor () {
+      constructor() {
         this.getTransceivers = jest.fn();
       }
     }
