@@ -217,7 +217,7 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
 
   // if devices haven't changed since last time we called this
   if (!refreshDevices) {
-    log.call(sdk, LogLevels.debug, 'Returning cached enumerated devices');
+    log.call(sdk, LogLevels.debug, 'Returning cached enumerated devices', { devices: enumeratedDevices });
     return enumeratedDevices;
   }
 
