@@ -8,10 +8,22 @@ import {
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { log, setupLogging } from './logging';
-import { ISdkConstructOptions, ILogger, ICustomerData, ISdkConfig, IEndSessionRequest, IAcceptSessionRequest, ISessionMuteRequest, IPersonDetails } from './types/interfaces';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { startMedia, startDisplayMedia } from './media-utils';
+import {
+  ISdkConstructOptions,
+  ILogger,
+  ICustomerData,
+  ISdkConfig,
+  IEndSessionRequest,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IPersonDetails,
+  IMediaRequestOptions,
+  IMediaDeviceIds,
+  IUpdateOutgoingMedia
+} from './types/interfaces';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -19,7 +31,10 @@ const ENVIRONMENTS = [
   'mypurecloud.jp',
   'mypurecloud.de',
   'mypurecloud.ie',
-  'usw2.pure.cloud'
+  'usw2.pure.cloud',
+  'cac1.pure.cloud',
+  'euw2.pure.cloud',
+  'apne2.pure.cloud'
 ];
 
 /**
@@ -101,6 +116,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       defaultAudioElement: options.defaultAudioElement,
       defaultAudioStream: options.defaultAudioStream,
       defaultVideoElement: options.defaultVideoElement,
+      defaultVideoDeviceId: options.defaultVideoDeviceId || null,
+      defaultAudioDeviceId: options.defaultAudioDeviceId || null,
+      defaultOutputDeviceId: options.defaultOutputDeviceId || null,
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
@@ -206,9 +224,9 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    * Start a screen share. Currently, guest is the only supported screen share.
    *  `initialize()` must be called first.
    */
-  public async startScreenShare (): Promise<void> {
+  public async startScreenShare (): Promise<{ conversationId: string }> {
     if (this.isGuest) {
-      await this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
+      return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
@@ -218,37 +236,154 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    * Start a video conference. Not supported for guests.
    *  `initialize()` must be called first.
    */
-  public async startVideoConference (roomJid: string): Promise<void> {
+  public async startVideoConference (roomJid: string): Promise<{ conversationId: string }> {
     if (!this.isGuest) {
-      await this.sessionManager.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
+      return this.sessionManager.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }
   }
 
-  public async createMedia (opts: { video?: boolean, audio?: boolean }): Promise<MediaStream> {
-    if (!opts || (!opts.video && !opts.audio)) {
+  /**
+   * Create media with video and/or audio
+   *  `{ video?: boolean | string, audio: boolean | string }`
+   *  `true` will use the sdk default device id (or system default if no sdk default)
+   *  `string` (for deviceId) will attempt to use that deviceId and fallback to sdk default
+   * @param opts video and/or audio default device or deviceId
+   */
+  public async createMedia (opts: IMediaRequestOptions): Promise<MediaStream> {
+    if (!opts || (
+      (opts.video === undefined || opts.video === false) &&
+      (opts.audio === undefined || opts.audio === false)
+    )) {
       throwSdkError.call(this, SdkErrorTypes.invalid_options, 'createMedia must be called with at least one media type request');
     }
 
-    return startMedia(opts);
+    return startMedia(this, opts);
   }
 
+  /**
+   * Creates a media stream from the screen (this will prompt for user screen selection)
+   */
   public getDisplayMedia (): Promise<MediaStream> {
     return startDisplayMedia();
   }
 
   /**
-   * Mutes/Unmutes video/camera for a session and updates the conversation accordingly. Will fail if the session is not found.
-   * Incoming video is unaffected
+   * Update the output device
+   *
+   *  NOTES:
+   *    - This will attempt to update all active sessions
+   *    - This does _not_ update the sdk `defaultOutputDeviceId`
+   * @param deviceId `deviceId` for audio output, `true` for sdk default output, or `null` for system default
+   */
+  public updateOutputDevice (deviceId: string | true | null): Promise<void> {
+    return this.sessionManager.updateOutputDeviceForAllSessions(deviceId);
+  }
+
+  /**
+   * Update outgoing media for a session
+   *  - `sessionId` _or_ `session` is required to find the session to update
+   *  - `stream`: if a stream is passed in, the session media will be
+   *    updated to use the media on the stream. This supercedes deviceId(s)
+   *  - `videoDeviceId` & `audioDeviceId` (superceded by `stream`)
+   *    - `undefined`: the sdk will not touch the `video|audio` media
+   *    - `null`: the sdk will update the `video|audio` media to system default
+   *    - `string`: the sdk will attempt to update the `video|audio` media
+   *        to the passed in deviceId
+   *
+   * @param updateOptions device(s) to update
+   */
+  public updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void> {
+    if (!updateOptions ||
+      (!updateOptions.stream && !updateOptions.videoDeviceId && !updateOptions.audioDeviceId)) {
+      throwSdkError.call(this, SdkErrorTypes.invalid_options, 'updateOutgoingMedia must be called with a MediaStream, a videoDeviceId, or an audioDeviceId');
+    }
+    return this.sessionManager.updateOutgoingMedia(updateOptions);
+  }
+
+  /**
+   * Update the default device(s) for the sdk.
+   *  Pass in the following:
+   *  - `string`: sdk will update to the deviceId
+   *  - `null`: sdk will update to system default device (`outputDeviceId` cannot be `null`)
+   *  - `undefined`: sdk will not update that media deviceId
+   *
+   * If `updateActiveSessions` is `true`, any active sessions will
+   *  have their media devices updated.
+   * Else, only the sdk defaults will be updated and active sessions
+   *  will not be touched.
+   *
+   * NOTE: `outputDeviceId` _must_ be a `string` or `undefined` -
+   *  system default is not supported for output devices
+   *
+   * @param options default device(s) to update
+   */
+  public async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
+    const updateVideo = options.videoDeviceId !== undefined;
+    const updateAudio = options.audioDeviceId !== undefined;
+    const updateOutput = options.outputDeviceId !== undefined;
+
+    if (updateVideo) {
+      log.call(this, LogLevels.info, 'Updating defaultVideoDeviceId', { defaultVideoDeviceId: options.videoDeviceId });
+      this._config.defaultVideoDeviceId = options.videoDeviceId;
+    }
+
+    if (updateAudio) {
+      log.call(this, LogLevels.info, 'Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
+      this._config.defaultAudioDeviceId = options.audioDeviceId;
+    }
+
+    if (updateOutput) {
+      log.call(this, LogLevels.info, 'Updating defaultOutputDeviceId', { defaultOutputDeviceId: options.outputDeviceId });
+      this._config.defaultOutputDeviceId = options.outputDeviceId;
+    }
+
+    if (typeof options.updateActiveSessions === 'boolean' && options.updateActiveSessions) {
+      const promises = [];
+      log.call(this, LogLevels.info, 'Updating devices for all active session', { defaultOutputDeviceId: options.outputDeviceId });
+
+      if (updateVideo || updateAudio) {
+        const opts = {
+          videoDeviceId: updateVideo ? this._config.defaultVideoDeviceId : undefined,
+          audioDeviceId: updateAudio ? this._config.defaultAudioDeviceId : undefined
+        };
+
+        promises.push(
+          this.sessionManager.updateOutgoingMediaForAllSessions(opts)
+        );
+      }
+
+      if (updateOutput) {
+        promises.push(
+          this.sessionManager.updateOutputDeviceForAllSessions(this._config.defaultOutputDeviceId)
+        );
+      }
+
+      return Promise.all(promises);
+    }
+  }
+
+  /**
+   * Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
+   * Will fail if the session is not found.
+   * Incoming video is unaffected.
+   *
+   * NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
+   *  attempt to use the sdk `defaultVideoDeviceId` as the device
    */
   public async setVideoMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setVideoMute(muteOptions);
   }
 
   /**
-   * Mutes/Unmutes audio/mic for a session and updates the conversation accordingly. Will fail if the session is not found.
-   * Incoming audio is unaffected
+   * Mutes/Unmutes audio/mic for a session and updates the conversation accordingly.
+   * Will fail if the session is not found.
+   * Incoming audio is unaffected.
+   *
+   * NOTE: if no `unmuteDeviceId` is provided when unmuting _AND_ there is no active
+   *  audio stream, it will unmute and attempt to use the sdk `defaultAudioDeviceId`
+   *  at the device
    */
   public async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setAudioMute(muteOptions);

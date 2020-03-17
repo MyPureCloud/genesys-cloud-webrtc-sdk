@@ -1,6 +1,8 @@
 body {
   font-family: 'arial';
   font-size: 14px;
+  display: flex;
+  flex-direction: column;
 }
 
 .control-link {
@@ -39,8 +41,13 @@ body {
   visibility: hidden;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 .app-content .top {
   display: flex;
+  flex-wrap: wrap;
   flex-direction: row;
   justify-content: space-between;
 }
@@ -51,6 +58,11 @@ body {
 
 #video-controls {
   display: flex;
+}
+
+.log-output {
+  min-width: 600px;
+  max-width: 600px;
 }
 
 .log-data {
@@ -77,7 +89,14 @@ body {
 }
 
 .footer {
-  position: absolute;
-  bottom: 10px;
-  font-size: 12px;
+  margin: 24px;
+}
+
+video {
+  max-height: 600px;
+  width: auto;
+}
+
+.fs-med {
+  font-size: medium;
 }

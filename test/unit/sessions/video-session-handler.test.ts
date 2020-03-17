@@ -2,12 +2,13 @@ import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../..
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes, CommunicationStates } from '../../../src/types/enums';
+import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
-import { IConversationUpdate, IParticipantsUpdate, IJingleSession } from '../../../src/types/interfaces';
+import { IConversationUpdate, IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
 import nock = require('nock');
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
+import uuid = require('uuid');
 
 let handler: VideoSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
@@ -33,6 +34,69 @@ describe('shouldHandleSessionByJid', () => {
     jest.spyOn(utils, 'isVideoJid').mockReturnValueOnce(false).mockReturnValueOnce(true);
     expect(handler.shouldHandleSessionByJid('sdlkf')).toBeFalsy();
     expect(handler.shouldHandleSessionByJid('sdlfk')).toBeTruthy();
+  });
+});
+
+describe('findLocalParticipantInConversationUpdate', () => {
+  it('should return null if not found', () => {
+    expect(handler.findLocalParticipantInConversationUpdate({ id: '1231', participants: [] })).toBe(null);
+  });
+
+  it('should return the user', () => {
+    const userId = '444kjskdk';
+    mockSdk._personDetails = { id: userId } as any;
+    const participant1 = {
+      id: '7b809e10-fb79-4420-9d5f-69d232ddf490',
+      userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf',
+      purpose: 'user',
+      videos: [
+        {
+          state: CommunicationStates.connected,
+          id: '5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5',
+          context: '5d1130ff978496186c5ce304@conference.test-valve-1ym37mj1kao.orgspan.com',
+          audioMuted: false,
+          videoMuted: true,
+          sharingScreen: false,
+          peerCount: 0
+        }
+      ]
+    };
+
+    const local = {
+      id: '7sdffs-4420-9d5f-69d232ddf490',
+      userId,
+      purpose: 'user',
+      videos: [
+        {
+          state: CommunicationStates.connected,
+          id: '5e2bf9b855125-b89b-756b6bd0b3d5',
+          context: '5d1130ff978496186c5ce304@conference.test-valve-1ym37mj1kao.orgspan.com',
+          audioMuted: false,
+          videoMuted: true,
+          sharingScreen: false,
+          peerCount: 0
+        }
+      ]
+    };
+
+    const conversationUpdate = {
+      id: 'ff5a3ba2-373b-42c7-912a-5309a2656095',
+      participants: [participant1, local]
+    };
+
+    const expected = {
+      address: null,
+      confined: null,
+      direction: null,
+      id: local.id,
+      state: local.videos[0].state,
+      purpose: local.purpose,
+      userId: local.userId,
+      muted: local.videos[0].audioMuted,
+      videoMuted: local.videos[0].videoMuted
+    };
+
+    expect(handler.findLocalParticipantInConversationUpdate(conversationUpdate)).toEqual(expected);
   });
 });
 
@@ -62,6 +126,21 @@ describe('handleConversationUpdate', () => {
       id: 'ff5a3ba2-373b-42c7-912a-5309a2656095',
       participants: [participant1]
     };
+
+    jest.spyOn(handler, 'findLocalParticipantInConversationUpdate').mockReturnValue(null);
+  });
+
+  it('should set the localParticipant on the session', () => {
+    const localParticipant = {} as any;
+    (handler.findLocalParticipantInConversationUpdate as jest.Mock).mockReturnValue(localParticipant);
+
+    const session = {
+      emit: jest.fn()
+    };
+
+    handler.handleConversationUpdate(session as any, conversationUpdate);
+
+    expect((session as any).pcParticipant).toBe(localParticipant);
   });
 
   it('activeParticipants should only include participants with video communications', () => {
@@ -283,7 +362,7 @@ describe('startSession', () => {
       }
     } as any;
 
-    jest.spyOn(utils, 'requestApi').mockResolvedValue({});
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ body: 'sldk' });
     await handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
 
     const expected = JSON.stringify({
@@ -372,7 +451,7 @@ describe('handleSessionInit', () => {
 describe('acceptSession', () => {
   let parentHandlerSpy: jest.SpyInstance<Promise<any>>;
   let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
-  let attachIncomingTrackToElementSpy: jest.SpyInstance<void>;;
+  let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLAudioElement>;
   let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
   let initialMutesSpy: jest.SpyInstance<void>;
   let session: IJingleSession;
@@ -382,7 +461,7 @@ describe('acceptSession', () => {
     media = new MockStream() as any;
     parentHandlerSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
     addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
-    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue(null);
+    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue({} as HTMLMediaElement);
     startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(media);
     initialMutesSpy = jest.spyOn(handler, 'setInitialMuteStates').mockReturnValue();
     session = new MockSession() as any;
@@ -404,10 +483,13 @@ describe('acceptSession', () => {
     const incomingTrack = {} as any;
     session.tracks = [incomingTrack];
 
+    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+
     await handler.acceptSession(session, { id: session.id });
 
     expect(parentHandlerSpy).toHaveBeenCalled();
     expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
+    expect(session._outputAudioElement).toBe(audio);
   });
 
   it('should use provided stream and elements', async () => {
@@ -451,6 +533,27 @@ describe('acceptSession', () => {
     const audio = document.createElement('audio');
     const video = document.createElement('video');
 
+    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
+    expect(parentHandlerSpy).toHaveBeenCalled();
+    expect(startMediaSpy).toHaveBeenCalled();
+
+    const incomingTrack = {} as any;
+
+    session.emit('peerTrackAdded', session, incomingTrack);
+
+    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
+    expect(session._outputAudioElement).toBe(audio);
+  });
+
+  it('should not attach the _outputAudioElement if it is not of type HTMLAudioElement', async () => {
+    const audio = document.createElement('audio');
+    const video = document.createElement('video');
+
+    attachIncomingTrackToElementSpy.mockReturnValue(video);
+
     await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
     expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
     expect(parentHandlerSpy).toHaveBeenCalled();
@@ -460,6 +563,7 @@ describe('acceptSession', () => {
     session.emit('peerTrackAdded', session, incomingTrack);
 
     expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
+    expect(session._outputAudioElement).toBe(undefined);
   });
 });
 
@@ -733,7 +837,26 @@ describe('setVideoMute', () => {
 
     await handler.setVideoMute(session, { id: session.id, mute: false });
 
-    expect(spy).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(mockSdk, { video: true });
+    expect(session._outboundStream.addTrack).toHaveBeenCalledWith(stream.getTracks()[0]);
+    expect(session.unmute).toHaveBeenCalledWith(userId, 'video');
+    expect(session.mute).not.toHaveBeenCalled();
+    expect(session.videoMuted).toBeFalsy();
+  });
+
+  it('unmute: should use unmuteDeviceId to request media', async () => {
+    const unmuteDeviceId = 'device-id';
+    const stream = new MockStream();
+    const spy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(stream as any);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
+
+    session._outboundStream = {
+      addTrack: jest.fn()
+    } as any;
+
+    await handler.setVideoMute(session, { id: session.id, mute: false, unmuteDeviceId });
+
+    expect(spy).toHaveBeenCalledWith(mockSdk, { video: unmuteDeviceId });
     expect(session._outboundStream.addTrack).toHaveBeenCalledWith(stream.getTracks()[0]);
     expect(session.unmute).toHaveBeenCalledWith(userId, 'video');
     expect(session.mute).not.toHaveBeenCalled();
@@ -800,8 +923,25 @@ describe('setAudioMute', () => {
 
     await handler.setAudioMute(session, { id: session.id, mute: false });
 
-    expect(mediaUtils.startMedia).toHaveBeenCalled();
+    expect(mediaUtils.startMedia).toHaveBeenCalledWith(mockSdk, { audio: true });
     expect(handler.addMediaToSession).toHaveBeenCalledWith(session, media, false);
+    expect(session.unmute).toHaveBeenCalledWith(userId, 'audio');
+    expect(session.audioMuted).toBeFalsy();
+  });
+
+  it('should create media with passed in unmuteDeviceId when unmuting if audio does not exist', async () => {
+    const unmuteDeviceId = 'device-id';
+
+    jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([] as any);
+    const media = {} as any;
+    jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(media);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
+
+    await handler.setAudioMute(session, { id: session.id, mute: false, unmuteDeviceId });
+
+    expect(mediaUtils.startMedia).toHaveBeenCalledWith(mockSdk, { audio: unmuteDeviceId });
+    expect(handler.addMediaToSession).toHaveBeenCalledWith(session, media, false);
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: unmuteDeviceId });
     expect(session.unmute).toHaveBeenCalledWith(userId, 'audio');
     expect(session.audioMuted).toBeFalsy();
   });
@@ -872,14 +1012,11 @@ describe('startScreenShare', () => {
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStart).toHaveBeenCalled();
   });
 
-  it('should log and error if screen share failed to start', async () => {
+  it('should throw if screen share failed to start', async () => {
     const error = new Error('fake');
     displayMediaSpy.mockRejectedValue(error);
-    const logSpy = jest.spyOn(mockSdk.logger, 'info');
 
-    await expect(handler.startScreenShare(session)).rejects.toThrowError(/fake/);
-
-    expect(logSpy).not.toHaveBeenCalled();
+    await expect(handler.startScreenShare(session)).rejects.toThrowError(/Failed to start screen share/);
   });
 
   it('should log message if rejected and no error', async () => {
@@ -888,7 +1025,7 @@ describe('startScreenShare', () => {
 
     await handler.startScreenShare(session);
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), undefined);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), { conversationId: session.conversationId });
   });
 });
 
@@ -969,5 +1106,78 @@ describe('attachIncomingTrackToElement', () => {
     expect(audio.srcObject).toBeUndefined();
     expect(video.autoplay).toBeTruthy();
     expect(video.muted).toBeTruthy();
+  });
+});
+
+describe('pinParticipantVideo', () => {
+  let videoMuteSpy;
+  let removeMediaSpy;
+  let session;
+  let localParticipant: IConversationParticipant;
+
+  beforeEach(() => {
+    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockResolvedValue();
+    removeMediaSpy = jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue();
+    session = new MockSession();
+    localParticipant = {
+      address: null,
+      confined: null,
+      direction: null,
+      id: uuid(),
+      state: CommunicationStates.connected,
+      purpose: 'user',
+      userId: uuid(),
+      muted: false,
+      videoMuted: false
+    };
+  });
+
+  it('should throw if no local participant', async () => {
+    await expect(handler.pinParticipantVideo(session, '123')).rejects.toThrowError(/Unable to pin participant video/);
+  });
+
+  it('should throw if request fails', async () => {
+    const errorSpy = jest.spyOn(utils, 'throwSdkError');
+    const fakeErr = { message: 'someError' };
+    jest.spyOn(utils, 'requestApi').mockRejectedValue(fakeErr);
+
+    const eventSpy = jest.fn();
+    session.on('pinnedParticipant', eventSpy);
+    session.pcParticipant = { id: 'fake' };
+    const targetParticipcant = '123jid';
+    await expect(handler.pinParticipantVideo(session, targetParticipcant)).rejects.toThrowError();
+
+    expect(eventSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(SdkErrorTypes.generic, 'Request to pin video failed', { conversationId: session.conversationId, error: fakeErr });
+  });
+
+  it('should pin participant', async () => {
+    const targetParticipcant = '123jid';
+    session.pcParticipant = localParticipant;
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({});
+    const eventSpy = jest.fn();
+    session.on('pinnedParticipant', eventSpy);
+    await handler.pinParticipantVideo(session, targetParticipcant);
+
+    const expectedParams = {
+      data: JSON.stringify({ targetParticipantId: targetParticipcant, streamType: 'video' }),
+      method: 'post'
+    };
+    expect(utils.requestApi).toHaveBeenCalledWith(expect.anything(), expectedParams);
+    expect(eventSpy).toHaveBeenCalledWith({ participantId: targetParticipcant });
+  });
+
+  it('should unpin participant', async () => {
+    session.pcParticipant = localParticipant;
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({});
+    const eventSpy = jest.fn();
+    session.on('pinnedParticipant', eventSpy);
+    await handler.pinParticipantVideo(session, null);
+
+    const expectedParams = {
+      method: 'delete'
+    };
+    expect(utils.requestApi).toHaveBeenCalledWith(expect.anything(), expectedParams);
+    expect(eventSpy).toHaveBeenCalledWith({ participantId: null });
   });
 });

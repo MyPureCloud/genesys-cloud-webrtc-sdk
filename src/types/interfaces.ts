@@ -2,6 +2,8 @@ import { LogLevels, SessionTypes, CommunicationStates } from './enums';
 import WildEmitter from 'wildemitter';
 import WebrtcStatsGatherer from 'webrtc-stats-gatherer';
 
+export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
+
 export interface ISdkConstructOptions {
   environment: string;
   accessToken?: string;
@@ -17,6 +19,9 @@ export interface ISdkConstructOptions {
   defaultAudioElement?: HTMLAudioElement;
   defaultAudioStream?: MediaStream;
   defaultVideoElement?: HTMLVideoElement;
+  defaultVideoDeviceId?: string | null;
+  defaultAudioDeviceId?: string | null;
+  defaultOutputDeviceId?: string | null;
 }
 
 /**
@@ -32,10 +37,62 @@ export interface ISdkConfig {
   defaultAudioElement?: HTMLAudioElement;
   defaultAudioStream?: MediaStream;
   defaultVideoElement?: HTMLVideoElement;
+  defaultVideoDeviceId?: string | null;
+  defaultAudioDeviceId?: string | null;
+  defaultOutputDeviceId?: string | null;
   iceTransportPolicy?: RTCIceTransportPolicy;
   logLevel?: LogLevels;
   optOutOfTelemetry?: boolean;
   customIceServersConfig?: RTCConfiguration;
+}
+
+export interface IMediaRequestOptions {
+  /**
+   * - `string` to request media from device
+   * - `true` to request media from sdk default device
+   * - `null` to request media from system default device
+   * - `false` | `undefined` to not request/update this type of media
+   */
+  video?: boolean | string | null;
+  /**
+   * - `string` to request media from device
+   * - `true` to request media from sdk default device
+   * - `null` to request media from system default device
+   * - `false` | `undefined` to not request/update this type of media
+   */
+  audio?: boolean | string | null;
+  /**
+   * This is just to be able to associate logs to a specific session. This is primarily for internal use an not generally needed.
+   */
+  session?: IJingleSession;
+}
+
+export interface IMediaDeviceIds {
+  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
+  videoDeviceId?: string | null;
+  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
+  audioDeviceId?: string | null;
+  /** `deviceId` for audio output, `true` for sdk default output, or `null` for system default */
+  outputDeviceId?: string | null;
+}
+
+export interface IEnumeratedDevices {
+  videoDeviceIds: string[];
+  audioDeviceIds: string[];
+  outputDeviceIds: string[];
+}
+
+export interface IUpdateOutgoingMedia {
+  /** session id (this _OR_ `session` is required) */
+  sessionId?: string;
+  /** session (this _OR_ `sessionId` is required) */
+  session?: IJingleSession;
+  /* stream with desired media */
+  stream?: MediaStream;
+  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
+  videoDeviceId?: string | boolean | null;
+  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
+  audioDeviceId?: string | boolean | null;
 }
 
 /**
@@ -83,6 +140,8 @@ export interface IAcceptSessionRequest {
   mediaStream?: MediaStream;
   audioElement?: HTMLAudioElement;
   videoElement?: HTMLVideoElement;
+  videoDeviceId?: string;
+  audioDeviceId?: string;
 }
 
 export interface IEndSessionRequest {
@@ -100,8 +159,12 @@ export interface IStartSessionParams {
  * mute: update the conversation's mute status to match this value
  */
 export interface ISessionMuteRequest {
+  /** session id */
   id: string;
+  /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
+  /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
+  unmuteDeviceId?: string | boolean | null;
 }
 
 /**
@@ -126,6 +189,7 @@ export interface IJingleSession extends WildEmitter {
   sid: string;
   peerID: string;
   conversationId: string;
+  active: boolean;
   sessionType: SessionTypes;
   streams: MediaStream[];
   tracks: MediaStreamTrack[];
@@ -134,6 +198,7 @@ export interface IJingleSession extends WildEmitter {
   addTrack: (track: MediaStreamTrack) => Promise<void>;
   addStream: (stream: MediaStream) => Promise<void>;
   removeTrack: (track: MediaStreamTrack) => Promise<void>;
+  replaceTrack: (newTrack: MediaStreamTrack, oldTrack?: MediaStreamTrack) => Promise<void>;
   mute: (userId: string, mediaType: 'video' | 'audio') => void;
   unmute: (userId: string, mediaType: 'video' | 'audio') => void;
   pc: {
@@ -146,9 +211,11 @@ export interface IJingleSession extends WildEmitter {
   audioMuted?: boolean;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;
+  pinParticipantVideo?: (participantId: string) => Promise<void>;
   _resurrectVideoOnScreenShareEnd?: boolean;
   _outboundStream?: MediaStream;
   _screenShareStream?: MediaStream;
+  _outputAudioElement?: HTMLAudioElement;
   _statsGatherer?: WebrtcStatsGatherer;
   _lastParticipantsUpdate?: IParticipantsUpdate;
   _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
@@ -164,12 +231,12 @@ export interface IConversationUpdateEvent {
 
 export interface IConversationUpdate {
   id: string;
-  participants: [
+  participants: Array<
     {
       id: string;
       purpose: string;
       userId: string;
-      videos: [
+      videos: Array<
         {
           context: string,
           audioMuted: boolean,
@@ -179,9 +246,9 @@ export interface IConversationUpdate {
           peerCount: number,
           sharingScreen: boolean
         }
-      ]
+      >
     }
-  ];
+  >;
 }
 
 export interface IParticipantsUpdate {

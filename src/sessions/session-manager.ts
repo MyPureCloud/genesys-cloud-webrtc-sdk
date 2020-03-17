@@ -3,10 +3,21 @@ import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import { IPendingSession, ISessionInfo, IEndSessionRequest, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IConversationUpdateEvent } from '../types/interfaces';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
+import { getValidDeviceId } from '../media-utils';
+import {
+  IPendingSession,
+  ISessionInfo,
+  IEndSessionRequest,
+  IStartSessionParams,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IJingleSession,
+  IConversationUpdateEvent,
+  IUpdateOutgoingMedia
+} from '../types/interfaces';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -68,6 +79,11 @@ export class SessionManager {
     return session;
   }
 
+  getAllActiveSessions (): IJingleSession[] {
+    return Object.values<IJingleSession>(this.jingle.sessions)
+      .filter((session: IJingleSession) => session.active);
+  }
+
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
@@ -89,10 +105,53 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams) {
+  async startSession (startSessionParams: IStartSessionParams): Promise<any> {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     return handler.startSession(startSessionParams);
+  }
+
+  /**
+   * Update the outgoing media for a session.
+   *
+   * @param options for updating outgoing media
+   */
+  async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
+    const session = options.session || this.getSession({ id: options.sessionId });
+    const handler = this.getSessionHandler({ jingleSession: session });
+
+    return handler.updateOutgoingMedia(session, options);
+  }
+
+  async updateOutgoingMediaForAllSessions (options: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
+    const { videoDeviceId, audioDeviceId } = options;
+    const sessions = this.getAllActiveSessions();
+
+    this.log(LogLevels.info, 'Updating outgoing deviceId(s) for all active sessions', { sessions: sessions.map(s => s.id), videoDeviceId, audioDeviceId });
+
+    const promises = sessions.map(session => {
+      return this.updateOutgoingMedia({ session, videoDeviceId, audioDeviceId });
+    });
+    return Promise.all(promises);
+  }
+
+  async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
+    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId);
+
+    if (!_outputDeviceId) {
+      this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
+      return;
+    }
+
+    const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
+    this.log(LogLevels.info, 'Updating output deviceId for all active sessions', { sessions: sessions.map(s => s.id), outputDeviceId: _outputDeviceId });
+
+    const promises = sessions.map(session => {
+      const handler = this.getSessionHandler({ jingleSession: session });
+      return handler.updateOutputDevice(session, _outputDeviceId);
+    });
+
+    return Promise.all(promises);
   }
 
   /**

@@ -1,4 +1,16 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, random, getMockConversation, PARTICIPANT_ID, USER_ID, mockGetConversationApi, mockPatchConversationApi, createNock } from '../../test-utils';
+import {
+  SimpleMockSdk,
+  MockSession,
+  createPendingSession,
+  MockStream,
+  random,
+  getMockConversation,
+  PARTICIPANT_ID,
+  USER_ID,
+  mockGetConversationApi,
+  mockPatchConversationApi,
+  createNock
+} from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
@@ -139,7 +151,7 @@ describe('acceptSesion', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).not.toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, mockOutgoingStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, element);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, element, session.conversationId);
   });
 
   it('should add media using default stream and element then accept session', async () => {
@@ -167,7 +179,7 @@ describe('acceptSesion', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).not.toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, defaultStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, defaultElement);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, defaultElement, session.conversationId);
   });
 
   it('should add media using created stream accept session', async () => {
@@ -192,7 +204,7 @@ describe('acceptSesion', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, createdStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, undefined);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, undefined, session.conversationId);
   });
 
   it('should wait to attachAudioMedia until session has a stream', async () => {
@@ -215,7 +227,7 @@ describe('acceptSesion', () => {
     const mockIncomingStream = new MockStream();
     session.emit('peerStreamAdded', session, mockIncomingStream);
 
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, element);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, element, session.conversationId);
   });
 });
 

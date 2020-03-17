@@ -1,10 +1,12 @@
 import WebSocket from 'ws';
-import nock, { NockBack } from 'nock';
+import nock from 'nock';
 import WildEmitter from 'wildemitter';
 import { PureCloudWebrtcSdk } from '../src/client';
 import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
 import crypto from 'crypto';
 import { SessionTypes, LogLevels } from '../src/types/enums';
+import fs from 'fs';
+import path from 'path';
 
 declare var global: {
   window: any,
@@ -54,30 +56,73 @@ export class SimpleMockSdk extends WildEmitter {
       refreshIceServers: jest.fn()
     }
   };
+  setAudioMute = jest.fn();
+  updateOutgoingMedia = jest.fn();
+}
+
+class MockSender {
+  track: MockTrack;
+  constructor (track: MockTrack) {
+    this.track = track;
+  }
+  async replaceTrack (track?: MockTrack): Promise<void> {
+    this.track = track;
+  }
+}
+
+class MockPC extends WildEmitter {
+  _mockSession: MockSession;
+  _senders: MockSender[] = [];
+  pc: any = {};
+  constructor (session: MockSession) {
+    super();
+    // this._mockSession = session;
+  }
+  getSenders (): MockSender[] {
+    return this._senders;
+  }
+
+  _addSender (track: MockTrack) {
+    this._senders.push(new MockSender(track));
+  }
 }
 
 class MockSession extends WildEmitter {
-  streams: any[] = [];
-  tracks: any[] = [];
+  streams: MockStream[] = [];
+  tracks: MockTrack[] = [];
   id: any;
   sid = random().toString();
   conversationId = random().toString();
-  pc = new WildEmitter();
+  pc = new MockPC(this);
   _statsGatherer: any;
   _outboundStream: any;
+  _screenShareStream: MockStream;
+  _outputAudioElement: any;
   accept = jest.fn();
   addStream = jest.fn();
   end = jest.fn();
   mute = jest.fn();
   unmute = jest.fn();
+  videoMuted: boolean = false;
+  audioMuted: boolean = false;
 
   constructor () {
     super();
     this.id = this.sid;
   }
+  addTrack (track: MockTrack) {
+    // this.tracks.push(track);
+    this.pc._addSender(track);
+  }
+  getTracks (): MockTrack[] {
+    return this.pc.getSenders().map(s => s.track).filter(t => !!t);
+  }
 }
 
 class MockTrack {
+  constructor (kind: 'video' | 'audio' = 'video') {
+    this.kind = kind;
+  }
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
   id = random();
@@ -89,14 +134,37 @@ class MockTrack {
 }
 
 class MockStream {
+  constructor (constraints?: { video?: boolean, audio?: boolean }) {
+    if (!constraints) {
+      this._tracks.push(new MockTrack('video'));
+    } else {
+      if (constraints.video) this._tracks.push(new MockTrack('video'));
+      if (constraints.audio) this._tracks.push(new MockTrack('audio'));
+    }
+  }
   id = random();
-  _tracks: MockTrack[] = [ new MockTrack() ];
+  _tracks: MockTrack[] = [];
   getVideoTracks () {
     return this.getTracks().filter((t) => t.kind === 'video');
   }
   getTracks () {
     return this._tracks;
   }
+
+  addTrack (track) {
+    this._tracks.push(track);
+  }
+
+  removeTrack (track: MockTrack): void {
+    const index = this._tracks.findIndex(t => t.id === track.id);
+    this._tracks.splice(index, 1);
+  }
+}
+
+export function addTrackToMockStream (stream: MockStream, trackKind: 'video' | 'audio'): string {
+  const mockTrack = new MockTrack(trackKind);
+  stream._tracks.push(mockTrack);
+  return mockTrack.id;
 }
 
 interface MockApiOptions {
@@ -114,6 +182,7 @@ interface MockApiOptions {
   guestSdk?: boolean;
   withCustomerData?: boolean;
   conversation?: MockConversation;
+  withIceRefresh?: boolean;
 }
 
 interface MockSingleApiOptions {
@@ -197,6 +266,10 @@ const MOCK_CONVERSATION: MockConversation = {
   ]
 };
 
+export function wait (milliseconds: number = 10): Promise<void> {
+  return new Promise(res => setTimeout(res, milliseconds));
+}
+
 export function createSessionInfo (): ISessionInfo {
   return {
     autoAnswer: true,
@@ -227,7 +300,7 @@ export function createPendingSession (type: SessionTypes = SessionTypes.softphon
   return Object.assign(base, specifics);
 }
 
-function closeWebSocketServer (): Promise<void> {
+export function closeWebSocketServer (): Promise<void> {
   if (wss) {
     return new Promise(resolve => {
       wss.clients.forEach(wsClient => wsClient.close());
@@ -315,7 +388,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     withLogs,
     guestSdk,
     withCustomerData,
-    conversation
+    conversation,
+    withIceRefresh
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
@@ -381,6 +455,11 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
 
   const sdk = new PureCloudWebrtcSdk(sdkOpts);
 
+  /* if we don't need to test refreshing the ice servers, then mock it */
+  if (!withIceRefresh) {
+    sdk._refreshIceServers = jest.fn().mockResolvedValue([]);
+  }
+
   let sendLogs: nock.Scope;
   if (withLogs) {
     const logsApi = nock('https://api.mypurecloud.com').persist();
@@ -405,13 +484,44 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   });
   let websocket: WebSocket;
 
+  let openSockets = 0;
+  const hash = random().toString().substr(0, 4);
+
+  const log = (direction: 'IN' | 'OUT', message: string) => {
+    /* this function can be useful to debug WS messages */
+    return;
+    const fileName = path.resolve('test/unit', './test-log.json');
+
+    if (!fs.existsSync(fileName)) {
+      fs.writeFileSync(fileName, '{}');
+    }
+
+    const file = fs.readFileSync(fileName);
+    const contents = file.toString();
+
+    let json = JSON.parse(contents || '{}');
+    let key = openSockets + '-' + hash;
+
+    if (direction === 'IN' && message.startsWith('<open')) {
+      key = ++openSockets + '-' + hash;
+      json[key] = [];
+    }
+
+    json[key].push({ direction, message });
+    fs.writeFileSync(fileName, JSON.stringify(json));
+  };
+
   wss.on('connection', function (ws: WebSocket & { __authSent: boolean }) {
     websocket = ws;
     ws.on('message', function (msg: string) {
+      log('IN', msg);
       // console.error('⬆️', msg);
       const send = function (r) {
         // console.error('⬇️', r);
-        setTimeout(function () { ws.send(r); }, 15);
+        setTimeout(function () {
+          log('OUT', r);
+          ws.send(r);
+        }, 15);
       };
       if (msg.indexOf('<open') === 0) {
         send('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" xmlns:stream="http://etherx.jabber.org/streams" version="1.0" from="hawk" id="d6f681a3-358c-49df-819f-b231adb3cb97" xml:lang="en"></open>');
@@ -470,7 +580,6 @@ export {
   ws,
   random,
   timeout,
-  closeWebSocketServer,
   getMockConversation,
   USER_ID,
   PARTICIPANT_ID,
