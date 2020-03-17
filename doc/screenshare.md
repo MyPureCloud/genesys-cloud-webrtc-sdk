@@ -9,7 +9,7 @@ WebRTC Screen Share sessions should be automatically accepted by the consuming g
 
 ## API
 
-See the full list of the [APIs](index.md#api), [methods](index.md#methods), and [events](index.md#events).
+See the full list of the [APIs], [methods], and [events].
 
 ## Usage
 
@@ -34,3 +34,7 @@ sdk.initialize({ securityCode: 'one-time-security-code' })
     // handle errors (connection, media denied, etc)
   });
 ```
+
+[APIs]: index.md#api
+[methods]: index.md#methods
+[events]: index.md#events

@@ -7,11 +7,11 @@ a user must join manually.
 
 ## API
 
-See the full list of the [APIs](index.md#api), [methods](index.md#methods), and [events](index.md#events).
+See the full list of the [APIs], [methods], and [events].
 
 ## Usage
 
-*Note: video conferencing does not support guest users.*
+> *Note: video conferencing does not support guest users.*
 
 Once you have an initialized instance of the WebrtcSdk, you can join or create a conference in the following manner:
 
@@ -45,8 +45,9 @@ The most common cases are, but not limited to:
   - Participants joining or leaving the conference
   - Participants muting or unmuting video or audio
   - Participants sharing or unsharing a screen
-```
-IParticipantsUpdate {
+
+``` typescript
+interface IParticipantsUpdate {
   conversationId: string;
   addedParticipants: IParticipantUpdate[];
   removedParticipants: IParticipantUpdate[];
@@ -54,9 +55,9 @@ IParticipantsUpdate {
 }
 
 interface IParticipantUpdate {
-  participantId: string; id corresponding to the participant on the conversation,
+  participantId: string; // id corresponding to the participant on the conversation,
   userId: string,
-  sharingScreen: boolean; whether or not the onScreenParticipant is sharing their screen,
+  sharingScreen: boolean; // whether or not the onScreenParticipant is sharing their screen,
   videoMuted: boolean,
   audioMuted: boolean
 }
@@ -66,9 +67,10 @@ interface IParticipantUpdate {
 `session.on('activeVideoParticipantsUpdate', (IOnScreenParticipantsUpdate) => {})` - This event will happen when
 the server switches who is visible on the screen. This will likely happen every time someone new speaks.
 
-*Note: this user may not be providing video or that video could be muted. It is up to the
-implementing party to show something else such as an avatar or profile picture in such instances.*
-```
+> *Note: this user may not be providing video or that video could be muted. It is up to the
+> implementing party to show something else such as an avatar or profile picture in such instances.*
+
+``` typescript
 interface IOnScreenParticipantsUpdate {
   participantsOnScreen: [
     {
@@ -79,7 +81,8 @@ interface IOnScreenParticipantsUpdate {
 ```
 
 `session.on('speakersUpdate', (ISpeakersUpdate) => {}))` - This event tells who is making noise in the conference.
-```
+
+``` typescript
 interface ISpeakersUpdate {
   speakers: [
     {
@@ -108,3 +111,7 @@ You can pin a participant's video or screenshare which will disable the video sw
 `session.pinParticipantVideo(participantId: string)` - Locks video to the provided video conference participant. If `participantId` is `null`
 or `undefined`, any currently pinned participants will be removed and will switch automatically when speaking. *Note: participantIds can
 be found in the `participantsUpdate` event.*
+
+[APIs]: index.md#api
+[methods]: index.md#methods
+[events]: index.md#events
