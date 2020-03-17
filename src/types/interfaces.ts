@@ -63,6 +63,13 @@ export interface IMediaRequestOptions {
   audio?: boolean | string | null;
 }
 
+export interface IOutgoingMediaDeviceIds {
+  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
+  videoDeviceId?: string | boolean | null;
+  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
+  audioDeviceId?: string | boolean | null;
+}
+
 export interface IMediaDeviceIds {
   /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
   videoDeviceId?: string | null;
@@ -131,13 +138,11 @@ export interface ISessionInfo {
   conversationId: string;
 }
 
-export interface IAcceptSessionRequest {
+export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
   id: string;
   mediaStream?: MediaStream;
   audioElement?: HTMLAudioElement;
   videoElement?: HTMLVideoElement;
-  videoDeviceId?: string;
-  audioDeviceId?: string;
 }
 
 export interface IEndSessionRequest {
@@ -145,7 +150,7 @@ export interface IEndSessionRequest {
   conversationId?: string;
 }
 
-export interface IStartSessionParams {
+export interface IStartSessionParams extends IOutgoingMediaDeviceIds {
   sessionType: SessionTypes;
   jid?: string;
 }

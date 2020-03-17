@@ -395,7 +395,7 @@ describe('getEnumeratedDevices()', () => {
     devices = await getEnumeratedDevices(mockSdk);
 
     expect(devices).toEqual(expectedEnumeratedDevices);
-    expect(mockSdk.logger.debug).toBeCalledWith(expect.stringContaining('Returning cached enumerated devices'), undefined);
+    expect(mockSdk.logger.debug).toBeCalledWith(expect.stringContaining('Returning cached enumerated devices'), { devices: expectedEnumeratedDevices });
     expect(mediaDevices.enumerateDevices).not.toBeCalled();
   });
 
