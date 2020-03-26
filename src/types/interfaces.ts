@@ -226,34 +226,12 @@ export interface IJingleSession extends WildEmitter {
   _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
 }
 
-export interface IConversationUpdateEvent {
+export interface SubscriptionEvent {
   metadata: {
     correlationId: string;
   };
   topicName: string;
-  eventBody: IConversationUpdate;
-}
-
-export interface IConversationUpdate {
-  id: string;
-  participants: Array<
-    {
-      id: string;
-      purpose: string;
-      userId: string;
-      videos: Array<
-        {
-          context: string,
-          audioMuted: boolean,
-          videoMuted: boolean,
-          id: string,
-          state: CommunicationStates,
-          peerCount: number,
-          sharingScreen: boolean
-        }
-      >
-    }
-  >;
+  eventBody: any;
 }
 
 export interface IParticipantsUpdate {

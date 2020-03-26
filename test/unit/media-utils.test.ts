@@ -5,7 +5,6 @@ import { PureCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack } from '../test-utils';
 import browserama from 'browserama';
 import { IEnumeratedDevices } from '../../src/types/interfaces';
-import { getEnumeratedDevices } from '../../src/media-utils';
 import { SdkErrorTypes } from '../../src/types/enums';
 
 const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1' };
@@ -36,7 +35,9 @@ beforeEach(() => {
   mediaDevices = (window.navigator as any).mediaDevices = {
     getDisplayMedia: jest.fn(),
     getUserMedia: jest.fn(),
-    enumerateDevices: jest.fn().mockResolvedValue(mockedDevices)
+    enumerateDevices: jest.fn().mockResolvedValue(mockedDevices),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn()
   };
 });
 
@@ -114,7 +115,7 @@ describe('startMedia()', () => {
     const conversationId = '123Convo';
 
     await mediaUtils.startMedia(mockSdk, { audio: true, session: { conversationId } as any });
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find an audio deviceId'), { conversationId });
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Using the system default audioinput'), { conversationId });
   });
 
   it('should request audio only', async () => {
@@ -180,8 +181,8 @@ describe('startMedia()', () => {
     await mediaUtils.startMedia(mockSdk, { video: videoDeviceId, audio: audioDeviceId });
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find an audio deviceId'), { conversationId: undefined });
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Unable to find a video deviceId'), { conversationId: undefined });
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find requested audioinput'), { deviceId: audioDeviceId, conversationId: undefined });
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find requested videoinput'), { deviceId: videoDeviceId, conversationId: undefined });
 
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
   });
@@ -339,9 +340,11 @@ describe('checkHasTransceiverFunctionality()', () => {
 
 describe('getEnumeratedDevices()', () => {
   const resetEnumeratedDevicesCache = async (devices?: { deviceId: string, kind: string }[]) => {
-    if (window.navigator.mediaDevices.ondevicechange) {
-      window.navigator.mediaDevices.ondevicechange({} as any);
-    }
+    // need to call the devicechange handler to reset the `refreshDevices` property
+    mediaUtils.stopListeningForDeviceChanges();
+    mediaUtils.handleDeviceChange.call(mockSdk);
+
+    jest.resetAllMocks();
     mediaDevices.enumerateDevices.mockResolvedValue(devices || mockedDevices);
   };
 
@@ -357,7 +360,7 @@ describe('getEnumeratedDevices()', () => {
     };
 
     mediaDevices.enumerateDevices = undefined;
-    const devices = await getEnumeratedDevices(mockSdk);
+    const devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
     expect(mockSdk.logger.warn).toBeCalledWith(expect.stringContaining('Unable to enumerate devices'), undefined);
     expect(devices).toEqual(expectedEnumeratedDevices);
@@ -365,17 +368,23 @@ describe('getEnumeratedDevices()', () => {
     mediaDevices.enumerateDevices = jest.fn();
   });
 
-  test('should set ondevicechange callback and fire when devices change', async () => {
-    expect(window.navigator.mediaDevices.ondevicechange).toBeFalsy();
+  it('should set devicechange listener only once', async () => {
+    const addEventListener = window.navigator.mediaDevices.addEventListener;
+    expect(addEventListener).not.toHaveBeenCalled();
 
-    await getEnumeratedDevices(mockSdk);
-    expect(window.navigator.mediaDevices.ondevicechange).toBeTruthy();
+    await mediaUtils.getEnumeratedDevices(mockSdk);
+    expect(addEventListener).toHaveBeenCalled();
 
-    window.navigator.mediaDevices.ondevicechange({} as any);
-    expect(mockSdk.logger.debug).toBeCalledWith(expect.stringContaining('onDeviceChange fired'), undefined);
+    const cb = (addEventListener as jest.Mock).mock.calls[0][1];
+    cb();
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('devices changed'), undefined);
+
+    (addEventListener as jest.Mock).mockReset();
+    await mediaUtils.getEnumeratedDevices(mockSdk);
+    expect(addEventListener).not.toHaveBeenCalled();
   });
 
-  test('should return cached enumeratedDevices if the devices have not changed', async () => {
+  it('should return cached enumeratedDevices if the devices have not changed', async () => {
     const videoDeviceCached = { deviceId: 'cached-video-device', kind: 'videoinput' };
     const audioDeviceCached = { deviceId: 'cached-audio-device', kind: 'audioinput' };
     const outputDeviceCached = { deviceId: 'cached-output-device', kind: 'audiooutput' };
@@ -390,7 +399,7 @@ describe('getEnumeratedDevices()', () => {
     mediaDevices.enumerateDevices.mockResolvedValue([videoDeviceCached, audioDeviceCached, outputDeviceCached]);
 
     // first call will load the cache
-    let devices = await getEnumeratedDevices(mockSdk);
+    let devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
     expect(devices).toEqual(expectedEnumeratedDevices);
     expect(mockSdk.logger.debug).not.toBeCalled();
@@ -399,7 +408,7 @@ describe('getEnumeratedDevices()', () => {
     // second call should use the cached value
     mediaDevices.enumerateDevices.mockReset();
     mediaDevices.enumerateDevices.mockResolvedValue(mockedDevices);
-    devices = await getEnumeratedDevices(mockSdk);
+    devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
     expect(devices).toEqual(expectedEnumeratedDevices);
     expect(mockSdk.logger.debug).toBeCalledWith(expect.stringContaining('Returning cached enumerated devices'), { devices: expectedEnumeratedDevices });
@@ -413,7 +422,7 @@ describe('getEnumeratedDevices()', () => {
       outputDeviceIds: [mockOutputDevice1.deviceId, mockOutputDevice2.deviceId]
     };
 
-    const devices = await getEnumeratedDevices(mockSdk);
+    const devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
     expect(devices).toEqual(expectedEnumeratedDevices);
     expect(mediaDevices.enumerateDevices).toBeCalled();
@@ -423,7 +432,7 @@ describe('getEnumeratedDevices()', () => {
     mediaDevices.enumerateDevices.mockImplementation(() => { throw new Error('Failure'); })
 
     try {
-      const val = await getEnumeratedDevices(mockSdk);
+      const val = await mediaUtils.getEnumeratedDevices(mockSdk);
       console.log({ val });
       fail('it should have thrown');
     } catch (e) {

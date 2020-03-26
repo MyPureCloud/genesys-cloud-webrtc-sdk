@@ -7,6 +7,7 @@ import { throwSdkError } from './utils';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
 export let _hasTransceiverFunctionality: boolean | null = null;
+let isListeningForDeviceChanges = false;
 
 declare var window: {
   navigator: {
@@ -36,28 +37,23 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
 
   // if we are requesting video
   if (opts.video || opts.video === null) {
-    const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video);
+    const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, conversationId);
     if (videoDeviceId) {
-      log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId });
+      log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId, conversationId });
       constraints.video.deviceId = {
         exact: videoDeviceId
       };
-    } else {
-      log.call(sdk, LogLevels.info, 'Unable to find a video deviceId. Using system defaults', { conversationId });
     }
   }
 
   // if we are requesting audio
   if (opts.audio || opts.audio === null) {
-    const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio);
-
+    const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, conversationId);
     if (audioDeviceId) {
-      log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId });
+      log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId });
       constraints.audio.deviceId = {
         exact: audioDeviceId
       };
-    } else {
-      log.call(sdk, LogLevels.info, 'Unable to find an audio deviceId. Using system defaults', { conversationId });
     }
   }
 
@@ -199,6 +195,16 @@ const enumeratedDevices: IEnumeratedDevices = {
   outputDeviceIds: []
 };
 
+export const handleDeviceChange = function (this: PureCloudWebrtcSdk) {
+  log.call(this, LogLevels.debug, 'devices changed');
+  refreshDevices = true;
+};
+
+export const stopListeningForDeviceChanges = function () {
+  isListeningForDeviceChanges = false;
+  navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+};
+
 export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDevices> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
     log.call(sdk, LogLevels.warn, 'Unable to enumerate devices');
@@ -208,11 +214,9 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
     return enumeratedDevices;
   }
 
-  if (!window.navigator.mediaDevices.ondevicechange) {
-    window.navigator.mediaDevices.ondevicechange = () => {
-      log.call(sdk, LogLevels.debug, 'onDeviceChange fired');
-      refreshDevices = true;
-    };
+  if (!isListeningForDeviceChanges) {
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange.bind(sdk));
+    isListeningForDeviceChanges = true;
   }
 
   // if devices haven't changed since last time we called this
@@ -259,7 +263,7 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
  * @param kind desired device kind
  * @param deviceId `deviceId` for specific device, `true` for sdk default device, or `null` for system default
  */
-export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null): Promise<undefined | string> {
+export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null, conversationId?: string): Promise<string> {
   const devices = await getEnumeratedDevices(sdk);
 
   let availableDevices: string[];
@@ -284,23 +288,27 @@ export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDevi
 
   // log if we didn't find the requested deviceId
   if (!foundDeviceId) {
-    log.call(sdk, LogLevels.warn, `Unable to find requested ${kind} deviceId`, { deviceId });
+    if (typeof deviceId === 'string') {
+      log.call(sdk, LogLevels.warn, `Unable to find requested ${kind} deviceId`, { deviceId, conversationId });
+    }
 
     // then try to find the sdk default device (if it is not `null`)
     if (sdkConfigDefault !== null) {
       foundDeviceId = availableDevices.find((d: string) => d === sdkConfigDefault);
       // log if we couldn't find the sdk default device
       if (!foundDeviceId) {
-        log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId });
+        log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, conversationId });
       }
     }
   }
 
-  /* if we are requesting 'audiooutput' and haven't found a device yet,
-    use the first output device in the list as it's the default. */
-  if (!foundDeviceId && kind === 'audiooutput') {
-    foundDeviceId = availableDevices[0];
-    log.call(sdk, LogLevels.info, `Using the system default 'audiooutput' device`, { deviceId: foundDeviceId });
+  if (!foundDeviceId) {
+    log.call(sdk, LogLevels.info, `Using the system default ${kind} device`, { conversationId });
+
+    /* The first device is the default device */
+    if (kind === 'audiooutput') {
+      foundDeviceId = availableDevices[0];
+    }
   }
 
   return foundDeviceId;

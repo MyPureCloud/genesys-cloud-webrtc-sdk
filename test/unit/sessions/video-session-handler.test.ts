@@ -5,10 +5,11 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
-import { IConversationUpdate, IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
+import { IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
 import nock = require('nock');
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
 import uuid = require('uuid');
+import { ConversationUpdate } from '../../../src/types/conversation-update';
 
 let handler: VideoSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
@@ -79,10 +80,10 @@ describe('findLocalParticipantInConversationUpdate', () => {
       ]
     };
 
-    const conversationUpdate = {
+    const conversationUpdate = new ConversationUpdate({
       id: 'ff5a3ba2-373b-42c7-912a-5309a2656095',
       participants: [participant1, local]
-    };
+    });
 
     const expected = {
       address: null,
@@ -101,7 +102,7 @@ describe('findLocalParticipantInConversationUpdate', () => {
 });
 
 describe('handleConversationUpdate', () => {
-  let conversationUpdate: IConversationUpdate;
+  let conversationUpdate: ConversationUpdate;
   let participant1: any;
 
   beforeEach(() => {

@@ -15,9 +15,9 @@ import {
   IAcceptSessionRequest,
   ISessionMuteRequest,
   IJingleSession,
-  IConversationUpdateEvent,
   IUpdateOutgoingMedia
 } from '../types/interfaces';
+import { ConversationUpdate } from '../types/conversation-update';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -45,13 +45,13 @@ export class SessionManager {
     return this.sdk._streamingConnection._webrtcSessions.jingleJs;
   }
 
-  handleConversationUpdate ({ eventBody }: IConversationUpdateEvent) {
+  handleConversationUpdate (update: ConversationUpdate) {
     // only handle a conversation update if we can associate it with a session
     const sessions = Object.values(this.jingle.sessions);
     (sessions as any).forEach((session: IJingleSession) => {
-      if (session.conversationId === eventBody.id) {
+      if (session.conversationId === update.id) {
         const handler = this.getSessionHandler({ sessionType: session.sessionType });
-        handler.handleConversationUpdate(session, eventBody);
+        handler.handleConversationUpdate(session, update);
       }
     });
   }
@@ -138,7 +138,7 @@ export class SessionManager {
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
     const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId);
 
-    if (!_outputDeviceId) {
+    if (_outputDeviceId !== outputDeviceId) {
       this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
       return;
     }
