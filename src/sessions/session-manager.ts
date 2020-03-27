@@ -138,7 +138,7 @@ export class SessionManager {
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
     const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId);
 
-    if (_outputDeviceId !== outputDeviceId) {
+    if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
       this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
       return;
     }
