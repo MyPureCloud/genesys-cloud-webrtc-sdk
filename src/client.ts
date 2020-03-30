@@ -74,6 +74,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
   _reduceLogPayload: boolean;
   _logBuffer: any[];
+  _logBufferSize: number;
   _logTimer: NodeJS.Timeout | null;
   _connected: boolean;
   _streamingConnection: any;

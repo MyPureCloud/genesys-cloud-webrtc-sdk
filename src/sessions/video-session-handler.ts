@@ -1,9 +1,10 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate, IConversationParticipant } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate, IConversationParticipant } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
+import { ConversationUpdate } from '../types/conversation-update';
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -43,7 +44,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return isVideoJid(jid);
   }
 
-  findLocalParticipantInConversationUpdate (conversationUpdate: IConversationUpdate): IConversationParticipant {
+  findLocalParticipantInConversationUpdate (conversationUpdate: ConversationUpdate): IConversationParticipant {
     const participant = conversationUpdate.participants.find((p) => p.userId === this.sdk._personDetails.id);
 
     if (!participant) {
@@ -64,7 +65,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     };
   }
 
-  handleConversationUpdate (session: IJingleSession, conversationUpdate: IConversationUpdate): void {
+  handleConversationUpdate (session: IJingleSession, conversationUpdate: ConversationUpdate): void {
     super.handleConversationUpdate(session, conversationUpdate);
     session.pcParticipant = this.findLocalParticipantInConversationUpdate(conversationUpdate);
 

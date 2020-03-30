@@ -8,6 +8,7 @@ import { LogLevels } from './types/enums';
 
 const LOG_LEVELS: string[] = Object.keys(LogLevels);
 const PAYLOAD_TOO_LARGE = 413;
+const MAX_LOG_SIZE = 14500;
 
 let APP_VERSION = '[AIV]{version}[/AIV]'; // injected by webpack auto-inject-version
 
@@ -19,6 +20,18 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
   APP_VERSION.indexOf('/AIV') > -1) {
   APP_VERSION = require('../package.json').version;
 }
+
+const calculateLogBufferSize = function (arr: Object[]): number {
+  return arr.reduce((size: number, trace: Object) => size + calculateLogMessageSize(trace), 0);
+};
+
+export const calculateLogMessageSize = function (trace: Object): number {
+  const str = JSON.stringify(trace);
+  // http://stackoverflow.com/questions/5515869/string-length-in-bytes-in-javascript
+  // Matches only the 10.. bytes that are non-initial characters in a multi-byte sequence.
+  const m = encodeURIComponent(str).match(/%[89ABab]/g);
+  return str.length + (m ? m.length : 0);
+};
 
 export const log = function (this: PureCloudWebrtcSdk, level: LogLevels, message: any, details?: any) {
   level = (level || LogLevels.log).toString().toLowerCase() as LogLevels;
@@ -51,8 +64,21 @@ export const log = function (this: PureCloudWebrtcSdk, level: LogLevels, message
     level: level.toUpperCase(),
     message: stringify(log)
   };
+
+  const logMessageSize = calculateLogMessageSize(logContainer);
+  const exceedsMaxLogSize = this._logBufferSize + logMessageSize > MAX_LOG_SIZE;
+
+  if (exceedsMaxLogSize) {
+    this.logger.info('Log size limit reached, sending immediately');
+    notifyLogs.call(this, true);
+  }
+
   this._logBuffer.push(logContainer);
-  notifyLogs.call(this); // debounced sendLogs
+  this._logBufferSize += logMessageSize;
+
+  if (!exceedsMaxLogSize) {
+    notifyLogs.call(this); // debounced call
+  }
 };
 
 export function setupLogging (this: PureCloudWebrtcSdk, logger: ILogger, logLevel: LogLevels) {
@@ -87,19 +113,26 @@ export function setupLogging (this: PureCloudWebrtcSdk, logger: ILogger, logLeve
   initializeBackoff.call(this);
 }
 
-function notifyLogs (this: PureCloudWebrtcSdk) {
+export const notifyLogs = function (this: PureCloudWebrtcSdk, runImmediate?: boolean): void {
   if (this._logTimer) {
     clearTimeout(this._logTimer);
   }
-  this._logTimer = setTimeout(() => {
-    if (!this._backoffActive) {
-      this._backoff.backoff();
-    }
-  }, 1000);
-}
+
+  if (runImmediate) {
+    return tryToSendLogs.call(this);
+  }
+  this._logTimer = setTimeout(tryToSendLogs.bind(this), 1000);
+};
+
+const tryToSendLogs = function (this: PureCloudWebrtcSdk) {
+  if (!this._backoffActive) {
+    this._backoff.backoff();
+  }
+};
 
 function sendLogs (this: PureCloudWebrtcSdk) {
   const traces = getLogPayload.call(this);
+  this._logBufferSize = calculateLogBufferSize(this._logBuffer);
   const payload = {
     app: {
       appId: 'webrtc-sdk',
@@ -146,6 +179,7 @@ function sendLogs (this: PureCloudWebrtcSdk) {
     // Put traces back into buffer in their original order
     const reverseTraces = traces.reverse(); // Reverse traces so they will be unshifted into their original order
     reverseTraces.forEach((log) => this._logBuffer.unshift(log));
+    this._logBufferSize = calculateLogBufferSize(this._logBuffer);
   });
 }
 

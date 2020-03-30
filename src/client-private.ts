@@ -3,7 +3,8 @@ import StreamingClient from 'purecloud-streaming-client';
 import { log } from './logging';
 import { LogLevels } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
-import { IJingleSession } from './types/interfaces';
+import { IJingleSession, SubscriptionEvent } from './types/interfaces';
+import { ConversationUpdate } from './types/conversation-update';
 
 /**
  * Establish the connection with the streaming client.
@@ -42,21 +43,26 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
   const connection = new StreamingClient(connectionOptions);
   this._streamingConnection = connection;
 
-  connection.on('connected', async () => {
-    this.emit('connected', { reconnect: this._hasConnected });
-    log.call(this, LogLevels.info, 'PureCloud streaming client connected', { reconnect: this._hasConnected });
-    this._hasConnected = true;
-    // refresh turn servers every 6 hours
-    this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
-    await this._refreshIceServers();
-    log.call(this, LogLevels.info, 'PureCloud streaming client ready for use');
-  });
+  const initialPromise = new Promise((resolve) => {
+    connection.on('connected', async () => {
+      this.emit('connected', { reconnect: this._hasConnected });
+      log.call(this, LogLevels.info, 'PureCloud streaming client connected', { reconnect: this._hasConnected });
+      this._hasConnected = true;
+      // refresh turn servers every 6 hours
+      this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
+      await this._refreshIceServers();
+      log.call(this, LogLevels.info, 'PureCloud streaming client ready for use');
+      resolve();
+    });
 
-  connection.on('disconnected', async () => {
-    clearInterval(this._refreshIceServersInterval);
+    connection.on('disconnected', async () => {
+      log.call(this, LogLevels.info, 'PureCloud streaming client disconnected');
+      clearInterval(this._refreshIceServersInterval);
+    });
   });
 
   await connection.connect();
+  await initialPromise;
 }
 
 /**
@@ -67,7 +73,7 @@ export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk): Pro
   this.sessionManager = new SessionManager(this);
 
   if (this._personDetails) {
-    await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, this.sessionManager.handleConversationUpdate.bind(this.sessionManager));
+    await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, handleConversationUpdate.bind(this));
   }
 
   // webrtc events
@@ -83,3 +89,8 @@ export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk): Pro
   this._streamingConnection.on('error', this.emit.bind(this, 'error'));
   this._streamingConnection.on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
 }
+
+export const handleConversationUpdate = function (this: PureCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
+  const update = new ConversationUpdate(updateEvent.eventBody);
+  this.sessionManager.handleConversationUpdate(update);
+};

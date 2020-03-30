@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 
+# [v3.2.0]
 ### Added
-* support for input and output devices
+* Support for input and output devices
 * Screen pinning for video
+* Better handling of the log buffer size to mitigate 413's received from the logging endpoint
 
 ### Changed
 * sdk.startVideoConference and sdk.startScreenShare now return Promise<{ conversationId: string }>
+
+### Fixed
+* sdk.initialize will no longer resolve before ice servers are fetched
+* Only log the parts of conversation updates we care about instead of the whole event
 
 # [v3.1.0]
 

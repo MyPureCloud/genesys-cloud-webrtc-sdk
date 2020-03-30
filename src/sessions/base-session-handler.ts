@@ -3,9 +3,10 @@ import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IConversationUpdate, IUpdateOutgoingMedia } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
 import { throwSdkError } from '../utils';
+import { ConversationUpdate } from '../types/conversation-update';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -24,7 +25,7 @@ export default abstract class BaseSessionHandler {
     log.call(this.sdk, level, message, details);
   }
 
-  handleConversationUpdate (session: IJingleSession, update: IConversationUpdate) {
+  handleConversationUpdate (session: IJingleSession, update: ConversationUpdate) {
     this.log(LogLevels.info, 'conversation update received', { conversationId: session.conversationId, update });
   }
 
@@ -214,7 +215,7 @@ export default abstract class BaseSessionHandler {
     const el: ExtendedHTMLAudioElement = session._outputAudioElement as ExtendedHTMLAudioElement;
 
     if (!el) {
-      this.log(LogLevels.warn, 'Cannot update audio output because there is no attached audio element to the session', { sessionId: session.id });
+      this.log(LogLevels.warn, 'Cannot update audio output because there is no attached audio element to the session', { sessionId: session.id, conversationId: session.conversationId });
       return;
     }
 

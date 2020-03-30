@@ -65,7 +65,7 @@ describe('handleConversationUpdate', () => {
     const fakeUpdate = {
       id: conversationId
     };
-    sessionManager.handleConversationUpdate({ eventBody: fakeUpdate } as any);
+    sessionManager.handleConversationUpdate(fakeUpdate as any);
     expect(spy).toBeCalledTimes(2);
     expect(spy).toHaveBeenCalledWith(session1, fakeUpdate);
     expect(spy).toHaveBeenCalledWith(session3, fakeUpdate);
