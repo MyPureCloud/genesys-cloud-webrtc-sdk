@@ -14,14 +14,12 @@ type ExtendedHTMLAudioElement = HTMLAudioElement & {
 
 export default abstract class BaseSessionHandler {
   removePendingSessionDelay = 1000;
+  disabled = true;
+  abstract sessionType: SessionTypes;
 
   constructor (protected sdk: PureCloudWebrtcSdk, protected sessionManager: SessionManager) { }
 
-  abstract sessionType: SessionTypes;
-
   abstract shouldHandleSessionByJid (jid: string): boolean;
-
-  disabled = true;
 
   protected log (level: LogLevels, message: any, details?: any): void {
     log.call(this.sdk, level, message, details);

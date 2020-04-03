@@ -57,6 +57,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
     - `String logLevel`: Optional, desired log level. Available options: `debug`, `log`, `info`, `warn`, `error`
     - `Object logger`: Optional, desired logger. Default, `console`. Must contain methods: `debug`, `log`, `info`, `warn`, `error`
     - `String wsHost`: Optional, websocket host
+    - `SessionTypes[] allowedSessionTypes`: Optional, *defaults to all session types* if not provided. If provided, only the provided types will be handled by the sdk and all others will be ignored.
 
 #### Methods
 
