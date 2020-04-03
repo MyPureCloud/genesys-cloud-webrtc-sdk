@@ -30,7 +30,8 @@ export class SimpleMockSdk extends WildEmitter {
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
     logLevel: LogLevels.debug,
-    wsHost: 'wshost'
+    wsHost: 'wshost',
+    allowedSessionTypes: Object.values(SessionTypes)
   };
   _logBuffer = [];
   logger = {

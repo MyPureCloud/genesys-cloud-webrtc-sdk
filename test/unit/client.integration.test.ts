@@ -1,5 +1,5 @@
 import { PureCloudWebrtcSdk } from '../../src/client';
-import { ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
+import { IJingleSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
@@ -15,7 +15,6 @@ import {
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
 import * as mediaUtils from '../../src/media-utils';
-import { IJingleSession } from '../../src/types/interfaces';
 
 let { ws } = require('../test-utils');
 
@@ -709,9 +708,7 @@ describe('Client', () => {
       await sdk.initialize();
       sdk._config.customIceServersConfig = [{ something: 'junk' }] as RTCConfiguration;
 
-      sdk._streamingConnection.sessionManager = {
-        iceServers: [{ urls: ['turn:mypurecloud.com'] }]
-      };
+      sdk.sessionManager.jingle.iceServers = [{ urls: ['turn:mypurecloud.com'] }];
 
       await sdk._streamingConnection.webrtcSessions.refreshIceServers();
       const actual = sdk.sessionManager.jingle.iceServers;
@@ -754,7 +751,7 @@ describe('Client', () => {
       sdk._streamingConnection.connected = true;
       expect(sdk.connected).toBe(true);
 
-      jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve());
+      jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(undefined));
       await sdk._refreshIceServers();
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshIceServersInterval).toBeTruthy();
@@ -777,7 +774,7 @@ describe('Client', () => {
             'password': 'pw',
             'port': '3478',
             'transport': 'udp',
-            'type': 'turn',
+            'type': 'relay',
             'username': 'user'
           },
           {
@@ -785,7 +782,7 @@ describe('Client', () => {
             'password': 'pass',
             'port': '3478',
             'transport': 'udp',
-            'type': 'turn',
+            'type': 'relay',
             'username': 'u2'
           }
         ]

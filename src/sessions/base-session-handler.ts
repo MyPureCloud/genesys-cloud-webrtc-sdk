@@ -21,6 +21,8 @@ export default abstract class BaseSessionHandler {
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
+  disabled = true;
+
   protected log (level: LogLevels, message: any, details?: any): void {
     log.call(this.sdk, level, message, details);
   }

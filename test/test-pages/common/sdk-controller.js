@@ -235,7 +235,7 @@ function updateDefaultDevices (options) {
     updateAudioDefault: boolean;
     updateOutputDefault: boolean;
     updateActiveSessions: boolean;
-  }*/
+  } */
   const sdkOpts = {
     videoDeviceId: undefined, // `undefined` will not change that device | `null` will reset to system default
     audioDeviceId: undefined,
