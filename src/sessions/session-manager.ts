@@ -95,7 +95,7 @@ export class SessionManager {
       .filter((session: IJingleSession) => session.active);
   }
 
-  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any, allowUnknownHandler?: boolean }): BaseSessionHandler {
+  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
       handler = this.sessionHandlers.find((handler) => handler.sessionType === params.sessionType);
@@ -109,7 +109,7 @@ export class SessionManager {
       handler = this.sessionHandlers.find((handler) => handler.shouldHandleSessionByJid(fromJid));
     }
 
-    if (!handler && !params.allowUnknownHandler) {
+    if (!handler) {
       throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to find session handler for session', params);
     }
 
@@ -174,7 +174,7 @@ export class SessionManager {
    * @param sessionInfo pending webrtc-session info
    */
   async onPropose (sessionInfo: ISessionInfo): Promise<void> {
-    const handler = this.getSessionHandler({ sessionInfo, allowUnknownHandler: true });
+    const handler = this.getSessionHandler({ sessionInfo });
 
     if (handler.disabled) {
       return;
@@ -215,7 +215,7 @@ export class SessionManager {
   }
 
   async onSessionInit (session: IJingleSession) {
-    const sessionHandler = this.getSessionHandler({ jingleSession: session, allowUnknownHandler: true });
+    const sessionHandler = this.getSessionHandler({ jingleSession: session });
 
     if (sessionHandler.disabled) {
       return;
