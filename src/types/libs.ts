@@ -36,12 +36,36 @@ declare module 'purecloud-streaming-client' {
   export default class StreamingClient {
     constructor (options: any);
     connect (): Promise<any>;
+    disconnect (): Promise<any>;
+    reconnect (): Promise<any>;
+    connected: boolean;
     on (name: string, fn: any): void;
     notifications: {
-      subscribe (topic: string, handler: (data: any) => {}): Promise<void>
+      subscribe (topic: string, handler: (data: any) => any): Promise<void>
+      unsubscribe (topic: string): Promise<void>
+    };
+    _webrtcSessions: {
+      refreshIceServers (): Promise<undefined | Array<{
+        host: string;
+        password: string;
+        port: string;
+        transport: string;
+        username: string;
+        type: 'relay' | 'stun'}>>
+      jingleJs: any;
     };
     webrtcSessions: {
+      config: {
+        iceTransportPolicy: 'all' | 'public' | 'relay' | null;
+      };
       refreshIceServers (): Promise<any>;
+      initiateRtcSession (opts: any): any;
+      acceptRtcSession (sessionId: string): any;
+      rtcSessionAccepted (sessionId: string): any;
+      rejectRtcSession (sessionId: string, ignore: boolean): any;
+      notifyScreenShareStart (session: any): any;
+      notifyScreenShareStop (session: any): any;
+      on: any;
     };
   }
 }

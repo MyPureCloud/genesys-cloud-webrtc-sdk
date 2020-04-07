@@ -22,6 +22,7 @@ export interface ISdkConstructOptions {
   defaultVideoDeviceId?: string | null;
   defaultAudioDeviceId?: string | null;
   defaultOutputDeviceId?: string | null;
+  allowedSessionTypes?: SessionTypes[];
 }
 
 /**
@@ -43,6 +44,7 @@ export interface ISdkConfig {
   iceTransportPolicy?: RTCIceTransportPolicy;
   logLevel?: LogLevels;
   optOutOfTelemetry?: boolean;
+  allowedSessionTypes?: SessionTypes[];
   customIceServersConfig?: RTCConfiguration;
 }
 

@@ -23,6 +23,17 @@ it('webrtcSessions should map to the sdk webrtcSession', () => {
   expect(sessionManager.webrtcSessions).toBe(webrtcSessions);
 });
 
+describe('allowedSessionTypes', () => {
+  it('should only enabled allowed session types', () => {
+    mockSdk._config.allowedSessionTypes = [SessionTypes.collaborateVideo];
+    sessionManager = new SessionManager(mockSdk);
+    sessionManager.sessionHandlers.forEach((handler) => {
+      expect(handler.disabled).toEqual(handler.sessionType !== SessionTypes.collaborateVideo);
+    });
+    expect.assertions(3);
+  });
+});
+
 describe('getPendingSession', () => {
   it('should find session by sessionId', () => {
     const pendingSession1 = createPendingSession();
@@ -69,6 +80,39 @@ describe('handleConversationUpdate', () => {
     expect(spy).toBeCalledTimes(2);
     expect(spy).toHaveBeenCalledWith(session1, fakeUpdate);
     expect(spy).toHaveBeenCalledWith(session3, fakeUpdate);
+  });
+
+  it('should not pass update to handler if the handler is disabled', async () => {
+    const conversationId = 'convoid123';
+    const session1 = {
+      conversationId
+    };
+
+    const session2 = {
+      conversationId: 'not this one'
+    };
+
+    const session3 = {
+      conversationId
+    };
+
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = {
+      sessions: {
+        1: session1,
+        2: session2,
+        3: session3
+      }
+    };
+
+    const spy = jest.fn();
+    const fakeHandler = { handleConversationUpdate: spy, disabled: true };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+
+    const fakeUpdate = {
+      id: conversationId
+    };
+    sessionManager.handleConversationUpdate(fakeUpdate as any);
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
@@ -182,6 +226,18 @@ describe('startSession', () => {
     await sessionManager.startSession(mockParams);
     expect(mockHandler.startSession).toHaveBeenCalledWith(mockParams);
   });
+
+  it('should throw if trying to start a disabled session type', async () => {
+    const mockHandler: any = {
+      startSession: jest.fn(),
+      disabled: true
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const mockParams = { sessionType: SessionTypes.softphone };
+    await expect(sessionManager.startSession(mockParams)).rejects.toThrowError(/disabled session/);
+    expect(mockHandler.startSession).not.toHaveBeenCalledWith(mockParams);
+  });
 });
 
 describe('onPropose', () => {
@@ -205,6 +261,22 @@ describe('onPropose', () => {
 
     const mockHandler: any = {
       handlePropose: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const sessionInfo = createSessionInfo();
+
+    await sessionManager.onPropose(sessionInfo);
+
+    expect(mockHandler.handlePropose).not.toHaveBeenCalled();
+  });
+
+  it('should ignore if sessionHandler is disabled', async () => {
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue({} as any);
+
+    const mockHandler: any = {
+      handlePropose: jest.fn(),
+      disabled: true
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
@@ -260,6 +332,21 @@ describe('onSessionInit', () => {
 
     expect(mockHandler.handleSessionInit).toHaveBeenCalled();
     expect(session.sessionType).toEqual(SessionTypes.acdScreenShare);
+  });
+
+  it('should not call handleSessionInit for disabled session handlers', async () => {
+    const session: any = {};
+
+    const mockHandler: any = {
+      sessionType: SessionTypes.acdScreenShare,
+      handleSessionInit: jest.fn(),
+      disabled: true
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    await sessionManager.onSessionInit(session);
+
+    expect(mockHandler.handleSessionInit).not.toHaveBeenCalled();
   });
 });
 

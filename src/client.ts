@@ -24,6 +24,7 @@ import {
   IMediaDeviceIds,
   IUpdateOutgoingMedia
 } from './types/interfaces';
+import StreamingClient from 'purecloud-streaming-client';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -77,7 +78,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   _logBufferSize: number;
   _logTimer: NodeJS.Timeout | null;
   _connected: boolean;
-  _streamingConnection: any;
+  _streamingConnection: StreamingClient;
   _backoffActive: boolean;
   _failedLogAttempts: number;
   _backoff: any;
@@ -125,6 +126,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       iceTransportPolicy: options.iceTransportPolicy || 'all',
       logLevel: options.logLevel || LogLevels.info,
       optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
+      allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
       wsHost: options.wsHost
     };
 

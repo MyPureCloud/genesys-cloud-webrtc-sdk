@@ -31,6 +31,12 @@ export class SessionManager {
 
   constructor (private sdk: PureCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
+
+    sdk._config.allowedSessionTypes.forEach((sessionType) => {
+      this.log(LogLevels.info, 'Allow session type', { sessionType });
+      const handler = this.getSessionHandler({ sessionType });
+      handler.disabled = false;
+    });
   }
 
   private log (level: LogLevels, message: any, details?: any): void {
@@ -51,6 +57,11 @@ export class SessionManager {
     (sessions as any).forEach((session: IJingleSession) => {
       if (session.conversationId === update.id) {
         const handler = this.getSessionHandler({ sessionType: session.sessionType });
+
+        if (handler.disabled) {
+          return;
+        }
+
         handler.handleConversationUpdate(session, update);
       }
     });
@@ -108,6 +119,10 @@ export class SessionManager {
   async startSession (startSessionParams: IStartSessionParams): Promise<any> {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
+    if (handler.disabled) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
+    }
+
     return handler.startSession(startSessionParams);
   }
 
@@ -159,6 +174,12 @@ export class SessionManager {
    * @param sessionInfo pending webrtc-session info
    */
   async onPropose (sessionInfo: ISessionInfo): Promise<void> {
+    const handler = this.getSessionHandler({ sessionInfo });
+
+    if (handler.disabled) {
+      return;
+    }
+
     this.log(LogLevels.info, 'onPendingSession', sessionInfo);
 
     const existingSession = this.getPendingSession(sessionInfo.sessionId);
@@ -167,8 +188,6 @@ export class SessionManager {
       this.log(LogLevels.info, 'duplicate session invitation, ignoring', sessionInfo);
       return;
     }
-
-    const handler = this.getSessionHandler({ sessionInfo });
 
     const pendingSession: IPendingSession = {
       id: sessionInfo.sessionId,
@@ -197,6 +216,11 @@ export class SessionManager {
 
   async onSessionInit (session: IJingleSession) {
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
+
+    if (sessionHandler.disabled) {
+      return;
+    }
+
     session.sessionType = sessionHandler.sessionType;
     return sessionHandler.handleSessionInit(session);
   }

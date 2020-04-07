@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 # [Unreleased]
+### Added
+* Be able to only handle specified conversation types (allowedSessionTypes in the config)
 
 # [v3.2.0]
 ### Added

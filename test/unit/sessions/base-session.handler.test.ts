@@ -48,7 +48,7 @@ describe('setAudioMute', () => {
 describe('updateOutgoingMedia()', () => {
   const getTrackType = (session: MockSession | MockStream, kind: 'video' | 'audio'): MockTrack => {
     return session.getTracks().filter(t => t && t.kind === kind)[0];
-  }
+  };
 
   test('should log and throw error if we do not have a video or audio deviceId', async () => {
     try {
@@ -99,7 +99,6 @@ describe('updateOutgoingMedia()', () => {
     expect(startMediaSpy).toBeCalledWith(mockSdk, { video: null, audio: null });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
-
 
     /* video only */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: null, audioDeviceId: undefined });

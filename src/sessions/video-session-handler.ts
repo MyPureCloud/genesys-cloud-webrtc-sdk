@@ -310,7 +310,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   }
 
   async endSession (session: IJingleSession) {
-    this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
+    await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
     await super.endSession(session);
     session.pc.getSenders().map((sender) => {
       if (sender.track) {
