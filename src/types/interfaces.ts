@@ -56,6 +56,10 @@ export interface IMediaRequestOptions {
    * - `false` | `undefined` to not request/update this type of media
    */
   video?: boolean | string | null;
+  videoResolution?: {
+    width: ConstrainULong,
+    height: ConstrainULong
+  };
   /**
    * - `string` to request media from device
    * - `true` to request media from sdk default device

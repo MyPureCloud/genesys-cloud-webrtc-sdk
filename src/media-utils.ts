@@ -6,6 +6,15 @@ import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
 import { throwSdkError } from './utils';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
+const DEFAULT_VIDEO_RESOLUTION = {
+  height: {
+    ideal: 2160
+  },
+  width: {
+    ideal: 4096
+  }
+};
+
 export let _hasTransceiverFunctionality: boolean | null = null;
 let isListeningForDeviceChanges = false;
 
@@ -183,6 +192,11 @@ function getStandardConstraints (opts: IMediaRequestOptions): MediaStreamConstra
 
   if (opts.audio === false || opts.audio === undefined) {
     constraints.audio = false;
+  }
+
+  if (constraints.video) {
+    const resolution = opts.videoResolution || DEFAULT_VIDEO_RESOLUTION;
+    Object.assign(constraints.video, resolution);
   }
 
   return constraints;

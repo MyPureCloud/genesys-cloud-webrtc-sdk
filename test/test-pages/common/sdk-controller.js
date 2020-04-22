@@ -57,7 +57,7 @@ function _getLogHeader (functionName) {
 function makeOutboundCall () {
   const numberToCall = getInputValue('outbound-phone-number');
   if (!numberToCall) {
-    document.getElementById('output-data').value += 'Phone Number is required to place an outbound call\n';
+    document.getElementById('log-data').value += 'Phone Number is required to place an outbound call\n';
     return;
   }
 
@@ -177,7 +177,7 @@ async function sessionStarted (session) {
 
     if (!startVideoOpts.video && !startVideoOpts.audio) {
       mediaStream = new MediaStream();
-    } else if (!startVideoOpts.video || !startVideoOpts.audio) {
+    } else if (!startVideoOpts.video || !startVideoOpts.audio || startVideoOpts.videoResolution) {
       if (startVideoOpts.video) {
         startVideoOpts.video = getDeviceId('video');
       }
@@ -331,14 +331,22 @@ function connected (e) {
   utils.writeToLog('connected event', e);
 }
 
-async function startVideoConference ({ noAudio, noVideo } = {}) {
+async function startVideoConference ({ noAudio, noVideo, mediaStream, useConstraints } = {}) {
   const roomJid = getInputValue('video-jid');
   if (!roomJid) {
-    document.getElementById('output-data').value += 'Phone Number is required to place an outbound call\n';
-    return;
+    const message = 'roomJid required to start a video call';
+    document.getElementById('log-data').value += `${message}\n`;
+    throw new Error(message);
   }
 
-  startVideoOpts = { video: !noVideo, audio: !noAudio };
+  let videoResolution;
+
+  if (useConstraints) {
+    videoResolution = JSON.parse(window['media-constraints'].value);
+    console.log('proceeding with custom resolution', videoResolution);
+  }
+
+  startVideoOpts = { video: !noVideo, audio: !noAudio, mediaStream, videoResolution };
 
   webrtcSdk.startVideoConference(roomJid);
   const element = document.getElementById('waiting-for-media');
