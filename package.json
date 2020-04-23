@@ -69,7 +69,7 @@
     "@types/node": "^13.9.5",
     "@types/safe-json-stringify": "^1.1.0",
     "@types/superagent": "^4.1.3",
-    "@types/uuid": "^3.4.5",
+    "@types/uuid": "^7.0.3",
     "@types/webrtc": "0.0.25",
     "@types/ws": "^6.0.1",
     "babel-jest": "^24.8.0",
