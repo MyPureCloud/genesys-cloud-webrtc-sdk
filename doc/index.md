@@ -127,6 +127,9 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 
     Advanced options:
     - `MediaStream mediaStream`: Optional, outgoing MediaStream. If not provided a MediaStream will be created automatically.
+    - `Object videoResolution`: Optional.
+      - `ConstrainULong width`: Required.
+      - `ConstrainULong height`: Required.
     - `HTMLAudioElement audioElement`: Optional, element to which incoming audio will be attached. Except for video sessions, a unique element will be created automatically if one is not provided, then cleaned up afterwards.
     - `HTMLVideoElement videoElement`: Optional/Required, element to which incoming video will be attached. This is optional if you provide a default video element in the config, otherwise this is required.
 

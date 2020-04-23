@@ -7,6 +7,14 @@ import browserama from 'browserama';
 import { IEnumeratedDevices } from '../../src/types/interfaces';
 import { SdkErrorTypes } from '../../src/types/enums';
 
+const defaultResolution = {
+  height: {
+    ideal: 2160
+  },
+  width: {
+    ideal: 4096
+  }
+};
 const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1' };
 const mockVideoDevice2 = { kind: 'videoinput', deviceId: 'mockVideoDevice2' };
 const mockAudioDevice1 = { kind: 'audioinput', deviceId: 'mockAudioDevice1' };
@@ -124,16 +132,34 @@ describe('startMedia()', () => {
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ audio: {}, video: false });
   });
 
-  it('should request video only', async () => {
+  it('should request video only with default resolution', async () => {
     await mediaUtils.startMedia(mockSdk, { video: true });
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: {}, audio: false });
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({
+      video: defaultResolution,
+      audio: false
+    });
+  });
+
+  it('should request video only custom resolution', async () => {
+    const resolution = {
+      width: {
+        ideal: 555
+      },
+      height: {
+        ideal: 333
+      }
+    };
+
+    await mediaUtils.startMedia(mockSdk, { video: true, videoResolution: resolution });
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: resolution, audio: false });
   });
 
   it('should request audio and video', async () => {
     await mediaUtils.startMedia(mockSdk);
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: {}, audio: {} });
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: defaultResolution, audio: {} });
   });
 
   it('should request audio and video in chrome', async () => {
@@ -149,14 +175,16 @@ describe('startMedia()', () => {
     };
     await mediaUtils.startMedia(mockSdk);
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: { googNoiseReduction: true }, audio: expectedAudioConstraints });
+    const expected = Object.assign({ googNoiseReduction: true }, defaultResolution);
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: expected, audio: expectedAudioConstraints });
   });
 
   it('should request audio and video by deviceId', async () => {
     const videoDeviceId = mockVideoDevice2.deviceId;
     const audioDeviceId = mockAudioDevice1.deviceId;
     const expectedConstraints = {
-      video: { deviceId: { exact: videoDeviceId } },
+      video: Object.assign({ deviceId: { exact: videoDeviceId } }, defaultResolution),
       audio: { deviceId: { exact: audioDeviceId } },
     };
 
@@ -172,7 +200,7 @@ describe('startMedia()', () => {
     const videoDeviceId = 'video-device-that-does-not-exist';
     const audioDeviceId = 'audio-device-that-does-not-exist';
     const expectedConstraints = {
-      video: {},
+      video: defaultResolution,
       audio: {},
     };
 
