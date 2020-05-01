@@ -1,7 +1,6 @@
 import browserama from 'browserama';
 import { PureCloudWebrtcSdk } from './client';
-import { log } from './logging';
-import { LogLevels, SdkErrorTypes } from './types/enums';
+import { SdkErrorTypes } from './types/enums';
 import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
 import { throwSdkError } from './utils';
 
@@ -48,7 +47,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   if (opts.video || opts.video === null) {
     const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, conversationId);
     if (videoDeviceId) {
-      log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId, conversationId });
+      sdk.logger.info('Requesting video with deviceId', { deviceId: videoDeviceId, conversationId });
       constraints.video.deviceId = {
         exact: videoDeviceId
       };
@@ -59,7 +58,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   if (opts.audio || opts.audio === null) {
     const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, conversationId);
     if (audioDeviceId) {
-      log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId });
+      sdk.logger.info('Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId });
       constraints.audio.deviceId = {
         exact: audioDeviceId
       };
@@ -96,7 +95,7 @@ export const attachAudioMedia = function (sdk: PureCloudWebrtcSdk, stream: Media
   }
 
   if (audioElement.srcObject) {
-    log.call(sdk, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.', { conversationId });
+    sdk.logger.warn('Attaching media to an audio element that already has a srcObject. This can result is audio issues.', { conversationId });
   }
 
   audioElement.autoplay = true;
@@ -210,7 +209,7 @@ const enumeratedDevices: IEnumeratedDevices = {
 };
 
 export const handleDeviceChange = function (this: PureCloudWebrtcSdk) {
-  log.call(this, LogLevels.debug, 'devices changed');
+  this.logger.debug('devices changed');
   refreshDevices = true;
 };
 
@@ -221,7 +220,7 @@ export const stopListeningForDeviceChanges = function () {
 
 export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDevices> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
-    log.call(sdk, LogLevels.warn, 'Unable to enumerate devices');
+    sdk.logger.warn('Unable to enumerate devices');
     enumeratedDevices.videoDeviceIds = [];
     enumeratedDevices.audioDeviceIds = [];
     enumeratedDevices.outputDeviceIds = [];
@@ -235,7 +234,7 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
 
   // if devices haven't changed since last time we called this
   if (!refreshDevices) {
-    log.call(sdk, LogLevels.debug, 'Returning cached enumerated devices', { devices: enumeratedDevices });
+    sdk.logger.debug('Returning cached enumerated devices', { devices: enumeratedDevices });
     return enumeratedDevices;
   }
 
@@ -303,7 +302,7 @@ export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDevi
   // log if we didn't find the requested deviceId
   if (!foundDeviceId) {
     if (typeof deviceId === 'string') {
-      log.call(sdk, LogLevels.warn, `Unable to find requested ${kind} deviceId`, { deviceId, conversationId });
+      sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, conversationId });
     }
 
     // then try to find the sdk default device (if it is not `null`)
@@ -311,13 +310,13 @@ export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDevi
       foundDeviceId = availableDevices.find((d: string) => d === sdkConfigDefault);
       // log if we couldn't find the sdk default device
       if (!foundDeviceId) {
-        log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, conversationId });
+        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, conversationId });
       }
     }
   }
 
   if (!foundDeviceId) {
-    log.call(sdk, LogLevels.info, `Using the system default ${kind} device`, { conversationId });
+    sdk.logger.info(`Using the system default ${kind} device`, { conversationId });
 
     /* The first device is the default device */
     if (kind === 'audiooutput') {

@@ -3,3 +3,4 @@ screenshots
 .npmrc
 bin
 reports
+.localconfig

@@ -1,6 +1,5 @@
 import { PureCloudWebrtcSdk } from './client';
 import StreamingClient from 'purecloud-streaming-client';
-import { log } from './logging';
 import { LogLevels } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { IJingleSession, SubscriptionEvent } from './types/interfaces';
@@ -37,7 +36,7 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
     connectionOptions.jwt = this._customerData.jwt;
   }
 
-  log.call(this, LogLevels.debug, 'Streaming client WebSocket connection options', connectionOptions);
+  this.logger.debug('Streaming client WebSocket connection options', connectionOptions);
   this._hasConnected = false;
 
   const connection = new StreamingClient(connectionOptions);
@@ -46,17 +45,17 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
   const initialPromise = new Promise((resolve) => {
     connection.on('connected', async () => {
       this.emit('connected', { reconnect: this._hasConnected });
-      log.call(this, LogLevels.info, 'PureCloud streaming client connected', { reconnect: this._hasConnected });
+      this.logger.info('PureCloud streaming client connected', { reconnect: this._hasConnected });
       this._hasConnected = true;
       // refresh turn servers every 6 hours
       this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
       await this._refreshIceServers();
-      log.call(this, LogLevels.info, 'PureCloud streaming client ready for use');
+      this.logger.info('PureCloud streaming client ready for use');
       resolve();
     });
 
     connection.on('disconnected', async () => {
-      log.call(this, LogLevels.info, 'PureCloud streaming client disconnected');
+      this.logger.info(LogLevels.info, 'PureCloud streaming client disconnected');
       clearInterval(this._refreshIceServersInterval);
     });
   });

@@ -390,7 +390,7 @@ describe('getEnumeratedDevices()', () => {
     mediaDevices.enumerateDevices = undefined;
     const devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
-    expect(mockSdk.logger.warn).toBeCalledWith(expect.stringContaining('Unable to enumerate devices'), undefined);
+    expect(mockSdk.logger.warn).toBeCalledWith(expect.stringContaining('Unable to enumerate devices'));
     expect(devices).toEqual(expectedEnumeratedDevices);
 
     mediaDevices.enumerateDevices = jest.fn();
@@ -405,7 +405,7 @@ describe('getEnumeratedDevices()', () => {
 
     const cb = (addEventListener as jest.Mock).mock.calls[0][1];
     cb();
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('devices changed'), undefined);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('devices changed'));
 
     (addEventListener as jest.Mock).mockReset();
     await mediaUtils.getEnumeratedDevices(mockSdk);
