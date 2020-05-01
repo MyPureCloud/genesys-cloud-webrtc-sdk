@@ -21,6 +21,7 @@
     "build": "tsc -p . && webpack && webpack --env.production",
     "build-sample": "./test/test-pages/build.sh",
     "build:sample": "./test/test-pages/build.sh",
+    "build:watch": "tsc -p . && webpack --watch",
     "build-run-local": "concurrently \"./test/test-pages/build-dev.sh\" \"npm start\"",
     "pretest": "npm run build",
     "start": "stupid-server -s -p 8443",

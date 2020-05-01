@@ -206,6 +206,75 @@ describe('updateOutgoingMedia()', () => {
     expect(session._outboundStream.addTrack).toHaveBeenCalledWith(newTracks[0]);
     expect(session._outboundStream.addTrack).toHaveBeenCalledWith(newTracks[1]);
   });
+
+  test('should catch `NotAllowedError`s, update mute states, and throw the error', async () => {
+    const session = new MockSession();
+    const mockError = { name: 'NotAllowedError' };
+    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockRejectedValue(mockError);
+
+    /* `NotAllowedError` error if updating audio and video */
+    try {
+      await handler.updateOutgoingMedia(session as any, { videoDeviceId: true, audioDeviceId: true });
+      fail('should have thrown');
+    } catch (e) {
+      /* was called and threw */
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: true });
+      expect(e).toEqual(mockError);
+      /* sent session mutes */
+      expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
+      expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
+      /* logs */
+      expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Sending mute for audio'), expect.any(Object));
+      expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Sending mute for video'), expect.any(Object));
+    }
+
+    session.mute.mockReset();
+
+    /* `NotAllowedError` error if updating only video  */
+    try {
+      await handler.updateOutgoingMedia(session as any, { videoDeviceId: true, audioDeviceId: undefined });
+      fail('should have thrown');
+    } catch (e) {
+      /* was called and threw */
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: undefined });
+      expect(e).toEqual(mockError);
+      /* sent session mutes */
+      expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
+      expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
+    }
+
+    session.mute.mockReset();
+
+    /* `NotAllowedError` error if updating only audio  */
+    try {
+      await handler.updateOutgoingMedia(session as any, { videoDeviceId: undefined, audioDeviceId: true });
+      fail('should have thrown');
+    } catch (e) {
+      /* was called and threw */
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: true });
+      expect(e).toEqual(mockError);
+      /* sent session mutes */
+      expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
+      expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
+    }
+
+    session.mute.mockReset();
+    startMediaSpy.mockRejectedValue({ name: 'SomeOtherError' });
+    /* Some other error */
+    try {
+      await handler.updateOutgoingMedia(session as any, { videoDeviceId: true, audioDeviceId: true });
+      fail('should have thrown');
+    } catch (e) {
+      /* was called and threw */
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: true });
+      expect(e).not.toEqual(mockError);
+      /* did not send session mutes */
+      expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
+      expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
+    }
+  });
 });
 
 describe('updateOutputDevice()', () => {

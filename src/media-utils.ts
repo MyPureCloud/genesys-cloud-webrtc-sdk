@@ -1,7 +1,8 @@
 import browserama from 'browserama';
+
 import { PureCloudWebrtcSdk } from './client';
+import { IEnumeratedDeviceIds, IMediaRequestOptions } from './types/interfaces';
 import { SdkErrorTypes } from './types/enums';
-import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
 import { throwSdkError } from './utils';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
@@ -202,7 +203,7 @@ function getStandardConstraints (opts: IMediaRequestOptions): MediaStreamConstra
 }
 
 let refreshDevices = true;
-const enumeratedDevices: IEnumeratedDevices = {
+const enumeratedDevices: IEnumeratedDeviceIds = {
   videoDeviceIds: [],
   audioDeviceIds: [],
   outputDeviceIds: []
@@ -218,7 +219,7 @@ export const stopListeningForDeviceChanges = function () {
   navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
 };
 
-export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDevices> {
+export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDeviceIds> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
     sdk.logger.warn('Unable to enumerate devices');
     enumeratedDevices.videoDeviceIds = [];

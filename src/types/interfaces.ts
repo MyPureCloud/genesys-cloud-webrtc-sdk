@@ -89,7 +89,7 @@ export interface IMediaDeviceIds {
   outputDeviceId?: string | null;
 }
 
-export interface IEnumeratedDevices {
+export interface IEnumeratedDeviceIds {
   videoDeviceIds: string[];
   audioDeviceIds: string[];
   outputDeviceIds: string[];

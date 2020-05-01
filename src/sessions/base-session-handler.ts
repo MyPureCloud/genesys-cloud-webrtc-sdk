@@ -144,22 +144,6 @@ export default abstract class BaseSessionHandler {
     const updateAudio = options.stream || options.audioDeviceId !== undefined;
     let stream: MediaStream = options.stream;
 
-    if (!stream) {
-      stream = await startMedia(this.sdk, {
-        audio: options.audioDeviceId,
-        /* if video is muted, we don't want to request it */
-        video: !session.videoMuted && options.videoDeviceId
-      });
-    }
-
-    /* make sure out stream does not have a video track if our session has video on mute  */
-    stream.getTracks().forEach(track => {
-      if (session.videoMuted && track.kind === 'video') {
-        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
-        stream.removeTrack(track);
-      }
-    });
-
     const outboundStream = session._outboundStream;
     const destroyMediaPromises: Promise<any>[] = [];
     const trackIdsToIgnore = [];
@@ -185,6 +169,7 @@ export default abstract class BaseSessionHandler {
         )
       );
 
+    /* stop media first because FF does not allow more than one audio/video track */
     senders.forEach(sender => {
       sender.track.stop();
       if (outboundStream) {
@@ -194,6 +179,47 @@ export default abstract class BaseSessionHandler {
     });
 
     await Promise.all(destroyMediaPromises);
+
+    if (!stream) {
+      try {
+        stream = await startMedia(this.sdk, {
+          audio: options.audioDeviceId,
+          /* if video is muted, we don't want to request it */
+          video: !session.videoMuted && options.videoDeviceId
+        });
+      } catch (e) {
+        /*
+          In FF, if the user does not grant us permissions for the new media,
+          we need to update the mute states on the session. The implementing
+          app will need to handle the error and react appropriately
+        */
+        if (e.name === 'NotAllowedError') {
+          /*
+            at this point, there is no active media so we just need to tell the server we are muted
+            realistically, the implementing app should kick them out of the conference
+          */
+          const userId = this.sdk._personDetails.id;
+          if (updateAudio) {
+            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for audio', { sessionId: session.id, conversationId: session.conversationId });
+            session.mute(userId, 'audio');
+          }
+          if (updateVideo) {
+            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for video', { sessionId: session.id, conversationId: session.conversationId });
+            session.mute(userId, 'video');
+          }
+        }
+        throw e;
+      }
+    }
+
+    /* make sure out stream does not have a video track if our session has video on mute (mainly checking any passed in stream)  */
+    stream.getTracks().forEach(track => {
+      if (session.videoMuted && track.kind === 'video') {
+        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
+        track.stop();
+        stream.removeTrack(track);
+      }
+    });
 
     const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
       await session.addTrack(track);
