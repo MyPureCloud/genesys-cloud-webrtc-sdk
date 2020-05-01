@@ -1,5 +1,4 @@
 import { PureCloudWebrtcSdk } from '../client';
-import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
@@ -22,7 +21,7 @@ export default abstract class BaseSessionHandler {
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
   protected log (level: LogLevels, message: any, details?: any): void {
-    log.call(this.sdk, level, message, details);
+    this.sdk.logger[level].call(this.sdk.logger, message, details);
   }
 
   handleConversationUpdate (session: IJingleSession, update: ConversationUpdate) {

@@ -122,7 +122,7 @@ describe('handleSessionInit', () => {
     await handler.handleSessionInit(session);
 
     expect(handler.addMediaToSession).not.toHaveBeenCalled();
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith('[webrtc-sdk] There is no `temporaryOutboundStream` for guest user', undefined);
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith('There is no `temporaryOutboundStream` for guest user', undefined);
     expect(acceptSpy).toHaveBeenCalled();
   });
 

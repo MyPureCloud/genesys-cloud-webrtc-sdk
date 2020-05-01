@@ -1,7 +1,6 @@
 import { PureCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
-import { log } from '../logging';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
@@ -40,7 +39,7 @@ export class SessionManager {
   }
 
   private log (level: LogLevels, message: any, details?: any): void {
-    log.call(this.sdk, level, message, details);
+    this.sdk.logger[level](message, details);
   }
 
   get webrtcSessions () {

@@ -1,7 +1,7 @@
 import { PureCloudWebrtcSdk } from '../../src/client';
-import { SimpleMockSdk, timeout } from '../test-utils';
-import * as logging from '../../src/logging';
-import { LogLevels } from '../../src/types/enums';
+import { SimpleMockSdk } from '../test-utils';
+import * as genesysCloudClientLogger from 'genesys-cloud-client-logger';
+import { setupLogging } from '../../src/logging';
 
 let sdk: PureCloudWebrtcSdk;
 
@@ -13,48 +13,49 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('log', () => {
-  it('should send immediately when full', async () => {
-    const notifySpy = jest.spyOn(logging, 'notifyLogs').mockReturnValue();
+describe('setupLogging', () => {
+  it('should not create a logger if one is passed in', async () => {
+    const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger');
+    sdk._config = { } as any;
+    setupLogging.call(sdk, {} as any);
 
-    sdk._logBufferSize = 14300;
-    logging.log.call(sdk, LogLevels.info, 'This is a log message that will not push the buffer over the limit');
-    expect(notifySpy).toHaveBeenCalledWith();
-    expect(sdk._logBufferSize).toEqual(14488);
-
-    logging.log.call(sdk, LogLevels.info, 'This message goes over the limit');
-    expect(notifySpy).toHaveBeenCalledWith(true);
-  });
-});
-
-describe('notifyLogs', () => {
-  it('should trigger backoff(send) immediately', async () => {
-    sdk._backoff = { backoff: jest.fn() };
-    logging.notifyLogs.call(sdk, true);
-    expect(sdk._backoff.backoff).toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
   });
 
-  it('should debounce backoff(send) if not immediate', async () => {
-    sdk._backoff = { backoff: jest.fn() };
-    logging.notifyLogs.call(sdk);
+  it('should not create logger if noTelemetry', async () => {
+    const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger');
+    sdk._config = { optOutOfTelemetry: true } as any;
+    setupLogging.call(sdk);
 
-    expect(sdk._backoff.backoff).not.toHaveBeenCalled();
-
-    await timeout(900);
-    expect(sdk._backoff.backoff).not.toHaveBeenCalled();
-
-    logging.notifyLogs.call(sdk);
-    await timeout(900);
-    expect(sdk._backoff.backoff).not.toHaveBeenCalled();
-
-    await timeout(200);
-    expect(sdk._backoff.backoff).toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
   });
-});
 
-describe('calculateLogMessageSize', () => {
-  it('should calculate multibyte characters', () => {
-    expect(logging.calculateLogMessageSize('a')).toBe(3);
-    expect(logging.calculateLogMessageSize('¢')).toBe(4);
+  it('should create logger', () => {
+    const initializeSpy = jest.fn();
+    const mockLogger = {
+      initializeServerLogging: initializeSpy,
+      debug: jest.fn()
+    };
+    const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger').mockReturnValue(mockLogger as any);
+    sdk._config = { } as any;
+    setupLogging.call(sdk);
+
+    expect(spy).toHaveBeenCalled();
+    expect(initializeSpy).toHaveBeenCalled();
+  });
+
+  it('should not initialize server logging for guests', () => {
+    const initializeSpy = jest.fn();
+    const mockLogger = {
+      initializeServerLogging: initializeSpy,
+      debug: jest.fn()
+    };
+    const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger').mockReturnValue(mockLogger as any);
+    sdk._config = { } as any;
+    (sdk as any).isGuest = true;
+    setupLogging.call(sdk);
+
+    expect(spy).toHaveBeenCalled();
+    expect(initializeSpy).not.toHaveBeenCalled();
   });
 });
