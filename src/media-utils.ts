@@ -52,6 +52,8 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
       constraints.video.deviceId = {
         exact: videoDeviceId
       };
+    } else {
+      constraints.video = true;
     }
   }
 
@@ -63,6 +65,8 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
       constraints.audio.deviceId = {
         exact: audioDeviceId
       };
+    } else {
+      constraints.audio = true;
     }
   }
 
