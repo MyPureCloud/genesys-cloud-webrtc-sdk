@@ -4,7 +4,7 @@ import * as mediaUtils from '../../src/media-utils';
 import { PureCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack } from '../test-utils';
 import browserama from 'browserama';
-import { IEnumeratedDevices } from '../../src/types/interfaces';
+import { IEnumeratedDeviceIds } from '../../src/types/interfaces';
 import { SdkErrorTypes } from '../../src/types/enums';
 
 const defaultResolution = {
@@ -344,7 +344,7 @@ describe('checkHasTransceiverFunctionality()', () => {
       getTransceivers () {
 
       }
-      constructor() {
+      constructor () {
         this.getTransceivers = jest.fn();
       }
     }
@@ -381,7 +381,7 @@ describe('getEnumeratedDevices()', () => {
   });
 
   test('should log a warning if mediaDevices cannot be enumerated', async () => {
-    const expectedEnumeratedDevices: IEnumeratedDevices = {
+    const expectedEnumeratedDevices: IEnumeratedDeviceIds = {
       videoDeviceIds: [],
       audioDeviceIds: [],
       outputDeviceIds: []
@@ -417,7 +417,7 @@ describe('getEnumeratedDevices()', () => {
     const audioDeviceCached = { deviceId: 'cached-audio-device', kind: 'audioinput' };
     const outputDeviceCached = { deviceId: 'cached-output-device', kind: 'audiooutput' };
 
-    const expectedEnumeratedDevices: IEnumeratedDevices = {
+    const expectedEnumeratedDevices: IEnumeratedDeviceIds = {
       videoDeviceIds: [videoDeviceCached.deviceId],
       audioDeviceIds: [audioDeviceCached.deviceId],
       outputDeviceIds: [outputDeviceCached.deviceId]
@@ -444,7 +444,7 @@ describe('getEnumeratedDevices()', () => {
   });
 
   test('should return enumerated devices', async () => {
-    const expectedEnumeratedDevices: IEnumeratedDevices = {
+    const expectedEnumeratedDevices: IEnumeratedDeviceIds = {
       videoDeviceIds: [mockVideoDevice1.deviceId, mockVideoDevice2.deviceId],
       audioDeviceIds: [mockAudioDevice1.deviceId, mockAudioDevice2.deviceId],
       outputDeviceIds: [mockOutputDevice1.deviceId, mockOutputDevice2.deviceId]

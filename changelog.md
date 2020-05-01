@@ -4,16 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [v3.4.0]
+# [Unreleased](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.4.0...HEAD)
+### Fixed
+* allow device switching in FireFox by stopping existing media before requesting new media
+
+# [v3.4.0](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.3.0...v3.4.0)
 ### Added
 * Be able to specific a desired video resolution with `createMedia`
 * Default video resolution to highest possible (up to 4k)
 
-# [v3.3.0]
+# [v3.3.0](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.2.0...v3.3.0)
 ### Added
 * Be able to only handle specified conversation types (allowedSessionTypes in the config)
 
-# [v3.2.0]
+# [v3.2.0](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.1.0...v3.2.0)
 ### Added
 * Support for input and output devices
 * Screen pinning for video
@@ -26,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * sdk.initialize will no longer resolve before ice servers are fetched
 * Only log the parts of conversation updates we care about instead of the whole event
 
-# [v3.1.0]
+# [v3.1.0](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.0.1...v3.1.0)
 
 ### Deprecated
 * SDK config option `iceTransportPolicy`
@@ -39,12 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Set iceTransportPolicy to `relay` if only turn servers are received
 * Update some typings
 
-# [v3.0.1]
+# [v3.0.1](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.0.0...v3.0.1)
 
 ### Changed
 * Stop video conference screen share stream when the session ends
 
-# [v3.0.0]
+# [v3.0.0](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v2.1.0...v3.0.0)
 
 ### Breaking Changes
 * Calling `session.accept()` manually which was the normal workflow after receiving the `sessionStarted` event is no longer supported and may have unpredictable outcomes. Use `sdk.acceptSession(options)` now.
@@ -54,9 +58,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Changed
 * Moved code base to a typescript implementation
-
-
-[Unreleased]: https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.1.0...HEAD
-[v3.1.0]: https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.0.1...v3.1.0
-[v3.0.1]: https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.0.0...v3.0.1
-[v3.0.0]: https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v2.1.0...v3.0.0

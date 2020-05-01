@@ -33,6 +33,9 @@ export class SimpleMockSdk extends WildEmitter {
     wsHost: 'wshost',
     allowedSessionTypes: Object.values(SessionTypes)
   };
+  _personDetails = {
+    id: 'USER_GUID'
+  };
   _logBuffer = [];
   logger = {
     debug: jest.fn(),
