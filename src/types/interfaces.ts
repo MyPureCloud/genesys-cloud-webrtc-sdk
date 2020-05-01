@@ -5,7 +5,7 @@ import WebrtcStatsGatherer from 'webrtc-stats-gatherer';
 export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
 
 export interface ISdkConstructOptions {
-  environment: string;
+  environment?: string;
   accessToken?: string;
   organizationId?: string;
   wsHost?: string;
@@ -120,11 +120,11 @@ export interface IPersonDetails {
 }
 
 export interface ILogger {
-  log (...args: any[]): void;
-  debug (...args: any[]): void;
-  info (...args: any[]): void;
-  warn (...args: any[]): void;
-  error (...args: any[]): void;
+  log (message: string | Error, details?: any, skipServer?: boolean): void;
+  debug (message: string | Error, details?: any, skipServer?: boolean): void;
+  info (message: string | Error, details?: any, skipServer?: boolean): void;
+  warn (message: string | Error, details?: any, skipServer?: boolean): void;
+  error (message: string | Error, details?: any, skipServer?: boolean): void;
 }
 
 export interface ICustomerData {

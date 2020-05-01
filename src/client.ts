@@ -1,13 +1,12 @@
 /// <reference path="types/libs.ts" />
 
 import WildEmitter from 'wildemitter';
-import uuidv4 from 'uuid/v4';
 import {
   setupStreamingClient,
   proxyStreamingClientEvents
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
-import { log, setupLogging } from './logging';
+import { setupLogging } from './logging';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { startMedia, startDisplayMedia } from './media-utils';
@@ -73,15 +72,8 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
   readonly VERSION = '[AIV]{version}[/AIV]';
 
-  _reduceLogPayload: boolean;
-  _logBuffer: any[];
-  _logBufferSize: number;
-  _logTimer: NodeJS.Timeout | null;
   _connected: boolean;
   _streamingConnection: StreamingClient;
-  _backoffActive: boolean;
-  _failedLogAttempts: number;
-  _backoff: any;
   _orgDetails: any;
   _personDetails: IPersonDetails;
   _clientId: string;
@@ -132,12 +124,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     this._orgDetails = { id: options.organizationId };
 
-    Object.defineProperty(this, '_clientId', {
-      value: uuidv4(),
-      writable: false
-    });
-
-    setupLogging.call(this, options.logger, this._config.logLevel);
+    setupLogging.call(this, options.logger);
 
     if (options.iceTransportPolicy) {
       this.logger.warn('Setting iceTransportPolicy manually is deprecated and will be removed soon.');
@@ -145,11 +132,11 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
-    this.on('error', log.bind(this, LogLevels.error));
-    this.on('disconnected', log.bind(this, LogLevels.error, 'onDisconnected'));
-    this.on('cancelPendingSession', log.bind(this, LogLevels.warn, 'cancelPendingSession'));
-    this.on('handledPendingSession', log.bind(this, LogLevels.warn, 'handledPendingSession'));
-    this.on('trace', log.bind(this, LogLevels.debug));
+    this.on('error', this.logger.error.bind(this.logger));
+    this.on('disconnected', this.logger.error.bind(this, 'onDisconnected'));
+    this.on('cancelPendingSession', this.logger.warn.bind(this, 'cancelPendingSession'));
+    this.on('handledPendingSession', this.logger.warn.bind(this, 'handledPendingSession'));
+    this.on('trace', this.logger.debug.bind(this.logger));
 
     this._connected = false;
     this._streamingConnection = null;
@@ -168,7 +155,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
       /* if there is a securityCode, fetch conversation details */
       if (this.isSecurityCode(opts)) {
-        log.call(this, LogLevels.debug, 'Fetching conversation details via secuirty code', opts.securityCode);
+        this.logger.debug('Fetching conversation details via secuirty code', opts.securityCode);
         guestPromise = requestApi.call(this, '/conversations/codes', {
           method: 'post',
           data: {
@@ -182,7 +169,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
         /* if no securityCode, check for valid customerData */
       } else if (this.isCustomerData(opts)) {
-        log.call(this, LogLevels.debug, 'Using customerData passed into the initialize', opts);
+        this.logger.debug('Using customerData passed into the initialize', opts);
         guestPromise = Promise.resolve().then(() => {
           this._customerData = opts;
         });
@@ -195,13 +182,13 @@ export class PureCloudWebrtcSdk extends WildEmitter {
       const getOrg = requestApi.call(this, '/organizations/me')
         .then(({ body }) => {
           this._orgDetails = body;
-          log.call(this, LogLevels.debug, 'Organization details', body);
+          this.logger.debug(LogLevels.debug, 'Organization details', body);
         });
 
       const getPerson = requestApi.call(this, '/users/me')
         .then(({ body }) => {
           this._personDetails = body;
-          log.call(this, LogLevels.debug, 'Person details', body);
+          this.logger.debug(LogLevels.debug, 'Person details', body);
         });
 
       httpRequests.push(getOrg);
@@ -328,23 +315,23 @@ export class PureCloudWebrtcSdk extends WildEmitter {
     const updateOutput = options.outputDeviceId !== undefined;
 
     if (updateVideo) {
-      log.call(this, LogLevels.info, 'Updating defaultVideoDeviceId', { defaultVideoDeviceId: options.videoDeviceId });
+      this.logger.info('Updating defaultVideoDeviceId', { defaultVideoDeviceId: options.videoDeviceId });
       this._config.defaultVideoDeviceId = options.videoDeviceId;
     }
 
     if (updateAudio) {
-      log.call(this, LogLevels.info, 'Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
+      this.logger.info('Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
       this._config.defaultAudioDeviceId = options.audioDeviceId;
     }
 
     if (updateOutput) {
-      log.call(this, LogLevels.info, 'Updating defaultOutputDeviceId', { defaultOutputDeviceId: options.outputDeviceId });
+      this.logger.info('Updating defaultOutputDeviceId', { defaultOutputDeviceId: options.outputDeviceId });
       this._config.defaultOutputDeviceId = options.outputDeviceId;
     }
 
     if (typeof options.updateActiveSessions === 'boolean' && options.updateActiveSessions) {
       const promises = [];
-      log.call(this, LogLevels.info, 'Updating devices for all active session', { defaultOutputDeviceId: options.outputDeviceId });
+      this.logger.info('Updating devices for all active session', { defaultOutputDeviceId: options.outputDeviceId });
 
       if (updateVideo || updateAudio) {
         const opts = {

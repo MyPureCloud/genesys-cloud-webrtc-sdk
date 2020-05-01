@@ -390,7 +390,7 @@ describe('startSession', () => {
     const logSpy = jest.spyOn(mockSdk.logger, 'error');
     await expect(handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
-    expect(logSpy).toHaveBeenCalledWith('[webrtc-sdk] Failed to request video session', expect.anything());
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything());
   });
 });
 
