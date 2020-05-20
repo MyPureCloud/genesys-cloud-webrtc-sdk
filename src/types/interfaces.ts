@@ -89,10 +89,10 @@ export interface IMediaDeviceIds {
   outputDeviceId?: string | null;
 }
 
-export interface IEnumeratedDeviceIds {
-  videoDeviceIds: string[];
-  audioDeviceIds: string[];
-  outputDeviceIds: string[];
+export interface IEnumeratedDevices {
+  videoDevices: MediaDeviceInfo[];
+  audioDevices: MediaDeviceInfo[];
+  outputDevices: MediaDeviceInfo[];
 }
 
 export interface IUpdateOutgoingMedia {
