@@ -62,7 +62,7 @@ declare module 'purecloud-streaming-client' {
       initiateRtcSession (opts: any): any;
       acceptRtcSession (sessionId: string): any;
       rtcSessionAccepted (sessionId: string): any;
-      rejectRtcSession (sessionId: string, ignore: boolean): any;
+      rejectRtcSession (sessionId: string, ignore?: boolean): any;
       notifyScreenShareStart (session: any): any;
       notifyScreenShareStop (session: any): any;
       on: any;

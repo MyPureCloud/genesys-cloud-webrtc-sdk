@@ -379,6 +379,21 @@ describe('Client', () => {
     });
   });
 
+  describe('rejectPendingSession()', () => {
+    test('proxies the call to the sessionManager', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'rejectPendingSession').mockImplementation(() => Promise.resolve());
+
+      const sessionId = '5512551';
+      await sdk.rejectPendingSession(sessionId);
+      expect(sdk.sessionManager.rejectPendingSession).toBeCalledWith(sessionId);
+
+      await disconnectSdk(sdk);
+    });
+  });
+
   describe('acceptSession()', () => {
     test('proxies the call to the sessionManager', async () => {
       const { sdk } = mockApis();

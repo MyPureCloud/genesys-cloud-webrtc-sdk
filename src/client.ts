@@ -225,10 +225,12 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   /**
    * Start a video conference. Not supported for guests.
    *  `initialize()` must be called first.
+   * @param roomJid jid of the conference to join. Can be made up if starting a new conference but must adhere to the format: <lowercase string>@conference.<lowercase string>
+   * @param inviteeJid jid of a user to invite to this conference.
    */
-  public async startVideoConference (roomJid: string): Promise<{ conversationId: string }> {
+  public async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
     if (!this.isGuest) {
-      return this.sessionManager.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
+      return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
     } else {
       throwSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }
@@ -385,6 +387,10 @@ export class PureCloudWebrtcSdk extends WildEmitter {
    */
   public async acceptPendingSession (sessionId: string): Promise<void> {
     await this.sessionManager.proceedWithSession(sessionId);
+  }
+
+  public async rejectPendingSession (sessionId: string): Promise<void> {
+    await this.sessionManager.rejectPendingSession(sessionId);
   }
 
   /**

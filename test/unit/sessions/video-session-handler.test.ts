@@ -376,6 +376,28 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
+  it('should post to api with an invitee', async () => {
+    const roomJid = '123@conference.com';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ body: 'sldk' });
+    await handler.startSession({ jid: roomJid, inviteeJid: 'sndkkf@conference.com', sessionType: SessionTypes.collaborateVideo });
+
+    const expected = JSON.stringify({
+      roomId: roomJid,
+      participant: {
+        address: 'sndkkf@conference.com'
+      }
+    });
+
+    expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
+  });
+
   it('should log error on failure', async () => {
     const roomJid = '123@conference.com';
     const error = new Error('test');
@@ -407,14 +429,15 @@ describe('handlePropose', () => {
       sessionType: SessionTypes.collaborateVideo,
       address: previouslyRequestedJid,
       autoAnswer: false,
-      conversationId: '141241241'
+      conversationId: '141241241',
+      originalRoomJid: previouslyRequestedJid
     });
 
     expect(handler.proceedWithSession).toHaveBeenCalled();
     expect(parentHandler).not.toHaveBeenCalled();
   });
 
-  it('should emit session if not requested', async () => {
+  it('should not emit session if not requested and its a conference', async () => {
     const jid = '123@conference.com';
 
     jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
@@ -428,7 +451,31 @@ describe('handlePropose', () => {
       sessionType: SessionTypes.collaborateVideo,
       address: jid,
       autoAnswer: false,
-      conversationId: '141241241'
+      conversationId: '141241241',
+      originalRoomJid: jid
+    });
+
+    expect(handler.proceedWithSession).not.toHaveBeenCalled();
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringMatching(/Propose received.*ignoring/), expect.anything());
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit session if peer request', async () => {
+    const jid = 'peer-123@conference.com';
+
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+
+    const emitSpy = jest.fn();
+
+    mockSdk.once('pendingSession', emitSpy);
+
+    await handler.handlePropose({
+      id: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      address: jid,
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
     });
 
     expect(handler.proceedWithSession).not.toHaveBeenCalled();
