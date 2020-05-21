@@ -53,6 +53,7 @@ export class SimpleMockSdk extends WildEmitter {
     webrtcSessions: {
       initiateRtcSession: jest.fn(),
       acceptRtcSession: jest.fn(),
+      rejectRtcSession: jest.fn(),
       rtcSessionAccepted: jest.fn(),
       notifyScreenShareStart: jest.fn(),
       notifyScreenShareStop: jest.fn()
@@ -281,11 +282,14 @@ export function wait (milliseconds: number = 10): Promise<void> {
 }
 
 export function createSessionInfo (): ISessionInfo {
+  const roomJid = `${random()}@${random()}.com`;
+
   return {
     autoAnswer: true,
     conversationId: random().toString(),
-    fromJid: `${random()}@${random()}.com`,
-    sessionId: random().toString()
+    fromJid: roomJid,
+    sessionId: random().toString(),
+    originalRoomJid: roomJid
   };
 }
 

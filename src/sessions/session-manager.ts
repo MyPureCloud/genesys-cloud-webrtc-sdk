@@ -14,7 +14,8 @@ import {
   IAcceptSessionRequest,
   ISessionMuteRequest,
   IJingleSession,
-  IUpdateOutgoingMedia
+  IUpdateOutgoingMedia,
+  IStartVideoSessionParams
 } from '../types/interfaces';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -115,7 +116,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams): Promise<any> {
+  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams): Promise<any> {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     if (handler.disabled) {
@@ -193,7 +194,9 @@ export class SessionManager {
       autoAnswer: sessionInfo.autoAnswer,
       address: sessionInfo.fromJid,
       conversationId: sessionInfo.conversationId,
-      sessionType: handler.sessionType
+      sessionType: handler.sessionType,
+      originalRoomJid: sessionInfo.originalRoomJid,
+      fromUserId: sessionInfo.fromUserId
     };
 
     this.pendingSessions[pendingSession.id] = pendingSession;
@@ -211,6 +214,18 @@ export class SessionManager {
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
 
     await sessionHandler.proceedWithSession(pendingSession);
+  }
+
+  async rejectPendingSession (sessionId: string): Promise<void> {
+    const pendingSession = this.getPendingSession(sessionId);
+
+    if (!pendingSession) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
+    }
+
+    const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
+
+    await sessionHandler.rejectPendingSession(pendingSession);
   }
 
   async onSessionInit (session: IJingleSession) {

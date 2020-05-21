@@ -100,3 +100,7 @@ video {
 .fs-med {
   font-size: medium;
 }
+
+.start-controls {
+  margin-top: 20px;
+}

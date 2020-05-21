@@ -319,6 +319,36 @@ describe('proceedWithSession', () => {
   });
 });
 
+describe('rejectPendingSession', () => {
+  it('should throw if no pending session', async () => {
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(null);
+
+    const mockHandler: any = {
+      rejectPendingSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const sessionInfo = createSessionInfo();
+    await expect(sessionManager.rejectPendingSession(sessionInfo.sessionId)).rejects.toThrowError(/Could not find a pendingSession/);
+
+    expect(mockHandler.rejectPendingSession).not.toHaveBeenCalled();
+  });
+
+  it('should call rejectPendingSession on the session handler', async () => {
+    const pendingSession: any = {};
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(pendingSession);
+
+    const mockHandler: any = {
+      rejectPendingSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    await sessionManager.rejectPendingSession('asldkfj');
+
+    expect(mockHandler.rejectPendingSession).toHaveBeenCalled();
+  });
+});
+
 describe('onSessionInit', () => {
   it('should call handleSessionInit for the session handler and set the sessionType on the session', async () => {
     const session: any = {};

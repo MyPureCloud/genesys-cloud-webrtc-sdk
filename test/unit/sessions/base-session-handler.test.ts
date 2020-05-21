@@ -367,6 +367,15 @@ describe('proceedWithSession', () => {
   });
 });
 
+describe('rejectPendingSession', () => {
+  it('should call rejectRtcSession', async () => {
+    const pendingSession = createPendingSession();
+    await handler.rejectPendingSession(pendingSession);
+
+    expect(mockSessionManager.webrtcSessions.rejectRtcSession).toHaveBeenCalledWith(pendingSession.id);
+  });
+});
+
 describe('handleSessionInit', () => {
   it('should set conversationId on existing pendingSession and emit sessionStarted', async () => {
     const session: any = new MockSession();
