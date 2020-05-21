@@ -139,6 +139,8 @@ export interface IPendingSession {
   address: string;
   conversationId: string;
   sessionType: SessionTypes;
+  originalRoomJid: string;
+  fromUserId?: string;
 }
 
 export interface ISessionInfo {
@@ -146,6 +148,8 @@ export interface ISessionInfo {
   autoAnswer: boolean;
   fromJid: string;
   conversationId: string;
+  originalRoomJid: string;
+  fromUserId?: string;
 }
 
 export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
@@ -162,7 +166,12 @@ export interface IEndSessionRequest {
 
 export interface IStartSessionParams extends IOutgoingMediaDeviceIds {
   sessionType: SessionTypes;
-  jid?: string;
+}
+
+export interface IStartVideoSessionParams extends IStartSessionParams {
+  jid: string;
+  /** userJid to be used when inviting a user to a conference */
+  inviteeJid?: string;
 }
 
 /**
