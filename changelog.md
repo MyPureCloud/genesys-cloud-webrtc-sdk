@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.5.1...HEAD)
+### Added
+* `startVideoConference` now takes an optional `inviteeJid` param for sending a propose to the `inviteeJid`
+* pending sessions can now be rejected with the `rejectPendingSession` function
 
 # [v3.5.1](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.5.0...v3.5.1)
 ### Fixed

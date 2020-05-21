@@ -69,9 +69,10 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 
 `sdk.startScreenShare() : Promise<void>` - Start sharing the guest user's screen.
 
-`sdk.startVideoConference(roomJid) : Promise<void>` - Start or join a video conference
+`sdk.startVideoConference(roomJid, inviteeJid?) : Promise<void>` - Start or join a video conference
   - parameters
     - `String roomJid`: Required; the id or jid of the room where the conference will take place.
+    - `String inviteeJid`: Optional; the jid of the user you would like to invite to this conference. In order for this to work, the roomJid must be prefixed with `peer-`
 
 `sdk.createMedia(options) : Promise<MediaStream>` - Creates a media stream with audio, video, or both.
   - parameters
