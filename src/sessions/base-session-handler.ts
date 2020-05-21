@@ -135,7 +135,7 @@ export default abstract class BaseSessionHandler {
   async updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): Promise<any> {
     this.log(LogLevels.info, 'updating outgoing media', {
       conversationId: session.conversationId,
-      sessionId: options.session ? options.session.sid : options.sessionId,
+      sessionId: session.id,
       streamId: options.stream ? options.stream.id : undefined,
       videoDeviceId: options.videoDeviceId,
       audioDeviceId: options.audioDeviceId

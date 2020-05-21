@@ -1,3 +1,6 @@
+import nock = require('nock');
+import uuid = require('uuid');
+
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -6,15 +9,13 @@ import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/t
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
 import { IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
-import nock = require('nock');
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import uuid = require('uuid');
 import { ConversationUpdate } from '../../../src/types/conversation-update';
 
 let handler: VideoSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
-let userId;
+let userId: string;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -454,7 +455,7 @@ describe('acceptSession', () => {
   let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
   let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLAudioElement>;
   let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
-  let initialMutesSpy: jest.SpyInstance<void>;
+  let initialMutesSpy: jest.SpyInstance<void>; /* keep this spy */
   let session: IJingleSession;
   let media: MediaStream;
 
@@ -520,6 +521,29 @@ describe('acceptSession', () => {
     expect(session._outboundStream).toBeTruthy();
     expect(parentHandlerSpy).toHaveBeenCalled();
     expect(startMediaSpy).toHaveBeenCalled();
+  });
+
+  it('should only create media if there are available devices', async () => {
+    const audio = document.createElement('audio');
+    const video = document.createElement('video');
+    const mockDevices = {
+      videoDevices: [],
+      audioDevices: [],
+      outputDevices: []
+    };
+    jest.spyOn(mediaUtils, 'getEnumeratedDevices').mockResolvedValue(mockDevices);
+
+    /* with no video devices */
+    mockDevices.videoDevices = [];
+    mockDevices.audioDevices = [{} as any];
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(startMediaSpy).toHaveBeenCalledWith(mockSdk, { video: false, audio: true });
+
+    /* with no audio devices */
+    mockDevices.videoDevices = [{} as any];
+    mockDevices.audioDevices = [];
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(startMediaSpy).toHaveBeenCalledWith(mockSdk, { video: true, audio: false });
   });
 
   it('should subscribe to media change events', async () => {

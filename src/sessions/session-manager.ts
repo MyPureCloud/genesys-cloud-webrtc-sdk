@@ -224,6 +224,40 @@ export class SessionManager {
     return sessionHandler.handleSessionInit(session);
   }
 
+  async acceptSession (params: IAcceptSessionRequest): Promise<any> {
+    if (!params || !params.id) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
+    }
+
+    const session = this.getSession({ id: params.id });
+    const sessionHandler = this.getSessionHandler({ jingleSession: session });
+    return sessionHandler.acceptSession(session, params);
+  }
+
+  async endSession (params: IEndSessionRequest) {
+    if (!params.id && !params.conversationId) {
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
+    }
+
+    const session = this.getSession(params);
+
+    const sessionHandler = this.getSessionHandler({ jingleSession: session });
+    return sessionHandler.endSession(session);
+  }
+
+  async setVideoMute (params: ISessionMuteRequest): Promise<void> {
+    const session = this.getSession({ id: params.id });
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    await handler.setVideoMute(session, params);
+  }
+
+  async setAudioMute (params: ISessionMuteRequest): Promise<void> {
+    const session = this.getSession({ id: params.id });
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    await handler.setAudioMute(session, params);
+  }
   async validateOutgoingMediaTracks () {
     const sessions = this.getAllActiveSessions();
     const { videoDevices, audioDevices } = await getEnumeratedDevices(this.sdk);
@@ -242,7 +276,10 @@ export class SessionManager {
         .filter((sender) => sender.track && !trackIdsToIgnore.includes(sender.track.id))
         .map(s => s.track)
         .forEach(track => {
-          const deviceExists = !!(track.kind === 'video' ? videoDevices : audioDevices).find(d => d.label === track.label);
+          /* senders won't be using output devices so we don't need to worry about those */
+          const deviceExists = !!(track.kind === 'video' ? videoDevices : audioDevices).find(
+            d => d.label === track.label && d.kind.slice(0, 5) === track.kind
+          );
           if (deviceExists) {
             this.log(LogLevels.info, 'sessions outgoing track still has available device',
               { deviceLabel: track.label, kind: track.kind, sessionId: session.id });
@@ -252,6 +289,7 @@ export class SessionManager {
           const currVal: { video?: boolean, audio?: boolean } = updates.get(session.id) || {};
           currVal[track.kind] = true;
           updates.set(session.id, currVal);
+
           this.log(LogLevels.warn, 'session lost media device and will attempt to switch devices',
             { sessionId: session.id, kind: track.kind, deviceLabel: track.label });
         });
@@ -312,40 +350,5 @@ export class SessionManager {
     }
 
     return Promise.all(promises);
-  }
-
-  async acceptSession (params: IAcceptSessionRequest): Promise<any> {
-    if (!params || !params.id) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
-    }
-
-    const session = this.getSession({ id: params.id });
-    const sessionHandler = this.getSessionHandler({ jingleSession: session });
-    return sessionHandler.acceptSession(session, params);
-  }
-
-  async endSession (params: IEndSessionRequest) {
-    if (!params.id && !params.conversationId) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
-    }
-
-    const session = this.getSession(params);
-
-    const sessionHandler = this.getSessionHandler({ jingleSession: session });
-    return sessionHandler.endSession(session);
-  }
-
-  async setVideoMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ id: params.id });
-
-    const handler = this.getSessionHandler({ sessionType: session.sessionType });
-    await handler.setVideoMute(session, params);
-  }
-
-  async setAudioMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ id: params.id });
-
-    const handler = this.getSessionHandler({ sessionType: session.sessionType });
-    await handler.setAudioMute(session, params);
   }
 }

@@ -1,7 +1,7 @@
 import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack } from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
+import { SessionTypes, SdkErrorTypes, LogLevels } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { IJingleSession } from '../../../src/types/interfaces';
@@ -50,7 +50,38 @@ describe('updateOutgoingMedia()', () => {
     return session.getTracks().filter(t => t && t.kind === kind)[0];
   };
 
-  test('should log and throw error if we do not have a video or audio deviceId', async () => {
+  it('should correctly log param information', async () => {
+    const videoDeviceId = 'imbatman';
+    const audioDeviceId = 'wonderwoman';
+    const session = new MockSession();
+    const stream = new MockStream({ video: true, audio: true });
+    const spy = mockSdk.logger.info as jest.Mock;
+
+    /* with a session and stream */
+    await handler.updateOutgoingMedia(session as any, { stream: stream as any, videoDeviceId, audioDeviceId });
+    expect(spy).toBeCalledWith(/* LogLevels.info, */ 'updating outgoing media', {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      streamId: stream.id,
+      videoDeviceId,
+      audioDeviceId
+    });
+
+    spy.mockReset();
+    jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(new MockStream({}) as any);
+
+    /* with no stream */
+    await handler.updateOutgoingMedia(session as any, { videoDeviceId, audioDeviceId });
+    expect(spy).toBeCalledWith(/* LogLevels.info, */ 'updating outgoing media', {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      streamId: undefined,
+      videoDeviceId,
+      audioDeviceId
+    });
+  });
+
+  it('should log and throw error if we do not have a video or audio deviceId', async () => {
     try {
       await handler.updateOutgoingMedia({} as IJingleSession, {});
       fail('should have thrown');
@@ -60,7 +91,7 @@ describe('updateOutgoingMedia()', () => {
     }
   });
 
-  test('should update outgoing media if a media stream was passed in', async () => {
+  it('should update outgoing media if a media stream was passed in', async () => {
     const session = new MockSession();
     const stream = new MockStream({ video: true, audio: true });
 
@@ -69,7 +100,7 @@ describe('updateOutgoingMedia()', () => {
     expect(session.getTracks()).toEqual(stream.getTracks());
   });
 
-  test('should not not update output video media from passed in stream if session has video muted', async () => {
+  it('should not not update output video media from passed in stream if session has video muted', async () => {
     const session = new MockSession();
     session.videoMuted = true;
     const stream = new MockStream({ video: true, audio: true });
@@ -79,7 +110,7 @@ describe('updateOutgoingMedia()', () => {
     expect(session.getTracks()).toEqual(stream.getTracks().filter(t => t.kind !== 'video'));
   });
 
-  test('should update outgoing media with the passed in deviceId(s)', async () => {
+  it('should update outgoing media with the passed in deviceId(s)', async () => {
     const session = new MockSession();
     const stream = new MockStream({ video: true, audio: true });
     const videoDeviceId = 'video-device';
@@ -112,7 +143,7 @@ describe('updateOutgoingMedia()', () => {
 
   });
 
-  test('should skip any screenshare tracks on the session', async () => {
+  it('should skip any screenshare tracks on the session', async () => {
     const session = new MockSession();
     const stream = new MockStream({ video: true, audio: true });
     session._screenShareStream = new MockStream({ video: true });
@@ -127,7 +158,7 @@ describe('updateOutgoingMedia()', () => {
     expect(screenShareTrackSpy).toHaveBeenCalled();
   });
 
-  test('should skip tracks for "kinds" that were not requested to be updated', async () => {
+  it('should skip tracks for "kinds" that were not requested to be updated', async () => {
     const session = new MockSession();
     const existingSessionStream = new MockStream({ video: true, audio: true });
     existingSessionStream.getTracks().forEach(track => session.addTrack(track));
@@ -145,7 +176,7 @@ describe('updateOutgoingMedia()', () => {
     expect(getTrackType(session, 'video')).toEqual(getTrackType(stream, 'video'));
   });
 
-  test('should skip video tracks if video is muted on the session', async () => {
+  it('should skip video tracks if video is muted on the session', async () => {
     const session = new MockSession();
     session.videoMuted = true;
     const existingSessionStream = new MockStream({ video: false, audio: true });
@@ -165,7 +196,7 @@ describe('updateOutgoingMedia()', () => {
     expect(getTrackType(session, 'video')).toBeFalsy();
   });
 
-  test('should update the mute state for audio tracks if audio is muted on the session', async () => {
+  it('should update the mute state for audio tracks if audio is muted on the session', async () => {
     const session = new MockSession();
     session.audioMuted = true;
     const existingSessionStream = new MockStream({ audio: true });
@@ -184,7 +215,7 @@ describe('updateOutgoingMedia()', () => {
     expect(mockSdk.setAudioMute).toHaveBeenCalledWith({ id: session.id, mute: true, unmuteDeviceId: null });
   });
 
-  test('should keep the _outboundStream in sync', async () => {
+  it('should keep the _outboundStream in sync', async () => {
     const session = new MockSession();
     const existingSessionStream = new MockStream({ video: true, audio: true });
     existingSessionStream.getTracks().forEach(track => session.addTrack(track));
@@ -207,7 +238,7 @@ describe('updateOutgoingMedia()', () => {
     expect(session._outboundStream.addTrack).toHaveBeenCalledWith(newTracks[1]);
   });
 
-  test('should catch `NotAllowedError`s, update mute states, and throw the error', async () => {
+  it('should catch `NotAllowedError`s, update mute states, and throw the error', async () => {
     const session = new MockSession();
     const mockError = { name: 'NotAllowedError' };
     const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockRejectedValue(mockError);
