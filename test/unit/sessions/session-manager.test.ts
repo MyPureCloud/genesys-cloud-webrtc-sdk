@@ -1,9 +1,10 @@
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
-import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo } from '../../test-utils';
+import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia, IJingleSession, IEnumeratedDevices } from '../../../src/types/interfaces';
 import * as mediaUtils from '../../../src/media-utils';
+import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
 let mockSdk: PureCloudWebrtcSdk;
 let sessionManager: SessionManager;
@@ -562,5 +563,185 @@ describe('updateOutputDeviceForAllSessions()', () => {
         expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ jingleSession: session });
         expect(mockSessionHandler.updateOutputDevice).toHaveBeenCalledWith(session, outputDeviceId);
       });
+  });
+});
+
+describe('validateOutgoingMediaTracks()', () => {
+  let sessions: IJingleSession[];
+  let devices: IEnumeratedDevices;
+  let mockSessionHandler: BaseSessionHandler;
+
+  let mockGetAllSessions: jest.SpyInstance<IJingleSession[]>;
+  let mockGetEnumeratedDevices: jest.SpyInstance<Promise<IEnumeratedDevices>>;
+  let mockGetSession: jest.SpyInstance<IJingleSession>;
+  let mockGetSessionHandler: jest.SpyInstance<BaseSessionHandler>;
+
+  beforeEach(() => {
+    mockSessionHandler = {
+      setVideoMute: jest.fn().mockResolvedValue(null),
+      setAudioMute: jest.fn().mockResolvedValue(null),
+      getSendersByTrackType: jest.fn().mockImplementation((session: MockSession, kind) =>
+        session.pc.getSenders().filter(s => s.track && s.track.kind === kind)),
+      removeMediaFromSession: jest.fn().mockResolvedValue(null),
+    } as any;
+
+    sessions = [
+      new MockSession() as any
+    ];
+    devices = {
+      audioDevices: [
+        { deviceId: 'device#1', groupId: 'group#1', kind: 'audioinput', label: 'Device #1' } as any,
+        { deviceId: 'device#2', groupId: 'group#2', kind: 'audioinput', label: 'Device #2' } as any
+      ],
+      videoDevices: [
+        { deviceId: 'device#3', groupId: 'group#3', kind: 'videoinput', label: 'Device #3' } as any,
+        { deviceId: 'device#4', groupId: 'group#4', kind: 'videoinput', label: 'Device #4' } as any
+      ],
+      outputDevices: []
+    };
+
+    mockGetAllSessions = jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions);
+    mockGetEnumeratedDevices = jest.spyOn(mediaUtils, 'getEnumeratedDevices').mockResolvedValue(devices);
+
+    mockGetSession = jest.spyOn(sessionManager, 'getSession').mockImplementation(({ id }) => sessions.find(s => s.id === id));
+    mockGetSessionHandler = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+  });
+
+  it('should ignore the screen share stream on the session', async () => {
+    const screenShareStream = new MockStream({ video: true });
+    const mockTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const session = sessions[0];
+
+    session._screenShareStream = screenShareStream as any;
+    session.pc['_addSender'](mockTrack); /* this is a mock PC */
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
+      'no active sessions have outgoing tracks that need to have the device updated',
+      { sessionIds: sessions.map(s => s.id) }
+    );
+
+    /* other generic mocks called */
+    expect(mockGetAllSessions).toBeCalled();
+    expect(mockGetEnumeratedDevices).toBeCalled();
+  });
+
+  it('should not update the session if the media did not get lost', async () => {
+    const mockTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const session = sessions[0];
+    session.pc['_addSender'](mockTrack); /* this is a mock PC */
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'sessions outgoing track still has available device',
+      { deviceLabel: mockTrack.label, kind: mockTrack.kind, sessionId: session.id }
+    );
+  });
+
+  it('should update video media on all sessions if the device was lost', async () => {
+    const mockVideoTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const mockAudioTrack = new MockTrack('audio', devices.audioDevices[0].label);
+
+    const session = sessions[0];
+    session.pc['_addSender'](mockVideoTrack); /* this is a mock PC */
+    session.pc['_addSender'](mockAudioTrack);
+
+    /* device is removed */
+    devices.videoDevices = devices.videoDevices.slice(1);
+
+    mockSdk.logger.warn['mockReset']();
+    await sessionManager.validateOutgoingMediaTracks();
+
+    /* logs correctly */
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'session lost media device and will attempt to switch devices',
+      { sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
+    );
+    expect(mockSdk.logger.warn).not.toHaveBeenCalledWith(
+      'session lost media device and will attempt to switch devices',
+      { sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
+    );
+
+    /* updates with the new devices */
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, sessionId: session.id });
+
+    /* other generic mocks called */
+    expect(mockGetSession).toBeCalled();
+    expect(mockGetSessionHandler).toBeCalled();
+  });
+
+  it('should update audio media on all sessions if the device was lost', async () => {
+    const mockVideoTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const mockAudioTrack = new MockTrack('audio', devices.audioDevices[0].label);
+
+    const session = sessions[0];
+    session.pc['_addSender'](mockVideoTrack); /* this is a mock PC */
+    session.pc['_addSender'](mockAudioTrack);
+
+    /* device is removed */
+    devices.audioDevices = devices.audioDevices.slice(1);
+
+    mockSdk.logger.warn['mockReset']();
+    await sessionManager.validateOutgoingMediaTracks();
+
+    /* logs correctly */
+    expect(mockSdk.logger.warn).not.toHaveBeenCalledWith(
+      'session lost media device and will attempt to switch devices',
+      { sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
+    );
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'session lost media device and will attempt to switch devices',
+      { sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
+    );
+
+    /* updates with the new devices */
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, sessionId: session.id });
+  });
+
+  it('should mute the media type if there is no device to switch to', async () => {
+    const mockVideoTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const mockAudioTrack = new MockTrack('audio', devices.videoDevices[0].label);
+
+    const session = sessions[0];
+    session.pc['_addSender'](mockVideoTrack); /* this is a mock PC */
+    session.pc['_addSender'](mockAudioTrack);
+    session._outboundStream = { removeTrack: jest.fn() } as any;
+
+    /* all devices are removed (none available to switch to) */
+    devices.videoDevices = [];
+    devices.audioDevices = [];
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    /* logs correctly */
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'session lost media device and will attempt to switch devices',
+      { sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
+    );
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'session lost media device and will attempt to switch devices',
+      { sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
+    );
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'no available audio devices to switch to. setting audio to mute for session',
+      { sessionId: session.id, kind: 'audio' }
+    );
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'no available video devices to switch to. setting video to mute for session',
+      { sessionId: session.id, kind: 'video' }
+    );
+
+    /* mutes the session and does not update media (since there is none to update to) */
+    expect(mockSessionHandler.getSendersByTrackType).toBeCalled();
+    expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
+    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
+    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
+
+    /* should also remove audio tracks because setAudioMute does not remove them (setVideoMute does) */
+    expect(mockSessionHandler.removeMediaFromSession).toHaveBeenCalledWith(session, mockAudioTrack);
+    expect(mockAudioTrack.stop).toHaveBeenCalled();
+    expect(session._outboundStream.removeTrack).toHaveBeenCalledWith(mockAudioTrack);
   });
 });

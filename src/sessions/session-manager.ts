@@ -5,7 +5,7 @@ import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
-import { getValidDeviceId } from '../media-utils';
+import { getValidDeviceId, getEnumeratedDevices } from '../media-utils';
 import {
   IPendingSession,
   ISessionInfo,
@@ -272,5 +272,98 @@ export class SessionManager {
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setAudioMute(session, params);
+  }
+  async validateOutgoingMediaTracks () {
+    const sessions = this.getAllActiveSessions();
+    const { videoDevices, audioDevices } = await getEnumeratedDevices(this.sdk);
+    const updates = new Map<string, { video?: boolean, audio?: boolean }>();
+    const promises = [];
+
+    /* find all sessions that ned to be updated */
+    for (const session of sessions) {
+      const trackIdsToIgnore: string[] = [];
+      /* if we have a video session with a screenShareStream */
+      if (session._screenShareStream) {
+        trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
+      }
+
+      session.pc.getSenders()
+        .filter((sender) => sender.track && !trackIdsToIgnore.includes(sender.track.id))
+        .map(s => s.track)
+        .forEach(track => {
+          /* senders won't be using output devices so we don't need to worry about those */
+          const deviceExists = !!(track.kind === 'video' ? videoDevices : audioDevices).find(
+            d => d.label === track.label && d.kind.slice(0, 5) === track.kind
+          );
+          if (deviceExists) {
+            this.log(LogLevels.info, 'sessions outgoing track still has available device',
+              { deviceLabel: track.label, kind: track.kind, sessionId: session.id });
+            return;
+          }
+
+          const currVal: { video?: boolean, audio?: boolean } = updates.get(session.id) || {};
+          currVal[track.kind] = true;
+          updates.set(session.id, currVal);
+
+          this.log(LogLevels.warn, 'session lost media device and will attempt to switch devices',
+            { sessionId: session.id, kind: track.kind, deviceLabel: track.label });
+        });
+    }
+
+    /* if there are not sessions to updated, log and we are done */
+    if (!updates.size) {
+      this.log(LogLevels.debug, 'no active sessions have outgoing tracks that need to have the device updated',
+        { sessionIds: sessions.map(s => s.id) });
+      return;
+    }
+
+    /* update the sessions */
+    for (const [sessionId, mediaToUpdate] of updates) {
+      const opts: IUpdateOutgoingMedia = { sessionId };
+      const jingleSession = this.getSession({ id: sessionId });
+      const handler = this.getSessionHandler({ jingleSession });
+
+      /* if our video needs to be updated */
+      if (mediaToUpdate.video) {
+        /* if we have devices, let the sdk figure out which to switch to */
+        if (videoDevices.length) {
+          opts.videoDeviceId = true;
+        } else {
+          this.log(LogLevels.warn, 'no available video devices to switch to. setting video to mute for session',
+            { sessionId, kind: 'video' });
+          promises.push(
+            handler.setVideoMute(jingleSession, { mute: true, id: jingleSession.id })
+          );
+        }
+      }
+
+      /* if our audio needs to be updated */
+      if (mediaToUpdate.audio) {
+        if (audioDevices.length) {
+          opts.audioDeviceId = true;
+        } else {
+          this.log(LogLevels.warn, 'no available audio devices to switch to. setting audio to mute for session',
+            { sessionId, kind: 'audio' });
+          promises.push(
+            handler.setAudioMute(jingleSession, { mute: true, id: jingleSession.id })
+          );
+
+          const senders = handler.getSendersByTrackType(jingleSession, 'audio')
+            .filter((sender) => sender.track);
+
+          senders.forEach((sender) => {
+            sender.track.stop();
+            promises.push(handler.removeMediaFromSession(jingleSession, sender.track));
+            jingleSession._outboundStream.removeTrack(sender.track);
+          });
+        }
+      }
+
+      if (opts.videoDeviceId || opts.audioDeviceId) {
+        promises.push(this.sdk.updateOutgoingMedia(opts));
+      }
+    }
+
+    return Promise.all(promises);
   }
 }

@@ -12,6 +12,8 @@ test/test-pages/*/index.html
 !test/test-pages/common/
 
 
+.ignore
+
 ## vscode specific files
 /.vscode
 

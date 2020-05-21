@@ -1,12 +1,13 @@
 import WebSocket from 'ws';
 import nock from 'nock';
 import WildEmitter from 'wildemitter';
-import { PureCloudWebrtcSdk } from '../src/client';
-import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
 import crypto from 'crypto';
-import { SessionTypes, LogLevels } from '../src/types/enums';
 import fs from 'fs';
 import path from 'path';
+
+import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
+import { SessionTypes, LogLevels } from '../src/types/enums';
+import { PureCloudWebrtcSdk } from '../src/client';
 
 declare var global: {
   window: any,
@@ -60,6 +61,9 @@ export class SimpleMockSdk extends WildEmitter {
     _webrtcSessions: {
       refreshIceServers: jest.fn()
     }
+  };
+  sessionManager = {
+    validateOutgoingMediaTracks: jest.fn()
   };
   setAudioMute = jest.fn();
   updateOutgoingMedia = jest.fn();
@@ -125,14 +129,16 @@ class MockSession extends WildEmitter {
 }
 
 class MockTrack {
-  constructor (kind: 'video' | 'audio' = 'video') {
+  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
     this.kind = kind;
+    this.label = label || '';
   }
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
   id = random();
   kind = 'video';
   stop = jest.fn();
+  label: string;
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
   }

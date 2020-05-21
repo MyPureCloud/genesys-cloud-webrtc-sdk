@@ -1,6 +1,7 @@
+import StatsGatherer from 'webrtc-stats-gatherer';
+
 import { PureCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import StatsGatherer from 'webrtc-stats-gatherer';
 import { SessionManager } from './session-manager';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
@@ -138,7 +139,13 @@ export default abstract class BaseSessionHandler {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): Promise<any> {
-    this.log(LogLevels.info, 'updating outgoing media', { conversationId: session.conversationId, options });
+    this.log(LogLevels.info, 'updating outgoing media', {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      streamId: options.stream ? options.stream.id : undefined,
+      videoDeviceId: options.videoDeviceId,
+      audioDeviceId: options.audioDeviceId
+    });
 
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
@@ -218,7 +225,7 @@ export default abstract class BaseSessionHandler {
       }
     }
 
-    /* make sure out stream does not have a video track if our session has video on mute (mainly checking any passed in stream)  */
+    /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
     stream.getTracks().forEach(track => {
       if (session.videoMuted && track.kind === 'video') {
         this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
@@ -292,5 +299,11 @@ export default abstract class BaseSessionHandler {
   removeMediaFromSession (session: IJingleSession, track: MediaStreamTrack): Promise<void> {
     this.log(LogLevels.debug, 'Removing track from session', { track, conversationId: session.conversationId });
     return session.removeTrack(track);
+  }
+
+  getSendersByTrackType (session: IJingleSession, kind: 'audio' | 'video'): RTCRtpSender[] {
+    return session.pc.getSenders().filter(sender => {
+      return sender.track && sender.track.kind === kind;
+    });
   }
 }

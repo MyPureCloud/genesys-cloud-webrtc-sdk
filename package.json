@@ -1,6 +1,6 @@
 {
   "name": "purecloud-webrtc-sdk",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
   "license": "MIT",
@@ -92,7 +92,7 @@
     "rimraf": "^3.0.0",
     "semistandard": "^13.0.1",
     "stupid-server": "^0.2.5",
-    "ts-jest": "^24.0.2",
+    "ts-jest": "^26.0.0",
     "ts-loader": "^6.2.1",
     "tslint": "^5.18.0",
     "tslint-config-semistandard": "^8.0.1",

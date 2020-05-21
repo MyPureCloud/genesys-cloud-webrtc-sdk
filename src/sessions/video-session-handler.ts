@@ -1,9 +1,22 @@
-import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate, IConversationParticipant, IStartVideoSessionParams } from '../types/interfaces';
-import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
-import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
+
+import {
+  IPendingSession,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IJingleSession,
+  IParticipantUpdate,
+  IParticipantsUpdate,
+  IOnScreenParticipantsUpdate,
+  ISpeakersUpdate,
+  IConversationParticipant,
+  IMediaRequestOptions,
+  IStartVideoSessionParams
+} from '../types/interfaces';
+import BaseSessionHandler from './base-session-handler';
+import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices } from '../media-utils';
+import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
 /**
@@ -244,10 +257,21 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream;
     if (!stream) {
-      stream = await startMedia(this.sdk, {
+      const devices = await getEnumeratedDevices(this.sdk);
+      const mediaParams: IMediaRequestOptions = {
         audio: params.audioDeviceId || true,
         video: params.videoDeviceId || true
-      });
+      };
+
+      if (!devices.videoDevices.length) {
+        mediaParams.video = false;
+      }
+
+      if (!devices.audioDevices.length) {
+        mediaParams.audio = false;
+      }
+
+      stream = await startMedia(this.sdk, mediaParams);
     }
 
     session._outboundStream = stream;
@@ -440,12 +464,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   handleMediaChangeEvent (session: IJingleSession, event: IMediaChangeEvent) {
     this.updateParticipantsOnScreen(session, event);
     this.updateSpeakers(session, event);
-  }
-
-  getSendersByTrackType (session: IJingleSession, kind: 'audio' | 'video'): RTCRtpSender[] {
-    return session.pc.getSenders().filter(sender => {
-      return sender.track && sender.track.kind === kind;
-    });
   }
 
   async startScreenShare (session: IJingleSession) {

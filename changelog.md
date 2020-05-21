@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `startVideoConference` now takes an optional `inviteeJid` param for sending a propose to the `inviteeJid`
 * pending sessions can now be rejected with the `rejectPendingSession` function
 
+### Fixed
+* When `mediaDevices` fires a `devicechange` event, the sdk will check to make sure all sessions have 
+media from devices that are still available. It will attempt to update if the media is no longer available 
+_or_ it will set the session mute if there are no devices available to switch to. 
+
 # [v3.5.1](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.5.0...v3.5.1)
 ### Fixed
 * Updated the logger to a version that doesn't cause an infinite loop
