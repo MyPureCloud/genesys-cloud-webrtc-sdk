@@ -98,8 +98,8 @@ function initDevices () {
 }
 
 function setAppControlVisiblity (visible) {
-  const visibility = visible ? 'visible' : 'hidden';
-  document.getElementById('app-controls').style.visibility = visibility;
+  const display = visible ? 'block' : 'none';
+  document.getElementById('app-controls').style.display = display;
 }
 
 function setInitTextVisibility (visible) {
@@ -118,18 +118,22 @@ function toggleDisplayNone (elementId) {
   }
 }
 
-function initialize (environmentData, conversationsApi) {
+function initialize (environmentData, conversationsApi, noAuth) {
   setAppControlVisiblity(false);
   setInitTextVisibility(true);
 
-  initControls();
+  if (!noAuth) {
+    initControls();
+  }
   initDevices();
 
   window.navigator.mediaDevices.ondevicechange = initDevices;
 
-  sdkHandler.initWebrtcSDK(environmentData, conversationsApi)
+  sdkHandler.initWebrtcSDK(environmentData, conversationsApi, noAuth)
     .then(() => {
-      setAppControlVisiblity(true);
+      if (!noAuth) {
+        setAppControlVisiblity(true);
+      }
       setInitTextVisibility(false);
     })
     .catch((err) => {

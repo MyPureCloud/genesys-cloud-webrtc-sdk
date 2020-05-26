@@ -31,7 +31,7 @@ describe('shouldHandleSessionByJid', () => {
 });
 
 describe('startSession', () => {
-  it('should create media and initiate session', async () => {
+  it('should initiate session', async () => {
     const stream = new MockStream();
     const jid = '123acdjid';
     jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue(stream as any);
@@ -47,7 +47,6 @@ describe('startSession', () => {
     await handler.startSession({ sessionType: SessionTypes.acdScreenShare });
 
     const expectedParams = {
-      stream,
       jid,
       conversationId: data.conversation.id,
       sourceCommunicationId: data.sourceCommunicationId,
@@ -56,7 +55,6 @@ describe('startSession', () => {
 
     expect(mockSdk._streamingConnection.webrtcSessions.initiateRtcSession)
       .toHaveBeenLastCalledWith(expectedParams);
-    expect(handler.temporaryOutboundStream).toBe(stream);
   });
 });
 
@@ -80,11 +78,11 @@ describe('handlePropose', () => {
 describe('handleSessionInit', () => {
   it('should set a track listener that ends the session when all tracks have ended; should save stream to session', async () => {
     const acceptSpy = jest.spyOn(handler, 'acceptSession');
+    jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit').mockImplementation();
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     const mockStream = (new MockStream() as any);
     jest.spyOn((mockStream as MockStream)._tracks[0], 'addEventListener');
-    handler.temporaryOutboundStream = mockStream;
 
     const session: IJingleSession = new MockSession() as any;
     await handler.handleSessionInit(session);
@@ -98,7 +96,6 @@ describe('handleSessionInit', () => {
     const session: any = new MockSession();
     const stream: MediaStream = new MockStream() as any;
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-    handler.temporaryOutboundStream = stream;
 
     session.emit.bind(session);
     await handler.handleSessionInit(session);

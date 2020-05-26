@@ -8,28 +8,38 @@ let startVideoOpts;
 let currentSessionId;
 let webrtcSdk;
 let conversationsApi;
+let securityKey;
 
-function initWebrtcSDK (environmentData, _conversationsApi) {
+function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
+  let options = {};
+  let initOptions = null;
   conversationsApi = _conversationsApi;
 
-  const accessToken = utils.getAccessToken();
-  if (!accessToken) {
-    window.alert('You have not authenticated yet');
-    throw new Error('Not Authenticated');
+  if (noAuth) {
+    initOptions = { securityCode: document.getElementById('security-key').value };
+    options.organizationId = document.getElementById('org-id').value;
+    options.autoConnectSessions = true;
+  } else {
+    const accessToken = utils.getAccessToken();
+    if (!accessToken) {
+      window.alert('You have not authenticated yet');
+      throw new Error('Not Authenticated');
+    }
+    options.accessToken = accessToken;
   }
 
-  const environment = environmentData.uri;
-  const options = { accessToken, environment, logLevel: 'info' };
+  options.environment = environmentData.uri;
+  options.logLevel = 'info';
 
   const SDK = PureCloudWebrtcSdk || getSdk();
   webrtcSdk = new SDK(options);
   window.webrtcSdk = webrtcSdk;
 
   connectEventHandlers();
-  return webrtcSdk.initialize()
-    .then(() => {
-      utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
-    });
+  return webrtcSdk.initialize(initOptions)
+  .then(() => {
+    utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
+  });
 }
 
 function connectEventHandlers () {
@@ -116,6 +126,7 @@ function getInputValue (inputId) {
 /* --------------------------- */
 
 function ready () {
+  webrtcSdk.startScreenShare();
   utils.writeToLog('webrtcSDK ready event emitted');
 }
 
