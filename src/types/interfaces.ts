@@ -5,7 +5,7 @@ import WebrtcStatsGatherer from 'webrtc-stats-gatherer';
 export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
 
 export interface ISdkConstructOptions {
-  environment: string;
+  environment?: string;
   accessToken?: string;
   organizationId?: string;
   wsHost?: string;
@@ -56,6 +56,10 @@ export interface IMediaRequestOptions {
    * - `false` | `undefined` to not request/update this type of media
    */
   video?: boolean | string | null;
+  videoResolution?: {
+    width: ConstrainULong,
+    height: ConstrainULong
+  };
   /**
    * - `string` to request media from device
    * - `true` to request media from sdk default device
@@ -86,9 +90,9 @@ export interface IMediaDeviceIds {
 }
 
 export interface IEnumeratedDevices {
-  videoDeviceIds: string[];
-  audioDeviceIds: string[];
-  outputDeviceIds: string[];
+  videoDevices: MediaDeviceInfo[];
+  audioDevices: MediaDeviceInfo[];
+  outputDevices: MediaDeviceInfo[];
 }
 
 export interface IUpdateOutgoingMedia {
@@ -116,11 +120,11 @@ export interface IPersonDetails {
 }
 
 export interface ILogger {
-  log (...args: any[]): void;
-  debug (...args: any[]): void;
-  info (...args: any[]): void;
-  warn (...args: any[]): void;
-  error (...args: any[]): void;
+  log (message: string | Error, details?: any, skipServer?: boolean): void;
+  debug (message: string | Error, details?: any, skipServer?: boolean): void;
+  info (message: string | Error, details?: any, skipServer?: boolean): void;
+  warn (message: string | Error, details?: any, skipServer?: boolean): void;
+  error (message: string | Error, details?: any, skipServer?: boolean): void;
 }
 
 export interface ICustomerData {
@@ -135,6 +139,8 @@ export interface IPendingSession {
   address: string;
   conversationId: string;
   sessionType: SessionTypes;
+  originalRoomJid: string;
+  fromUserId?: string;
 }
 
 export interface ISessionInfo {
@@ -142,6 +148,8 @@ export interface ISessionInfo {
   autoAnswer: boolean;
   fromJid: string;
   conversationId: string;
+  originalRoomJid: string;
+  fromUserId?: string;
 }
 
 export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
@@ -158,7 +166,12 @@ export interface IEndSessionRequest {
 
 export interface IStartSessionParams extends IOutgoingMediaDeviceIds {
   sessionType: SessionTypes;
-  jid?: string;
+}
+
+export interface IStartVideoSessionParams extends IStartSessionParams {
+  jid: string;
+  /** userJid to be used when inviting a user to a conference */
+  inviteeJid?: string;
 }
 
 /**

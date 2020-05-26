@@ -69,9 +69,10 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 
 `sdk.startScreenShare() : Promise<void>` - Start sharing the guest user's screen.
 
-`sdk.startVideoConference(roomJid) : Promise<void>` - Start or join a video conference
+`sdk.startVideoConference(roomJid, inviteeJid?) : Promise<void>` - Start or join a video conference
   - parameters
     - `String roomJid`: Required; the id or jid of the room where the conference will take place.
+    - `String inviteeJid`: Optional; the jid of the user you would like to invite to this conference. In order for this to work, the roomJid must be prefixed with `peer-`
 
 `sdk.createMedia(options) : Promise<MediaStream>` - Creates a media stream with audio, video, or both.
   - parameters
@@ -127,6 +128,9 @@ connectivity with PureCloud. Initialize must be called before any events will tr
 
     Advanced options:
     - `MediaStream mediaStream`: Optional, outgoing MediaStream. If not provided a MediaStream will be created automatically.
+    - `Object videoResolution`: Optional.
+      - `ConstrainULong width`: Required.
+      - `ConstrainULong height`: Required.
     - `HTMLAudioElement audioElement`: Optional, element to which incoming audio will be attached. Except for video sessions, a unique element will be created automatically if one is not provided, then cleaned up afterwards.
     - `HTMLVideoElement videoElement`: Optional/Required, element to which incoming video will be attached. This is optional if you provide a default video element in the config, otherwise this is required.
 

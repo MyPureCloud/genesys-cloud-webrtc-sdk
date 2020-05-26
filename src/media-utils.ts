@@ -1,11 +1,20 @@
 import browserama from 'browserama';
+
 import { PureCloudWebrtcSdk } from './client';
-import { log } from './logging';
-import { LogLevels, SdkErrorTypes } from './types/enums';
 import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
+import { SdkErrorTypes } from './types/enums';
 import { throwSdkError } from './utils';
 
 const PC_AUDIO_EL_CLASS = '__pc-webrtc-inbound';
+const DEFAULT_VIDEO_RESOLUTION = {
+  height: {
+    ideal: 2160
+  },
+  width: {
+    ideal: 4096
+  }
+};
+
 export let _hasTransceiverFunctionality: boolean | null = null;
 let isListeningForDeviceChanges = false;
 
@@ -39,7 +48,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   if (opts.video || opts.video === null) {
     const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, conversationId);
     if (videoDeviceId) {
-      log.call(sdk, LogLevels.info, 'Requesting video with deviceId', { deviceId: videoDeviceId, conversationId });
+      sdk.logger.info('Requesting video with deviceId', { deviceId: videoDeviceId, conversationId });
       constraints.video.deviceId = {
         exact: videoDeviceId
       };
@@ -50,7 +59,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   if (opts.audio || opts.audio === null) {
     const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, conversationId);
     if (audioDeviceId) {
-      log.call(sdk, LogLevels.info, 'Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId });
+      sdk.logger.info('Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId });
       constraints.audio.deviceId = {
         exact: audioDeviceId
       };
@@ -87,7 +96,7 @@ export const attachAudioMedia = function (sdk: PureCloudWebrtcSdk, stream: Media
   }
 
   if (audioElement.srcObject) {
-    log.call(sdk, LogLevels.warn, 'Attaching media to an audio element that already has a srcObject. This can result is audio issues.', { conversationId });
+    sdk.logger.warn('Attaching media to an audio element that already has a srcObject. This can result is audio issues.', { conversationId });
   }
 
   audioElement.autoplay = true;
@@ -185,19 +194,26 @@ function getStandardConstraints (opts: IMediaRequestOptions): MediaStreamConstra
     constraints.audio = false;
   }
 
+  if (constraints.video) {
+    const resolution = opts.videoResolution || DEFAULT_VIDEO_RESOLUTION;
+    Object.assign(constraints.video, resolution);
+  }
+
   return constraints;
 }
 
 let refreshDevices = true;
 const enumeratedDevices: IEnumeratedDevices = {
-  videoDeviceIds: [],
-  audioDeviceIds: [],
-  outputDeviceIds: []
+  videoDevices: [],
+  audioDevices: [],
+  outputDevices: []
 };
 
 export const handleDeviceChange = function (this: PureCloudWebrtcSdk) {
-  log.call(this, LogLevels.debug, 'devices changed');
+  this.logger.debug('devices changed');
   refreshDevices = true;
+  /* this function will enumerate devices again */
+  return this.sessionManager.validateOutgoingMediaTracks();
 };
 
 export const stopListeningForDeviceChanges = function () {
@@ -205,12 +221,12 @@ export const stopListeningForDeviceChanges = function () {
   navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
 };
 
-export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IEnumeratedDevices> {
+export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk, forceRefresh: boolean = false): Promise<IEnumeratedDevices> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
-    log.call(sdk, LogLevels.warn, 'Unable to enumerate devices');
-    enumeratedDevices.videoDeviceIds = [];
-    enumeratedDevices.audioDeviceIds = [];
-    enumeratedDevices.outputDeviceIds = [];
+    sdk.logger.warn('Unable to enumerate devices');
+    enumeratedDevices.videoDevices = [];
+    enumeratedDevices.audioDevices = [];
+    enumeratedDevices.outputDevices = [];
     return enumeratedDevices;
   }
 
@@ -219,33 +235,87 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
     isListeningForDeviceChanges = true;
   }
 
-  // if devices haven't changed since last time we called this
-  if (!refreshDevices) {
-    log.call(sdk, LogLevels.debug, 'Returning cached enumerated devices', { devices: enumeratedDevices });
+  /* if devices haven't changed, no forceRefresh, & we have permission - return the cache devices */
+  if (!refreshDevices && !forceRefresh && hasDevicePermissions(enumeratedDevices)) {
+    sdk.logger.debug('Returning cached enumerated devices', { devices: enumeratedDevices });
     return enumeratedDevices;
   }
 
   try {
-    enumeratedDevices.videoDeviceIds = [];
-    enumeratedDevices.audioDeviceIds = [];
-    enumeratedDevices.outputDeviceIds = [];
+    const oldDevices = { ...enumeratedDevices };
+    enumeratedDevices.videoDevices = [];
+    enumeratedDevices.audioDevices = [];
+    enumeratedDevices.outputDevices = [];
 
-    const devices = await window.navigator.mediaDevices.enumerateDevices();
+    const newDevices = await window.navigator.mediaDevices.enumerateDevices();
     refreshDevices = false;
-    devices.forEach(device => {
+
+    const mappedDevices = mapOldToNewDevices(oldDevices, newDevices);
+    mappedDevices.forEach(device => {
       if (device.kind === 'videoinput') {
-        enumeratedDevices.videoDeviceIds.push(device.deviceId);
+        enumeratedDevices.videoDevices.push(device);
       } else if (device.kind === 'audioinput') {
-        enumeratedDevices.audioDeviceIds.push(device.deviceId);
+        enumeratedDevices.audioDevices.push(device);
       } else /* if (device.kind === 'audiooutput') */ {
-        enumeratedDevices.outputDeviceIds.push(device.deviceId);
+        enumeratedDevices.outputDevices.push(device);
       }
     });
   } catch (e) {
     throwSdkError.call(sdk, SdkErrorTypes.generic, 'Error enumerating devices', e);
   }
 
+  sdk.logger.debug('Enumerated devices', { devices: enumeratedDevices });
   return enumeratedDevices;
+}
+
+function mapOldToNewDevices (oldEnumeratedDevices: IEnumeratedDevices | undefined, newDevices: MediaDeviceInfo[]): MediaDeviceInfo[] {
+  /* if we have labels on the new devices, no reason to do anything with them
+    OR if we didn't have old labels, no need to do anything */
+  if (hasDevicePermissions(newDevices) || !oldEnumeratedDevices || !hasDevicePermissions(oldEnumeratedDevices)) {
+    return newDevices;
+  }
+
+  /* if we don't have labels, but we HAD labels - we can map the old labels to the new devices without labels (because FF) */
+  const devices = [];
+  const oldDevices = mapSdkEnumeratedDevicesToArray(oldEnumeratedDevices);
+  for (const newDevice of newDevices) {
+    const foundOldDevice = oldDevices.find(
+      d => d.deviceId === newDevice.deviceId && d.groupId === newDevice.groupId && d.kind === newDevice.kind
+    );
+    if (foundOldDevice && foundOldDevice.label) {
+      devices.push(foundOldDevice);
+    } else {
+      devices.push(newDevice);
+    }
+  }
+
+  return devices;
+}
+
+function mapSdkEnumeratedDevicesToArray (devices: IEnumeratedDevices): MediaDeviceInfo[] {
+  return [...devices.audioDevices, ...devices.videoDevices, ...devices.outputDevices];
+}
+
+function isSdkEnumeratedDevices (obj: IEnumeratedDevices | MediaDeviceInfo[]): obj is IEnumeratedDevices {
+  return (obj as IEnumeratedDevices).videoDevices !== undefined;
+}
+
+function hasDevicePermissions (devices: MediaDeviceInfo[] | IEnumeratedDevices): boolean {
+  const hasPermission = { video: true, audio: true };
+
+  if (isSdkEnumeratedDevices(devices)) {
+    devices = mapSdkEnumeratedDevicesToArray(devices);
+  }
+
+  for (const device of devices) {
+    if (device.kind === 'videoinput' && hasPermission.video) {
+      hasPermission.video = !!device.label;
+    } else if (device.kind === 'audioinput' && hasPermission.audio) {
+      hasPermission.audio = !!device.label;
+    }
+  }
+
+  return hasPermission.video && hasPermission.audio;
 }
 
 /**
@@ -259,6 +329,13 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
  *      it will look for the system default device
  *  4. If no device was found, return `undefined`
  *
+ * Note: if `kind === 'audiooutput'` it will always return a value.
+ * Reason: There is no way to request "default" output device, so
+ *  we have to return the id of the first output device.
+ *  For mic/camera, we just return `undefined` because gUM will
+ *  automatically find the default device (the defaults are different
+ *  between Chrome and FF)
+ *
  * @param sdk purecloud sdk instance
  * @param kind desired device kind
  * @param deviceId `deviceId` for specific device, `true` for sdk default device, or `null` for system default
@@ -266,50 +343,56 @@ export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk): Promise<IE
 export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null, conversationId?: string): Promise<string> {
   const devices = await getEnumeratedDevices(sdk);
 
-  let availableDevices: string[];
+  let availableDevices: MediaDeviceInfo[];
   let sdkConfigDefault: string | null;
-  let foundDeviceId: string | undefined;
+  let foundDevice: MediaDeviceInfo | undefined;
 
   if (kind === 'videoinput') {
-    availableDevices = devices.videoDeviceIds.slice();
+    availableDevices = devices.videoDevices.slice();
     sdkConfigDefault = sdk._config.defaultVideoDeviceId;
   } else if (kind === 'audioinput') {
-    availableDevices = devices.audioDeviceIds.slice();
+    availableDevices = devices.audioDevices.slice();
     sdkConfigDefault = sdk._config.defaultAudioDeviceId;
   } else {
-    availableDevices = devices.outputDeviceIds.slice();
+    availableDevices = devices.outputDevices.slice();
     sdkConfigDefault = sdk._config.defaultOutputDeviceId;
   }
 
   // if a deviceId was passed in, try to use it
   if (typeof deviceId === 'string') {
-    foundDeviceId = availableDevices.find((d: string) => d === deviceId);
+    foundDevice = availableDevices.find((d: MediaDeviceInfo) => d.deviceId === deviceId);
   }
 
   // log if we didn't find the requested deviceId
-  if (!foundDeviceId) {
+  if (!foundDevice) {
     if (typeof deviceId === 'string') {
-      log.call(sdk, LogLevels.warn, `Unable to find requested ${kind} deviceId`, { deviceId, conversationId });
+      sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, conversationId });
     }
 
     // then try to find the sdk default device (if it is not `null`)
     if (sdkConfigDefault !== null) {
-      foundDeviceId = availableDevices.find((d: string) => d === sdkConfigDefault);
+      foundDevice = availableDevices.find((d: MediaDeviceInfo) => d.deviceId === sdkConfigDefault);
       // log if we couldn't find the sdk default device
-      if (!foundDeviceId) {
-        log.call(sdk, LogLevels.warn, `Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, conversationId });
+      if (!foundDevice) {
+        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, conversationId });
       }
     }
   }
 
-  if (!foundDeviceId) {
-    log.call(sdk, LogLevels.info, `Using the system default ${kind} device`, { conversationId });
+  if (!foundDevice) {
+    sdk.logger.info(`Using the system default ${kind} device`, { conversationId });
 
-    /* The first device is the default device */
+    /*
+      SANITY: There is no way to request "default" output device, so
+        we have to return the id of the first output device.
+        For mic/camera, we just return `undefined` because gUM will
+        automatically find the default device (the defaults are different
+          between Chrome and FF)
+    */
     if (kind === 'audiooutput') {
-      foundDeviceId = availableDevices[0];
+      foundDevice = availableDevices[0];
     }
   }
 
-  return foundDeviceId;
+  return foundDevice ? foundDevice.deviceId : undefined;
 }

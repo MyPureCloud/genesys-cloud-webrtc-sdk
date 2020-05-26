@@ -4,7 +4,7 @@ import { getSdk, PureCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
 
 let currentSession;
-let startVideoOpts;
+let videoOpts;
 let currentSessionId;
 let webrtcSdk;
 let conversationsApi;
@@ -67,7 +67,7 @@ function _getLogHeader (functionName) {
 function makeOutboundCall () {
   const numberToCall = getInputValue('outbound-phone-number');
   if (!numberToCall) {
-    document.getElementById('output-data').value += 'Phone Number is required to place an outbound call\n';
+    document.getElementById('log-data').value += 'Phone Number is required to place an outbound call\n';
     return;
   }
 
@@ -88,8 +88,8 @@ async function endSession () {
     const controls = document.getElementById('video-actions');
     controls.classList.add('hidden');
 
-    const startControls = document.getElementById('start-controls');
-    startControls.classList.remove('hidden');
+    const startControls = document.querySelectorAll('.start-controls');
+    startControls.forEach(el => el.classList.remove('hidden'));
 
     utils.writeToLog('Call ended');
   } catch (err) {
@@ -134,6 +134,7 @@ function ready () {
 function pendingSession (options) {
   let output = `${_getLogHeader('pendingSession')}
     id: ${JSON.stringify(options.id)}
+    sessionType: ${JSON.stringify(options.sessionType)}
     address: ${JSON.stringify(options.address)}
     conversationId: ${JSON.stringify(options.conversationId)}
     autoAnswer: ${JSON.stringify(options.autoAnswer)}`;
@@ -186,19 +187,19 @@ async function sessionStarted (session) {
 
     let mediaStream;
 
-    if (!startVideoOpts.video && !startVideoOpts.audio) {
+    if (!videoOpts.video && !videoOpts.audio) {
       mediaStream = new MediaStream();
-    } else if (!startVideoOpts.video || !startVideoOpts.audio) {
-      if (startVideoOpts.video) {
-        startVideoOpts.video = getDeviceId('video');
+    } else if (!videoOpts.video || !videoOpts.audio || videoOpts.videoResolution) {
+      if (videoOpts.video) {
+        videoOpts.video = getDeviceId('video');
       }
 
-      if (startVideoOpts.audio) {
-        startVideoOpts.audio = getDeviceId('audio');
+      if (videoOpts.audio) {
+        videoOpts.audio = getDeviceId('audio');
       }
 
-      console.log({ startVideoOpts });
-      mediaStream = await webrtcSdk.createMedia(startVideoOpts);
+      console.log({ videoOpts });
+      mediaStream = await webrtcSdk.createMedia(videoOpts);
     }
 
     const sessionEventsToLog = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
@@ -342,21 +343,34 @@ function connected (e) {
   utils.writeToLog('connected event', e);
 }
 
-async function startVideoConference ({ noAudio, noVideo } = {}) {
-  const roomJid = getInputValue('video-jid');
-  if (!roomJid) {
-    document.getElementById('output-data').value += 'Phone Number is required to place an outbound call\n';
-    return;
+async function startVideoConference ({ noAudio, noVideo, mediaStream, useConstraints } = {}, answerPendingSession) {
+  let videoResolution;
+
+  if (useConstraints) {
+    videoResolution = JSON.parse(window['media-constraints'].value);
+    console.log('proceeding with custom resolution', videoResolution);
   }
 
-  startVideoOpts = { video: !noVideo, audio: !noAudio };
+  videoOpts = { video: !noVideo, audio: !noAudio, mediaStream, videoResolution };
 
-  webrtcSdk.startVideoConference(roomJid);
+  if (answerPendingSession) {
+    webrtcSdk.acceptPendingSession(currentSessionId);
+  } else {
+    const roomJid = getInputValue('video-jid');
+    if (!roomJid) {
+      const message = 'roomJid required to start a video call';
+      document.getElementById('log-data').value += `${message}\n`;
+      throw new Error(message);
+    }
+
+    webrtcSdk.startVideoConference(roomJid, getInputValue('invitee-jid'));
+  }
+
   const element = document.getElementById('waiting-for-media');
   element.classList.remove('hidden');
 
-  const startControls = document.getElementById('start-controls');
-  startControls.classList.add('hidden');
+  const startControls = document.querySelectorAll('.start-controls');
+  startControls.forEach(el => el.classList.add('hidden'));
 }
 
 function setVideoMute (mute) {

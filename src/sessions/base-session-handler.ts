@@ -1,7 +1,7 @@
-import { PureCloudWebrtcSdk } from '../client';
-import { log } from '../logging';
-import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import StatsGatherer from 'webrtc-stats-gatherer';
+
+import { PureCloudWebrtcSdk } from '../client';
+import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
@@ -22,7 +22,7 @@ export default abstract class BaseSessionHandler {
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
   protected log (level: LogLevels, message: any, details?: any): void {
-    log.call(this.sdk, level, message, details);
+    this.sdk.logger[level].call(this.sdk.logger, message, details);
   }
 
   handleConversationUpdate (session: IJingleSession, update: ConversationUpdate) {
@@ -34,13 +34,19 @@ export default abstract class BaseSessionHandler {
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
-    this.log(LogLevels.info, 'handling propose', { conversationId: pendingSession.conversationId });
+    pendingSession.sessionType = this.sessionType;
+    this.log(LogLevels.info, 'handling propose', { pendingSession });
     this.sdk.emit('pendingSession', pendingSession);
   }
 
   async proceedWithSession (session: IPendingSession): Promise<any> {
-    this.log(LogLevels.info, 'proceeding with session', { conversationId: session.conversationId });
+    this.log(LogLevels.info, 'proceeding with proposed session', { conversationId: session.conversationId });
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
+  }
+
+  async rejectPendingSession (session: IPendingSession): Promise<any> {
+    this.log(LogLevels.info, 'rejecting propose', { conversationId: session.conversationId });
+    this.sessionManager.webrtcSessions.rejectRtcSession(session.id);
   }
 
   async handleSessionInit (session: IJingleSession): Promise<any> {
@@ -133,7 +139,13 @@ export default abstract class BaseSessionHandler {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): Promise<any> {
-    this.log(LogLevels.info, 'updating outgoing media', { conversationId: session.conversationId, options });
+    this.log(LogLevels.info, 'updating outgoing media', {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      streamId: options.stream ? options.stream.id : undefined,
+      videoDeviceId: options.videoDeviceId,
+      audioDeviceId: options.audioDeviceId
+    });
 
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
@@ -144,22 +156,6 @@ export default abstract class BaseSessionHandler {
     const updateVideo = (options.stream || options.videoDeviceId !== undefined) && !session.videoMuted;
     const updateAudio = options.stream || options.audioDeviceId !== undefined;
     let stream: MediaStream = options.stream;
-
-    if (!stream) {
-      stream = await startMedia(this.sdk, {
-        audio: options.audioDeviceId,
-        /* if video is muted, we don't want to request it */
-        video: !session.videoMuted && options.videoDeviceId
-      });
-    }
-
-    /* make sure out stream does not have a video track if our session has video on mute  */
-    stream.getTracks().forEach(track => {
-      if (session.videoMuted && track.kind === 'video') {
-        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
-        stream.removeTrack(track);
-      }
-    });
 
     const outboundStream = session._outboundStream;
     const destroyMediaPromises: Promise<any>[] = [];
@@ -186,6 +182,7 @@ export default abstract class BaseSessionHandler {
         )
       );
 
+    /* stop media first because FF does not allow more than one audio/video track */
     senders.forEach(sender => {
       sender.track.stop();
       if (outboundStream) {
@@ -195,6 +192,47 @@ export default abstract class BaseSessionHandler {
     });
 
     await Promise.all(destroyMediaPromises);
+
+    if (!stream) {
+      try {
+        stream = await startMedia(this.sdk, {
+          audio: options.audioDeviceId,
+          /* if video is muted, we don't want to request it */
+          video: !session.videoMuted && options.videoDeviceId
+        });
+      } catch (e) {
+        /*
+          In FF, if the user does not grant us permissions for the new media,
+          we need to update the mute states on the session. The implementing
+          app will need to handle the error and react appropriately
+        */
+        if (e.name === 'NotAllowedError') {
+          /*
+            at this point, there is no active media so we just need to tell the server we are muted
+            realistically, the implementing app should kick them out of the conference
+          */
+          const userId = this.sdk._personDetails.id;
+          if (updateAudio) {
+            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for audio', { sessionId: session.id, conversationId: session.conversationId });
+            session.mute(userId, 'audio');
+          }
+          if (updateVideo) {
+            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for video', { sessionId: session.id, conversationId: session.conversationId });
+            session.mute(userId, 'video');
+          }
+        }
+        throw e;
+      }
+    }
+
+    /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
+    stream.getTracks().forEach(track => {
+      if (session.videoMuted && track.kind === 'video') {
+        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
+        track.stop();
+        stream.removeTrack(track);
+      }
+    });
 
     const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
       await session.addTrack(track);
@@ -261,5 +299,11 @@ export default abstract class BaseSessionHandler {
   removeMediaFromSession (session: IJingleSession, track: MediaStreamTrack): Promise<void> {
     this.log(LogLevels.debug, 'Removing track from session', { track, conversationId: session.conversationId });
     return session.removeTrack(track);
+  }
+
+  getSendersByTrackType (session: IJingleSession, kind: 'audio' | 'video'): RTCRtpSender[] {
+    return session.pc.getSenders().filter(sender => {
+      return sender.track && sender.track.kind === kind;
+    });
   }
 }

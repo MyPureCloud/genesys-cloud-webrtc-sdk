@@ -14,9 +14,15 @@ function initControls () {
 
   /* video controls */
   document.getElementById('video-start').addEventListener('click', () => sdkHandler.startVideoConference());
+  document.getElementById('video-start-constraints').addEventListener('click', () => sdkHandler.startVideoConference({ useConstraints: true }));
   document.getElementById('video-start-no-audio').addEventListener('click', () => sdkHandler.startVideoConference({ noAudio: true }));
   document.getElementById('video-start-no-video').addEventListener('click', () => sdkHandler.startVideoConference({ noVideo: true }));
   document.getElementById('video-start-no-audio-video').addEventListener('click', () => sdkHandler.startVideoConference({ noVideo: true, noAudio: true }));
+  document.getElementById('video-answer').addEventListener('click', () => sdkHandler.startVideoConference(undefined, true));
+  document.getElementById('video-answer-constraints').addEventListener('click', () => sdkHandler.startVideoConference({ useConstraints: true }, true));
+  document.getElementById('video-answer-no-audio').addEventListener('click', () => sdkHandler.startVideoConference({ noAudio: true }, true));
+  document.getElementById('video-answer-no-video').addEventListener('click', () => sdkHandler.startVideoConference({ noVideo: true }, true));
+  document.getElementById('video-answer-no-audio-video').addEventListener('click', () => sdkHandler.startVideoConference({ noVideo: true, noAudio: true }, true));
   document.getElementById('video-mute').addEventListener('click', () => sdkHandler.setVideoMute(true));
   document.getElementById('video-unmute').addEventListener('click', () => sdkHandler.setVideoMute(false));
   document.getElementById('audio-mute').addEventListener('click', () => sdkHandler.setAudioMute(true));

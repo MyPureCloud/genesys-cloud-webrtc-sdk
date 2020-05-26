@@ -1,3 +1,6 @@
+import nock = require('nock');
+import uuid = require('uuid');
+
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -6,15 +9,13 @@ import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/t
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
 import { IParticipantsUpdate, IJingleSession, IConversationParticipant } from '../../../src/types/interfaces';
-import nock = require('nock');
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import uuid = require('uuid');
 import { ConversationUpdate } from '../../../src/types/conversation-update';
 
 let handler: VideoSessionHandler;
 let mockSdk: PureCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
-let userId;
+let userId: string;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -376,6 +377,28 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
+  it('should post to api with an invitee', async () => {
+    const roomJid = '123@conference.com';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ body: 'sldk' });
+    await handler.startSession({ jid: roomJid, inviteeJid: 'sndkkf@conference.com', sessionType: SessionTypes.collaborateVideo });
+
+    const expected = JSON.stringify({
+      roomId: roomJid,
+      participant: {
+        address: 'sndkkf@conference.com'
+      }
+    });
+
+    expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
+  });
+
   it('should log error on failure', async () => {
     const roomJid = '123@conference.com';
     const error = new Error('test');
@@ -390,7 +413,7 @@ describe('startSession', () => {
     const logSpy = jest.spyOn(mockSdk.logger, 'error');
     await expect(handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
-    expect(logSpy).toHaveBeenCalledWith('[webrtc-sdk] Failed to request video session', expect.anything());
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything());
   });
 });
 
@@ -407,14 +430,15 @@ describe('handlePropose', () => {
       sessionType: SessionTypes.collaborateVideo,
       address: previouslyRequestedJid,
       autoAnswer: false,
-      conversationId: '141241241'
+      conversationId: '141241241',
+      originalRoomJid: previouslyRequestedJid
     });
 
     expect(handler.proceedWithSession).toHaveBeenCalled();
     expect(parentHandler).not.toHaveBeenCalled();
   });
 
-  it('should emit session if not requested', async () => {
+  it('should not emit session if not requested and its a conference', async () => {
     const jid = '123@conference.com';
 
     jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
@@ -428,7 +452,31 @@ describe('handlePropose', () => {
       sessionType: SessionTypes.collaborateVideo,
       address: jid,
       autoAnswer: false,
-      conversationId: '141241241'
+      conversationId: '141241241',
+      originalRoomJid: jid
+    });
+
+    expect(handler.proceedWithSession).not.toHaveBeenCalled();
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringMatching(/Propose received.*ignoring/), expect.anything());
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit session if peer request', async () => {
+    const jid = 'peer-123@conference.com';
+
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+
+    const emitSpy = jest.fn();
+
+    mockSdk.once('pendingSession', emitSpy);
+
+    await handler.handlePropose({
+      id: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      address: jid,
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
     });
 
     expect(handler.proceedWithSession).not.toHaveBeenCalled();
@@ -454,7 +502,7 @@ describe('acceptSession', () => {
   let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
   let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLAudioElement>;
   let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
-  let initialMutesSpy: jest.SpyInstance<void>;
+  let initialMutesSpy: jest.SpyInstance<void>; /* keep this spy */
   let session: IJingleSession;
   let media: MediaStream;
 
@@ -520,6 +568,29 @@ describe('acceptSession', () => {
     expect(session._outboundStream).toBeTruthy();
     expect(parentHandlerSpy).toHaveBeenCalled();
     expect(startMediaSpy).toHaveBeenCalled();
+  });
+
+  it('should only create media if there are available devices', async () => {
+    const audio = document.createElement('audio');
+    const video = document.createElement('video');
+    const mockDevices = {
+      videoDevices: [],
+      audioDevices: [],
+      outputDevices: []
+    };
+    jest.spyOn(mediaUtils, 'getEnumeratedDevices').mockResolvedValue(mockDevices);
+
+    /* with no video devices */
+    mockDevices.videoDevices = [];
+    mockDevices.audioDevices = [{} as any];
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(startMediaSpy).toHaveBeenCalledWith(mockSdk, { video: false, audio: true });
+
+    /* with no audio devices */
+    mockDevices.videoDevices = [{} as any];
+    mockDevices.audioDevices = [];
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(startMediaSpy).toHaveBeenCalledWith(mockSdk, { video: true, audio: false });
   });
 
   it('should subscribe to media change events', async () => {

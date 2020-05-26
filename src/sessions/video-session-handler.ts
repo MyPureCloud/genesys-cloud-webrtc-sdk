@@ -1,9 +1,22 @@
-import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IParticipantUpdate, IParticipantsUpdate, IOnScreenParticipantsUpdate, ISpeakersUpdate, IConversationParticipant } from '../types/interfaces';
-import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia } from '../media-utils';
-import { throwSdkError, requestApi, isVideoJid } from '../utils';
 import { differenceBy, intersection } from 'lodash';
+
+import {
+  IPendingSession,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IJingleSession,
+  IParticipantUpdate,
+  IParticipantsUpdate,
+  IOnScreenParticipantsUpdate,
+  ISpeakersUpdate,
+  IConversationParticipant,
+  IMediaRequestOptions,
+  IStartVideoSessionParams
+} from '../types/interfaces';
+import BaseSessionHandler from './base-session-handler';
+import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices } from '../media-utils';
+import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
 /**
@@ -174,12 +187,18 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   }
 
   // triggers a propose from the backend
-  async startSession (startParams: IStartSessionParams): Promise<{ conversationId: string }> {
+  async startSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
+    let participant: { address: string };
+
+    if (startParams.inviteeJid) {
+      participant = { address: startParams.inviteeJid };
+    } else {
+      participant = { address: this.sdk._personDetails.chat.jabberId };
+    }
+
     const data = JSON.stringify({
       roomId: startParams.jid,
-      participant: {
-        address: this.sdk._personDetails.chat.jabberId
-      }
+      participant
     });
 
     this.requestedSessions[startParams.jid] = true;
@@ -200,14 +219,19 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     // if we requested the session dont emit a pending session
-    if (this.requestedSessions[pendingSession.address]) {
+    if (this.requestedSessions[pendingSession.originalRoomJid]) {
       this.log(LogLevels.debug, 'Propose received for requested video session, accepting automatically', pendingSession);
-      delete this.requestedSessions[pendingSession.address];
+      delete this.requestedSessions[pendingSession.originalRoomJid];
       await this.proceedWithSession(pendingSession);
       return;
     }
 
-    this.log(LogLevels.info, 'Propose received for an unknown video session', pendingSession);
+    if (isPeerVideoJid(pendingSession.address)) {
+      this.log(LogLevels.info, 'Propose received for incoming peer video', pendingSession);
+    } else {
+      this.log(LogLevels.debug, 'Propose received for a video session that is not a peer session and wasn\'t started by this client, ignoring.', pendingSession);
+      return;
+    }
     await super.handlePropose(pendingSession);
   }
 
@@ -233,10 +257,21 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream;
     if (!stream) {
-      stream = await startMedia(this.sdk, {
+      const devices = await getEnumeratedDevices(this.sdk);
+      const mediaParams: IMediaRequestOptions = {
         audio: params.audioDeviceId || true,
         video: params.videoDeviceId || true
-      });
+      };
+
+      if (!devices.videoDevices.length) {
+        mediaParams.video = false;
+      }
+
+      if (!devices.audioDevices.length) {
+        mediaParams.audio = false;
+      }
+
+      stream = await startMedia(this.sdk, mediaParams);
     }
 
     session._outboundStream = stream;
@@ -429,12 +464,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   handleMediaChangeEvent (session: IJingleSession, event: IMediaChangeEvent) {
     this.updateParticipantsOnScreen(session, event);
     this.updateSpeakers(session, event);
-  }
-
-  getSendersByTrackType (session: IJingleSession, kind: 'audio' | 'video'): RTCRtpSender[] {
-    return session.pc.getSenders().filter(sender => {
-      return sender.track && sender.track.kind === kind;
-    });
   }
 
   async startScreenShare (session: IJingleSession) {

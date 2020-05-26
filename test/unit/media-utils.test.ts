@@ -7,12 +7,20 @@ import browserama from 'browserama';
 import { IEnumeratedDevices } from '../../src/types/interfaces';
 import { SdkErrorTypes } from '../../src/types/enums';
 
-const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1' };
-const mockVideoDevice2 = { kind: 'videoinput', deviceId: 'mockVideoDevice2' };
-const mockAudioDevice1 = { kind: 'audioinput', deviceId: 'mockAudioDevice1' };
-const mockAudioDevice2 = { kind: 'audioinput', deviceId: 'mockAudioDevice2' };
-const mockOutputDevice1 = { kind: 'audiooutput', deviceId: 'mockOutputDevice1' };
-const mockOutputDevice2 = { kind: 'audiooutput', deviceId: 'mockOutputDevice2' };
+const defaultResolution = {
+  height: {
+    ideal: 2160
+  },
+  width: {
+    ideal: 4096
+  }
+};
+const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1' } as MediaDeviceInfo;
+const mockVideoDevice2 = { kind: 'videoinput', deviceId: 'mockVideoDevice2' } as MediaDeviceInfo;
+const mockAudioDevice1 = { kind: 'audioinput', deviceId: 'mockAudioDevice1' } as MediaDeviceInfo;
+const mockAudioDevice2 = { kind: 'audioinput', deviceId: 'mockAudioDevice2' } as MediaDeviceInfo;
+const mockOutputDevice1 = { kind: 'audiooutput', deviceId: 'mockOutputDevice1' } as MediaDeviceInfo;
+const mockOutputDevice2 = { kind: 'audiooutput', deviceId: 'mockOutputDevice2' } as MediaDeviceInfo;
 const mockedDevices = [
   mockVideoDevice1,
   mockVideoDevice2,
@@ -124,16 +132,34 @@ describe('startMedia()', () => {
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ audio: {}, video: false });
   });
 
-  it('should request video only', async () => {
+  it('should request video only with default resolution', async () => {
     await mediaUtils.startMedia(mockSdk, { video: true });
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: {}, audio: false });
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({
+      video: defaultResolution,
+      audio: false
+    });
+  });
+
+  it('should request video only custom resolution', async () => {
+    const resolution = {
+      width: {
+        ideal: 555
+      },
+      height: {
+        ideal: 333
+      }
+    };
+
+    await mediaUtils.startMedia(mockSdk, { video: true, videoResolution: resolution });
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: resolution, audio: false });
   });
 
   it('should request audio and video', async () => {
     await mediaUtils.startMedia(mockSdk);
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: {}, audio: {} });
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: defaultResolution, audio: {} });
   });
 
   it('should request audio and video in chrome', async () => {
@@ -149,14 +175,16 @@ describe('startMedia()', () => {
     };
     await mediaUtils.startMedia(mockSdk);
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: { googNoiseReduction: true }, audio: expectedAudioConstraints });
+    const expected = Object.assign({ googNoiseReduction: true }, defaultResolution);
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: expected, audio: expectedAudioConstraints });
   });
 
   it('should request audio and video by deviceId', async () => {
     const videoDeviceId = mockVideoDevice2.deviceId;
     const audioDeviceId = mockAudioDevice1.deviceId;
     const expectedConstraints = {
-      video: { deviceId: { exact: videoDeviceId } },
+      video: Object.assign({ deviceId: { exact: videoDeviceId } }, defaultResolution),
       audio: { deviceId: { exact: audioDeviceId } },
     };
 
@@ -172,7 +200,7 @@ describe('startMedia()', () => {
     const videoDeviceId = 'video-device-that-does-not-exist';
     const audioDeviceId = 'audio-device-that-does-not-exist';
     const expectedConstraints = {
-      video: {},
+      video: defaultResolution,
       audio: {},
     };
 
@@ -316,7 +344,7 @@ describe('checkHasTransceiverFunctionality()', () => {
       getTransceivers () {
 
       }
-      constructor() {
+      constructor () {
         this.getTransceivers = jest.fn();
       }
     }
@@ -342,7 +370,7 @@ describe('getEnumeratedDevices()', () => {
   const resetEnumeratedDevicesCache = async (devices?: { deviceId: string, kind: string }[]) => {
     // need to call the devicechange handler to reset the `refreshDevices` property
     mediaUtils.stopListeningForDeviceChanges();
-    mediaUtils.handleDeviceChange.call(mockSdk);
+    await mediaUtils.handleDeviceChange.call(mockSdk);
 
     jest.resetAllMocks();
     mediaDevices.enumerateDevices.mockResolvedValue(devices || mockedDevices);
@@ -352,17 +380,17 @@ describe('getEnumeratedDevices()', () => {
     await resetEnumeratedDevicesCache();
   });
 
-  test('should log a warning if mediaDevices cannot be enumerated', async () => {
+  it('should log a warning if mediaDevices cannot be enumerated', async () => {
     const expectedEnumeratedDevices: IEnumeratedDevices = {
-      videoDeviceIds: [],
-      audioDeviceIds: [],
-      outputDeviceIds: []
+      videoDevices: [],
+      audioDevices: [],
+      outputDevices: []
     };
 
     mediaDevices.enumerateDevices = undefined;
     const devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
-    expect(mockSdk.logger.warn).toBeCalledWith(expect.stringContaining('Unable to enumerate devices'), undefined);
+    expect(mockSdk.logger.warn).toBeCalledWith(expect.stringContaining('Unable to enumerate devices'));
     expect(devices).toEqual(expectedEnumeratedDevices);
 
     mediaDevices.enumerateDevices = jest.fn();
@@ -377,7 +405,7 @@ describe('getEnumeratedDevices()', () => {
 
     const cb = (addEventListener as jest.Mock).mock.calls[0][1];
     cb();
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('devices changed'), undefined);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('devices changed'));
 
     (addEventListener as jest.Mock).mockReset();
     await mediaUtils.getEnumeratedDevices(mockSdk);
@@ -385,41 +413,79 @@ describe('getEnumeratedDevices()', () => {
   });
 
   it('should return cached enumeratedDevices if the devices have not changed', async () => {
-    const videoDeviceCached = { deviceId: 'cached-video-device', kind: 'videoinput' };
-    const audioDeviceCached = { deviceId: 'cached-audio-device', kind: 'audioinput' };
-    const outputDeviceCached = { deviceId: 'cached-output-device', kind: 'audiooutput' };
+    const videoDeviceCached = { deviceId: 'cached-video-device', label: 'device #1', kind: 'videoinput' } as MediaDeviceInfo;
+    const audioDeviceCached = { deviceId: 'cached-audio-device', label: 'device #2', kind: 'audioinput' } as MediaDeviceInfo;
+    const outputDeviceCached = { deviceId: 'cached-output-device', label: 'device #3', kind: 'audiooutput' } as MediaDeviceInfo;
 
     const expectedEnumeratedDevices: IEnumeratedDevices = {
-      videoDeviceIds: [videoDeviceCached.deviceId],
-      audioDeviceIds: [audioDeviceCached.deviceId],
-      outputDeviceIds: [outputDeviceCached.deviceId]
+      videoDevices: [videoDeviceCached],
+      audioDevices: [audioDeviceCached],
+      outputDevices: [outputDeviceCached]
     };
 
     mediaDevices.enumerateDevices.mockReset();
     mediaDevices.enumerateDevices.mockResolvedValue([videoDeviceCached, audioDeviceCached, outputDeviceCached]);
 
-    // first call will load the cache
+    /* first call will load the cache */
     let devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
     expect(devices).toEqual(expectedEnumeratedDevices);
-    expect(mockSdk.logger.debug).not.toBeCalled();
+    expect((mockSdk.logger.debug as jest.Mock).mock.calls[0]).toEqual([
+      'Enumerated devices',
+      { devices: expectedEnumeratedDevices }
+    ]);
     expect(mediaDevices.enumerateDevices).toBeCalled();
 
-    // second call should use the cached value
+    /* second call should use the cached value */
     mediaDevices.enumerateDevices.mockReset();
     mediaDevices.enumerateDevices.mockResolvedValue(mockedDevices);
     devices = await mediaUtils.getEnumeratedDevices(mockSdk);
 
     expect(devices).toEqual(expectedEnumeratedDevices);
-    expect(mockSdk.logger.debug).toBeCalledWith(expect.stringContaining('Returning cached enumerated devices'), { devices: expectedEnumeratedDevices });
+    expect(mockSdk.logger.debug).toBeCalledWith(
+      expect.stringContaining('Returning cached enumerated devices'),
+      { devices: expectedEnumeratedDevices }
+    );
     expect(mediaDevices.enumerateDevices).not.toBeCalled();
   });
 
-  test('should return enumerated devices', async () => {
+  it('should keep old devices if the same device is enumerated without a label (this happens in FF)', async () => {
+    const videoDeviceCached = { deviceId: 'cached-video-device', groupId: 'groupId1', label: 'device #1', kind: 'videoinput' } as MediaDeviceInfo;
+
     const expectedEnumeratedDevices: IEnumeratedDevices = {
-      videoDeviceIds: [mockVideoDevice1.deviceId, mockVideoDevice2.deviceId],
-      audioDeviceIds: [mockAudioDevice1.deviceId, mockAudioDevice2.deviceId],
-      outputDeviceIds: [mockOutputDevice1.deviceId, mockOutputDevice2.deviceId]
+      videoDevices: [videoDeviceCached],
+      audioDevices: [],
+      outputDevices: []
+    };
+
+    mediaDevices.enumerateDevices.mockReset();
+    mediaDevices.enumerateDevices.mockResolvedValue([videoDeviceCached]);
+
+    /* first call will load the cache */
+    let devices = await mediaUtils.getEnumeratedDevices(mockSdk);
+
+    expect(devices).toEqual(expectedEnumeratedDevices);
+    expect((mockSdk.logger.debug as jest.Mock).mock.calls[0]).toEqual([
+      'Enumerated devices',
+      { devices: expectedEnumeratedDevices }
+    ]);
+    expect(mediaDevices.enumerateDevices).toBeCalled();
+
+    /* second call with devices that don't have labels should use the old devices */
+    mediaDevices.enumerateDevices.mockReset();
+    const copyOfVideoDeviceCached = { ...videoDeviceCached, label: '' } as MediaDeviceInfo;
+    mediaDevices.enumerateDevices.mockResolvedValue([copyOfVideoDeviceCached]);
+
+    devices = await mediaUtils.getEnumeratedDevices(mockSdk, true);
+
+    expect(devices).toEqual(expectedEnumeratedDevices);
+  });
+
+  it('should return enumerated devices', async () => {
+    const expectedEnumeratedDevices: IEnumeratedDevices = {
+      videoDevices: [mockVideoDevice1, mockVideoDevice2],
+      audioDevices: [mockAudioDevice1, mockAudioDevice2],
+      outputDevices: [mockOutputDevice1, mockOutputDevice2]
     };
 
     const devices = await mediaUtils.getEnumeratedDevices(mockSdk);
@@ -428,7 +494,7 @@ describe('getEnumeratedDevices()', () => {
     expect(mediaDevices.enumerateDevices).toBeCalled();
   });
 
-  test('should throw if enumerateDevices() fails', async () => {
+  it('should throw if enumerateDevices() fails', async () => {
     mediaDevices.enumerateDevices.mockImplementation(() => { throw new Error('Failure'); })
 
     try {
@@ -442,7 +508,7 @@ describe('getEnumeratedDevices()', () => {
 });
 
 describe('getValidDeviceId()', () => {
-  test('should return the found deviceId for specific kinds', async () => {
+  it('should return the found deviceId for specific kinds', async () => {
     /* audio device */
     let result = await mediaUtils.getValidDeviceId(mockSdk, 'audioinput', mockAudioDevice1.deviceId);
     expect(result).toBe(mockAudioDevice1.deviceId);
@@ -456,7 +522,7 @@ describe('getValidDeviceId()', () => {
     expect(result).toBe(mockOutputDevice1.deviceId);
   });
 
-  test('should use the sdk default deviceId if the request deviceId cannot be found', async () => {
+  it('should use the sdk default deviceId if the request deviceId cannot be found', async () => {
     mockSdk._config.defaultAudioDeviceId = mockAudioDevice1.deviceId;
     mockSdk._config.defaultVideoDeviceId = mockVideoDevice1.deviceId;
     mockSdk._config.defaultOutputDeviceId = mockOutputDevice1.deviceId;
@@ -474,7 +540,7 @@ describe('getValidDeviceId()', () => {
     expect(result).toBe(mockOutputDevice1.deviceId);
   });
 
-  test('should return `undefined` if no deviceId can be found', async () => {
+  it('should return `undefined` if no deviceId can be found', async () => {
     mockSdk._config.defaultAudioDeviceId = null;
     mockSdk._config.defaultVideoDeviceId = null;
 
@@ -487,8 +553,9 @@ describe('getValidDeviceId()', () => {
     expect(result).toBe(undefined);
   });
 
-  test("should return default 'audiooutput' device if no deviceId can be found", async () => {
+  it("should return default 'audiooutput' device if no deviceId can be found", async () => {
     mockSdk._config.defaultOutputDeviceId = null;
+
     /* output device */
     const result = await mediaUtils.getValidDeviceId(mockSdk, 'audiooutput', 'non-existent-device-id');
     expect(result).toBe(mockOutputDevice1.deviceId);

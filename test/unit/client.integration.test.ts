@@ -1,3 +1,10 @@
+import crypto from 'crypto';
+
+// @ts-ignore
+window.crypto = {
+  getRandomValues: arr => crypto.randomBytes(arr.length)
+};
+
 import { PureCloudWebrtcSdk } from '../../src/client';
 import { IJingleSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
 import {
@@ -17,6 +24,10 @@ import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
 import * as mediaUtils from '../../src/media-utils';
 
 let { ws } = require('../test-utils');
+
+function getMockLogger () {
+  return { debug: jest.fn(), warn: jest.fn(), error: jest.fn() };
+}
 
 function disconnectSdk (sdk: PureCloudWebrtcSdk): Promise<any> {
   return new Promise(async res => {
@@ -69,25 +80,15 @@ describe('Client', () => {
       }
     });
 
-    test('warns if environment is not valid', () => {
+    it('warns if environment is not valid', () => {
       const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
       const sdk2 = new PureCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.con',
-        logger: { warn: jest.fn(), debug: jest.fn() } as any
+        logger: getMockLogger() as any
       } as ISdkConstructOptions);
 
       expect(sdk2.logger.warn).toHaveBeenCalled();
-    });
-
-    test('warns if the logLevel is not valid', () => {
-      const sdk = new PureCloudWebrtcSdk({
-        accessToken: '1234',
-        environment: 'mypurecloud.com',
-        logLevel: 'error__' as LogLevels,
-        logger: { warn: jest.fn(), debug: jest.fn() } as any
-      } as ISdkConstructOptions);
-      expect(sdk.logger.warn).toHaveBeenCalled();
     });
 
     test('does not warn if things are fine', () => {
@@ -95,14 +96,13 @@ describe('Client', () => {
         accessToken: '1234',
         environment: 'mypurecloud.com',
         logLevel: 'error',
-        logger: { warn: jest.fn(), debug: jest.fn() } as any
+        logger: getMockLogger() as any
       } as ISdkConstructOptions);
       expect(sdk.logger.warn).not.toHaveBeenCalled();
     });
 
     test('sets up options with defaults', () => {
       const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
-      expect(sdk.logger).toBe(console);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
@@ -112,7 +112,7 @@ describe('Client', () => {
     });
 
     test('sets up options when provided', () => {
-      const logger = { debug: jest.fn(), warn: jest.fn() };
+      const logger = getMockLogger();
       const iceServers = [];
       const sdk = new PureCloudWebrtcSdk({
         accessToken: '1234',
@@ -142,7 +142,6 @@ describe('Client', () => {
       getChannel.done();
       notificationSubscription.done();
       expect(sdk._streamingConnection).toBeTruthy();
-      sdk._logBuffer = [];
       sdk._config.optOutOfTelemetry = true;
 
       await disconnectSdk(sdk);
@@ -152,7 +151,6 @@ describe('Client', () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       expect(sdk._streamingConnection).toBeTruthy();
-      sdk._logBuffer = [];
       sdk._config.optOutOfTelemetry = true;
       expect(sdk.isInitialized).toBeTruthy();
       const disconnectSpy = jest.spyOn(sdk._streamingConnection, 'disconnect');
@@ -376,6 +374,21 @@ describe('Client', () => {
       const sessionId = '5512551';
       await sdk.acceptPendingSession(sessionId);
       expect(sdk.sessionManager.proceedWithSession).toBeCalledWith(sessionId);
+
+      await disconnectSdk(sdk);
+    });
+  });
+
+  describe('rejectPendingSession()', () => {
+    test('proxies the call to the sessionManager', async () => {
+      const { sdk } = mockApis();
+      await sdk.initialize();
+
+      jest.spyOn(sdk.sessionManager, 'rejectPendingSession').mockImplementation(() => Promise.resolve());
+
+      const sessionId = '5512551';
+      await sdk.rejectPendingSession(sessionId);
+      expect(sdk.sessionManager.rejectPendingSession).toBeCalledWith(sessionId);
 
       await disconnectSdk(sdk);
     });
