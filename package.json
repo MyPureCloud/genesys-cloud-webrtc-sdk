@@ -90,7 +90,7 @@
     "nock": "^10.0.6",
     "pre-push": "^0.1.1",
     "rimraf": "^3.0.0",
-    "semistandard": "^13.0.1",
+    "semistandard": "^14.2.0",
     "stupid-server": "^0.2.5",
     "ts-jest": "^26.0.0",
     "ts-loader": "^6.2.1",
