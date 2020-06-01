@@ -63,7 +63,7 @@ describe('startDisplayMedia()', () => {
 
       expect(constraints).toEqual({
         audio: false,
-        video: true
+        video: { frameRate: { ideal: 30 } }
       });
     });
 
@@ -136,7 +136,7 @@ describe('startMedia()', () => {
     await mediaUtils.startMedia(mockSdk, { video: true });
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({
-      video: defaultResolution,
+      video: Object.assign({ frameRate: { ideal: 30 } }, defaultResolution),
       audio: false
     });
   });
@@ -153,13 +153,13 @@ describe('startMedia()', () => {
 
     await mediaUtils.startMedia(mockSdk, { video: true, videoResolution: resolution });
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: resolution, audio: false });
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: Object.assign({ frameRate: { ideal: 30 } }, resolution), audio: false });
   });
 
   it('should request audio and video', async () => {
     await mediaUtils.startMedia(mockSdk);
 
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: defaultResolution, audio: {} });
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: Object.assign({ frameRate: { ideal: 30 } }, defaultResolution), audio: {} });
   });
 
   it('should request audio and video in chrome', async () => {
@@ -175,7 +175,7 @@ describe('startMedia()', () => {
     };
     await mediaUtils.startMedia(mockSdk);
 
-    const expected = Object.assign({ googNoiseReduction: true }, defaultResolution);
+    const expected = Object.assign({ frameRate: { ideal: 30 }, googNoiseReduction: true }, defaultResolution);
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith({ video: expected, audio: expectedAudioConstraints });
   });
@@ -184,7 +184,7 @@ describe('startMedia()', () => {
     const videoDeviceId = mockVideoDevice2.deviceId;
     const audioDeviceId = mockAudioDevice1.deviceId;
     const expectedConstraints = {
-      video: Object.assign({ deviceId: { exact: videoDeviceId } }, defaultResolution),
+      video: Object.assign({ frameRate: { ideal: 30 }, deviceId: { exact: videoDeviceId } }, defaultResolution),
       audio: { deviceId: { exact: audioDeviceId } },
     };
 
@@ -196,11 +196,27 @@ describe('startMedia()', () => {
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
   });
 
+  it('should use the requested frameRate', async () => {
+    const videoDeviceId = mockVideoDevice2.deviceId;
+    const audioDeviceId = mockAudioDevice1.deviceId;
+    const expectedConstraints = {
+      video: Object.assign({ frameRate: { ideal: 10 }, deviceId: { exact: videoDeviceId } }, defaultResolution),
+      audio: { deviceId: { exact: audioDeviceId } },
+    };
+
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
+
+    await mediaUtils.startMedia(mockSdk, { video: videoDeviceId, audio: audioDeviceId, videoFrameRate: { ideal: 10 } });
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+  });
+
   it('should log if the requested audio/video deviceId cannot be found', async () => {
     const videoDeviceId = 'video-device-that-does-not-exist';
     const audioDeviceId = 'audio-device-that-does-not-exist';
     const expectedConstraints = {
-      video: defaultResolution,
+      video: Object.assign({ frameRate: { ideal: 30 } }, defaultResolution),
       audio: {},
     };
 
