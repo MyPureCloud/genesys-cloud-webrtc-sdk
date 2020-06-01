@@ -365,30 +365,22 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     // if we are going to mute, we need to remove/end the existing camera track
     if (params.mute) {
-      // we don't want videoMute to affect screen share so we need to ignore senders that contain a screen share track
-      const trackIdsToIgnore = [];
-      if (session._screenShareStream) {
-        trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
+      // get the first video track
+      const track = session._outboundStream.getVideoTracks().find(t => t);
+
+      if (!track) {
+        this.log(LogLevels.warn, 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId });
+      } else {
+        const sender = this.getSendersByTrackType(session, 'video')
+          .find((sender) => sender.track && sender.track.id === track.id);
+
+        if (sender) {
+          await this.removeMediaFromSession(session, sender.track);
+        }
+
+        track.stop();
+        session._outboundStream.removeTrack(track);
       }
-
-      const senders = this.getSendersByTrackType(session, 'video')
-        .filter((sender) => !trackIdsToIgnore.includes(sender.track.id));
-
-      if (!senders.length) {
-        this.log(LogLevels.warn, 'Unable to find any video tracks to mute', { sessionId: session.id, conversationId: session.conversationId });
-        return;
-      }
-
-      // remove track from sender and outbound stream referrence
-      const promises = [];
-      senders.forEach((sender) => {
-        this.log(LogLevels.info, 'Ending track because of video mute request', { trackId: sender.track.id, conversationId: session.conversationId });
-        sender.track.stop();
-        promises.push(this.removeMediaFromSession(session, sender.track));
-        session._outboundStream.removeTrack(sender.track);
-      });
-
-      await Promise.all(promises);
 
       if (!skipServerUpdate) {
         session.mute(userId, 'video');
@@ -399,13 +391,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       this.log(LogLevels.info, 'Creating new video track', { conversationId: session.conversationId });
 
       // look for a device to use, else use default
-      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
+      const track = (await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId })).getVideoTracks()[0];
 
       // add track to session
-      await this.addMediaToSession(session, stream, false);
+      await this.addReplaceTrackToSession(session, track);
 
       // add sync track to local outbound referrence
-      session._outboundStream.addTrack(stream.getVideoTracks()[0]);
+      session._outboundStream.addTrack(track);
 
       if (!skipServerUpdate) {
         session.unmute(userId, 'video');
@@ -444,8 +436,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id, conversationId: session.conversationId });
 
         // if params.unmuteDeviceId is `undefined`, use sdk defaults
-        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
-        await this.addMediaToSession(session, stream, false);
+        const track = (await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId })).getAudioTracks()[0];
+        await this.addReplaceTrackToSession(session, track);
       }
 
       session.unmute(userId, 'audio');
@@ -472,6 +464,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       this.log(LogLevels.info, 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId });
 
       const stream = await startDisplayMedia();
+      session._screenShareStream = stream;
+
+      await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
+
       if (!session.videoMuted) {
         await this.setVideoMute(session, { id: session.id, mute: true }, true);
       }
@@ -480,8 +476,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         track.addEventListener('ended', this.stopScreenShare.bind(this, session));
       });
 
-      session._screenShareStream = stream;
-      await this.addMediaToSession(session, stream, false);
       this.sessionManager.webrtcSessions.notifyScreenShareStart(session);
     } catch (err) {
       if (!err) {
@@ -492,21 +486,23 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async stopScreenShare (session: IJingleSession) {
+  async stopScreenShare (session: IJingleSession): Promise<void> {
     if (!session._screenShareStream) {
       this.log(LogLevels.error, 'No screen share stream to stop', { conversationId: session.conversationId });
       return;
     }
 
-    session._screenShareStream.getTracks().forEach(async (track) => {
-      track.stop();
-      await this.removeMediaFromSession(session, track);
-    });
+    const track = session._screenShareStream.getVideoTracks()[0];
+    const sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
 
     if (session._resurrectVideoOnScreenShareEnd) {
       this.log(LogLevels.info, 'Restarting video track', { conversationId: session.conversationId });
       await this.setVideoMute(session, { id: session.id, mute: false }, true);
+    } else {
+      await sender.replaceTrack(null);
     }
+
+    track.stop();
 
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
   }

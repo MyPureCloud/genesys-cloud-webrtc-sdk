@@ -60,6 +60,7 @@ export interface IMediaRequestOptions {
     width: ConstrainULong,
     height: ConstrainULong
   };
+  videoFrameRate?: ConstrainDouble;
   /**
    * - `string` to request media from device
    * - `true` to request media from sdk default device
