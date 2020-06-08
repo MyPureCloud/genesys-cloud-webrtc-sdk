@@ -61,7 +61,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       stream.getTracks().forEach((track: MediaStreamTrack) => {
         track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
-      this.log(LogLevels.debug, 'Adding stream to the session and setting it to _screenShareStream');
+      this.log(LogLevels.debug, 'Adding stream to the session and setting it to _screenShareStream', { sessionId: session.id, conversationId: session.conversationId });
 
       await this.addMediaToSession(session, stream);
 
@@ -71,7 +71,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         // if autoConnectSessions is 'false' and we have a guest, throw an error
         //  guests should auto accept screen share session
         const errMsg = '`autoConnectSession` must be set to "true" for guests';
-        this.log(LogLevels.error, errMsg);
+        this.log(LogLevels.error, errMsg, { sessionId: session.id, conversationId: session.conversationId });
         throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg);
       }
 

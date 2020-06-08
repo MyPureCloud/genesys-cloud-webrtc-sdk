@@ -37,9 +37,9 @@ function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
 
   connectEventHandlers();
   return webrtcSdk.initialize(initOptions)
-  .then(() => {
-    utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
-  });
+    .then(() => {
+      utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
+    });
 }
 
 function connectEventHandlers () {
