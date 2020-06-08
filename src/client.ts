@@ -333,7 +333,11 @@ export class PureCloudWebrtcSdk extends WildEmitter {
 
     if (typeof options.updateActiveSessions === 'boolean' && options.updateActiveSessions) {
       const promises = [];
-      this.logger.info('Updating devices for all active session', { defaultOutputDeviceId: options.outputDeviceId });
+      this.logger.info('Updating devices for all active session', {
+        defaultVideoDeviceId: options.videoDeviceId,
+        defaultAudioDeviceId: options.audioDeviceId,
+        defaultOutputDeviceId: options.outputDeviceId
+      });
 
       if (updateVideo || updateAudio) {
         const opts = {

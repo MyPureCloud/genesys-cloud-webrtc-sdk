@@ -5,7 +5,7 @@ import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
-import { getValidDeviceId, getEnumeratedDevices } from '../media-utils';
+import { getValidDeviceId, getEnumeratedDevices, hasOutputDeviceSupport } from '../media-utils';
 import {
   IPendingSession,
   ISessionInfo,
@@ -151,7 +151,7 @@ export class SessionManager {
   }
 
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
-    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId);
+    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId) || '';
 
     if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
       this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
@@ -275,9 +275,11 @@ export class SessionManager {
   }
   async validateOutgoingMediaTracks () {
     const sessions = this.getAllActiveSessions();
-    const { videoDevices, audioDevices } = await getEnumeratedDevices(this.sdk);
+    const { videoDevices, audioDevices, outputDevices } = await getEnumeratedDevices(this.sdk);
     const updates = new Map<string, { video?: boolean, audio?: boolean }>();
     const promises = [];
+
+    let updateOutputDeviceForAllSessions = false;
 
     /* find all sessions that ned to be updated */
     for (const session of sessions) {
@@ -296,7 +298,7 @@ export class SessionManager {
             d => d.label === track.label && d.kind.slice(0, 5) === track.kind
           );
           if (deviceExists) {
-            this.log(LogLevels.info, 'sessions outgoing track still has available device',
+            this.log(LogLevels.debug, 'sessions outgoing track still has available device',
               { deviceLabel: track.label, kind: track.kind, sessionId: session.id });
             return;
           }
@@ -305,9 +307,23 @@ export class SessionManager {
           currVal[track.kind] = true;
           updates.set(session.id, currVal);
 
-          this.log(LogLevels.warn, 'session lost media device and will attempt to switch devices',
-            { sessionId: session.id, kind: track.kind, deviceLabel: track.label });
+          this.log(LogLevels.info, 'session lost media device and will attempt to switch devices',
+            { conversationId: session.conversationId, sessionId: session.id, kind: track.kind, deviceLabel: track.label });
         });
+
+      /* check output device */
+      if (hasOutputDeviceSupport() && session._outputAudioElement) {
+        const deviceExists = outputDevices.find(
+          d => d.deviceId === session._outputAudioElement.sinkId
+        );
+
+        if (!deviceExists) {
+          updateOutputDeviceForAllSessions = true;
+
+          this.log(LogLevels.info, 'session lost output device and will attempt to switch device',
+            { conversationId: session.conversationId, sessionId: session.id, kind: 'output' });
+        }
+      }
     }
 
     /* if there are not sessions to updated, log and we are done */
@@ -359,9 +375,17 @@ export class SessionManager {
         }
       }
 
+      /* update outgoing media */
       if (opts.videoDeviceId || opts.audioDeviceId) {
         promises.push(this.sdk.updateOutgoingMedia(opts));
       }
+    }
+
+    /* if the output device needs to change, update all sessions */
+    if (updateOutputDeviceForAllSessions) {
+      promises.push(
+        this.updateOutputDeviceForAllSessions(true)
+      );
     }
 
     return Promise.all(promises);

@@ -260,7 +260,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       const devices = await getEnumeratedDevices(this.sdk);
       const mediaParams: IMediaRequestOptions = {
         audio: params.audioDeviceId || true,
-        video: params.videoDeviceId || true
+        video: params.videoDeviceId || true,
+        session
       };
 
       if (!devices.videoDevices.length) {
@@ -399,7 +400,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       this.log(LogLevels.info, 'Creating new video track', { conversationId: session.conversationId });
 
       // look for a device to use, else use default
-      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
+      const stream = await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session });
 
       // add track to session
       await this.addMediaToSession(session, stream, false);
@@ -444,7 +445,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id, conversationId: session.conversationId });
 
         // if params.unmuteDeviceId is `undefined`, use sdk defaults
-        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId });
+        const stream = await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session });
         await this.addMediaToSession(session, stream, false);
       }
 

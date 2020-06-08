@@ -198,7 +198,8 @@ export default abstract class BaseSessionHandler {
         stream = await startMedia(this.sdk, {
           audio: options.audioDeviceId,
           /* if video is muted, we don't want to request it */
-          video: !session.videoMuted && options.videoDeviceId
+          video: !session.videoMuted && options.videoDeviceId,
+          session
         });
       } catch (e) {
         /*
@@ -259,10 +260,10 @@ export default abstract class BaseSessionHandler {
 
     if (typeof el.setSinkId === 'undefined') {
       const err = 'Cannot set sink id in unsupported browser';
-      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId });
+      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
     }
 
-    this.log(LogLevels.info, 'Setting output deviceId', { deviceId, conversationId: session.conversationId });
+    this.log(LogLevels.info, 'Setting output deviceId', { deviceId, conversationId: session.conversationId, sessionId: session.id });
     return el.setSinkId(deviceId);
   }
 
