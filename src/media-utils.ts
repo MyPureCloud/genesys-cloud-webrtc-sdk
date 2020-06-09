@@ -144,7 +144,9 @@ function getScreenShareConstraints (): MediaStreamConstraints {
     if (hasGetDisplayMedia()) {
       return {
         audio: false,
-        video: true
+        video: {
+          frameRate: { ideal: 30 }
+        }
       };
     }
     return {
@@ -196,6 +198,7 @@ function getStandardConstraints (opts: IMediaRequestOptions): MediaStreamConstra
   }
 
   if (constraints.video) {
+    constraints.video.frameRate = opts.videoFrameRate || { ideal: 30 };
     const resolution = opts.videoResolution || DEFAULT_VIDEO_RESOLUTION;
     Object.assign(constraints.video, resolution);
   }

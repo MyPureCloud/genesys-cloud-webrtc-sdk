@@ -69,7 +69,7 @@ export class SimpleMockSdk extends WildEmitter {
   updateOutgoingMedia = jest.fn();
 }
 
-class MockSender {
+export class MockSender {
   track: MockTrack;
   constructor (track: MockTrack) {
     this.track = track;
@@ -142,6 +142,10 @@ class MockTrack {
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
   }
+
+  getSettings = jest.fn().mockReturnValue({ height: 1080, width: 1920, frameRate: 30 });
+
+  applyConstraints = jest.fn();
 }
 
 class MockStream {

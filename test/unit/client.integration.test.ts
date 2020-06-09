@@ -26,7 +26,7 @@ import * as mediaUtils from '../../src/media-utils';
 let { ws } = require('../test-utils');
 
 function getMockLogger () {
-  return { debug: jest.fn(), warn: jest.fn(), error: jest.fn() };
+  return { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn() };
 }
 
 function disconnectSdk (sdk: PureCloudWebrtcSdk): Promise<any> {

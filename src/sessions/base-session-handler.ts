@@ -7,6 +7,7 @@ import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMu
 import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
 import { throwSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
+import browserama from 'browserama';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -50,19 +51,21 @@ export default abstract class BaseSessionHandler {
   }
 
   async handleSessionInit (session: IJingleSession): Promise<any> {
+    session.id = session.sid;
+
+    const pendingSession = this.sessionManager.getPendingSession(session.id);
+    if (pendingSession) {
+      session.conversationId = session.conversationId || pendingSession.conversationId;
+    }
+    this.sessionManager.removePendingSession(session.id);
+
     try {
-      this.log(LogLevels.info, 'handling session init', session);
+      this.log(LogLevels.info, 'handling session init', { sessionId: session.id, conversationId: session.conversationId });
     } catch (e) {
       // don't let log errors ruin a session
     }
 
-    session.id = session.sid;
     this.sdk._streamingConnection.webrtcSessions.rtcSessionAccepted(session.id);
-    const pendingSession = this.sessionManager.getPendingSession(session.id);
-    if (pendingSession) {
-      session.conversationId = pendingSession.conversationId;
-    }
-    this.sessionManager.removePendingSession(session.id);
 
     session._statsGatherer = new StatsGatherer(session.pc, {
       session: session.sid,
@@ -183,13 +186,12 @@ export default abstract class BaseSessionHandler {
       );
 
     /* stop media first because FF does not allow more than one audio/video track */
-    senders.forEach(sender => {
-      sender.track.stop();
-      if (outboundStream) {
-        outboundStream.removeTrack(sender.track);
-      }
-      destroyMediaPromises.push(sender.replaceTrack(null));
-    });
+    if (browserama.isFirefox) {
+      senders.forEach(sender => {
+        sender.track.stop();
+        destroyMediaPromises.push(sender.replaceTrack(null));
+      });
+    }
 
     await Promise.all(destroyMediaPromises);
 
@@ -236,14 +238,22 @@ export default abstract class BaseSessionHandler {
     });
 
     const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
-      await session.addTrack(track);
-      if (outboundStream) {
-        outboundStream.addTrack(track);
-      }
+      await this.addReplaceTrackToSession(session, track);
+      outboundStream.addTrack(track);
 
       /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
       if (track.kind === 'audio' && session.audioMuted) {
         await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
+      }
+    });
+
+    /* prune tracks not being sent */
+    session._outboundStream.getTracks().forEach((track) => {
+      const hasSender = session.pc.getSenders().find((sender) => sender.track && sender.track.id === track.id);
+
+      if (!hasSender) {
+        track.stop();
+        session._outboundStream.removeTrack(track);
       }
     });
 
@@ -291,6 +301,37 @@ export default abstract class BaseSessionHandler {
     }
 
     await Promise.all(promises);
+  }
+
+  /**
+   * Will try and replace a track of the same kind if possible, otherwise it will add the track
+   */
+  async addReplaceTrackToSession (session: IJingleSession, track: MediaStreamTrack): Promise<void> {
+    let sender = session.pc.getSenders().find(sender => sender.track && sender.track.kind === track.kind);
+
+    if (sender) {
+      await sender.replaceTrack(track);
+    } else {
+      await session.addTrack(track);
+      sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
+    }
+
+    if (sender.track.kind === 'audio') {
+      return;
+    }
+
+    const { height, width, frameRate } = sender.track.getSettings();
+    await sender.track.applyConstraints({
+      width: {
+        ideal: width
+      },
+      height: {
+        ideal: height
+      },
+      frameRate: {
+        ideal: frameRate
+      }
+    });
   }
 
   _warnNegotiationNeeded (session: IJingleSession): void {
