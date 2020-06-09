@@ -327,7 +327,7 @@ export class SessionManager {
     }
 
     /* if there are not sessions to updated, log and we are done */
-    if (!updates.size) {
+    if (!updates.size && !updateOutputDeviceForAllSessions) {
       this.log(LogLevels.debug, 'no active sessions have outgoing tracks that need to have the device updated',
         { sessionIds: sessions.map(s => s.id) });
       return;
@@ -346,7 +346,7 @@ export class SessionManager {
           opts.videoDeviceId = true;
         } else {
           this.log(LogLevels.warn, 'no available video devices to switch to. setting video to mute for session',
-            { sessionId, kind: 'video' });
+            { conversationId: jingleSession.conversationId, sessionId, kind: 'video' });
           promises.push(
             handler.setVideoMute(jingleSession, { mute: true, id: jingleSession.id })
           );
@@ -359,7 +359,7 @@ export class SessionManager {
           opts.audioDeviceId = true;
         } else {
           this.log(LogLevels.warn, 'no available audio devices to switch to. setting audio to mute for session',
-            { sessionId, kind: 'audio' });
+            { conversationId: jingleSession.conversationId, sessionId, kind: 'audio' });
           promises.push(
             handler.setAudioMute(jingleSession, { mute: true, id: jingleSession.id })
           );
