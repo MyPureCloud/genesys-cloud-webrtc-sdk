@@ -236,7 +236,7 @@ export interface IJingleSession extends WildEmitter {
   _resurrectVideoOnScreenShareEnd?: boolean;
   _outboundStream?: MediaStream;
   _screenShareStream?: MediaStream;
-  _outputAudioElement?: HTMLAudioElement;
+  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
   _statsGatherer?: WebrtcStatsGatherer;
   _lastParticipantsUpdate?: IParticipantsUpdate;
   _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;

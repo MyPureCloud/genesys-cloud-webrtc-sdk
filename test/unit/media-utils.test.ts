@@ -6,6 +6,7 @@ import { SimpleMockSdk, MockStream, MockTrack } from '../test-utils';
 import browserama from 'browserama';
 import { IEnumeratedDevices } from '../../src/types/interfaces';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { hasOutputDeviceSupport } from '../../src/media-utils';
 
 const defaultResolution = {
   height: {
@@ -575,5 +576,38 @@ describe('getValidDeviceId()', () => {
     /* output device */
     const result = await mediaUtils.getValidDeviceId(mockSdk, 'audiooutput', 'non-existent-device-id');
     expect(result).toBe(mockOutputDevice1.deviceId);
+  });
+});
+
+describe('hasOutputDeviceSupport()', () => {
+  let OriginalHTMLMediaElement: typeof HTMLMediaElement;
+  let hasOwnPropertySpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    OriginalHTMLMediaElement = window.HTMLMediaElement;
+    hasOwnPropertySpy = jest.fn();
+    Object.defineProperty(window, 'HTMLMediaElement', {
+      value: {
+        prototype: {
+          hasOwnProperty: hasOwnPropertySpy
+        }
+      }
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'HTMLMediaElement', { value: OriginalHTMLMediaElement });
+  });
+
+  it('should return true for supported browsers', () => {
+    hasOwnPropertySpy.mockReturnValue(true);
+    expect(hasOutputDeviceSupport()).toBe(true);
+    expect(hasOwnPropertySpy).toHaveBeenCalledWith('setSinkId');
+  });
+
+  it('should return false for non-supported browsers', () => {
+    hasOwnPropertySpy.mockReturnValue(false);
+    expect(hasOutputDeviceSupport()).toBe(false);
+    expect(hasOwnPropertySpy).toHaveBeenCalledWith('setSinkId');
   });
 });
