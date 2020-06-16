@@ -3,7 +3,7 @@ import StatsGatherer from 'webrtc-stats-gatherer';
 import { PureCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
 import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
 import { throwSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
@@ -95,7 +95,7 @@ export default abstract class BaseSessionHandler {
     this.sdk.emit('sessionStarted', session);
   }
 
-  onSessionTerminated (session: IJingleSession, reason: any): void {
+  onSessionTerminated (session: IJingleSession, reason: IJingleReason): void {
     this.log(LogLevels.info, 'handling session terminated', { conversationId: session.conversationId, reason });
     if (session._outboundStream) {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());

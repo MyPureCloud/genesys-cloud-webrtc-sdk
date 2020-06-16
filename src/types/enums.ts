@@ -26,3 +26,14 @@ export enum CommunicationStates {
   connected = 'connected',
   disconnected = 'disconnected'
 }
+
+export enum JingleReasons {
+  success = 'success',
+  failedTransport = 'failed-transport',
+  generalError = 'general-error',
+  decline = 'decline',
+  gone = 'gone',
+  timeout = 'timeout',
+  connectivityError = 'connectivity-error',
+  alternativeSession = 'alternative-session'
+}
