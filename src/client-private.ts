@@ -80,7 +80,7 @@ export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk): Pro
   on('requestIncomingRtcSession', this.sessionManager.onPropose.bind(this.sessionManager));
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
   on('rtcSessionError', this.emit.bind(this, 'error'));
-  on('cancelIncomingRtcSession', (session: IJingleSession) => this.emit('cancelPendingSession', session));
+  on('cancelIncomingRtcSession', (sessionId: string) => this.emit('cancelPendingSession', sessionId));
   on('handledIncomingRtcSession', (session: IJingleSession) => this.emit('handledPendingSession', session));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 

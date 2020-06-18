@@ -24,7 +24,7 @@ declare var window: {
       getDisplayMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream>;
     } & MediaDevices;
   } & Navigator;
-} & Window;
+} & Window & typeof globalThis;
 
 /**
  * Get the screen media
@@ -43,12 +43,13 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   const constraints: any = getStandardConstraints(opts);
 
   const conversationId = opts.session && opts.session.conversationId;
+  const sessionId = opts.session && opts.session.id;
 
   // if we are requesting video
   if (opts.video || opts.video === null) {
     const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, conversationId);
     if (videoDeviceId) {
-      sdk.logger.info('Requesting video with deviceId', { deviceId: videoDeviceId, conversationId });
+      sdk.logger.info('Requesting video with deviceId', { deviceId: videoDeviceId, conversationId, sessionId });
       constraints.video.deviceId = {
         exact: videoDeviceId
       };
@@ -59,7 +60,7 @@ export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaR
   if (opts.audio || opts.audio === null) {
     const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, conversationId);
     if (audioDeviceId) {
-      sdk.logger.info('Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId });
+      sdk.logger.info('Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId, sessionId });
       constraints.audio.deviceId = {
         exact: audioDeviceId
       };
@@ -143,7 +144,9 @@ function getScreenShareConstraints (): MediaStreamConstraints {
     if (hasGetDisplayMedia()) {
       return {
         audio: false,
-        video: true
+        video: {
+          frameRate: { ideal: 30 }
+        }
       };
     }
     return {
@@ -195,6 +198,7 @@ function getStandardConstraints (opts: IMediaRequestOptions): MediaStreamConstra
   }
 
   if (constraints.video) {
+    constraints.video.frameRate = opts.videoFrameRate || { ideal: 30 };
     const resolution = opts.videoResolution || DEFAULT_VIDEO_RESOLUTION;
     Object.assign(constraints.video, resolution);
   }
@@ -395,4 +399,8 @@ export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDevi
   }
 
   return foundDevice ? foundDevice.deviceId : undefined;
+}
+
+export function hasOutputDeviceSupport (): boolean {
+  return window.HTMLMediaElement.prototype.hasOwnProperty('setSinkId');
 }

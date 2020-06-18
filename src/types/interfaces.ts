@@ -1,4 +1,4 @@
-import { LogLevels, SessionTypes, CommunicationStates } from './enums';
+import { LogLevels, SessionTypes, JingleReasons } from './enums';
 import WildEmitter from 'wildemitter';
 import WebrtcStatsGatherer from 'webrtc-stats-gatherer';
 
@@ -60,6 +60,7 @@ export interface IMediaRequestOptions {
     width: ConstrainULong,
     height: ConstrainULong
   };
+  videoFrameRate?: ConstrainDouble;
   /**
    * - `string` to request media from device
    * - `true` to request media from sdk default device
@@ -208,6 +209,7 @@ export interface IJingleSession extends WildEmitter {
   id: string;
   sid: string;
   peerID: string;
+  originalRoomJid: string;
   conversationId: string;
   active: boolean;
   sessionType: SessionTypes;
@@ -235,7 +237,7 @@ export interface IJingleSession extends WildEmitter {
   _resurrectVideoOnScreenShareEnd?: boolean;
   _outboundStream?: MediaStream;
   _screenShareStream?: MediaStream;
-  _outputAudioElement?: HTMLAudioElement;
+  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
   _statsGatherer?: WebrtcStatsGatherer;
   _lastParticipantsUpdate?: IParticipantsUpdate;
   _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
@@ -278,4 +280,8 @@ export interface ISpeakersUpdate {
       userId: string;
     }
   >;
+}
+
+export interface IJingleReason {
+  condition: JingleReasons;
 }

@@ -634,7 +634,7 @@ describe('validateOutgoingMediaTracks()', () => {
 
     await sessionManager.validateOutgoingMediaTracks();
 
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
       'sessions outgoing track still has available device',
       { deviceLabel: mockTrack.label, kind: mockTrack.kind, sessionId: session.id }
     );
@@ -655,13 +655,13 @@ describe('validateOutgoingMediaTracks()', () => {
     await sessionManager.validateOutgoingMediaTracks();
 
     /* logs correctly */
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
       'session lost media device and will attempt to switch devices',
-      { sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
+      { conversationId: session.conversationId, sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
     );
-    expect(mockSdk.logger.warn).not.toHaveBeenCalledWith(
+    expect(mockSdk.logger.info).not.toHaveBeenCalledWith(
       'session lost media device and will attempt to switch devices',
-      { sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
+      { conversationId: session.conversationId, sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
     );
 
     /* updates with the new devices */
@@ -687,13 +687,13 @@ describe('validateOutgoingMediaTracks()', () => {
     await sessionManager.validateOutgoingMediaTracks();
 
     /* logs correctly */
-    expect(mockSdk.logger.warn).not.toHaveBeenCalledWith(
+    expect(mockSdk.logger.info).not.toHaveBeenCalledWith(
       'session lost media device and will attempt to switch devices',
-      { sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
+      { conversationId: session.conversationId, sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
     );
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
       'session lost media device and will attempt to switch devices',
-      { sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
+      { conversationId: session.conversationId, sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
     );
 
     /* updates with the new devices */
@@ -716,21 +716,21 @@ describe('validateOutgoingMediaTracks()', () => {
     await sessionManager.validateOutgoingMediaTracks();
 
     /* logs correctly */
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
       'session lost media device and will attempt to switch devices',
-      { sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
+      { conversationId: session.conversationId, sessionId: session.id, kind: mockVideoTrack.kind, deviceLabel: mockVideoTrack.label }
     );
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
       'session lost media device and will attempt to switch devices',
-      { sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
+      { conversationId: session.conversationId, sessionId: session.id, kind: mockAudioTrack.kind, deviceLabel: mockAudioTrack.label }
     );
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       'no available audio devices to switch to. setting audio to mute for session',
-      { sessionId: session.id, kind: 'audio' }
+      { conversationId: session.conversationId, sessionId: session.id, kind: 'audio' }
     );
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       'no available video devices to switch to. setting video to mute for session',
-      { sessionId: session.id, kind: 'video' }
+      { conversationId: session.conversationId, sessionId: session.id, kind: 'video' }
     );
 
     /* mutes the session and does not update media (since there is none to update to) */
@@ -743,5 +743,37 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(mockSessionHandler.removeMediaFromSession).toHaveBeenCalledWith(session, mockAudioTrack);
     expect(mockAudioTrack.stop).toHaveBeenCalled();
     expect(session._outboundStream.removeTrack).toHaveBeenCalledWith(mockAudioTrack);
+  });
+
+  it('should attempt to update output device if lost', async () => {
+    const mockOutputElement = { sinkId: 'some-device-id' };
+    const session = sessions[0];
+    session._outputAudioElement = mockOutputElement as any;
+
+    devices.outputDevices = [
+      { deviceId: 'some-device-id' } as MediaDeviceInfo
+    ];
+
+    jest.spyOn(mediaUtils, 'hasOutputDeviceSupport').mockReturnValue(true);
+    jest.spyOn(sessionManager, 'updateOutputDeviceForAllSessions').mockResolvedValue(null);
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    /* device exists, does not update */
+    expect(mockSdk.logger.info).not.toHaveBeenCalledWith(
+      'session lost output device and will attempt to switch device',
+      { conversationId: session.conversationId, sessionId: session.id, kind: 'output' }
+    );
+    expect(sessionManager.updateOutputDeviceForAllSessions).not.toHaveBeenCalled();
+
+    /* device does not exist, attempt to switch */
+    devices.outputDevices = [];
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'session lost output device and will attempt to switch device',
+      { conversationId: session.conversationId, sessionId: session.id, kind: 'output' }
+    );
+    expect(sessionManager.updateOutputDeviceForAllSessions).toHaveBeenCalled();
   });
 });

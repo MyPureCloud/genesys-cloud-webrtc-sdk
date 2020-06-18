@@ -1,10 +1,11 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack } from '../../test-utils';
+import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, MockSender } from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes, SdkErrorTypes, LogLevels } from '../../../src/types/enums';
+import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { IJingleSession } from '../../../src/types/interfaces';
+import browserama from 'browserama';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
@@ -54,6 +55,7 @@ describe('updateOutgoingMedia()', () => {
     const videoDeviceId = 'imbatman';
     const audioDeviceId = 'wonderwoman';
     const session = new MockSession();
+    session._outboundStream = new MockStream();
     const stream = new MockStream({ video: true, audio: true });
     const spy = mockSdk.logger.info as jest.Mock;
 
@@ -81,6 +83,31 @@ describe('updateOutgoingMedia()', () => {
     });
   });
 
+  it('should stop tracks in ff before starting new media', async () => {
+    Object.defineProperty(browserama, 'isFirefox', { get: () => true });
+    const videoDeviceId = 'imbatman';
+    const audioDeviceId = 'wonderwoman';
+    const session = new MockSession();
+    const sender1 = new MockSender(null);
+    jest.spyOn(sender1, 'replaceTrack');
+    const sender2 = new MockSender(new MockTrack());
+    jest.spyOn(sender2, 'replaceTrack').mockResolvedValue();
+    session.pc._senders = [sender1, sender2];
+    session._outboundStream = new MockStream();
+    const spy = mockSdk.logger.info as jest.Mock;
+
+    const createSpy = jest.spyOn(mediaUtils, 'startMedia').mockImplementation(() => {
+      expect(sender1.replaceTrack).not.toHaveBeenCalled();
+      expect(sender2.replaceTrack).toHaveBeenCalled();
+      return Promise.resolve(new MockStream() as any);
+    });
+
+    /* with a session and stream */
+    await handler.updateOutgoingMedia(session as any, { stream: null, videoDeviceId, audioDeviceId });
+
+    expect(createSpy).toHaveBeenCalled();
+  });
+
   it('should log and throw error if we do not have a video or audio deviceId', async () => {
     try {
       await handler.updateOutgoingMedia({} as IJingleSession, {});
@@ -93,6 +120,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should update outgoing media if a media stream was passed in', async () => {
     const session = new MockSession();
+    session._outboundStream = new MockStream();
     const stream = new MockStream({ video: true, audio: true });
 
     await handler.updateOutgoingMedia(session as any, { stream: stream as any });
@@ -102,6 +130,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should not not update output video media from passed in stream if session has video muted', async () => {
     const session = new MockSession();
+    session._outboundStream = new MockStream();
     session.videoMuted = true;
     const stream = new MockStream({ video: true, audio: true });
 
@@ -112,6 +141,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should update outgoing media with the passed in deviceId(s)', async () => {
     const session = new MockSession();
+    session._outboundStream = new MockStream();
     const stream = new MockStream({ video: true, audio: true });
     const videoDeviceId = 'video-device';
     const audioDeviceId = 'audio-device';
@@ -121,30 +151,31 @@ describe('updateOutgoingMedia()', () => {
     /* video and audio with IDs */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId, audioDeviceId });
     expect(session.getTracks()).toEqual(stream.getTracks());
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: videoDeviceId, audio: audioDeviceId });
+    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: videoDeviceId, audio: audioDeviceId, session });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
     /* video and audio defaults */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: null, audioDeviceId: null });
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: null, audio: null });
+    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: null, audio: null, session });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
     /* video only */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: null, audioDeviceId: undefined });
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: null, audio: undefined });
+    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: null, audio: undefined, session });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
     /* audio only */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: undefined, audioDeviceId: null });
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: null });
+    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: null, session });
 
   });
 
   it('should skip any screenshare tracks on the session', async () => {
     const session = new MockSession();
+    session._outboundStream = new MockStream();
     const stream = new MockStream({ video: true, audio: true });
     session._screenShareStream = new MockStream({ video: true });
     jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(stream as any);
@@ -160,6 +191,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should skip tracks for "kinds" that were not requested to be updated', async () => {
     const session = new MockSession();
+    session._outboundStream = new MockStream();
     const existingSessionStream = new MockStream({ video: true, audio: true });
     existingSessionStream.getTracks().forEach(track => session.addTrack(track));
 
@@ -179,6 +211,7 @@ describe('updateOutgoingMedia()', () => {
   it('should skip video tracks if video is muted on the session', async () => {
     const session = new MockSession();
     session.videoMuted = true;
+    session._outboundStream = new MockStream();
     const existingSessionStream = new MockStream({ video: false, audio: true });
     existingSessionStream.getTracks().forEach(track => session.addTrack(track));
 
@@ -199,6 +232,7 @@ describe('updateOutgoingMedia()', () => {
   it('should update the mute state for audio tracks if audio is muted on the session', async () => {
     const session = new MockSession();
     session.audioMuted = true;
+    session._outboundStream = new MockStream();
     const existingSessionStream = new MockStream({ audio: true });
     existingSessionStream.getTracks().forEach(track => session.addTrack(track));
 
@@ -249,16 +283,18 @@ describe('updateOutgoingMedia()', () => {
       fail('should have thrown');
     } catch (e) {
       /* was called and threw */
-      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: true });
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: true, session });
       expect(e).toEqual(mockError);
       /* sent session mutes */
       expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
       expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
       /* logs */
       expect(mockSdk.logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Sending mute for audio'), expect.any(Object));
+        expect.stringContaining('Sending mute for audio'), expect.any(Object)
+      );
       expect(mockSdk.logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Sending mute for video'), expect.any(Object));
+        expect.stringContaining('Sending mute for video'), expect.any(Object)
+      );
     }
 
     session.mute.mockReset();
@@ -269,7 +305,7 @@ describe('updateOutgoingMedia()', () => {
       fail('should have thrown');
     } catch (e) {
       /* was called and threw */
-      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: undefined });
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: undefined, session });
       expect(e).toEqual(mockError);
       /* sent session mutes */
       expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
@@ -284,7 +320,7 @@ describe('updateOutgoingMedia()', () => {
       fail('should have thrown');
     } catch (e) {
       /* was called and threw */
-      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: true });
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: true, session });
       expect(e).toEqual(mockError);
       /* sent session mutes */
       expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
@@ -299,7 +335,7 @@ describe('updateOutgoingMedia()', () => {
       fail('should have thrown');
     } catch (e) {
       /* was called and threw */
-      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: true });
+      expect(startMediaSpy).toBeCalledWith(mockSdk, { video: true, audio: true, session });
       expect(e).not.toEqual(mockError);
       /* did not send session mutes */
       expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
@@ -309,13 +345,13 @@ describe('updateOutgoingMedia()', () => {
 });
 
 describe('updateOutputDevice()', () => {
-  test('should log and return if the session does not have an _outputAudioElement', async () => {
+  it('should log and return if the session does not have an _outputAudioElement', async () => {
     const session = new MockSession();
     await handler.updateOutputDevice(session as any, 'deviceId');
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Cannot update audio output'), expect.any(Object));
   });
 
-  test('should throw if the audio element does not have the `setSinkId` property', async () => {
+  it('should throw if the audio element does not have the `setSinkId` property', async () => {
     const session = new MockSession();
     session._outputAudioElement = {};
 
@@ -328,14 +364,17 @@ describe('updateOutputDevice()', () => {
     }
   });
 
-  test('should set the sinkId with the passed in deviceId', async () => {
+  it('should set the sinkId with the passed in deviceId', async () => {
     const session = new MockSession();
     const deviceId = 'new-output-device';
     const spy = jest.fn();
     session._outputAudioElement = { setSinkId: spy };
 
     await handler.updateOutputDevice(session as any, deviceId);
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Setting output deviceId'), { deviceId, conversationId: session.conversationId });
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'Setting output deviceId',
+      { deviceId, conversationId: session.conversationId, sessionId: session.id }
+    );
     expect(spy).toHaveBeenCalledWith(deviceId);
   });
 });
@@ -500,7 +539,7 @@ describe('onSessionTerminated', () => {
     const spy = jest.fn();
     mockSdk.on('sessionEnded', spy);
 
-    handler.onSessionTerminated(session, 'success');
+    handler.onSessionTerminated(session, { condition: JingleReasons.success });
 
     expect(stream._tracks[0].stop).toHaveBeenCalled();
     expect(spy).toHaveBeenCalled();
@@ -600,5 +639,17 @@ describe('_warnNegotiationNeeded', () => {
     handler._warnNegotiationNeeded(session as any);
 
     expect(mockSdk.logger.error).toHaveBeenCalledWith(expect.stringContaining('negotiation needed and not supported'), { conversationId: session.conversationId });
+  });
+});
+
+describe('addReplaceTrackToSession', () => {
+  it('should not apply constraints for audio tracks', async () => {
+    const session = new MockSession();
+    session.pc._senders = [new MockSender(new MockTrack('audio'))];
+
+    const track = new MockTrack('audio');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+
+    expect(track.applyConstraints).not.toHaveBeenCalled();
   });
 });
