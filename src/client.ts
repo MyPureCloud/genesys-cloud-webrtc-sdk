@@ -468,3 +468,5 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   }
 
 }
+
+export default PureCloudWebrtcSdk;

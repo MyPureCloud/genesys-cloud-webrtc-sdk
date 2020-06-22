@@ -34,23 +34,34 @@ module.exports = (env) => {
       })
     ],
     resolve: {
-      extensions: ['.ts', '.js', '.json']
+      extensions: ['.ts', '.js', '.cjs', '.mjs', /* '.json' */]
     },
+    // resolve: {
+    //   alias: {
+    //     'purecloud-streaming-client': path.join(__dirname, './node_modules/purecloud-streaming-client/dist/streaming-client.cjs')
+    //   }
+    // },
     module: {
       rules: [
         {
-          test: /\.js$/,
-          exclude: /(node_modules|bower_components)/,
-          loader: 'babel-loader',
-          query: {
-            presets: ['@babel/preset-env']
-          }
+          test: /\.(c|m)?js|ts$/,
+          exclude: [
+            /\@babel\//,
+            /\bcore-js\b/,
+            /\bwebpack\/buildin\b/,
+          ],
+          // exclude: /(node_modules)/, // \/(!?[purecloud\-streaming\-client])/,
+          // include: /node_modules\/purecloud\-streaming\-client/,
+          loader: ['babel-loader', 'ts-loader'],
+          // query: {
+          //   presets: ['@babel/preset-env']
+          // }
         },
-        {
-          test: /\.ts$/,
-          exclude: /(node_modules|bower_components)/,
-          loader: 'ts-loader'
-        }
+        // {
+        //   test: /\.ts$/,
+        //   exclude: /(node_modules|bower_components)/,
+        //   loader: 'ts-loader'
+        // }
       ]
     }
   };
