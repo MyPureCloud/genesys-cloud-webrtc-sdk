@@ -227,6 +227,11 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
 
     if (isPeerVideoJid(pendingSession.address)) {
+      if (pendingSession.fromUserId === this.sdk._personDetails.id) {
+        this.log(LogLevels.info, 'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
+        return;
+      }
+
       this.log(LogLevels.info, 'Propose received for incoming peer video', pendingSession);
     } else {
       this.log(LogLevels.debug, 'Propose received for a video session that is not a peer session and wasn\'t started by this client, ignoring.', pendingSession);

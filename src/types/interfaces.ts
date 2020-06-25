@@ -229,6 +229,7 @@ export interface IJingleSession extends WildEmitter {
     pc: RTCPeerConnection
   };
   pcParticipant?: IConversationParticipant;
+  fromUserId?: string;
   videoMuted?: boolean;
   audioMuted?: boolean;
   startScreenShare?: () => Promise<void>;

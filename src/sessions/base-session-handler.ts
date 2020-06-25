@@ -56,6 +56,7 @@ export default abstract class BaseSessionHandler {
     const pendingSession = this.sessionManager.getPendingSession(session.id);
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
+      session.fromUserId = pendingSession.fromUserId;
     }
     this.sessionManager.removePendingSession(session.id);
 

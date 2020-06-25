@@ -416,11 +416,13 @@ describe('rejectPendingSession', () => {
 });
 
 describe('handleSessionInit', () => {
-  it('should set conversationId on existing pendingSession and emit sessionStarted', async () => {
+  it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {
     const session: any = new MockSession();
     session.conversationId = null;
+    session.fromUserId = null;
 
     const pendingSession = createPendingSession();
+    pendingSession.fromUserId = 'fake';
     jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
 
     const eventSpy = jest.fn();
@@ -430,6 +432,7 @@ describe('handleSessionInit', () => {
 
     expect(mockSdk._streamingConnection.webrtcSessions.rtcSessionAccepted).toHaveBeenCalled();
     expect(session.conversationId).toEqual(pendingSession.conversationId);
+    expect(session.fromUserId).toEqual('fake');
     expect(eventSpy).toHaveBeenCalled();
     expect(session._statsGatherer).toBeTruthy();
   });
