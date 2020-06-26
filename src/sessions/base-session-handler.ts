@@ -57,6 +57,7 @@ export default abstract class BaseSessionHandler {
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
       session.fromUserId = pendingSession.fromUserId;
+      session.originalRoomJid = pendingSession.originalRoomJid;
     }
     this.sessionManager.removePendingSession(session.id);
 
