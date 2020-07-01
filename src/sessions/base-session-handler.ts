@@ -249,6 +249,8 @@ export default abstract class BaseSessionHandler {
       }
     });
 
+    await Promise.all(newMediaPromises);
+
     /* prune tracks not being sent */
     session._outboundStream.getTracks().forEach((track) => {
       const hasSender = session.pc.getSenders().find((sender) => sender.track && sender.track.id === track.id);
@@ -258,8 +260,6 @@ export default abstract class BaseSessionHandler {
         session._outboundStream.removeTrack(track);
       }
     });
-
-    return Promise.all(newMediaPromises);
   }
 
   async updateOutputDevice (session: IJingleSession, deviceId: string): Promise<undefined> {
