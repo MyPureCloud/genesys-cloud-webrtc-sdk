@@ -1,7 +1,7 @@
 @Library('pipeline-library@webapp-pipelines') _
 
 webappPipeline {
-    slaveLabel = 'dev'
+    slaveLabel = 'dev_v2'
     nodeVersion = '10.16.2'
     useArtifactoryRepo = false
     projectName = 'developercenter-cdn/webrtc-sdk'
