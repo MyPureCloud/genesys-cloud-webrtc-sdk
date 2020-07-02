@@ -1,7 +1,7 @@
 import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, MockSender } from '../../test-utils';
 import { PureCloudWebrtcSdk } from '../../../src/client';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes, SdkErrorTypes, LogLevels } from '../../../src/types/enums';
+import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { IJingleSession } from '../../../src/types/interfaces';
@@ -416,11 +416,13 @@ describe('rejectPendingSession', () => {
 });
 
 describe('handleSessionInit', () => {
-  it('should set conversationId on existing pendingSession and emit sessionStarted', async () => {
+  it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {
     const session: any = new MockSession();
     session.conversationId = null;
+    session.fromUserId = null;
 
     const pendingSession = createPendingSession();
+    pendingSession.fromUserId = 'fake';
     jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
 
     const eventSpy = jest.fn();
@@ -430,6 +432,7 @@ describe('handleSessionInit', () => {
 
     expect(mockSdk._streamingConnection.webrtcSessions.rtcSessionAccepted).toHaveBeenCalled();
     expect(session.conversationId).toEqual(pendingSession.conversationId);
+    expect(session.fromUserId).toEqual('fake');
     expect(eventSpy).toHaveBeenCalled();
     expect(session._statsGatherer).toBeTruthy();
   });
@@ -539,7 +542,7 @@ describe('onSessionTerminated', () => {
     const spy = jest.fn();
     mockSdk.on('sessionEnded', spy);
 
-    handler.onSessionTerminated(session, 'success');
+    handler.onSessionTerminated(session, { condition: JingleReasons.success });
 
     expect(stream._tracks[0].stop).toHaveBeenCalled();
     expect(spy).toHaveBeenCalled();

@@ -9,12 +9,22 @@ const manifest = {
   version: process.env.VERSION,
   build: process.env.BUILD_ID,
   buildDate: buildDate.toISOString(),
-  indexFiles: [
-    {
-      file: 'purecloud-webrtc-sdk.js'
-    }
-  ]
+  indexFiles: []
 };
+
+/* read top level purecloud-webrtc-sdk file variations */
+const files = fs.readdirSync('dist/');
+files.forEach(file => {
+  /* skip directories and non-js files */
+  if (
+    fs.lstatSync('dist/' + file).isDirectory() ||
+    !file.startsWith('purecloud-webrtc-sdk')
+  ) {
+    return;
+  }
+
+  manifest.indexFiles.push({ file });
+});
 
 try {
   const files = fs.readdirSync('dist/demo/');

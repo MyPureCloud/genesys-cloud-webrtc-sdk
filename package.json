@@ -1,6 +1,6 @@
 {
   "name": "purecloud-webrtc-sdk",
-  "version": "3.6.2",
+  "version": "3.6.7",
   "description": "client for the interfacing with PureCloud WebRTC",
   "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
   "license": "MIT",
@@ -8,7 +8,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "main": "dist/src/client.js",
-  "browser": "dist/purecloud-webrtc-sdk.min.js",
   "files": [
     "dist"
   ],
@@ -18,7 +17,10 @@
   ],
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "tsc -p . && webpack && webpack --env.production",
+    "build": "npm run build:src && npm run build:cdn && npm run build:module",
+    "build:src": "tsc -p .",
+    "build:cdn": "webpack --env.cdn && webpack --env.cdn --env.production",
+    "build:module": "webpack && webpack --env.production",
     "build-sample": "./test/test-pages/build.sh",
     "build:sample": "./test/test-pages/build.sh",
     "build:watch": "tsc -p . && webpack --watch",

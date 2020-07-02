@@ -3,7 +3,7 @@ import StatsGatherer from 'webrtc-stats-gatherer';
 import { PureCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
 import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
 import { throwSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
@@ -56,6 +56,8 @@ export default abstract class BaseSessionHandler {
     const pendingSession = this.sessionManager.getPendingSession(session.id);
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
+      session.fromUserId = pendingSession.fromUserId;
+      session.originalRoomJid = pendingSession.originalRoomJid;
     }
     this.sessionManager.removePendingSession(session.id);
 
@@ -95,7 +97,7 @@ export default abstract class BaseSessionHandler {
     this.sdk.emit('sessionStarted', session);
   }
 
-  onSessionTerminated (session: IJingleSession, reason: any): void {
+  onSessionTerminated (session: IJingleSession, reason: IJingleReason): void {
     this.log(LogLevels.info, 'handling session terminated', { conversationId: session.conversationId, reason });
     if (session._outboundStream) {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
@@ -247,6 +249,8 @@ export default abstract class BaseSessionHandler {
       }
     });
 
+    await Promise.all(newMediaPromises);
+
     /* prune tracks not being sent */
     session._outboundStream.getTracks().forEach((track) => {
       const hasSender = session.pc.getSenders().find((sender) => sender.track && sender.track.id === track.id);
@@ -256,8 +260,6 @@ export default abstract class BaseSessionHandler {
         session._outboundStream.removeTrack(track);
       }
     });
-
-    return Promise.all(newMediaPromises);
   }
 
   async updateOutputDevice (session: IJingleSession, deviceId: string): Promise<undefined> {

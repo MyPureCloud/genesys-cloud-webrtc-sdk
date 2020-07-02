@@ -4,11 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.2...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.7...HEAD)
+### Fixed 
+* [#165](https://github.com/MyPureCloud/purecloud-webrtc-sdk/issues/165) where cdn build does not export as default
+* Adjusted `create-manifest.js` to dynamically add all files starting with `purecloud-webrtc-sdk` 
+
+# [v3.6.7](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.6...v3.6.7)
+### Fixed
+* updateOutgoingMedia now cleans up existing media correctly (async issue)
+
+# [v3.6.6](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.5...v3.6.6)
+### Fixed
+* orignalRoomJid now showing up on IJingleSession
+
+# [v3.6.5](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.4...v3.6.5)
+### Added
+* fromUserId added to session for 1:1 video calls
+
+### Changed
+* Media for screen share is no longer spun up prior to `sessionInit
+
+# [v3.6.4](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.3...v3.6.4)
+### Changed
+* Bumped streaming client version
+
+# [v3.6.3](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.2...v3.6.3)
+### Added
+* Added enum for Jingle Reasons
+
+### Fixed
+* Fix signature for retract handler
 
 # [v3.6.2](https://github.com/MyPureCloud/purecloud-webrtc-sdk/compare/v3.6.1...v3.6.2)
 ### Fixed
-* make sure output device(s) is available when devices change 
+* make sure output device(s) is available when devices change
 
 ### Changed
 * added session ids to logging around devices

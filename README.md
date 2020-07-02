@@ -12,7 +12,8 @@ services. Supported WebRTC Features:
 - WebRTC SoftPhone (Authenticated Business User/Agent Telephony - inbound/outbound, etc)
 - WebRTC Screen Share (Unauthenticated User/Guest)
 
-Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ (requires PureCloud Credentials)
+Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ 
+- Demo requires PureCloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
 
 Not yet supported:
 
@@ -38,7 +39,7 @@ sdk.initialize();
 Or via global module
 
 ```html
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.bundle.min.js"></script>
 <script>
   const sdk = new window.PureCloudWebrtcSdk({
     accessToken: 'your access token'

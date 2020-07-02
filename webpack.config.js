@@ -3,8 +3,20 @@ const WebpackAutoInject = require('webpack-auto-inject-version');
 
 module.exports = (env) => {
   const minimize = env && env.production;
-  const filename = `purecloud-webrtc-sdk${minimize ? '.min' : ''}.js`;
+  const cdn = env && env.cdn;
   const mode = minimize ? 'production' : 'development';
+
+  let filename = 'purecloud-webrtc-sdk';
+
+  if (cdn) {
+    filename += '.bundle';
+  }
+
+  if (minimize) {
+    filename += '.min';
+  }
+
+  filename += '.js';
 
   console.log(`build mode: ${mode}`);
 
@@ -20,6 +32,7 @@ module.exports = (env) => {
       path: path.resolve(__dirname, 'dist'),
       filename,
       library: 'PureCloudWebrtcSdk',
+      libraryExport: cdn ? 'PureCloudWebrtcSdk' : '',
       libraryTarget: 'umd'
     },
     plugins: [
@@ -34,13 +47,8 @@ module.exports = (env) => {
       })
     ],
     resolve: {
-      extensions: ['.ts', '.js', '.cjs', '.mjs', /* '.json' */]
+      extensions: ['.ts', '.js', '.cjs', '.mjs', '.json']
     },
-    // resolve: {
-    //   alias: {
-    //     'purecloud-streaming-client': path.join(__dirname, './node_modules/purecloud-streaming-client/dist/streaming-client.cjs')
-    //   }
-    // },
     module: {
       rules: [
         {
@@ -50,9 +58,7 @@ module.exports = (env) => {
             /\bcore-js\b/,
             /\bwebpack\/buildin\b/,
           ],
-          // exclude: /(node_modules)/, // \/(!?[purecloud\-streaming\-client])/,
-          // include: /node_modules\/purecloud\-streaming\-client/,
-          loader: ['babel-loader', 'ts-loader'],
+          loader: ['babel-loader'/* , 'ts-loader' */],
           // query: {
           //   presets: ['@babel/preset-env']
           // }

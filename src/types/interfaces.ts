@@ -1,4 +1,4 @@
-import { LogLevels, SessionTypes, CommunicationStates } from './enums';
+import { LogLevels, SessionTypes, JingleReasons } from './enums';
 import WildEmitter from 'wildemitter';
 import WebrtcStatsGatherer from 'webrtc-stats-gatherer';
 
@@ -209,6 +209,7 @@ export interface IJingleSession extends WildEmitter {
   id: string;
   sid: string;
   peerID: string;
+  originalRoomJid: string;
   conversationId: string;
   active: boolean;
   sessionType: SessionTypes;
@@ -228,6 +229,7 @@ export interface IJingleSession extends WildEmitter {
     pc: RTCPeerConnection
   };
   pcParticipant?: IConversationParticipant;
+  fromUserId?: string;
   videoMuted?: boolean;
   audioMuted?: boolean;
   startScreenShare?: () => Promise<void>;
@@ -279,4 +281,8 @@ export interface ISpeakersUpdate {
       userId: string;
     }
   >;
+}
+
+export interface IJingleReason {
+  condition: JingleReasons;
 }

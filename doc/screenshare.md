@@ -4,7 +4,6 @@ This SDK supports guests/unauthenticated users the ability to share their screen
 
 ## Session Flow
 
-
 WebRTC Screen Share sessions should be automatically accepted by the consuming guest application. A valid `conversationId` and `securityCode` are required to start a screen share session.
 
 ## API

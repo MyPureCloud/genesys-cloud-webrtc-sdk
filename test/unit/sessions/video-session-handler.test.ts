@@ -461,6 +461,29 @@ describe('handlePropose', () => {
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
+  it('should not emit session if peer request and the requestor is current user and not requested by this client', async () => {
+    const jid = 'peer-123@conference.com';
+
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+
+    const emitSpy = jest.fn();
+
+    mockSdk.once('pendingSession', emitSpy);
+
+    await handler.handlePropose({
+      id: '1241241',
+      fromUserId: userId,
+      sessionType: SessionTypes.collaborateVideo,
+      address: jid,
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
+    });
+
+    expect(handler.proceedWithSession).not.toHaveBeenCalled();
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
   it('should emit session if peer request', async () => {
     const jid = 'peer-123@conference.com';
 
