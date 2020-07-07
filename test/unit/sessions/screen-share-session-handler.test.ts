@@ -159,7 +159,7 @@ describe('onTrackEnd', () => {
 });
 
 describe('updateOutgoingMedia()', () => {
-  test('should throw because updating outgoing media is not supported for screen share', async () => {
+  it('should throw because updating outgoing media is not supported for screen share', async () => {
     try {
       handler.updateOutgoingMedia({} as any, {} as any);
       fail('should have thrown');

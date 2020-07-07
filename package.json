@@ -8,10 +8,10 @@
     "registry": "https://registry.npmjs.org/"
   },
   "main": "dist/src/client.js",
+  "typings": "dist/src/client.d.ts",
   "files": [
     "dist"
   ],
-  "typings": "dist/src/client.d.ts",
   "pre-push": [
     "test"
   ],
@@ -58,7 +58,7 @@
     "genesys-cloud-client-logger": "^1.0.3",
     "lodash": "^4.17.15",
     "purecloud-platform-client-v2": "^73.0.0",
-    "purecloud-streaming-client": "file:../purecloud-streaming-client/purecloud-streaming-client-12.0.0.tgz",
+    "purecloud-streaming-client": "^12.0.0-branch.PCM1205.7",
     "safe-json-stringify": "^1.2.0",
     "superagent": "^5.1.0",
     "uuid": "^3.3.2",
@@ -67,10 +67,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
-    "@babel/plugin-proposal-async-generator-functions": "^7.10.1",
-    "@babel/plugin-transform-regenerator": "^7.10.1",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
     "@babel/plugin-transform-runtime": "^7.6.2",
     "@babel/preset-env": "^7.5.5",
+    "@babel/preset-typescript": "^7.10.4",
     "@types/jest": "^25.2.3",
     "@types/lodash": "^4.14.149",
     "@types/nock": "^11.1.0",

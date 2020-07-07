@@ -456,7 +456,7 @@ describe('setAudioMute', () => {
 });
 
 describe('getAllActiveSessions()', () => {
-  test('should return all active sessions as an array', () => {
+  it('should return all active sessions as an array', () => {
     const sessionsObject = {
       'session-1': { id: 'session-1', active: true },
       'session-2': { id: 'session-2', active: true },
@@ -470,7 +470,7 @@ describe('getAllActiveSessions()', () => {
 });
 
 describe('updateOutgoingMedia()', () => {
-  test('should call the handler to updateOutgoingMedia with the passed in session', async () => {
+  it('should call the handler to updateOutgoingMedia with the passed in session', async () => {
     const session = {} as any;
     const options: IUpdateOutgoingMedia = { session, videoDeviceId: 'deviceId' };
 
@@ -485,7 +485,7 @@ describe('updateOutgoingMedia()', () => {
     expect(mockSessionHandler.updateOutgoingMedia).toHaveBeenCalledWith(session, options);
   });
 
-  test('should find the session by id and call the handler to updateOutgoingMedia', async () => {
+  it('should find the session by id and call the handler to updateOutgoingMedia', async () => {
     const session = {} as any;
     const options: IUpdateOutgoingMedia = { sessionId: 'abc123', videoDeviceId: 'deviceId' };
 
@@ -502,7 +502,7 @@ describe('updateOutgoingMedia()', () => {
 });
 
 describe('updateOutgoingMediaForAllSessions()', () => {
-  test('should call the handler to updateOutgoingMedia for all sessions', async () => {
+  it('should call the handler to updateOutgoingMedia for all sessions', async () => {
     const sessions = [{ id: '1' }, { id: '2' }, { id: '3' }];
     const videoDeviceId = 'video-device';
     const audioDeviceId = 'audio-device';
@@ -524,7 +524,7 @@ describe('updateOutgoingMediaForAllSessions()', () => {
 });
 
 describe('updateOutputDeviceForAllSessions()', () => {
-  test('should log and return if outputDeviceId cannot be found', async () => {
+  it('should log and return if outputDeviceId cannot be found', async () => {
     const outputDeviceId = 'device-id';
     jest.spyOn(mediaUtils, 'getValidDeviceId').mockResolvedValue(undefined);
     jest.spyOn(sessionManager, 'getAllActiveSessions');
@@ -539,7 +539,7 @@ describe('updateOutputDeviceForAllSessions()', () => {
     );
   });
 
-  test('should call the handler to update all active, non-screenshare sessions', async () => {
+  it('should call the handler to update all active, non-screenshare sessions', async () => {
     const outputDeviceId = 'device-id';
     const sessions = [
       { id: '1', sessionType: SessionTypes.collaborateVideo },
