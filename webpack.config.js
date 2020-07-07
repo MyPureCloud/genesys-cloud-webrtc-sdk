@@ -3,8 +3,20 @@ const WebpackAutoInject = require('webpack-auto-inject-version');
 
 module.exports = (env) => {
   const minimize = env && env.production;
-  const filename = `purecloud-webrtc-sdk${minimize ? '.min' : ''}.js`;
+  const cdn = env && env.cdn;
   const mode = minimize ? 'production' : 'development';
+
+  let filename = 'purecloud-webrtc-sdk';
+
+  if (cdn) {
+    filename += '.bundle';
+  }
+
+  if (minimize) {
+    filename += '.min';
+  }
+
+  filename += '.js';
 
   console.log(`build mode: ${mode}`);
 
@@ -20,6 +32,7 @@ module.exports = (env) => {
       path: path.resolve(__dirname, 'dist'),
       filename,
       library: 'PureCloudWebrtcSdk',
+      libraryExport: cdn ? 'PureCloudWebrtcSdk' : '',
       libraryTarget: 'umd'
     },
     plugins: [
@@ -34,7 +47,7 @@ module.exports = (env) => {
       })
     ],
     resolve: {
-      extensions: ['.ts', '.js', '.json']
+      extensions: ['.ts', '.js', '.cjs', '.mjs', '.json']
     },
     module: {
       rules: [
