@@ -18,7 +18,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "npm run build:src && npm run build:cdn && npm run build:module",
-    "build:src": "tsc -p .",
+    "build:src": "tsc -p . && node copy-version.js",
     "build:cdn": "webpack --env.cdn && webpack --env.cdn --env.production",
     "build:module": "webpack && webpack --env.production",
     "build-sample": "./test/test-pages/build.sh",
