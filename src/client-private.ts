@@ -1,5 +1,6 @@
-import { PureCloudWebrtcSdk } from './client';
-import StreamingClient from 'purecloud-streaming-client';
+import StreamingClient from 'genesys-cloud-streaming-client';
+
+import { GenesysCloudWebrtcSdk } from './client';
 import { LogLevels } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { IJingleSession, SubscriptionEvent } from './types/interfaces';
@@ -8,9 +9,9 @@ import { ConversationUpdate } from './types/conversation-update';
 /**
  * Establish the connection with the streaming client.
  *  Must be called after construction _before_ the SDK is used.
- * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param this must be called with a GenesysCloudWebrtcSdk as `this`
  */
-export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<void> {
+export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promise<void> {
   if (this.isInitialized && this.connected) {
     this.logger.warn('Existing streaming connection detected. Disconnecting and creating a new connection.');
     await this._streamingConnection.disconnect();
@@ -45,17 +46,17 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
   const initialPromise = new Promise((resolve) => {
     connection.on('connected', async () => {
       this.emit('connected', { reconnect: this._hasConnected });
-      this.logger.info('PureCloud streaming client connected', { reconnect: this._hasConnected });
+      this.logger.info('GenesysCloud streaming client connected', { reconnect: this._hasConnected });
       this._hasConnected = true;
       // refresh turn servers every 6 hours
       this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
       await this._refreshIceServers();
-      this.logger.info('PureCloud streaming client ready for use');
+      this.logger.info('GenesysCloud streaming client ready for use');
       resolve();
     });
 
     connection.on('disconnected', async () => {
-      this.logger.info(LogLevels.info, 'PureCloud streaming client disconnected');
+      this.logger.info(LogLevels.info, 'GenesysCloud streaming client disconnected');
       clearInterval(this._refreshIceServersInterval);
     });
   });
@@ -66,9 +67,9 @@ export async function setupStreamingClient (this: PureCloudWebrtcSdk): Promise<v
 
 /**
  * Set up proxy for streaming client events
- * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param this must be called with a GenesysCloudWebrtcSdk as `this`
  */
-export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk): Promise<void> {
+export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): Promise<void> {
   this.sessionManager = new SessionManager(this);
 
   if (this._personDetails) {
@@ -89,7 +90,7 @@ export async function proxyStreamingClientEvents (this: PureCloudWebrtcSdk): Pro
   this._streamingConnection.on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
 }
 
-export const handleConversationUpdate = function (this: PureCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
+export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
   const update = new ConversationUpdate(updateEvent.eventBody);
   this.sessionManager.handleConversationUpdate(update);
 };

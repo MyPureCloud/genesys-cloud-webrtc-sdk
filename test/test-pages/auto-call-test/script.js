@@ -1,5 +1,5 @@
 const platformClient = require('platformClient');
-const WebrtcSdk = window.PureCloudWebrtcSdk;
+const WebrtcSdk = window.GenesysCloudWebrtcSdk;
 
 const client = platformClient.ApiClient.instance;
 client.setPersistSettings(true, 'uber_test');
@@ -17,7 +17,7 @@ let me, webrtcSdk;
 client.loginImplicitGrant(clientId, window.location.href)
   .then(() => {
     t('getUsersMe', 'Getting user');
-    return usersApi.getUsersMe({ expand: [ 'station' ] });
+    return usersApi.getUsersMe({ expand: ['station'] });
   })
   .then((userMe) => {
     t('getUsersMe');

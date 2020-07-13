@@ -1,11 +1,11 @@
-import { PureCloudWebrtcSdk } from '../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk } from '../test-utils';
 import { CommunicationStates } from '../../src/types/enums';
 import { SubscriptionEvent } from '../../src/types/interfaces';
 import { handleConversationUpdate } from '../../src/client-private';
 import { ConversationUpdate } from '../../src/types/conversation-update';
 
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 
 beforeEach(() => {
   mockSdk = new SimpleMockSdk() as any;

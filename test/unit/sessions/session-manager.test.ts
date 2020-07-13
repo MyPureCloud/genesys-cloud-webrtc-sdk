@@ -1,4 +1,4 @@
-import { PureCloudWebrtcSdk } from '../../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
@@ -6,7 +6,7 @@ import { IUpdateOutgoingMedia, IJingleSession, IEnumeratedDevices } from '../../
 import * as mediaUtils from '../../../src/media-utils';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 let sessionManager: SessionManager;
 
 beforeEach(() => {

@@ -1,4 +1,4 @@
-import { PureCloudWebrtcSdk } from '../client';
+import { GenesysCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
@@ -29,7 +29,7 @@ export class SessionManager {
   sessionHandlers: BaseSessionHandler[];
   pendingSessions: { [sessionId: string]: IPendingSession } = {};
 
-  constructor (private sdk: PureCloudWebrtcSdk) {
+  constructor (private sdk: GenesysCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
 
     sdk._config.allowedSessionTypes.forEach((sessionType) => {

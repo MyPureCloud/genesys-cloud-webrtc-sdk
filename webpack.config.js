@@ -6,7 +6,7 @@ module.exports = (env) => {
   const cdn = env && env.cdn;
   const mode = minimize ? 'production' : 'development';
 
-  let filename = 'purecloud-webrtc-sdk';
+  let filename = 'genesys-cloud-webrtc-sdk';
   let babelExcludes = [];
 
   /* if building for the cdn */
@@ -43,8 +43,8 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename,
-      library: 'PureCloudWebrtcSdk',
-      libraryExport: cdn ? 'PureCloudWebrtcSdk' : '',
+      library: 'GenesysCloudWebrtcSdk',
+      libraryExport: cdn ? 'GenesysCloudWebrtcSdk' : '',
       libraryTarget: 'umd'
     },
     plugins: [

@@ -1,5 +1,5 @@
 import fetch from 'superagent';
-import { PureCloudWebrtcSdk } from './client';
+import { GenesysCloudWebrtcSdk } from './client';
 import { SdkErrorTypes } from './types/enums';
 
 interface RequestApiOptions {
@@ -23,18 +23,18 @@ export class SdkError extends Error {
   }
 }
 
-export const throwSdkError = function (this: PureCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): void {
+export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): void {
   const error = new SdkError(errorType, message, details);
   this.emit('error', error);
   throw error;
 };
 
-export const buildUri = function (this: PureCloudWebrtcSdk, path: string, version: string = 'v2'): string {
+export const buildUri = function (this: GenesysCloudWebrtcSdk, path: string, version: string = 'v2'): string {
   path = path.replace(/^\/+|\/+$/g, ''); // trim leading/trailing /
   return `https://api.${this._config.environment}/api/${version}/${path}`;
 };
 
-export const requestApi = function (this: PureCloudWebrtcSdk, path: string, { method, data, version, contentType, auth }: RequestApiOptions = {}): Promise<any> {
+export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, { method, data, version, contentType, auth }: RequestApiOptions = {}): Promise<any> {
   let request = fetch[method || 'get'](buildUri.call(this, path, version));
   if (auth !== false) {
     request.set('Authorization', `Bearer ${auth || this._config.accessToken}`);

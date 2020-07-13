@@ -1,5 +1,5 @@
 /* global describe, it, before, afterEach, after */
-import { PureCloudWebrtcSdk } from '../../dist/purecloud-webrtc-sdk';
+import { GenesysCloudWebrtcSdk } from '../../dist/genesys-cloud-webrtc-sdk';
 import { testUtils, callUtils } from 'genesyscloud-spigot';
 import * as utils from '../utils/utils';
 
@@ -19,7 +19,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     if (!iceServers.length) {
       throw new Error('No ICE Servers received');
     }
-    sdk = new PureCloudWebrtcSdk({
+    sdk = new GenesysCloudWebrtcSdk({
       environment: config.envHost,
       organizationId: context.org.id,
       logLevel: 'debug',

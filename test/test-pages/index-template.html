@@ -11,8 +11,8 @@
     if (window.location.href.indexOf('/cdn') > -1) {
       const script = document.createElement('script');
       // for local development
-      // script.src = '../../web/purecloud-webrtc-sdk.js';
-      script.src = 'https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.js';
+      // script.src = '../../web/genesys-cloud-webrtc-sdk.js';
+      script.src = 'https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/genesys-cloud-webrtc-sdk.js';
       document.head.prepend(script);
     }
   </script>
@@ -94,7 +94,8 @@
       <label>Security code:</label>
       <input id="security-key" placeholder="Security code">
     </div>
-    <button id="start-app-no-auth-button" type="button" class="btn btn-success">Start App Without Auth (ACD Screen Share)</button>
+    <button id="start-app-no-auth-button" type="button" class="btn btn-success">Start App Without Auth (ACD Screen
+      Share)</button>
   </div>
   <div id="auth-text" class="auth-text">Authenticated</div>
   <div id="init-text" class="init-text">Initializing SDK...</div>

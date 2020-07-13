@@ -32,7 +32,7 @@ declare module 'wildemitter' {
   }
 }
 
-declare module 'purecloud-streaming-client' {
+declare module 'genesys-cloud-streaming-client' {
   export default class StreamingClient {
     constructor (options: any);
     connect (): Promise<any>;
@@ -51,7 +51,8 @@ declare module 'purecloud-streaming-client' {
         port: string;
         transport: string;
         username: string;
-        type: 'relay' | 'stun'}>>
+        type: 'relay' | 'stun'
+      }>>
       jingleJs: any;
     };
     webrtcSessions: {

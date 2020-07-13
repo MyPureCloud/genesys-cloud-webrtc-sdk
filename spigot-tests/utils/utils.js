@@ -1,6 +1,6 @@
-import { PureCloudWebrtcSdk } from '../../dist/purecloud-webrtc-sdk';
+import { GenesysCloudWebrtcSdk } from '../../dist/genesys-cloud-webrtc-sdk';
 import { testUtils } from 'genesyscloud-spigot';
-import StreamingClient from 'purecloud-streaming-client';
+import StreamingClient from 'genesys-cloud-streaming-client';
 
 export function getConnectedStreamingClient (authToken, jwt) {
   return new Promise((resolve) => {
@@ -44,7 +44,7 @@ export function createConnection (authToken, jwt) {
 export async function getNewSdkConnection () {
   const config = testUtils.getConfig();
 
-  const newSdk = new PureCloudWebrtcSdk({
+  const newSdk = new GenesysCloudWebrtcSdk({
     environment: config.envHost,
     accessToken: testUtils.getAuthToken(),
     logLevel: 'debug',

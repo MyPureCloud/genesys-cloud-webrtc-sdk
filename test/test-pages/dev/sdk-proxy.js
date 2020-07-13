@@ -1,3 +1,3 @@
-import { PureCloudWebrtcSdk as sdk } from '../../../src/client';
+import { GenesysCloudWebrtcSdk as sdk } from '../../../src/client';
 
-export let PureCloudWebrtcSdk = sdk;
+export let GenesysCloudWebrtcSdk = sdk;

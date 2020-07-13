@@ -1,4 +1,4 @@
-# PureCloud WebRTC SDK Documentation
+# Genesys Cloud WebRTC SDK Documentation
 
 ## Feature Index
 
@@ -28,7 +28,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
 
 #### Constructor
 
-`new PureCloudWebrtcSdk(options)`
+`new GenesysCloudWebrtcSdk(options)`
 
 - parameters
   - `Object options` with properties:
@@ -62,7 +62,7 @@ the WebSocket connection drops, all active WebRTC connections will be disconnect
 #### Methods
 
 `sdk.intialize(options) : Promise<void>` - Initialize the WebSocket connection for streaming
-connectivity with PureCloud. Initialize must be called before any events will trigger.
+connectivity with GenesysCloud. Initialize must be called before any events will trigger.
   - parameters
     - `Object options`: Optional; with properties
       - `String securityCode`: Optional; one-time security code used to authenticate guest users
@@ -141,10 +141,10 @@ connectivity with PureCloud. Initialize must be called before any events will tr
     - `String id`: the id of the session to disconnect
     - `String conversationId`: the conversationId of the session to disconnect
 
-`sdk.disconnect() : void` - Tear down the WebSocket connection to PureCloud.
+`sdk.disconnect() : void` - Tear down the WebSocket connection to GenesysCloud.
 This does not hangup or disconnect active WebRTC Session calls.
 
-`sdk.reconnect() : void` - Tear down the WebSocket connection to PureCloud (if active) and reconnect it.
+`sdk.reconnect() : void` - Tear down the WebSocket connection to GenesysCloud (if active) and reconnect it.
 This does not hangup or disconnect active WebRTC Session calls.
 
 > \*_See [Device ID Support] for device lookup behavior_

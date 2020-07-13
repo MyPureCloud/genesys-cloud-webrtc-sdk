@@ -12,7 +12,7 @@ module.exports = {
   },
   transformIgnorePatterns: [
     // Change MODULE_NAME_HERE to your module that isn't being compiled
-    '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|purecloud-streaming-client).+\\.js$'
+    '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
   ],
   collectCoverage: true,
   collectCoverageFrom: [

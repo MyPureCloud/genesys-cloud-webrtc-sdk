@@ -1,4 +1,4 @@
-import { PureCloudWebrtcSdk } from './client';
+import { GenesysCloudWebrtcSdk } from './client';
 
 import { ILogger } from './types/interfaces';
 import { createLogger } from 'genesys-cloud-client-logger';
@@ -14,7 +14,7 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
   APP_VERSION = require('../package.json').version;
 }
 
-export function setupLogging (this: PureCloudWebrtcSdk, logger?: ILogger) {
+export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
   this.logger = logger;
 
   if (logger || this._config.optOutOfTelemetry) {
@@ -35,7 +35,7 @@ export function setupLogging (this: PureCloudWebrtcSdk, logger?: ILogger) {
     accessToken: this._config.accessToken,
     environment: this._config.environment,
     appVersion: APP_VERSION,
-    logTopic: 'purecloud-webrtc-sdk',
+    logTopic: 'genesys-cloud-webrtc-sdk',
     logLevel: this._config.logLevel,
     uploadDebounceTime: 1000
   });

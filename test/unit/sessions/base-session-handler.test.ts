@@ -1,5 +1,5 @@
 import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, MockSender } from '../../test-utils';
-import { PureCloudWebrtcSdk } from '../../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
@@ -15,7 +15,7 @@ class TestableBaseSessionHandler extends BaseSessionHandler {
 }
 
 let handler: TestableBaseSessionHandler;
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 
 beforeEach(() => {

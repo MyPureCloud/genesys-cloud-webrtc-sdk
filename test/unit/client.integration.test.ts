@@ -5,7 +5,7 @@ window.crypto = {
   getRandomValues: arr => crypto.randomBytes(arr.length)
 };
 
-import { PureCloudWebrtcSdk } from '../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { IJingleSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
 import {
   MockStream,
@@ -29,7 +29,7 @@ function getMockLogger () {
   return { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn() };
 }
 
-function disconnectSdk (sdk: PureCloudWebrtcSdk): Promise<any> {
+function disconnectSdk (sdk: GenesysCloudWebrtcSdk): Promise<any> {
   return new Promise(async res => {
     // wait and then call disconnect
     await wait(50);
@@ -64,7 +64,7 @@ describe('Client', () => {
   describe('constructor()', () => {
     it('throws if options are not provided', () => {
       try {
-        new PureCloudWebrtcSdk(null); // tslint:disable-line
+        new GenesysCloudWebrtcSdk(null); // tslint:disable-line
         fail();
       } catch (err) {
         expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Options required to create an instance of the SDK'));
@@ -73,7 +73,7 @@ describe('Client', () => {
 
     it('throws if accessToken and organizationId is not provided', () => {
       try {
-        new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
+        new GenesysCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
         fail();
       } catch (err) {
         expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
@@ -81,8 +81,8 @@ describe('Client', () => {
     });
 
     it('warns if environment is not valid', () => {
-      const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
-      const sdk2 = new PureCloudWebrtcSdk({
+      const sdk1 = new GenesysCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
+      const sdk2 = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.con',
         logger: getMockLogger() as any
@@ -92,7 +92,7 @@ describe('Client', () => {
     });
 
     it('does not warn if things are fine', () => {
-      const sdk = new PureCloudWebrtcSdk({
+      const sdk = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.com',
         logLevel: 'error',
@@ -102,7 +102,7 @@ describe('Client', () => {
     });
 
     it('sets up options with defaults', () => {
-      const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
+      const sdk = new GenesysCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
@@ -114,7 +114,7 @@ describe('Client', () => {
     it('sets up options when provided', () => {
       const logger = getMockLogger();
       const iceServers = [];
-      const sdk = new PureCloudWebrtcSdk({
+      const sdk = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
@@ -832,8 +832,8 @@ describe('Client', () => {
   });
 
   describe('isCustomerData()', () => {
-    let sdk: PureCloudWebrtcSdk;
-    let isCustomerData: PureCloudWebrtcSdk['isCustomerData'];
+    let sdk: GenesysCloudWebrtcSdk;
+    let isCustomerData: GenesysCloudWebrtcSdk['isCustomerData'];
 
     beforeEach(() => {
       sdk = mockApis().sdk;
@@ -889,8 +889,8 @@ describe('Client', () => {
   });
 
   describe('isSecurityCode()', () => {
-    let sdk: PureCloudWebrtcSdk;
-    let isSecurityCode: PureCloudWebrtcSdk['isSecurityCode'];
+    let sdk: GenesysCloudWebrtcSdk;
+    let isSecurityCode: GenesysCloudWebrtcSdk['isSecurityCode'];
 
     beforeEach(() => {
       sdk = mockApis().sdk;

@@ -19,7 +19,7 @@ If the user cancels/denies the screen share, the error will need to be handled b
 #### Example Usage
 
 ``` javascript
-const sdk = new window.PureCloudWebrtcSdk({
+const sdk = new window.GenesysCloudWebrtcSdk({
   organizationId: 'your-org-id', // required for guests
   environment: 'mypurecloud.com',
   autoConnectSessions: true // default true

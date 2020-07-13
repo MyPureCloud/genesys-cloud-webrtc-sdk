@@ -1,6 +1,6 @@
 import browserama from 'browserama';
 
-import { PureCloudWebrtcSdk } from './client';
+import { GenesysCloudWebrtcSdk } from './client';
 import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
 import { SdkErrorTypes } from './types/enums';
 import { throwSdkError } from './utils';
@@ -39,7 +39,7 @@ export const startDisplayMedia = function (): Promise<MediaStream> {
   return window.navigator.mediaDevices.getUserMedia(constraints);
 };
 
-export const startMedia = async function (sdk: PureCloudWebrtcSdk, opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
+export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
   const constraints: any = getStandardConstraints(opts);
 
   const conversationId = opts.session && opts.session.conversationId;
@@ -88,10 +88,10 @@ export const createAudioMediaElement = function (): HTMLAudioElement {
 
 /**
  * Attach an audio stream to the audio element
- * @param this must be called with a PureCloudWebrtcSdk as `this`
+ * @param this must be called with a GenesysCloudWebrtcSdk as `this`
  * @param stream audio stream to attach
  */
-export const attachAudioMedia = function (sdk: PureCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement, conversationId?: string): HTMLAudioElement {
+export const attachAudioMedia = function (sdk: GenesysCloudWebrtcSdk, stream: MediaStream, audioElement?: HTMLAudioElement, conversationId?: string): HTMLAudioElement {
   if (!audioElement) {
     audioElement = createAudioMediaElement();
   }
@@ -213,7 +213,7 @@ const enumeratedDevices: IEnumeratedDevices = {
   outputDevices: []
 };
 
-export const handleDeviceChange = function (this: PureCloudWebrtcSdk) {
+export const handleDeviceChange = function (this: GenesysCloudWebrtcSdk) {
   this.logger.debug('devices changed');
   refreshDevices = true;
   /* this function will enumerate devices again */
@@ -225,7 +225,7 @@ export const stopListeningForDeviceChanges = function () {
   navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
 };
 
-export async function getEnumeratedDevices (sdk: PureCloudWebrtcSdk, forceRefresh: boolean = false): Promise<IEnumeratedDevices> {
+export async function getEnumeratedDevices (sdk: GenesysCloudWebrtcSdk, forceRefresh: boolean = false): Promise<IEnumeratedDevices> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
     sdk.logger.warn('Unable to enumerate devices');
     enumeratedDevices.videoDevices = [];
@@ -340,11 +340,11 @@ function hasDevicePermissions (devices: MediaDeviceInfo[] | IEnumeratedDevices):
  *  automatically find the default device (the defaults are different
  *  between Chrome and FF)
  *
- * @param sdk purecloud sdk instance
+ * @param sdk genesyscloud sdk instance
  * @param kind desired device kind
  * @param deviceId `deviceId` for specific device, `true` for sdk default device, or `null` for system default
  */
-export async function getValidDeviceId (sdk: PureCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null, conversationId?: string): Promise<string> {
+export async function getValidDeviceId (sdk: GenesysCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null, conversationId?: string): Promise<string> {
   const devices = await getEnumeratedDevices(sdk);
 
   let availableDevices: MediaDeviceInfo[];

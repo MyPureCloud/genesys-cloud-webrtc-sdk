@@ -1,6 +1,6 @@
 import StatsGatherer from 'webrtc-stats-gatherer';
 
-import { PureCloudWebrtcSdk } from '../client';
+import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
@@ -18,7 +18,7 @@ export default abstract class BaseSessionHandler {
   disabled = true;
   abstract sessionType: SessionTypes;
 
-  constructor (protected sdk: PureCloudWebrtcSdk, protected sessionManager: SessionManager) { }
+  constructor (protected sdk: GenesysCloudWebrtcSdk, protected sessionManager: SessionManager) { }
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
