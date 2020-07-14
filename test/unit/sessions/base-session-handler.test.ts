@@ -30,7 +30,7 @@ beforeEach(() => {
 
 describe('startSession', () => {
   it('should throw since startSession should be overridden by implementing class', async () => {
-    await expect(handler.startSession({ sessionType: SessionTypes.softphone })).rejects.toThrowError(/can only be started using the purecloud api/);
+    await expect(handler.startSession({ sessionType: SessionTypes.softphone })).rejects.toThrowError(/can only be started using the genesys cloud api/);
   });
 });
 
