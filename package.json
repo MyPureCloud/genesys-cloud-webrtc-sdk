@@ -60,7 +60,7 @@
     "safe-json-stringify": "^1.2.0",
     "superagent": "^5.1.0",
     "uuid": "^3.3.2",
-    "webrtc-stats-gatherer": "^7.1.1",
+    "webrtc-stats-gatherer": "^8.0.2",
     "wildemitter": "^1.2.1"
   },
   "devDependencies": {
