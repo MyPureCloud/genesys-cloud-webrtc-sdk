@@ -31,7 +31,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the purecloud api`, { sessionStartParams });
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
