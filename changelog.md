@@ -5,13 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v3.6.7...HEAD)
-### Fixed 
-* [#165](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/165) where cdn build does not export as default
-* Adjusted `create-manifest.js` to dynamically add all files starting with `genesys-cloud-webrtc-sdk` 
+### Breaking Changes
+* Renamed repo/app to `GenesysCloudWebrtcSdk` / `genesys-cloud-webrtc-sdk`
+* Changed the build output and `package.json#main` to point at compiled src rather than bundling for node. 
+There is still a `.bundle.js` version for the cdn. 
 
 # [v3.6.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v3.6.6...v3.6.7)
 ### Fixed
 * updateOutgoingMedia now cleans up existing media correctly (async issue)
+* [#165](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/165) where cdn build does not export as default
+* Adjusted `create-manifest.js` to dynamically add all files starting with `genesys-cloud-webrtc-sdk` 
 
 # [v3.6.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v3.6.5...v3.6.6)
 ### Fixed
