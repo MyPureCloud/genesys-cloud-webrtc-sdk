@@ -95,7 +95,7 @@
     "semistandard": "^13.0.1",
     "stupid-server": "^0.2.5",
     "ts-jest": "^26.0.0",
-    "ts-loader": "^6.2.1",
+    "ts-loader": "^8.0.1",
     "tslint": "^5.18.0",
     "tslint-config-semistandard": "^8.0.1",
     "typescript": "~3.6.5",
