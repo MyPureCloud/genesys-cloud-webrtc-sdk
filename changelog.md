@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Changed the build output and `package.json#main` to point at compiled src rather than bundling for node. 
 There is still a `.bundle.js` version for the cdn. 
 
+### Added
+* Bumped `webrtc-stats-gatherer` to v8
+* Bumped `purecloud-platform-client-v2` to v86
+
+### Maintenance
+* Merged dependabot PRs
+* Removed semistandard and ts-loader
+
 # [v3.6.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v3.6.6...v3.6.7)
 ### Fixed
 * updateOutgoingMedia now cleans up existing media correctly (async issue)

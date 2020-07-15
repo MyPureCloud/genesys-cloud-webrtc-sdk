@@ -67,23 +67,7 @@ module.exports = (env) => {
           test: /\.(cjs|mjs|js|ts)$/,
           exclude: babelExcludes,
           loader: ['babel-loader']
-          // query: {
-          //   presets: ['@babel/preset-env']
-          // }
         }
-        // {
-        //   test: /\.ts$/,
-        //   exclude: /(node_modules|bower_components)/,
-        //   loader: 'ts-loader'
-        // },
-        // {
-        //   test: /\.json$/,
-        //   exclude: /node_modules/,
-        //   use: {
-        //     // included by default (https://webpack.js.org/loaders/json-loader/)
-        //     loader: 'json-loader'
-        //   }
-        // },
       ]
     }
   };

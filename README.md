@@ -61,10 +61,10 @@ This repo uses [typescript semistandard][2] for code style and [Jest][3] for tes
 To get started in development:
 ```sh
 npm install
-npm run watch-tests
+npm run test:watch
 ```
 
-Test will rebuild as source or tests change. All linting (semistandard) and tests must
+Test will rebuild as source or tests change. All linting and tests must
 pass 100%, and coverage should remain at 100%.
 
 ### Testing

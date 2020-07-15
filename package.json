@@ -31,22 +31,11 @@
     "test": "npm run lint && npm run test:unit",
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
-    "lint": "npm run semistandard && npm run tslint",
-    "lint:fix": "npm run semistandard:fix && npm run tslint:fix",
+    "lint": "npm run tslint",
     "tslint": "tslint --project . --config tslint.json",
     "tslint:fix": "tslint --project . --config tslint.json --fix",
-    "semistandard": "semistandard",
-    "semistandard:fix": "semistandard --fix",
     "greenkeep": "npx npm-check --update",
     "codecov": "codecov"
-  },
-  "semistandard": {
-    "ignore": [
-      "/.coverage",
-      "/dist",
-      "**/node_modules",
-      "/test/test-pages/sdk-sample.js"
-    ]
   },
   "author": "",
   "dependencies": {
@@ -96,10 +85,8 @@
     "nock": "^10.0.6",
     "pre-push": "^0.1.1",
     "rimraf": "^3.0.0",
-    "semistandard": "^13.0.1",
     "stupid-server": "^0.2.5",
     "ts-jest": "^26.0.0",
-    "ts-loader": "^6.2.1",
     "tslint": "^5.18.0",
     "tslint-config-semistandard": "^8.0.1",
     "typescript": "~3.6.5",
