@@ -1,24 +1,24 @@
 {
-  "name": "purecloud-webrtc-sdk",
-  "version": "3.6.7",
-  "description": "client for the interfacing with PureCloud WebRTC",
-  "repository": "https://github.com/mypurecloud/purecloud-webrtc-sdk",
+  "name": "genesys-cloud-webrtc-sdk",
+  "version": "4.0.0",
+  "description": "client for the interfacing with Genesys Cloud WebRTC",
+  "repository": "https://github.com/mypurecloud/genesys-cloud-webrtc-sdk",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "dist/purecloud-webrtc-sdk.min.js",
+  "main": "dist/src/client.js",
+  "typings": "dist/src/client.d.ts",
   "files": [
     "dist"
   ],
-  "typings": "dist/src/client.d.ts",
   "pre-push": [
     "test"
   ],
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "npm run build:src && npm run build:cdn && npm run build:module",
-    "build:src": "tsc -p .",
+    "build:src": "tsc -p . && node copy-version.js",
     "build:cdn": "webpack --env.cdn && webpack --env.cdn --env.production",
     "build:module": "webpack && webpack --env.production",
     "build-sample": "./test/test-pages/build.sh",
@@ -31,32 +31,23 @@
     "test": "npm run lint && npm run test:unit",
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
-    "lint": "npm run semistandard && npm run tslint",
-    "lint:fix": "npm run semistandard:fix && npm run tslint:fix",
+    "lint": "npm run tslint",
     "tslint": "tslint --project . --config tslint.json",
     "tslint:fix": "tslint --project . --config tslint.json --fix",
-    "semistandard": "semistandard",
-    "semistandard:fix": "semistandard --fix",
     "greenkeep": "npx npm-check --update",
     "codecov": "codecov"
-  },
-  "semistandard": {
-    "ignore": [
-      "/.coverage",
-      "/dist",
-      "**/node_modules",
-      "/test/test-pages/sdk-sample.js"
-    ]
   },
   "author": "",
   "dependencies": {
     "@babel/runtime": "^7.6.3",
+    "@babel/runtime-corejs3": "^7.10.2",
     "backoff-web": "^1.0.1",
     "browserama": "^3.1.1",
+    "core-js": "^3.6.5",
     "genesys-cloud-client-logger": "^1.0.3",
+    "genesys-cloud-streaming-client": "^12.0.0",
     "lodash": "^4.17.15",
     "purecloud-platform-client-v2": "^86.0.0",
-    "purecloud-streaming-client": "^11.3.1",
     "safe-json-stringify": "^1.2.0",
     "superagent": "^5.1.0",
     "uuid": "^3.3.2",
@@ -65,8 +56,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
     "@babel/plugin-transform-runtime": "^7.6.2",
     "@babel/preset-env": "^7.5.5",
+    "@babel/preset-typescript": "^7.10.4",
     "@types/jest": "^25.2.3",
     "@types/lodash": "^4.14.149",
     "@types/nock": "^11.1.0",
@@ -92,10 +85,8 @@
     "nock": "^10.0.6",
     "pre-push": "^0.1.1",
     "rimraf": "^3.0.0",
-    "semistandard": "^13.0.1",
     "stupid-server": "^0.2.5",
     "ts-jest": "^26.0.0",
-    "ts-loader": "^6.2.1",
     "tslint": "^5.18.0",
     "tslint-config-semistandard": "^8.0.1",
     "typescript": "~3.6.5",

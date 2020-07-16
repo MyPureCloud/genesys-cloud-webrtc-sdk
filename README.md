@@ -1,19 +1,19 @@
-[![Build Status](https://travis-ci.com/MyPureCloud/purecloud-webrtc-sdk.svg?branch=master)](https://travis-ci.com/MyPureCloud/purecloud-webrtc-sdk)
-[![npm version](https://badge.fury.io/js/purecloud-webrtc-sdk.svg)](https://badge.fury.io/js/purecloud-webrtc-sdk)
-[![codecov](https://codecov.io/gh/MyPureCloud/purecloud-webrtc-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/MyPureCloud/purecloud-webrtc-sdk)
-[![dependabot-status](https://flat.badgen.net/dependabot/MyPureCloud/purecloud-webrtc-sdk/?icon=dependabot)](https://dependabot.com)
+[![Build Status](https://travis-ci.com/MyPureCloud/genesys-cloud-webrtc-sdk.svg?branch=master)](https://travis-ci.com/MyPureCloud/genesys-cloud-webrtc-sdk)
+[![npm version](https://badge.fury.io/js/genesys-cloud-webrtc-sdk.svg)](https://badge.fury.io/js/genesys-cloud-webrtc-sdk)
+[![codecov](https://codecov.io/gh/MyPureCloud/genesys-cloud-webrtc-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/MyPureCloud/genesys-cloud-webrtc-sdk)
+[![dependabot-status](https://flat.badgen.net/dependabot/MyPureCloud/genesys-cloud-webrtc-sdk/?icon=dependabot)](https://dependabot.com)
 
-# PureCloud WebRTC SDK
+# Genesys Cloud WebRTC SDK
 
 ### Overview
-The PureCloud WebRTC SDK is a client library for connecting to PureCloud WebRTC
+The Genesys Cloud WebRTC SDK is a client library for connecting to Genesys Cloud WebRTC
 services. Supported WebRTC Features:
 
 - WebRTC SoftPhone (Authenticated Business User/Agent Telephony - inbound/outbound, etc)
 - WebRTC Screen Share (Unauthenticated User/Guest)
 
 Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ 
-- Demo requires PureCloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
+- Demo requires Genesys Cloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
 
 Not yet supported:
 
@@ -26,11 +26,11 @@ Not yet supported:
 
 Module import:
 
-- `npm install --save purecloud-webrtc-sdk`
+- `npm install --save genesys-cloud-webrtc-sdk`
 
 ```js
-const PureCloudWebrtcSdk = require('purecloud-webrtc-sdk');
-const sdk = new PureCloudWebrtcSdk({
+const GenesysCloudWebrtcSdk = require('genesys-cloud-webrtc-sdk');
+const sdk = new GenesysCloudWebrtcSdk({
   accessToken: 'your-access-token'
 });
 sdk.initialize();
@@ -39,9 +39,9 @@ sdk.initialize();
 Or via global module
 
 ```html
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/purecloud-webrtc-sdk.bundle.min.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
 <script>
-  const sdk = new window.PureCloudWebrtcSdk({
+  const sdk = new window.GenesysCloudWebrtcSdk({
     accessToken: 'your access token'
   });
   sdk.initialize();
@@ -50,7 +50,7 @@ Or via global module
 
 ### Documentation
 
-Documentation is in doc/documentation.md and available on the PureCloud Developer Center
+Documentation is in doc/documentation.md and available on the Genesys Cloud Developer Center
 at [DeveloperCenter][1] and in the [documentation](/doc/index.md) in this repo.
 
 
@@ -61,10 +61,10 @@ This repo uses [typescript semistandard][2] for code style and [Jest][3] for tes
 To get started in development:
 ```sh
 npm install
-npm run watch-tests
+npm run test:watch
 ```
 
-Test will rebuild as source or tests change. All linting (semistandard) and tests must
+Test will rebuild as source or tests change. All linting and tests must
 pass 100%, and coverage should remain at 100%.
 
 ### Testing

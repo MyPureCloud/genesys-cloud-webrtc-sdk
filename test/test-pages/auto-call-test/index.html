@@ -1,67 +1,71 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>Uber Conversation Test</title>
+  <title>Uber Conversation Test</title>
 
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
-	<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
-	<style type="text/css">
-		pre {
-			background: #f0f0f0;
-			padding: 8px;
-			border-radius: 8px;
-		}
-	</style>
+  <style type="text/css">
+    pre {
+      background: #f0f0f0;
+      padding: 8px;
+      border-radius: 8px;
+    }
+  </style>
 
-	<script src="https://sdk-cdn.mypurecloud.com/javascript/41.0.0/purecloud-platform-client-v2.min.js"></script>
-	<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/purecloud-webrtc-sdk.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-	<script src="script.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/41.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="script.js"></script>
 </head>
+
 <body>
 
-<div class="container">
-  <div class="row">
-    <div class="col-sm">
-			<div class="jumbotron">
-			  <h1 class="display-4">Conversation PATCH Test</h1>
-			</div>
-		</div>
-	</div>
-  <div class="row">
-    <div class="col-sm-6">
-			<form>
-			  <div class="form-group">
-			    <label for="station">Station</label>
-			    <input class="form-control" id="station">
-			  </div>
-			  <button id="setStation" type="submit" class="btn btn-primary">Set Station</button>
-			</form>
-		</div>
-    <div class="col-sm-6">
-			<form>
-			  <div class="form-group">
-			    <label for="numberToDial">Number to dial</label>
-			    <input class="form-control" id="numberToDial" value="3172222222">
-			  </div>
-			  <div class="form-group">
-			    <label for="attempts">Attempts</label>
-			    <input class="form-control" id="attempts" value="3">
-			  </div>
-			  <button id="startDialing" type="submit" class="btn btn-primary">Start Dialing</button>
-			  <button id="stopDialing" type="submit" class="btn btn-danger">Stop Dialing</button>
-			</form>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-sm">
-			<h1 class="display-5">Results</h1>
-			<pre><code id="output"></code></pre>
-		</div>
-	</div>
-</div>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm">
+        <div class="jumbotron">
+          <h1 class="display-4">Conversation PATCH Test</h1>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6">
+        <form>
+          <div class="form-group">
+            <label for="station">Station</label>
+            <input class="form-control" id="station">
+          </div>
+          <button id="setStation" type="submit" class="btn btn-primary">Set Station</button>
+        </form>
+      </div>
+      <div class="col-sm-6">
+        <form>
+          <div class="form-group">
+            <label for="numberToDial">Number to dial</label>
+            <input class="form-control" id="numberToDial" value="3172222222">
+          </div>
+          <div class="form-group">
+            <label for="attempts">Attempts</label>
+            <input class="form-control" id="attempts" value="3">
+          </div>
+          <button id="startDialing" type="submit" class="btn btn-primary">Start Dialing</button>
+          <button id="stopDialing" type="submit" class="btn btn-danger">Stop Dialing</button>
+        </form>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm">
+        <h1 class="display-5">Results</h1>
+        <pre><code id="output"></code></pre>
+      </div>
+    </div>
+  </div>
 
 
 </body>
+
 </html>

@@ -2,7 +2,7 @@ import nock = require('nock');
 import uuid = require('uuid');
 
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
-import { PureCloudWebrtcSdk } from '../../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
@@ -13,7 +13,7 @@ import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/vi
 import { ConversationUpdate } from '../../../src/types/conversation-update';
 
 let handler: VideoSessionHandler;
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 let userId: string;
 

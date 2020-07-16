@@ -1,5 +1,5 @@
 export function getSdk () {
-  return window.PureCloudWebrtcSdk;
+  return window.GenesysCloudWebrtcSdk;
 }
 
-export let PureCloudWebrtcSdk = null;
+export let GenesysCloudWebrtcSdk = null;

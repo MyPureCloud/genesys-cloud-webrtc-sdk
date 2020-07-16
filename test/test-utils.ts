@@ -7,7 +7,7 @@ import path from 'path';
 
 import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
 import { SessionTypes, LogLevels } from '../src/types/enums';
-import { PureCloudWebrtcSdk } from '../src/client';
+import { GenesysCloudWebrtcSdk } from '../src/client';
 
 declare var global: {
   window: any,
@@ -217,7 +217,7 @@ interface MockApiReturns {
   getJwt: nock.Scope;
   sendLogs: nock.Scope;
   patchConversation: nock.Scope;
-  sdk: PureCloudWebrtcSdk;
+  sdk: GenesysCloudWebrtcSdk;
   websocket: WebSocket;
   mockCustomerData: ICustomerData;
 }
@@ -471,7 +471,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
   } as ISdkConstructOptions;
 
-  const sdk = new PureCloudWebrtcSdk(sdkOpts);
+  const sdk = new GenesysCloudWebrtcSdk(sdkOpts);
 
   /* if we don't need to test refreshing the ice servers, then mock it */
   if (!withIceRefresh) {

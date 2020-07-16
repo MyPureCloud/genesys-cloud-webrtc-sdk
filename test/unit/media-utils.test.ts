@@ -1,7 +1,7 @@
 /* global MediaStream */
 
 import * as mediaUtils from '../../src/media-utils';
-import { PureCloudWebrtcSdk } from '../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack } from '../test-utils';
 import browserama from 'browserama';
 import { IEnumeratedDevices } from '../../src/types/interfaces';
@@ -31,7 +31,7 @@ const mockedDevices = [
   mockOutputDevice2
 ];
 
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 let mediaDevices: {
   getDisplayMedia: jest.SpyInstance,
   getUserMedia: jest.SpyInstance,

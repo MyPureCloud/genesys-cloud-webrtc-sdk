@@ -12,13 +12,13 @@ const manifest = {
   indexFiles: []
 };
 
-/* read top level purecloud-webrtc-sdk file variations */
+/* read top level genesys-cloud-webrtc-sdk file variations */
 const files = fs.readdirSync('dist/');
 files.forEach(file => {
   /* skip directories and non-js files */
   if (
     fs.lstatSync('dist/' + file).isDirectory() ||
-    !file.startsWith('purecloud-webrtc-sdk')
+    !file.startsWith('genesys-cloud-webrtc-sdk')
   ) {
     return;
   }

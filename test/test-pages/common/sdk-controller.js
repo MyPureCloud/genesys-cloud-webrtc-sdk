@@ -1,6 +1,6 @@
 /* global MediaStream */
 
-import { getSdk, PureCloudWebrtcSdk } from '../sdk-proxy';
+import { getSdk, GenesysCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
 
 let currentSession;
@@ -31,7 +31,7 @@ function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
   options.environment = environmentData.uri;
   options.logLevel = 'info';
 
-  const SDK = PureCloudWebrtcSdk || getSdk();
+  const SDK = GenesysCloudWebrtcSdk || getSdk();
   webrtcSdk = new SDK(options);
   window.webrtcSdk = webrtcSdk;
 

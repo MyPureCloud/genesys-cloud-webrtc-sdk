@@ -6,22 +6,34 @@ module.exports = (env) => {
   const cdn = env && env.cdn;
   const mode = minimize ? 'production' : 'development';
 
-  let filename = 'purecloud-webrtc-sdk';
+  let filename = 'genesys-cloud-webrtc-sdk';
+  let babelExcludes = [];
 
+  /* if building for the cdn */
   if (cdn) {
+    /*
+      this is so babel doesn't try to polyfill/transpile core-js (which is the polyfill)
+        and the build tools.
+      But we want it polyfill/transpile all other node_modules when building for the web
+    */
+    babelExcludes = [
+      /@babel\//,
+      /\bcore-js\b/,
+      /\bwebpack\/buildin\b/
+    ];
+
     filename += '.bundle';
+  } else {
+    /* if we are building for 'module', don't polyfill/transpile any dependencies */
+    babelExcludes = [/node_modules/];
   }
 
-  if (minimize) {
-    filename += '.min';
-  }
-
-  filename += '.js';
+  filename += minimize ? '.min.js' : '.js';
 
   console.log(`build mode: ${mode}`);
 
   return {
-    target: 'web',
+    target: cdn ? 'web' : 'node',
     entry: './src/client.ts',
     mode,
     optimization: {
@@ -31,8 +43,8 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename,
-      library: 'PureCloudWebrtcSdk',
-      libraryExport: cdn ? 'PureCloudWebrtcSdk' : '',
+      library: 'GenesysCloudWebrtcSdk',
+      libraryExport: cdn ? 'GenesysCloudWebrtcSdk' : '',
       libraryTarget: 'umd'
     },
     plugins: [
@@ -52,17 +64,9 @@ module.exports = (env) => {
     module: {
       rules: [
         {
-          test: /\.js$/,
-          exclude: /(node_modules|bower_components)/,
-          loader: 'babel-loader',
-          query: {
-            presets: ['@babel/preset-env']
-          }
-        },
-        {
-          test: /\.ts$/,
-          exclude: /(node_modules|bower_components)/,
-          loader: 'ts-loader'
+          test: /\.(cjs|mjs|js|ts)$/,
+          exclude: babelExcludes,
+          loader: ['babel-loader']
         }
       ]
     }

@@ -1,6 +1,6 @@
 import { SimpleMockSdk, MockSession, createPendingSession, MockStream } from '../../test-utils';
 import ScreenShareSessionHandler from '../../../src/sessions/screen-share-session-handler';
-import { PureCloudWebrtcSdk } from '../../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
@@ -9,7 +9,7 @@ import * as utils from '../../../src/utils';
 import { IJingleSession } from '../../../src/types/interfaces';
 
 let handler: ScreenShareSessionHandler;
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 
 beforeEach(() => {
@@ -159,7 +159,7 @@ describe('onTrackEnd', () => {
 });
 
 describe('updateOutgoingMedia()', () => {
-  test('should throw because updating outgoing media is not supported for screen share', async () => {
+  it('should throw because updating outgoing media is not supported for screen share', async () => {
     try {
       handler.updateOutgoingMedia({} as any, {} as any);
       fail('should have thrown');

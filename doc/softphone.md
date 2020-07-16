@@ -75,7 +75,7 @@ Alice                     Push Notifications    WebRTC SDK
 After creating an instance of the SDK, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `pendingSession` is an example
 of an SDK event. You can answer and control sessions via the SDK methods documented
-below. Most call control actions, however, should be done via the PureCloud Public
+below. Most call control actions, however, should be done via the GenesysCloud Public
 API (or the Public API javascript SDK).
 
 Once the client has a session, it can add event handlers for lower level control

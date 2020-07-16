@@ -5,7 +5,7 @@ window.crypto = {
   getRandomValues: arr => crypto.randomBytes(arr.length)
 };
 
-import { PureCloudWebrtcSdk } from '../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { IJingleSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
 import {
   MockStream,
@@ -29,7 +29,7 @@ function getMockLogger () {
   return { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn() };
 }
 
-function disconnectSdk (sdk: PureCloudWebrtcSdk): Promise<any> {
+function disconnectSdk (sdk: GenesysCloudWebrtcSdk): Promise<any> {
   return new Promise(async res => {
     // wait and then call disconnect
     await wait(50);
@@ -62,18 +62,18 @@ describe('Client', () => {
   });
 
   describe('constructor()', () => {
-    test('throws if options are not provided', () => {
+    it('throws if options are not provided', () => {
       try {
-        new PureCloudWebrtcSdk(null); // tslint:disable-line
+        new GenesysCloudWebrtcSdk(null); // tslint:disable-line
         fail();
       } catch (err) {
         expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Options required to create an instance of the SDK'));
       }
     });
 
-    test('throws if accessToken and organizationId is not provided', () => {
+    it('throws if accessToken and organizationId is not provided', () => {
       try {
-        new PureCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
+        new GenesysCloudWebrtcSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
         fail();
       } catch (err) {
         expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
@@ -81,8 +81,8 @@ describe('Client', () => {
     });
 
     it('warns if environment is not valid', () => {
-      const sdk1 = new PureCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
-      const sdk2 = new PureCloudWebrtcSdk({
+      const sdk1 = new GenesysCloudWebrtcSdk({ accessToken: '1234', environment: 'mypurecloud.con' });
+      const sdk2 = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.con',
         logger: getMockLogger() as any
@@ -91,8 +91,8 @@ describe('Client', () => {
       expect(sdk2.logger.warn).toHaveBeenCalled();
     });
 
-    test('does not warn if things are fine', () => {
-      const sdk = new PureCloudWebrtcSdk({
+    it('does not warn if things are fine', () => {
+      const sdk = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.com',
         logLevel: 'error',
@@ -101,8 +101,8 @@ describe('Client', () => {
       expect(sdk.logger.warn).not.toHaveBeenCalled();
     });
 
-    test('sets up options with defaults', () => {
-      const sdk = new PureCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
+    it('sets up options with defaults', () => {
+      const sdk = new GenesysCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
@@ -111,10 +111,10 @@ describe('Client', () => {
       expect(sdk.isGuest).toBe(false);
     });
 
-    test('sets up options when provided', () => {
+    it('sets up options when provided', () => {
       const logger = getMockLogger();
       const iceServers = [];
-      const sdk = new PureCloudWebrtcSdk({
+      const sdk = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
@@ -134,7 +134,7 @@ describe('Client', () => {
   });
 
   describe('initialize()', () => {
-    test('fetches org and person details, sets up the streaming connection', async () => {
+    it('fetches org and person details, sets up the streaming connection', async () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       getOrg.done();
@@ -147,7 +147,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should disconnect if initialize is called again', async () => {
+    it('should disconnect if initialize is called again', async () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       expect(sdk._streamingConnection).toBeTruthy();
@@ -164,7 +164,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('fetches jwt for guest users, sets up the streaming connection', async () => {
+    it('fetches jwt for guest users, sets up the streaming connection', async () => {
       const { getJwt, sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       await sdk.initialize({ securityCode: '123456' });
       getJwt.done();
@@ -173,7 +173,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should use the customerData when passed in', async () => {
+    it('should use the customerData when passed in', async () => {
       const { sdk, mockCustomerData } = mockApis({ withMedia: new MockStream(), guestSdk: true, withCustomerData: true });
 
       await sdk.initialize(mockCustomerData);
@@ -182,7 +182,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should throw if invalid customerData is passed in', async () => {
+    it('should throw if invalid customerData is passed in', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
 
       const invalidCustomerData = {};
@@ -194,7 +194,7 @@ describe('Client', () => {
       }
     });
 
-    test('throws error for guest users without a security code', async () => {
+    it('throws error for guest users without a security code', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       try {
         await sdk.initialize();
@@ -204,7 +204,7 @@ describe('Client', () => {
       }
     });
 
-    test('throws if getting the jwt fails', async () => {
+    it('throws if getting the jwt fails', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true, failSecurityCode: true });
 
       try {
@@ -215,7 +215,7 @@ describe('Client', () => {
       }
     });
 
-    test('throws if getting the org fails', async () => {
+    it('throws if getting the org fails', async () => {
       const { sdk } = mockApis({ failOrg: true });
 
       try {
@@ -226,7 +226,7 @@ describe('Client', () => {
       }
     });
 
-    test('throws if getting the user fails', async () => {
+    it('throws if getting the user fails', async () => {
       const { sdk } = mockApis({ failUser: true });
 
       try {
@@ -237,7 +237,7 @@ describe('Client', () => {
       }
     });
 
-    test('throws if setting up streaming connection fails', async () => {
+    it('throws if setting up streaming connection fails', async () => {
       const { sdk } = mockApis({ failStreaming: true });
       try {
         await sdk.initialize();
@@ -248,7 +248,7 @@ describe('Client', () => {
       }
     }, 12 * 1000);
 
-    test('sets up event proxies', async () => {
+    it('sets up event proxies', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -299,7 +299,7 @@ describe('Client', () => {
   });
 
   describe('startScreenShare()', () => {
-    test('should reject if authenticated user', async () => {
+    it('should reject if authenticated user', async () => {
       const { sdk } = mockApis();
       try {
         await sdk.startScreenShare();
@@ -309,7 +309,7 @@ describe('Client', () => {
       }
     });
 
-    test('should call session manager to start screenshare', async () => {
+    it('should call session manager to start screenshare', async () => {
       const media = new MockStream();
       const { sdk } = mockApis({ guestSdk: true, withMedia: media });
 
@@ -351,7 +351,7 @@ describe('Client', () => {
   });
 
   describe('connected()', () => {
-    test('returns the streaming client connection status', async () => {
+    it('returns the streaming client connection status', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -365,7 +365,7 @@ describe('Client', () => {
   });
 
   describe('proceedWithSession()', () => {
-    test('proxies the call to the sessionManager', async () => {
+    it('proxies the call to the sessionManager', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -380,7 +380,7 @@ describe('Client', () => {
   });
 
   describe('rejectPendingSession()', () => {
-    test('proxies the call to the sessionManager', async () => {
+    it('proxies the call to the sessionManager', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -395,7 +395,7 @@ describe('Client', () => {
   });
 
   describe('acceptSession()', () => {
-    test('proxies the call to the sessionManager', async () => {
+    it('proxies the call to the sessionManager', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -475,7 +475,7 @@ describe('Client', () => {
   });
 
   describe('getDisplayMedia()', () => {
-    test('should call through to startDisplayMedia', async () => {
+    it('should call through to startDisplayMedia', async () => {
       const { sdk } = mockApis();
       const spy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue({} as any);
       await sdk.getDisplayMedia();
@@ -484,7 +484,7 @@ describe('Client', () => {
   });
 
   describe('updateOutputDevice()', () => {
-    test('should call through to the sessionManager', async () => {
+    it('should call through to the sessionManager', async () => {
       const { sdk } = mockApis();
       const deviceId = 'device-id';
       await sdk.initialize();
@@ -499,7 +499,7 @@ describe('Client', () => {
   });
 
   describe('updateOutgoingMedia()', () => {
-    test('should throw if invalid options are passed in', async () => {
+    it('should throw if invalid options are passed in', async () => {
       const { sdk } = mockApis();
       const options: IUpdateOutgoingMedia = {};
       await sdk.initialize();
@@ -514,7 +514,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should call through to sessionManager', async () => {
+    it('should call through to sessionManager', async () => {
       const { sdk } = mockApis();
       const options: IUpdateOutgoingMedia = {
         sessionId: 'session-id',
@@ -536,7 +536,7 @@ describe('Client', () => {
   });
 
   describe('updateDefaultDevices()', () => {
-    test('should not set defaultDevice Ids if value is not undefined', async () => {
+    it('should not set defaultDevice Ids if value is not undefined', async () => {
       const { sdk } = mockApis();
       const options: IMediaDeviceIds = {};
 
@@ -551,7 +551,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should set defaultDevice Ids if values are passed in', async () => {
+    it('should set defaultDevice Ids if values are passed in', async () => {
       const { sdk } = mockApis();
       const options: IMediaDeviceIds = {
         videoDeviceId: 'new-video-device',
@@ -570,7 +570,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should call through to sessionManager to update active sessions', async () => {
+    it('should call through to sessionManager to update active sessions', async () => {
       const { sdk } = mockApis();
       const options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {
         videoDeviceId: 'new-video-device',
@@ -596,7 +596,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should only update media that is changing (video, audio, and/or output)', async () => {
+    it('should only update media that is changing (video, audio, and/or output)', async () => {
       const { sdk } = mockApis();
       const options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {
         videoDeviceId: 'new-video-device',
@@ -656,7 +656,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should do nothing if no params are passed in', async () => {
+    it('should do nothing if no params are passed in', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -688,7 +688,7 @@ describe('Client', () => {
   });
 
   describe('reconnect()', () => {
-    test('proxies the call to the streaming connection', async () => {
+    it('proxies the call to the streaming connection', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -702,7 +702,7 @@ describe('Client', () => {
   });
 
   describe('disconnect()', () => {
-    test('proxies the call to the streaming connection', async () => {
+    it('proxies the call to the streaming connection', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
@@ -716,7 +716,7 @@ describe('Client', () => {
       await wait(50);
     });
 
-    test('_config.customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
+    it('_config.customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
       sdk._config.customIceServersConfig = [{ something: 'junk' }] as RTCConfiguration;
@@ -743,8 +743,9 @@ describe('Client', () => {
   });
 
   describe('_refreshIceServers()', () => {
-    test('should not get iceServers if not connected', async () => {
+    it('should not get iceServers if not connected', async () => {
       const { sdk } = mockApis({ withIceRefresh: true });
+
       await sdk.initialize();
 
       sdk._streamingConnection.connected = false;
@@ -755,9 +756,9 @@ describe('Client', () => {
       expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
 
       await disconnectSdk(sdk);
-    });
+    }, 150000);
 
-    test('refreshes the turn servers', async () => {
+    it('refreshes the turn servers', async () => {
       const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
 
@@ -772,7 +773,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('should set icePolicy to relay if only relay candidates are returned', async () => {
+    it('should set icePolicy to relay if only relay candidates are returned', async () => {
       const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
 
@@ -808,7 +809,7 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    test('emits an error if there is an error refreshing turn servers', async () => {
+    it('emits an error if there is an error refreshing turn servers', async () => {
       const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
 
@@ -831,15 +832,15 @@ describe('Client', () => {
   });
 
   describe('isCustomerData()', () => {
-    let sdk: PureCloudWebrtcSdk;
-    let isCustomerData: PureCloudWebrtcSdk['isCustomerData'];
+    let sdk: GenesysCloudWebrtcSdk;
+    let isCustomerData: GenesysCloudWebrtcSdk['isCustomerData'];
 
     beforeEach(() => {
       sdk = mockApis().sdk;
       isCustomerData = sdk['isCustomerData'];
     });
 
-    test('should return true if valid customerData is present', () => {
+    it('should return true if valid customerData is present', () => {
       const customerData = {
         jwt: 'JWT',
         sourceCommunicationId: 'source-123',
@@ -848,12 +849,12 @@ describe('Client', () => {
       expect(isCustomerData(customerData)).toBe(true);
     });
 
-    test('should return false if no customerData is present', () => {
+    it('should return false if no customerData is present', () => {
       let customerData: ICustomerData;
       expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if conversation is missing from customerData', () => {
+    it('should return false if conversation is missing from customerData', () => {
       const customerData = {
         jwt: 'string',
         sourceCommunicationId: 'commId'
@@ -861,7 +862,7 @@ describe('Client', () => {
       expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if conversation.id is missing from customerData', () => {
+    it('should return false if conversation.id is missing from customerData', () => {
       const customerData = {
         conversation: {},
         jwt: 'string',
@@ -870,7 +871,7 @@ describe('Client', () => {
       expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if jwt is missing from customerData', () => {
+    it('should return false if jwt is missing from customerData', () => {
       const customerData = {
         conversation: { id: 'convoId' },
         sourceCommunicationId: 'commId'
@@ -878,7 +879,7 @@ describe('Client', () => {
       expect(isCustomerData(customerData)).toBe(false);
     });
 
-    test('should return false if sourceCommunicationId is missing from customerData', () => {
+    it('should return false if sourceCommunicationId is missing from customerData', () => {
       const customerData = {
         conversation: { id: 'convoId' },
         jwt: 'string'
@@ -888,23 +889,23 @@ describe('Client', () => {
   });
 
   describe('isSecurityCode()', () => {
-    let sdk: PureCloudWebrtcSdk;
-    let isSecurityCode: PureCloudWebrtcSdk['isSecurityCode'];
+    let sdk: GenesysCloudWebrtcSdk;
+    let isSecurityCode: GenesysCloudWebrtcSdk['isSecurityCode'];
 
     beforeEach(() => {
       sdk = mockApis().sdk;
       isSecurityCode = sdk['isSecurityCode'];
     });
 
-    test('should return true if object has securityKey', () => {
+    it('should return true if object has securityKey', () => {
       expect(isSecurityCode({ securityCode: '123456' })).toBe(true);
     });
 
-    test('should return false if object is missing securityKey', () => {
+    it('should return false if object is missing securityKey', () => {
       expect(isSecurityCode({ key: 'prop' } as any)).toBe(false);
     });
 
-    test('should return false if nothing is passed in', () => {
+    it('should return false if nothing is passed in', () => {
       expect(isSecurityCode(undefined as any)).toBe(false);
     });
   });

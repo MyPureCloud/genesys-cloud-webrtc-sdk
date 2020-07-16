@@ -2,15 +2,6 @@
 
 import WildEmitter from 'wildemitter';
 import {
-  setupStreamingClient,
-  proxyStreamingClientEvents
-} from './client-private';
-import { requestApi, throwSdkError, SdkError } from './utils';
-import { setupLogging } from './logging';
-import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
-import { SessionManager } from './sessions/session-manager';
-import { startMedia, startDisplayMedia } from './media-utils';
-import {
   ISdkConstructOptions,
   ILogger,
   ICustomerData,
@@ -23,7 +14,17 @@ import {
   IMediaDeviceIds,
   IUpdateOutgoingMedia
 } from './types/interfaces';
-import StreamingClient from 'purecloud-streaming-client';
+import StreamingClient from 'genesys-cloud-streaming-client';
+
+import {
+  setupStreamingClient,
+  proxyStreamingClientEvents
+} from './client-private';
+import { requestApi, throwSdkError, SdkError } from './utils';
+import { setupLogging } from './logging';
+import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
+import { SessionManager } from './sessions/session-manager';
+import { startMedia, startDisplayMedia } from './media-utils';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -64,9 +65,9 @@ function validateOptions (options: ISdkConstructOptions): string | null {
 }
 
 /**
- * SDK to interact with PureCloud WebRTC functionality
+ * SDK to interact with GenesysCloud WebRTC functionality
  */
-export class PureCloudWebrtcSdk extends WildEmitter {
+export class GenesysCloudWebrtcSdk extends WildEmitter {
 
   public logger: ILogger;
 
@@ -447,7 +448,7 @@ export class PureCloudWebrtcSdk extends WildEmitter {
         this._streamingConnection.webrtcSessions.config.iceTransportPolicy = 'relay';
       }
     } catch (err) {
-      const errorMessage = 'PureCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
+      const errorMessage = 'GenesysCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
       this.logger.warn(errorMessage, err);
       throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
     }
@@ -468,3 +469,5 @@ export class PureCloudWebrtcSdk extends WildEmitter {
   }
 
 }
+
+export default GenesysCloudWebrtcSdk;

@@ -11,7 +11,7 @@ import {
   mockPatchConversationApi,
   createNock
 } from '../../test-utils';
-import { PureCloudWebrtcSdk } from '../../../src/client';
+import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes } from '../../../src/types/enums';
@@ -22,7 +22,7 @@ import { IAcceptSessionRequest } from '../../../src/types/interfaces';
 import nock = require('nock');
 
 let handler: SoftphoneSessionHandler;
-let mockSdk: PureCloudWebrtcSdk;
+let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 
 beforeEach(() => {

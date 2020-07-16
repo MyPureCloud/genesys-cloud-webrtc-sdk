@@ -1,9 +1,10 @@
-import { PureCloudWebrtcSdk } from '../../src/client';
-import { SimpleMockSdk } from '../test-utils';
 import * as genesysCloudClientLogger from 'genesys-cloud-client-logger';
+
+import { GenesysCloudWebrtcSdk } from '../../src/client';
+import { SimpleMockSdk } from '../test-utils';
 import { setupLogging } from '../../src/logging';
 
-let sdk: PureCloudWebrtcSdk;
+let sdk: GenesysCloudWebrtcSdk;
 
 beforeEach(() => {
   sdk = new SimpleMockSdk() as any;
@@ -16,7 +17,7 @@ afterEach(() => {
 describe('setupLogging', () => {
   it('should not create a logger if one is passed in', async () => {
     const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger');
-    sdk._config = { } as any;
+    sdk._config = {} as any;
     setupLogging.call(sdk, {} as any);
 
     expect(spy).not.toHaveBeenCalled();
@@ -37,7 +38,7 @@ describe('setupLogging', () => {
       debug: jest.fn()
     };
     const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger').mockReturnValue(mockLogger as any);
-    sdk._config = { } as any;
+    sdk._config = {} as any;
     setupLogging.call(sdk);
 
     expect(spy).toHaveBeenCalled();
@@ -51,7 +52,7 @@ describe('setupLogging', () => {
       debug: jest.fn()
     };
     const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger').mockReturnValue(mockLogger as any);
-    sdk._config = { } as any;
+    sdk._config = {} as any;
     (sdk as any).isGuest = true;
     setupLogging.call(sdk);
 
