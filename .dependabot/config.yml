@@ -9,3 +9,5 @@ update_configs:
           version_requirement: "~3.6.5"
           dependency_name: "@types/uuid"
           version_requirement: "^3.4.5"
+          dependency_name: "uuid"
+          version_requirement: "^3.3.2"
