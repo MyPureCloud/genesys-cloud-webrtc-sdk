@@ -60,7 +60,7 @@
     "@babel/plugin-transform-runtime": "^7.6.2",
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-typescript": "^7.10.4",
-    "@types/jest": "^25.2.3",
+    "@types/jest": "^26.0.4",
     "@types/lodash": "^4.14.149",
     "@types/nock": "^11.1.0",
     "@types/node": "^13.9.5",
