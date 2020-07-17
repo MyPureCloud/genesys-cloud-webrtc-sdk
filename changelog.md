@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Renamed app / repo to `GenesysCloudWebrtcSdk` / `genesys-cloud-webrtc-sdk`
 * Changed the build output and `package.json#main` to point at compiled src rather than bundling for node. 
 There is still a `.bundle.js` version for the cdn. 
+* Upgraded to typescript v3.9.x which can potentially break projects using older versions of ts (ie. 3.6.x)
 
 ### Added
 * Bumped `webrtc-stats-gatherer` to v8
 * Bumped `purecloud-platform-client-v2` to v86
+* Bumped `typescript` to v3.9.x
 
 ### Maintenance
 * Merged dependabot PRs
