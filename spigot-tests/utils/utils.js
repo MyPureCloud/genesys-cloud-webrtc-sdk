@@ -1,5 +1,5 @@
 import { GenesysCloudWebrtcSdk } from '../../dist/genesys-cloud-webrtc-sdk';
-import { testUtils } from 'genesyscloud-spigot';
+import { testUtils } from 'purecloud-spigot';
 import StreamingClient from 'genesys-cloud-streaming-client';
 
 export function getConnectedStreamingClient (authToken, jwt) {

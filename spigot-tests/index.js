@@ -1,4 +1,4 @@
-const { Spigot } = require('genesyscloud-spigot/dist/src/index');
+const { Spigot } = require('purecloud-spigot/dist/src/index');
 
 let envConfig = {};
 

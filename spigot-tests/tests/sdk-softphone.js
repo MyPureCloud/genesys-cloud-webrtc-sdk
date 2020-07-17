@@ -1,6 +1,6 @@
 /* global describe, it, beforeEach, after */
 
-import { testUtils, callUtils } from 'genesyscloud-spigot';
+import { testUtils, callUtils } from 'purecloud-spigot';
 import { getNewSdkConnection } from '../utils/utils';
 
 let sdk;
