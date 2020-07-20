@@ -64,7 +64,11 @@ describe('startDisplayMedia()', () => {
 
       expect(constraints).toEqual({
         audio: false,
-        video: { frameRate: { ideal: 30 } }
+        video: {
+          frameRate: { ideal: 30 },
+          height: { max: 10000 },
+          width: { max: 10000 }
+        }
       });
     });
 
@@ -80,8 +84,8 @@ describe('startDisplayMedia()', () => {
         video: {
           mandatory: {
             chromeMediaSource: 'desktop',
-            maxWidth: window.screen.width,
-            maxHeight: window.screen.height,
+            maxWidth: 10000,
+            maxHeight: 10000,
             maxFrameRate: 15
           }
         }
