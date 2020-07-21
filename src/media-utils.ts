@@ -145,7 +145,9 @@ function getScreenShareConstraints (): MediaStreamConstraints {
       return {
         audio: false,
         video: {
-          frameRate: { ideal: 30 }
+          frameRate: { ideal: 30 },
+          height: { max: 10000 },
+          width: { max: 10000 }
         }
       };
     }
@@ -154,8 +156,8 @@ function getScreenShareConstraints (): MediaStreamConstraints {
       video: {
         mandatory: {
           chromeMediaSource: 'desktop',
-          maxWidth: window.screen.width,
-          maxHeight: window.screen.height,
+          maxWidth: 10000,
+          maxHeight: 10000,
           maxFrameRate: 15
         }
       } as MediaTrackConstraints
