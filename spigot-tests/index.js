@@ -1,4 +1,4 @@
-const { Spigot } = require('purecloud-spigot/dist/src/index');
+const { Spigot } = require('genesyscloud-spigot/dist/src/index');
 
 let envConfig = {};
 
@@ -40,7 +40,22 @@ const config = {
   filter: '',
   validationTimeout: '15000',
   iceTransportPolicy: 'all',
-  testGlob: 'tests/*'
+  testGlob: 'tests/*',
+  babelExtras: {
+    modulesToTranspile: [
+      'genesys-cloud-webrtc-sdk',
+      'genesyscloud-spigot',
+      'genesys-cloud-streaming-client',
+      'genesys-cloud-streaming-client-webrtc-sessions',
+      'whatwg-fetch',
+      'stanza',
+    ],
+    aliases: {
+      crypto: './node_modules/stanza/lib/crypto/index-browser.js',
+      stringprep: './node_modules/stanza/lib/stringprep/index-browser.js',
+      'node-stringprep': './node_modules/stanza/lib/stringprep/index-browser.js',
+    }
+  }
 };
 
 async function runTests () {
