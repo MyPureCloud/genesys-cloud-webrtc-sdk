@@ -50,7 +50,7 @@
     "purecloud-platform-client-v2": "^86.0.0",
     "safe-json-stringify": "^1.2.0",
     "superagent": "^5.1.0",
-    "uuid": "^3.3.2",
+    "uuid": "^8.3.0",
     "webrtc-stats-gatherer": "^8.0.2",
     "wildemitter": "^1.2.1"
   },
