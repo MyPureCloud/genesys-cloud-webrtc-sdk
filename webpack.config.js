@@ -1,5 +1,6 @@
 const path = require('path');
 const WebpackAutoInject = require('webpack-auto-inject-version');
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = (env) => {
   const minimize = env && env.production;
@@ -8,6 +9,8 @@ module.exports = (env) => {
 
   let filename = 'genesys-cloud-webrtc-sdk';
   let babelExcludes = [];
+  let babelOptions;
+  let externals = [];
 
   /* if building for the cdn */
   if (cdn) {
@@ -22,10 +25,44 @@ module.exports = (env) => {
       /\bwebpack\/buildin\b/
     ];
 
+    babelOptions = {
+      sourceType: 'unambiguous',
+      presets: [
+        ['@babel/preset-env', {
+          debug: false,
+          targets: [
+            'last 2 versions',
+            '> 5%',
+            'IE 11',
+            'not dead'
+          ]
+        }],
+        '@babel/preset-typescript'
+      ],
+      plugins: [
+        ['@babel/plugin-transform-runtime', {
+          corejs: 3
+        }],
+        '@babel/plugin-proposal-class-properties'
+      ]
+    };
+
     filename += '.bundle';
   } else {
-    /* if we are building for 'module', don't polyfill/transpile any dependencies */
+    /* if we are building for 'module', don't polyfill, transpile, or bundle any dependencies */
     babelExcludes = [/node_modules/];
+    externals.push(nodeExternals());
+
+    babelOptions = {
+      sourceType: 'unambiguous',
+      presets: [
+        '@babel/preset-env',
+        '@babel/preset-typescript'
+      ],
+      plugins: [
+        '@babel/plugin-proposal-class-properties'
+      ]
+    };
   }
 
   filename += minimize ? '.min.js' : '.js';
@@ -33,12 +70,13 @@ module.exports = (env) => {
   console.log(`build mode: ${mode}`);
 
   return {
-    target: cdn ? 'web' : 'node',
+    target: 'web',
     entry: './src/client.ts',
     mode,
     optimization: {
       minimize
     },
+    externals,
     devtool: 'source-map',
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -65,8 +103,9 @@ module.exports = (env) => {
       rules: [
         {
           test: /\.(cjs|mjs|js|ts)$/,
+          loader: 'babel-loader',
           exclude: babelExcludes,
-          loader: ['babel-loader']
+          options: babelOptions
         }
       ]
     }

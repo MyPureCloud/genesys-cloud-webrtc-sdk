@@ -29,7 +29,11 @@ Module import:
 - `npm install --save genesys-cloud-webrtc-sdk`
 
 ```js
-const GenesysCloudWebrtcSdk = require('genesys-cloud-webrtc-sdk');
+/* import */
+import { GenesysCloudWebrtcSdk } from 'genesys-cloud-webrtc-sdk';
+/* or require */
+const { GenesysCloudWebrtcSdk } = require('genesys-cloud-webrtc-sdk');
+
 const sdk = new GenesysCloudWebrtcSdk({
   accessToken: 'your-access-token'
 });
@@ -38,14 +42,22 @@ sdk.initialize();
 
 Or via global module
 
+> Note: `/latest/` is no longer supported in the cdn url. By default, the latest version will also be used. 
+
 ```html
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/latest/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
 <script>
   const sdk = new window.GenesysCloudWebrtcSdk({
     accessToken: 'your access token'
   });
   sdk.initialize();
 </script>
+```
+
+You can also use a specific version: 
+
+``` html
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/4.0.1/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
 ```
 
 ### Documentation
