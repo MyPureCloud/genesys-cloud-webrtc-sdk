@@ -11,8 +11,8 @@ module.exports = {
     '^.+\\.tsx?$': 'ts-jest'
   },
   transformIgnorePatterns: [
-    // Change MODULE_NAME_HERE to your module that isn't being compiled
-    '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
+    // Add module name that needs to be transpiled
+    // '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
   ],
   collectCoverage: true,
   collectCoverageFrom: [
