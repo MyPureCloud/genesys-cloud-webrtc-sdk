@@ -4,6 +4,7 @@ import { testUtils } from 'genesyscloud-spigot';
 import { v4 as uuid } from 'uuid';
 
 import { getNewSdkConnection } from '../utils/utils';
+const logger = testUtils.getLogger();
 
 let sdk;
 let context;
@@ -42,10 +43,10 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
 
       // Resolve when the session arrives, short circuiting the timeout/reject
       sdk.on('sessionStarted', async (session) => {
-        console.log('Session Started', { session, conversationId });
+        logger.log('Session Started', { session, conversationId });
 
         session.on('terminated', function (...args) {
-          console.log('SESSION TERMINATED', ...args);
+          logger.log('SESSION TERMINATED', ...args);
         });
 
         if (!options.manual) {
@@ -70,7 +71,7 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
 
     const info = await sdk.startVideoConference(roomJid);
     conversationId = info.conversationId;
-    console.log('video conversationId', conversationId);
+    logger.log('video conversationId', conversationId);
 
     // wait for the session to arrive
     const session = await sessionEvents;
@@ -87,12 +88,12 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
     await testUtils.pollForTruthy(isMediaAttached);
 
     if (options.sdkDisconnect) {
-      console.log('disconnecting via the SDK with session', session.id);
+      logger.log('disconnecting via the SDK with session', session.id);
       await testUtils.timeout(testUtils.getConfig().callDelay);
       await sdk.endSession({ id: session.id });
     }
     if (options.waitForDisconnect) {
-      console.log('Waiting for the session to go disconnected');
+      logger.log('Waiting for the session to go disconnected');
       await sessionDisconnected;
     }
   }
