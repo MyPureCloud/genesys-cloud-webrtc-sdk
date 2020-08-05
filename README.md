@@ -42,7 +42,7 @@ sdk.initialize();
 
 Or via global module
 
-> Note: `/latest/` is no longer supported in the cdn url. By default, the latest version will also be used. 
+> Note: `/latest/` is no longer supported in the cdn url. By default, the latest version will always be used. 
 
 ```html
 <script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
