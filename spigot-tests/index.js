@@ -1,4 +1,5 @@
 const { Spigot } = require('genesyscloud-spigot/dist/src/index');
+const version = require('../package.json').version;
 
 let envConfig = {};
 
@@ -33,6 +34,8 @@ const config = {
     username: envConfig.USERNAME,
     password: envConfig.PASSWORD
   },
+  appName: 'webrtc-sdk',
+  appVersion: version,
   headless: !!process.env.SINGLE_RUN || process.env.CI_MODE,
   testPort: '8443',
   envHost: envConfig.ENV_HOST,

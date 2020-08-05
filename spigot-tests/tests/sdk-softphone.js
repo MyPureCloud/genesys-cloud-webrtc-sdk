@@ -3,6 +3,8 @@
 import { testUtils, callUtils } from 'genesyscloud-spigot';
 import { getNewSdkConnection } from '../utils/utils';
 
+const logger = testUtils.getLogger();
+
 let sdk;
 let activeCall;
 
@@ -32,7 +34,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     this.timeout(this.callDelay + testUtils.getConfig().validationTimeout * 10);
     if (!sdk) {
       sdk = await getNewSdkConnection();
-      console.log('SDK connected', sdk);
+      logger.log('SDK connected', sdk);
     }
     let conversationId;
     // Convert session events to promise so we can await them
@@ -55,10 +57,10 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
 
       // Resolve when the session arrives, short circuiting the timeout/reject
       sdk.on('sessionStarted', async (session) => {
-        console.log('Session Started', { session, conversationId });
+        logger.log('Session Started', { session, conversationId });
 
         session.on('terminated', function () {
-          console.log('SESSION TERMINATED', ...arguments);
+          logger.log('SESSION TERMINATED', ...arguments);
         });
 
         if (options.manual) {
@@ -83,7 +85,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
         phoneNumber: options.user ? undefined : phoneNumber,
         callUserId: options.user ? phoneNumber : undefined
       });
-      console.info('Call conversationId', conversationId);
+      logger.info('Call conversationId', conversationId);
     }
 
     // wait for the session to arrive
@@ -100,7 +102,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
         return resolve(session.streams[0]);
       }
       session.on('peerStreamAdded', async (session, stream) => {
-        console.log('peerStreamAdded', { session });
+        logger.log('peerStreamAdded', { session });
         resolve(stream);
       });
     });
@@ -112,18 +114,18 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     if (!autoAttachedMediaEl) {
       throw new Error('Failed to find auto attached media');
     }
-    console.log('validating stream', { activeCall });
+    logger.log('validating stream', { activeCall });
     await callUtils.validateStream(session, autoAttachedMediaEl.srcObject,
       ((options.sdkDisconnect || options.waitForDisconnect) ? null : activeCall), false);
-    console.log('stream validated');
+    logger.log('stream validated');
 
     if (options.sdkDisconnect) {
-      console.log('disconnecting via the SDK with session', session.id);
+      logger.log('disconnecting via the SDK with session', session.id);
       await testUtils.timeout(testUtils.getConfig().callDelay);
       await sdk.endSession({ id: session.id });
     }
     if (options.waitForDisconnect) {
-      console.log('Waiting for the session to go disconnected');
+      logger.log('Waiting for the session to go disconnected');
       await sessionDisconnected;
     }
     activeCall = null;
