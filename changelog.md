@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.0.1...HEAD)
+### Added
+* added client logger to spigot tests for test debugability
 
 # [v4.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.0.0...v4.0.1)
 ### Fixed
@@ -18,9 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v4.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v3.6.7...v4.0.0)
 ### Breaking Changes
 * Renamed app / repo to `GenesysCloudWebrtcSdk` / `genesys-cloud-webrtc-sdk`
-  * cdn url also changed to: https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.bundle.min.js
-* Changed the build output and `package.json#main` to point at compiled src rather than bundling for node. 
-There is still a `.bundle.js` version for the cdn. 
+* cdn url also changed to: https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.bundle.min.js
+* Changed the build output and `package.json#main` to point at compiled src rather than bundling for node. There is still a `.bundle.js` version for the cdn.
 * Upgraded to typescript v3.9.x which can potentially break projects using older versions of ts (ie. 3.6.x)
 
 ### Added
@@ -36,7 +37,7 @@ There is still a `.bundle.js` version for the cdn.
 ### Fixed
 * updateOutgoingMedia now cleans up existing media correctly (async issue)
 * [#165](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/165) where cdn build does not export as default
-* Adjusted `create-manifest.js` to dynamically add all files starting with `genesys-cloud-webrtc-sdk` 
+* Adjusted `create-manifest.js` to dynamically add all files starting with `genesys-cloud-webrtc-sdk`
 
 # [v3.6.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v3.6.5...v3.6.6)
 ### Fixed
