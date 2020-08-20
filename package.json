@@ -45,7 +45,7 @@
     "browserama": "^3.1.1",
     "core-js": "^3.6.5",
     "genesys-cloud-client-logger": "^1.0.3",
-    "genesys-cloud-streaming-client": "^12.0.1",
+    "genesys-cloud-streaming-client": "^12.0.2",
     "lodash": "^4.17.15",
     "purecloud-platform-client-v2": "^86.0.0",
     "safe-json-stringify": "^1.2.0",
