@@ -15,7 +15,7 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -308,6 +308,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     await super.acceptSession(session, params);
     this.setInitialMuteStates(session);
+
+    logDeviceChange(this.sdk, session, 'sessionStarted');
   }
 
   setInitialMuteStates (session: IJingleSession): void {
@@ -318,6 +320,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       session.videoMuted = true;
       this.log(LogLevels.info, 'Sending initial video mute', { conversationId: session.conversationId });
       session.mute(userId, 'video');
+    } else {
+      session.videoMuted = false;
     }
 
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
@@ -325,6 +329,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       session.audioMuted = true;
       this.log(LogLevels.info, 'Sending initial audio mute', { conversationId: session.conversationId });
       session.mute(userId, 'audio');
+    } else {
+      session.audioMuted = false;
     }
   }
 

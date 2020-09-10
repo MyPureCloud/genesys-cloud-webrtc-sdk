@@ -1,7 +1,7 @@
 import browserama from 'browserama';
 
 import { GenesysCloudWebrtcSdk } from './client';
-import { IMediaRequestOptions, IEnumeratedDevices } from './types/interfaces';
+import { IMediaRequestOptions, IEnumeratedDevices, IJingleSession } from './types/interfaces';
 import { SdkErrorTypes } from './types/enums';
 import { throwSdkError } from './utils';
 
@@ -227,13 +227,116 @@ export const stopListeningForDeviceChanges = function () {
   navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
 };
 
+/**
+ * Look through the cached enumerated devices and match based on
+ * the passed in track's `kind` and `label`
+ * @param track media stream track with the label to search for
+ */
+export const findCachedDeviceByTrackLabel = (track?: MediaStreamTrack): MediaDeviceInfo | undefined => {
+  if (!track?.kind) return;
+  const availableDevices = getCachedEnumeratedDevices();
+  const devicesToSearch = track.kind === 'video' ? availableDevices.videoDevices : availableDevices.audioDevices;
+  return devicesToSearch.find(d => d.label === track.label);
+};
+
+/**
+ * Look through the cached enumerated devices and match based on
+ *  the passed in output deviceId
+ * @param id output deviceId
+ */
+export const findCachedOutputDeviceById = (id?: string): MediaDeviceInfo | undefined => {
+  return getCachedEnumeratedDevices().outputDevices.find(d => d.deviceId === id);
+};
+
+/**
+ * Utility to log device changes. It will use the passed in `from` track _or_
+ *  look up the currently used devices via the sender (based on labels) to see
+ *  what device is currently in use. Then it will log out the device changing `to`
+ *  as the new device.
+ *
+ * NOTE: if the system default is being used and then changes (which will force
+ *  devices to be enumerated) the device will not be able to be looked up in the
+ *  cached devices. So the caller will need to pass in the "old" system default(s)
+ *  as `fromVideoTrack` and/or `fromAudioTrack`.
+ *
+ * @param sdk sdk instance
+ * @param session session devices are changing for
+ * @param action action taken
+ * @param devicesChange devices changing to/from
+ */
+export function logDeviceChange (
+  sdk: GenesysCloudWebrtcSdk,
+  session: IJingleSession,
+  action: 'sessionStarted' | 'changingDevices',
+  devicesChange: {
+    toVideoTrack?: MediaStreamTrack,
+    fromVideoTrack?: MediaStreamTrack,
+    toAudioTrack?: MediaStreamTrack,
+    fromAudioTrack?: MediaStreamTrack,
+    toOutputDeviceId?: string
+  } = {}
+): void {
+  let currentVideoTrack: MediaStreamTrack;
+  let currentAudioTrack: MediaStreamTrack;
+  const currentOutputDeviceId: string = session._outputAudioElement?.sinkId;
+  const screenShareTrackId = session._screenShareStream?.getVideoTracks()[0]?.id;
+
+  /* grab the currect device being used */
+  session.pc.getSenders()
+    .filter(s => s.track && s.track.id !== screenShareTrackId)
+    .forEach(sender => {
+      if (sender.track.kind === 'audio') {
+        currentAudioTrack = sender.track;
+      } else /* if (sender.track.kind === 'video') */ {
+        currentVideoTrack = sender.track;
+      }
+    });
+
+  const availableDevices = getCachedEnumeratedDevices();
+  const details = {
+    /* meta data */
+    action,
+    availableDevices,
+    sessionId: session.id,
+    conversationId: session.conversationId,
+    /* the device being switched from and/or currently being used.
+      if a track was passed in, we will assume the caller knows what it is doing
+      and we will use that track for logging. Otherwise, we will look up the device */
+    currentVideoDevice: devicesChange.fromVideoTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromVideoTrack.label } : findCachedDeviceByTrackLabel(currentVideoTrack),
+    currentAudioDevice: devicesChange.fromAudioTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromAudioTrack.label } : findCachedDeviceByTrackLabel(currentAudioTrack),
+    currentOutputDevice: findCachedOutputDeviceById(currentOutputDeviceId),
+    /* the device being switched to */
+    newVideoDevice: findCachedDeviceByTrackLabel(devicesChange.toVideoTrack),
+    newAudioDevice: findCachedDeviceByTrackLabel(devicesChange.toAudioTrack),
+    newOutputDevice: findCachedOutputDeviceById(devicesChange.toOutputDeviceId),
+    /* other potentially useful information to log */
+    sessionVideoMute: session.videoMuted,
+    sessionAudioMute: session.audioMuted,
+    hasDevicePermissions: hasDevicePermissions(availableDevices)
+  };
+
+  sdk.logger.info('media devices changing for session', details);
+}
+
+/**
+ * Get the currently cached enumerated devices
+ */
+export function getCachedEnumeratedDevices (): IEnumeratedDevices {
+  /* return a copy of cached devices */
+  return {
+    audioDevices: enumeratedDevices.audioDevices.slice(),
+    videoDevices: enumeratedDevices.videoDevices.slice(),
+    outputDevices: enumeratedDevices.outputDevices.slice()
+  };
+}
+
 export async function getEnumeratedDevices (sdk: GenesysCloudWebrtcSdk, forceRefresh: boolean = false): Promise<IEnumeratedDevices> {
   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.enumerateDevices) {
     sdk.logger.warn('Unable to enumerate devices');
     enumeratedDevices.videoDevices = [];
     enumeratedDevices.audioDevices = [];
     enumeratedDevices.outputDevices = [];
-    return enumeratedDevices;
+    return getCachedEnumeratedDevices();
   }
 
   if (!isListeningForDeviceChanges) {
@@ -241,14 +344,14 @@ export async function getEnumeratedDevices (sdk: GenesysCloudWebrtcSdk, forceRef
     isListeningForDeviceChanges = true;
   }
 
-  /* if devices haven't changed, no forceRefresh, & we have permission - return the cache devices */
+  /* if devices haven't changed, no forceRefresh, & we have permissions - return the cache devices */
   if (!refreshDevices && !forceRefresh && hasDevicePermissions(enumeratedDevices)) {
     sdk.logger.debug('Returning cached enumerated devices', { devices: enumeratedDevices });
-    return enumeratedDevices;
+    return getCachedEnumeratedDevices();
   }
 
   try {
-    const oldDevices = { ...enumeratedDevices };
+    const oldDevices = getCachedEnumeratedDevices();
     enumeratedDevices.videoDevices = [];
     enumeratedDevices.audioDevices = [];
     enumeratedDevices.outputDevices = [];
@@ -271,7 +374,8 @@ export async function getEnumeratedDevices (sdk: GenesysCloudWebrtcSdk, forceRef
   }
 
   sdk.logger.debug('Enumerated devices', { devices: enumeratedDevices });
-  return enumeratedDevices;
+  /* the "cache" was just updated with the new devices, this will make a copy */
+  return getCachedEnumeratedDevices();
 }
 
 function mapOldToNewDevices (oldEnumeratedDevices: IEnumeratedDevices | undefined, newDevices: MediaDeviceInfo[]): MediaDeviceInfo[] {

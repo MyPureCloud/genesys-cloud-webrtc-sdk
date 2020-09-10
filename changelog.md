@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.0...HEAD)
 
+### Fixed
+* [PCM-1428](https://inindca.atlassian.net/browse/PCM-1428) – in chrome, if you were using the system default audio device and then changed the default on the system level, the sdk would not start a audio with the new system default. 
+
+### Added 
+* [PCM-1426](https://inindca.atlassian.net/browse/PCM-1426) – better logging around devices. It will log devices in use we a session starts and when the devices change. 
+
+
 # [v4.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.0.1...v4.1.0)
 ### Added
 * added client logger to spigot tests for test debugability
