@@ -4,10 +4,9 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
-import { checkHasTransceiverFunctionality, startMedia } from '../media-utils';
+import { checkHasTransceiverFunctionality, startMedia, logDeviceChange } from '../media-utils';
 import { throwSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
-import browserama from 'browserama';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -171,6 +170,7 @@ export default abstract class BaseSessionHandler {
     if (session._screenShareStream) {
       trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
     }
+
     /*
       if we aren't updating a media type, leave the existing track(s) alone
       also true if our video is on mute, we don't need to touch it
@@ -187,13 +187,23 @@ export default abstract class BaseSessionHandler {
         )
       );
 
-    /* stop media first because FF does not allow more than one audio/video track */
-    if (browserama.isFirefox) {
-      senders.forEach(sender => {
-        sender.track.stop();
-        destroyMediaPromises.push(sender.replaceTrack(null));
-      });
-    }
+    /*
+      stop media first because FF does not allow more than one audio/video track
+      AND stop the media in case we are using system default because chrome will not let you switch
+      system default devices _while_ you have an active media track with the old system default
+    */
+    let fromVideoTrack: MediaStreamTrack;
+    let fromAudioTrack: MediaStreamTrack;
+
+    senders.forEach(sender => {
+      if (sender.track.kind === 'video') {
+        fromVideoTrack = sender.track;
+      } else {
+        fromAudioTrack = sender.track;
+      }
+      sender.track.stop();
+      destroyMediaPromises.push(sender.replaceTrack(null));
+    });
 
     await Promise.all(destroyMediaPromises);
 
@@ -239,6 +249,15 @@ export default abstract class BaseSessionHandler {
       }
     });
 
+    /* just in case the system default is changing, we need to tell this log function what was the
+      previous device being used (since it won't show up in the enumerated device list anymore) */
+    logDeviceChange(this.sdk, session, 'changingDevices', {
+      fromVideoTrack: fromVideoTrack,
+      fromAudioTrack: fromAudioTrack,
+      toVideoTrack: stream.getVideoTracks()[0],
+      toAudioTrack: stream.getAudioTracks()[0]
+    });
+
     const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
       await this.addReplaceTrackToSession(session, track);
       outboundStream.addTrack(track);
@@ -275,7 +294,7 @@ export default abstract class BaseSessionHandler {
       throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
     }
 
-    this.log(LogLevels.info, 'Setting output deviceId', { deviceId, conversationId: session.conversationId, sessionId: session.id });
+    logDeviceChange(this.sdk, session, 'changingDevices', { toOutputDeviceId: deviceId });
     return el.setSinkId(deviceId);
   }
 
@@ -337,11 +356,11 @@ export default abstract class BaseSessionHandler {
   }
 
   _warnNegotiationNeeded (session: IJingleSession): void {
-    this.log(LogLevels.error, 'negotiation needed and not supported', { conversationId: session.conversationId });
+    this.log(LogLevels.error, 'negotiation needed and not supported', { conversationId: session.conversationId, sessionId: session.id });
   }
 
   removeMediaFromSession (session: IJingleSession, track: MediaStreamTrack): Promise<void> {
-    this.log(LogLevels.debug, 'Removing track from session', { track, conversationId: session.conversationId });
+    this.log(LogLevels.debug, 'Removing track from session', { track, conversationId: session.conversationId, sessionId: session.id });
     return session.removeTrack(track);
   }
 

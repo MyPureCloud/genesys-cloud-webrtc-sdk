@@ -368,12 +368,16 @@ describe('updateOutputDevice()', () => {
     const session = new MockSession();
     const deviceId = 'new-output-device';
     const spy = jest.fn();
+    jest.spyOn(mediaUtils, 'logDeviceChange').mockImplementation();
+
     session._outputAudioElement = { setSinkId: spy };
 
     await handler.updateOutputDevice(session as any, deviceId);
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(
-      'Setting output deviceId',
-      { deviceId, conversationId: session.conversationId, sessionId: session.id }
+    expect(mediaUtils.logDeviceChange).toHaveBeenCalledWith(
+      mockSdk,
+      session,
+      'changingDevices',
+      { toOutputDeviceId: deviceId }
     );
     expect(spy).toHaveBeenCalledWith(deviceId);
   });
@@ -641,7 +645,10 @@ describe('_warnNegotiationNeeded', () => {
     const session = new MockSession();
     handler._warnNegotiationNeeded(session as any);
 
-    expect(mockSdk.logger.error).toHaveBeenCalledWith(expect.stringContaining('negotiation needed and not supported'), { conversationId: session.conversationId });
+    expect(mockSdk.logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('negotiation needed and not supported'),
+      { conversationId: session.conversationId, sessionId: session.id }
+    );
   });
 });
 
