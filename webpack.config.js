@@ -43,7 +43,8 @@ module.exports = (env) => {
         ['@babel/plugin-transform-runtime', {
           corejs: 3
         }],
-        '@babel/plugin-proposal-class-properties'
+        '@babel/plugin-proposal-class-properties',
+        '@babel/plugin-transform-property-mutators'
       ]
     };
 
