@@ -162,6 +162,9 @@ class MockStream {
   getVideoTracks () {
     return this.getTracks().filter((t) => t.kind === 'video');
   }
+  getAudioTracks () {
+    return this.getTracks().filter((t) => t.kind === 'audio');
+  }
   getTracks () {
     return this._tracks;
   }

@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IJingleSession } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
-import { attachAudioMedia, startMedia } from '../media-utils';
+import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
 import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 import { pick } from 'lodash';
 
@@ -47,7 +47,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
     }
 
-    return super.acceptSession(session, params);
+    await super.acceptSession(session, params);
+    logDeviceChange(this.sdk, session, 'sessionStarted');
   }
 
   async endSession (session: IJingleSession): Promise<void> {

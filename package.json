@@ -32,6 +32,7 @@
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
     "lint": "npm run tslint",
+    "lint:fix": "npm run tslint:fix",
     "tslint": "tslint --project . --config tslint.json",
     "tslint:fix": "tslint --project . --config tslint.json --fix",
     "greenkeep": "npx npm-check --update",
