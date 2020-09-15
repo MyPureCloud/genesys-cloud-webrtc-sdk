@@ -5,13 +5,13 @@ import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
 import { throwSdkError, parseJwt, isAcdJid } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
+  private _screenStreamPromise: Promise<MediaStream>;
   sessionType = SessionTypes.acdScreenShare;
 
   shouldHandleSessionByJid (jid: string): boolean {
     return isAcdJid(jid);
   }
 
-  // TODO: someday we should do media right before the session accept once we get away from media presence
   async startSession (startParams: IStartSessionParams): Promise<{ conversationId: string }> {
     const { jwt, conversation, sourceCommunicationId } = this.sdk._customerData;
 
@@ -25,7 +25,19 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
 
     this.log(LogLevels.info, 'starting acd screen share session', opts);
 
+    /* if we had existing media, clean it up */
+    try {
+      this.endTracks(await this._screenStreamPromise);
+    } catch (error) {
+      /* no-op: it just means the last promise had rejected, we don't care about that error now */
+    }
+    this._screenStreamPromise = null;
+
+    /* request the display now, but handle it on session-init */
+    this._screenStreamPromise = startDisplayMedia();
+
     this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
+
     return { conversationId: conversation.id };
   }
 
@@ -41,41 +53,60 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     }
   }
 
+  endTracks (mediaStream?: MediaStream): void {
+    mediaStream?.getTracks().forEach(t => t.stop());
+  }
+
   async handleSessionInit (session: IJingleSession): Promise<void> {
     try {
       await super.handleSessionInit(session);
-    } catch (err) {
-      this.log(LogLevels.error, 'Screen share session init failed');
-      await super.endSession(session);
-    } finally {
-      const stream = await startDisplayMedia();
 
       session.on('terminated', (session: IJingleSession) => {
-        session._screenShareStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+        /* just in case our session termintated, but didn't set _screenShareStream */
+        this.endTracks(session._screenShareStream);
+        /* cleanup our local state */
+        this._screenStreamPromise = null;
       });
 
       if (!this.sdk.isGuest) {
         throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
       }
 
-      stream.getTracks().forEach((track: MediaStreamTrack) => {
-        track.addEventListener('ended', this.onTrackEnd.bind(this, session));
-      });
-      this.log(LogLevels.debug, 'Adding stream to the session and setting it to _screenShareStream', { sessionId: session.id, conversationId: session.conversationId });
-
-      await this.addMediaToSession(session, stream);
-
-      session._screenShareStream = stream;
-
       if (!this.sdk._config.autoConnectSessions) {
         // if autoConnectSessions is 'false' and we have a guest, throw an error
         //  guests should auto accept screen share session
         const errMsg = '`autoConnectSession` must be set to "true" for guests';
         this.log(LogLevels.error, errMsg, { sessionId: session.id, conversationId: session.conversationId });
-        throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg);
+        throw new Error(errMsg);
       }
 
+      if (!this._screenStreamPromise) {
+        throw new Error('No pending or active screen share media promise');
+      }
+
+      const stream = await this._screenStreamPromise;
+
+      session._screenShareStream = stream;
+
+      stream.getTracks().forEach((track: MediaStreamTrack) => {
+        track.addEventListener('ended', this.onTrackEnd.bind(this, session));
+      });
+
+      this.log(LogLevels.debug, 'Adding stream to the session and setting it to _screenShareStream', { sessionId: session.id, conversationId: session.conversationId });
+
+      await this.addMediaToSession(session, stream);
       await this.acceptSession(session, { id: session.id });
+    } catch (err) {
+      await super.endSession(session);
+
+      /* attempt to clean up any streams that may have been created */
+      try {
+        this.endTracks(await this._screenStreamPromise);
+      } catch (error) {
+        /* no-op: if the promise rejected, we don't care at this point */
+      }
+      this._screenStreamPromise = null;
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Screen share session init failed', err);
     }
   }
 
