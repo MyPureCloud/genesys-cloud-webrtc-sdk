@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v4.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.0...v4.1.1)
 
 ### Fixed
+* [PCM-1408](https://inindca.atlassian.net/browse/PCM-1408) – moved `getDisplayMedia` request to `startScreenShare` for acd-screenshare. Firefox needs a `userGesture` in order to request the screen. 
+The Request is now handled on `session-init`, but requested at the beginning (before the propose). 
 * [WC-801](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/pull/268) – added `@babel/plugin-transform-property-mutators` to webpack/babel plugins to properly polyfill cdn bundle for IE11.
 * [PCM-1428](https://inindca.atlassian.net/browse/PCM-1428) – in chrome, if you were using the system default audio device and then changed the default on the system level, the sdk would not start a audio with the new system default. 
 
