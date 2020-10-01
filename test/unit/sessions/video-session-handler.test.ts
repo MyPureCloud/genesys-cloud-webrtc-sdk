@@ -643,6 +643,26 @@ describe('acceptSession', () => {
     expect(session._outputAudioElement).toBe(audio);
   });
 
+  it('should set the sinkId in supported browsers to the default output device', async () => {
+    const audio = document.createElement('audio') as HTMLAudioElement & { setSinkId (id: string): Promise<undefined> };
+    const video = document.createElement('video');
+
+    audio.setSinkId = jest.fn().mockResolvedValue(undefined);
+    session.tracks = [new MockTrack('audio') as any]
+
+    jest.spyOn(mediaUtils, 'hasOutputDeviceSupport').mockReturnValue(true);
+    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+
+    /* with no sdk default output deviceId */
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(audio.setSinkId).toHaveBeenCalledWith('');
+
+    /* with sdk default output deviceId */
+    mockSdk._config.defaultOutputDeviceId = 'output-device-id';
+    await handler.acceptSession(session, { id: session.id, audioElement: audio, videoElement: video });
+    expect(audio.setSinkId).toHaveBeenCalledWith(mockSdk._config.defaultOutputDeviceId);
+  });
+
   it('should not attach the _outputAudioElement if it is not of type HTMLAudioElement', async () => {
     const audio = document.createElement('audio');
     const video = document.createElement('video');

@@ -79,9 +79,12 @@ export class MockSender {
   }
 }
 
+class MockReceiver { }
+
 class MockPC extends WildEmitter {
   _mockSession: MockSession;
   _senders: MockSender[] = [];
+  _receivers: MockReceiver[] = [];
   pc: any = {};
   constructor (session: MockSession) {
     super();
@@ -89,6 +92,10 @@ class MockPC extends WildEmitter {
   }
   getSenders (): MockSender[] {
     return this._senders;
+  }
+
+  getReceivers (): MockReceiver[] {
+    return this._receivers;
   }
 
   _addSender (track: MockTrack) {

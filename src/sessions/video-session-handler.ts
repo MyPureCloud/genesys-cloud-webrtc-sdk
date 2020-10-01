@@ -15,9 +15,13 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange, hasOutputDeviceSupport } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
+
+type ExtendedHTMLAudioElement = HTMLAudioElement & {
+  setSinkId (deviceId: string): Promise<undefined>;
+};
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -290,19 +294,39 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.setupTransceivers(session);
 
     const attachParams = { audioElement, videoElement };
-    if (session.tracks.length) {
-      session.tracks.forEach((track) => {
-        this.log(LogLevels.info, 'Incoming track', { track, conversationId: session.conversationId });
+
+    const handleIncomingTracks = (session: IJingleSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
+      if (!Array.isArray(tracks)) tracks = [tracks];
+
+      for (const track of tracks) {
+        this.log(LogLevels.info, 'Incoming track', {
+          track,
+          conversationId: session.conversationId,
+          sessionId: session.id
+        });
+
         const el = this.attachIncomingTrackToElement(track, attachParams);
-        if (el instanceof HTMLAudioElement) session._outputAudioElement = el;
-      });
+
+        /* if the track was attatched to an audio element, we have an audio track */
+        if (el instanceof HTMLAudioElement) {
+          session._outputAudioElement = el;
+
+          /* if we have support, make sure to set the sinkId on the element */
+          if (hasOutputDeviceSupport()) {
+            /* tslint:disable-next-line:no-floating-promises */
+            (el as ExtendedHTMLAudioElement).setSinkId(this.sdk._config.defaultOutputDeviceId || '');
+          }
+        }
+      }
+
       session.emit('incomingMedia');
+    };
+
+    if (session.tracks.length) {
+      handleIncomingTracks(session, session.tracks);
     } else {
       session.on('peerTrackAdded', (session: IJingleSession, track: MediaStreamTrack) => {
-        this.log(LogLevels.info, 'Incoming track', { track, conversationId: session.conversationId });
-        const el = this.attachIncomingTrackToElement(track, attachParams);
-        if (el instanceof HTMLAudioElement) session._outputAudioElement = el;
-        session.emit('incomingMedia');
+        handleIncomingTracks(session, track);
       });
     }
 

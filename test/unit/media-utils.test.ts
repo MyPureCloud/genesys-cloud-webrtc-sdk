@@ -479,6 +479,7 @@ describe('logDeviceChange()', () => {
   let action;
   let mockAudioSender;
   let mockVideoSender;
+  let mockVideoReceiver;
   let mockSession: IJingleSession;
   let expectedBasicInfo;
 
@@ -503,13 +504,15 @@ describe('logDeviceChange()', () => {
     action = 'sessionStarted';
     mockAudioSender = {};
     mockVideoSender = {};
+    mockVideoReceiver = {};
     mockSession = {
       id: 'some-session-id',
       conversationId: 'some-convo-id',
       videoMuted: false,
       audioMuted: false,
       pc: {
-        getSenders: () => [mockAudioSender, mockVideoSender]
+        getSenders: () => [mockAudioSender, mockVideoSender],
+        getReceivers: () => [mockVideoReceiver]
       }
     } as IJingleSession;
 
@@ -525,6 +528,15 @@ describe('logDeviceChange()', () => {
       newVideoDevice: undefined,
       newAudioDevice: undefined,
       newOutputDevice: undefined,
+
+      sdkDefaultVideoDeviceId: undefined,
+      sdkDefaultAudioDeviceId: undefined,
+      sdkDefaultOutputDeviceId: undefined,
+
+      currentAudioElementSinkId: undefined,
+      currentSessionSenderTracks: [],
+      currentSessionReceiverTracks: [],
+
       sessionVideoMute: mockSession.videoMuted,
       sessionAudioMute: mockSession.audioMuted,
       hasDevicePermissions: true
@@ -585,6 +597,13 @@ describe('logDeviceChange()', () => {
       id: '67890'
     };
 
+    /* setup mock receivers */
+    mockVideoReceiver.track = {
+      label: 'Some label from the server',
+      kind: 'video',
+      id: '845784625'
+    };
+
     mockSession._outputAudioElement = {
       sinkId: mockOutputDevice2.deviceId
     } as any;
@@ -604,7 +623,10 @@ describe('logDeviceChange()', () => {
       ...expectedBasicInfo,
       currentVideoDevice: mockVideoDevice2,
       currentAudioDevice: mockAudioDevice2,
-      currentOutputDevice: mockOutputDevice2
+      currentOutputDevice: mockOutputDevice2,
+      currentAudioElementSinkId: mockOutputDevice2.deviceId,
+      currentSessionSenderTracks: [mockAudioSender.track, mockVideoSender.track],
+      currentSessionReceiverTracks: [mockVideoReceiver.track]
     });
   });
 
@@ -650,6 +672,8 @@ describe('logDeviceChange()', () => {
       newVideoDevice: mockVideoDevice2,
       newAudioDevice: mockAudioDevice2,
       newOutputDevice: mockOutputDevice2,
+      currentAudioElementSinkId: mockOutputDevice1.deviceId,
+      currentSessionSenderTracks: mockSession.pc.getSenders().map(s => s.track)
     });
   });
 });
