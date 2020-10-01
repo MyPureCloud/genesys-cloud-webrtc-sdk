@@ -299,16 +299,29 @@ export function logDeviceChange (
     availableDevices,
     sessionId: session.id,
     conversationId: session.conversationId,
+
     /* the device being switched from and/or currently being used.
       if a track was passed in, we will assume the caller knows what it is doing
       and we will use that track for logging. Otherwise, we will look up the device */
     currentVideoDevice: devicesChange.fromVideoTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromVideoTrack.label } : findCachedDeviceByTrackLabel(currentVideoTrack),
     currentAudioDevice: devicesChange.fromAudioTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromAudioTrack.label } : findCachedDeviceByTrackLabel(currentAudioTrack),
     currentOutputDevice: findCachedOutputDeviceById(currentOutputDeviceId),
+
     /* the device being switched to */
     newVideoDevice: findCachedDeviceByTrackLabel(devicesChange.toVideoTrack),
     newAudioDevice: findCachedDeviceByTrackLabel(devicesChange.toAudioTrack),
     newOutputDevice: findCachedOutputDeviceById(devicesChange.toOutputDeviceId),
+
+    /* sdk defaults */
+    sdkDefaultVideoDeviceId: sdk._config.defaultVideoDeviceId,
+    sdkDefaultAudioDeviceId: sdk._config.defaultAudioDeviceId,
+    sdkDefaultOutputDeviceId: sdk._config.defaultOutputDeviceId,
+
+    /* other random stuff */
+    currentAudioElementSinkId: currentOutputDeviceId,
+    currentSessionSenderTracks: session.pc.getSenders().filter(s => s.track).map(s => s.track),
+    currentSessionReceiverTracks: session.pc.getReceivers().filter(s => s.track).map(s => s.track),
+
     /* other potentially useful information to log */
     sessionVideoMute: session.videoMuted,
     sessionAudioMute: session.audioMuted,

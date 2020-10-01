@@ -4,7 +4,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IJingleSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
-import { checkHasTransceiverFunctionality, startMedia, logDeviceChange } from '../media-utils';
+import { checkHasTransceiverFunctionality, startMedia, logDeviceChange, hasOutputDeviceSupport } from '../media-utils';
 import { throwSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -105,7 +105,24 @@ export default abstract class BaseSessionHandler {
   }
 
   async acceptSession (session: IJingleSession, params: IAcceptSessionRequest): Promise<any> {
-    this.log(LogLevels.info, 'accepting session', { conversationId: session.conversationId, params });
+    const logExtras: any = {
+      sessionType: session.sessionType,
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params
+    };
+    const outputDeviceId = this.sdk._config.defaultOutputDeviceId || '';
+    const isSupported = hasOutputDeviceSupport();
+
+    /* if we have an audio element _and_ are in a supported browser */
+    if (session._outputAudioElement && isSupported) {
+      /* tslint:disable-next-line:no-floating-promises */
+      (session._outputAudioElement as ExtendedHTMLAudioElement).setSinkId(outputDeviceId);
+      logExtras.hasOutputDeviceSupport = isSupported;
+      logExtras.outputDeviceId = outputDeviceId;
+    }
+
+    this.log(LogLevels.info, 'accepting session', logExtras);
     return session.accept();
   }
 

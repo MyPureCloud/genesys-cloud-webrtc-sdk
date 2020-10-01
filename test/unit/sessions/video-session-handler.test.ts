@@ -1148,7 +1148,10 @@ describe('startScreenShare', () => {
 
     await handler.startScreenShare(session);
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), { conversationId: session.conversationId });
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), {
+      conversationId: session.conversationId,
+      sessionId: session.id
+    });
   });
 });
 
@@ -1275,7 +1278,11 @@ describe('pinParticipantVideo', () => {
     await expect(handler.pinParticipantVideo(session, targetParticipcant)).rejects.toThrowError();
 
     expect(eventSpy).not.toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalledWith(SdkErrorTypes.generic, 'Request to pin video failed', { conversationId: session.conversationId, error: fakeErr });
+    expect(errorSpy).toHaveBeenCalledWith(SdkErrorTypes.generic, 'Request to pin video failed', {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      error: fakeErr
+    });
   });
 
   it('should pin participant', async () => {
