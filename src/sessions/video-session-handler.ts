@@ -15,13 +15,9 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange, hasOutputDeviceSupport } from '../media-utils';
+import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
-
-type ExtendedHTMLAudioElement = HTMLAudioElement & {
-  setSinkId (deviceId: string): Promise<undefined>;
-};
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -310,12 +306,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         /* if the track was attatched to an audio element, we have an audio track */
         if (el instanceof HTMLAudioElement) {
           session._outputAudioElement = el;
-
-          /* if we have support, make sure to set the sinkId on the element */
-          if (hasOutputDeviceSupport()) {
-            /* tslint:disable-next-line:no-floating-promises */
-            (el as ExtendedHTMLAudioElement).setSinkId(this.sdk._config.defaultOutputDeviceId || '');
-          }
         }
       }
 
@@ -342,7 +332,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const videoSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'video');
     if (!videoSender || !videoSender.track.enabled) {
       session.videoMuted = true;
-      this.log(LogLevels.info, 'Sending initial video mute', { conversationId: session.conversationId });
+      this.log(LogLevels.info, 'Sending initial video mute', { conversationId: session.conversationId, sessionId: session.id });
       session.mute(userId, 'video');
     } else {
       session.videoMuted = false;
@@ -351,7 +341,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
     if (!audioSender || !audioSender.track.enabled) {
       session.audioMuted = true;
-      this.log(LogLevels.info, 'Sending initial audio mute', { conversationId: session.conversationId });
+      this.log(LogLevels.info, 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id });
       session.mute(userId, 'audio');
     } else {
       session.audioMuted = false;
@@ -361,7 +351,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   setupTransceivers (session: IJingleSession) {
     // not supported in edge at time of writing https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addTransceiver
     if (!session.pc.pc.addTransceiver) {
-      this.log(LogLevels.warn, 'addTransceiver not supported, video experience may be sub optimal', { conversationId: session.conversationId });
+      this.log(LogLevels.warn, 'addTransceiver not supported, video experience may be sub optimal', {
+        conversationId: session.conversationId,
+        sessionId: session.id
+      });
       return;
     }
 
@@ -394,7 +387,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
     if (replayMuteRequest) {
-      this.log(LogLevels.warn, 'Replaying video mute request since the local state already matches the requested state', { conversationId: session.conversationId });
+      this.log(LogLevels.warn, 'Replaying video mute request since the local state already matches the requested state', {
+        conversationId: session.conversationId,
+        sessionId: session.id
+      });
     }
 
     const userId = this.sdk._personDetails.id;
@@ -424,7 +420,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      this.log(LogLevels.info, 'Creating new video track', { conversationId: session.conversationId });
+      this.log(LogLevels.info, 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id });
 
       // look for a device to use, else use default
       const track = (
@@ -458,7 +454,11 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const outgoingTracks = this.getSendersByTrackType(session, 'audio').map(sender => sender.track);
 
     outgoingTracks.forEach((track) => {
-      this.log(LogLevels.info, `${params.mute ? 'Muting' : 'Unmuting'} audio track`, { trackId: track.id, conversationId: session.conversationId });
+      this.log(LogLevels.info, `${params.mute ? 'Muting' : 'Unmuting'} audio track`, {
+        trackId: track.id,
+        conversationId: session.conversationId,
+        sessionId: session.id
+      });
       track.enabled = !params.mute;
     });
 
@@ -519,16 +519,20 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       this.sessionManager.webrtcSessions.notifyScreenShareStart(session);
     } catch (err) {
       if (!err) {
-        return this.log(LogLevels.info, 'screen selection cancelled', { conversationId: session.conversationId });
+        return this.log(LogLevels.info, 'screen selection cancelled', { conversationId: session.conversationId, sessionId: session.id });
       }
 
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', { conversationId: session.conversationId, error: err });
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        error: err
+      });
     }
   }
 
   async stopScreenShare (session: IJingleSession): Promise<void> {
     if (!session._screenShareStream) {
-      this.log(LogLevels.error, 'No screen share stream to stop', { conversationId: session.conversationId });
+      this.log(LogLevels.error, 'No screen share stream to stop', { conversationId: session.conversationId, sessionId: session.id });
       return;
     }
 
@@ -536,7 +540,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
 
     if (session._resurrectVideoOnScreenShareEnd) {
-      this.log(LogLevels.info, 'Restarting video track', { conversationId: session.conversationId });
+      this.log(LogLevels.info, 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id });
       await this.setVideoMute(session, { id: session.id, mute: false }, true);
     } else {
       await sender.replaceTrack(null);
@@ -549,7 +553,11 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   async pinParticipantVideo (session: IJingleSession, participantId?: string) {
     if (!session.pcParticipant) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', { conversation: session.conversationId, participantId });
+      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
+        conversation: session.conversationId,
+        sessionId: session.id,
+        participantId
+      });
     }
 
     const uri = `/conversations/videos/${session.conversationId}/participants/${session.pcParticipant.id}/pin`;
@@ -565,16 +573,28 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         streamType: 'video'
       });
 
-      this.log(LogLevels.info, 'Pinning video for participant', { conversationId: session.conversationId, participantId });
+      this.log(LogLevels.info, 'Pinning video for participant', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        participantId
+      });
     } else {
-      this.log(LogLevels.info, 'Unpinning all participants', { conversationId: session.conversationId, participantId });
+      this.log(LogLevels.info, 'Unpinning all participants', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        participantId
+      });
     }
 
     try {
       await requestApi.call(this.sdk, uri, { method, data });
       session.emit('pinnedParticipant', { participantId: participantId || null });
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', { conversationId: session.conversationId, error: err });
+      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        error: err
+      });
     }
   }
 

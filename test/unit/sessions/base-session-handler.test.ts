@@ -1,7 +1,7 @@
 import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, MockSender } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/enums';
+import { SessionTypes, SdkErrorTypes, JingleReasons, LogLevels } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { IJingleSession } from '../../../src/types/interfaces';
@@ -558,6 +558,41 @@ describe('acceptSession', () => {
     const session: any = new MockSession();
     await handler.acceptSession(session, { id: session.id });
     expect(session.accept).toHaveBeenCalled();
+  });
+
+  it('should log correctly', async () => {
+    const session: any = new MockSession();
+    const params = { id: session.id };
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    await handler.acceptSession(session, params);
+
+    expect(logSpy).toHaveBeenCalledWith(LogLevels.info, 'accepting session', {
+      sessionType: undefined,
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params
+    });
+  });
+
+
+  it('should set the sinkId in supported browsers to the default output device', async () => {
+    const session: any = new MockSession();
+    const audio = document.createElement('audio') as HTMLAudioElement & { setSinkId (id: string): Promise<undefined> };
+
+    audio.setSinkId = jest.fn().mockResolvedValue(undefined);
+    session._outputAudioElement = audio;
+
+    jest.spyOn(mediaUtils, 'hasOutputDeviceSupport').mockReturnValue(true);
+
+    /* with no sdk default output deviceId */
+    await handler.acceptSession(session, { id: session.id });
+    expect(audio.setSinkId).toHaveBeenCalledWith('');
+
+    /* with sdk default output deviceId */
+    mockSdk._config.defaultOutputDeviceId = 'output-device-id';
+    await handler.acceptSession(session, { id: session.id });
+    expect(audio.setSinkId).toHaveBeenCalledWith(mockSdk._config.defaultOutputDeviceId);
   });
 });
 
