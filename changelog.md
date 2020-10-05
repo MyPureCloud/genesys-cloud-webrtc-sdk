@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.2...HEAD)
 
+### Fixed 
+* [PCM-1440](https://inindca.atlassian.net/browse/PCM-1440) – changed `getUserMedia` [constraints](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia) with a deviceId to be `ideal` rather than `exact` to avoid `NotFound` errors if called with a bad deviceId. Example: 
+``` js
+constraints = { 
+  video: { 
+    deviceId: { ideal: 'device-id-hash' } 
+  }
+};
+```
+
+### Maintenance
+* Merged dependabot PRs
+
 # [v4.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.1...v4.1.2)
 ### Fixed
 * [PCM-1442](https://inindca.atlassian.net/browse/PCM-1442) – added `audioElement.setSinkId` to `base-session-handler.ts#acceptSession()` so the sdk default output deviceId is used when accepting a video or softphone session. 
