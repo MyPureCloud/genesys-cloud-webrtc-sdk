@@ -3,9 +3,10 @@ import browserama from 'browserama';
 
 import * as mediaUtils from '../../src/media-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
-import { SimpleMockSdk, MockStream, MockTrack } from '../test-utils';
+import { SimpleMockSdk, MockStream, MockTrack, MockSession } from '../test-utils';
 import { IEnumeratedDevices, IJingleSession } from '../../src/types/interfaces';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { startMedia } from '../../src/media-utils';
 
 const defaultResolution = {
   height: {
@@ -42,7 +43,7 @@ beforeEach(() => {
   mockSdk = new SimpleMockSdk() as any;
   mediaDevices = (window.navigator as any).mediaDevices = {
     getDisplayMedia: jest.fn(),
-    getUserMedia: jest.fn(),
+    getUserMedia: jest.fn().mockResolvedValue({}),
     enumerateDevices: jest.fn().mockResolvedValue(mockedDevices),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn()
@@ -123,11 +124,22 @@ describe('startDisplayMedia()', () => {
 });
 
 describe('startMedia()', () => {
-  it('should log with conversationId if session is provided', async () => {
-    const conversationId = '123Convo';
+  it('should log session info if is provided', async () => {
+    const session: any = new MockSession();
+    const opts = { video: false, audio: false };
 
-    await mediaUtils.startMedia(mockSdk, { audio: true, session: { conversationId } as any });
-    expect(mockSdk.logger.info).toHaveBeenCalledWith(expect.stringContaining('Using the system default audioinput'), { conversationId });
+    await mediaUtils.startMedia(mockSdk, { ...opts, session });
+    expect(mockSdk.logger.info).toHaveBeenCalledWith('requesting getUserMedia', {
+      opts,
+      constraints: { video: false, audio: false },
+      sessionId: session.id,
+      conversationId: session.conversationId,
+      availableDevices: {
+        audioDevices: [],
+        outputDevices: [],
+        videoDevices: []
+      }
+    });
   });
 
   it('should request audio only', async () => {
@@ -188,8 +200,8 @@ describe('startMedia()', () => {
     const videoDeviceId = mockVideoDevice2.deviceId;
     const audioDeviceId = mockAudioDevice1.deviceId;
     const expectedConstraints = {
-      video: Object.assign({ frameRate: { ideal: 30 }, deviceId: { exact: videoDeviceId } }, defaultResolution),
-      audio: { deviceId: { exact: audioDeviceId } },
+      video: Object.assign({ frameRate: { ideal: 30 }, deviceId: { ideal: videoDeviceId } }, defaultResolution),
+      audio: { deviceId: { ideal: audioDeviceId } },
     };
 
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
@@ -204,8 +216,8 @@ describe('startMedia()', () => {
     const videoDeviceId = mockVideoDevice2.deviceId;
     const audioDeviceId = mockAudioDevice1.deviceId;
     const expectedConstraints = {
-      video: Object.assign({ frameRate: { ideal: 10 }, deviceId: { exact: videoDeviceId } }, defaultResolution),
-      audio: { deviceId: { exact: audioDeviceId } },
+      video: Object.assign({ frameRate: { ideal: 10 }, deviceId: { ideal: videoDeviceId } }, defaultResolution),
+      audio: { deviceId: { ideal: audioDeviceId } },
     };
 
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
@@ -229,10 +241,38 @@ describe('startMedia()', () => {
     await mediaUtils.startMedia(mockSdk, { video: videoDeviceId, audio: audioDeviceId });
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find requested audioinput'), { deviceId: audioDeviceId, conversationId: undefined });
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find requested videoinput'), { deviceId: videoDeviceId, conversationId: undefined });
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Unable to find requested audioinput'),
+      { deviceId: audioDeviceId, sessions: [] }
+    );
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Unable to find requested videoinput'),
+      { deviceId: videoDeviceId, sessions: [] }
+    );
 
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+  });
+
+  it('should log errors', async () => {
+    const constraints = { video: false, audio: false };
+    const session: any = new MockSession();
+    const availableDevices = mediaUtils.getCachedEnumeratedDevices();
+
+    const loggerSpy = jest.spyOn(mockSdk.logger, 'error');
+    mediaDevices.getUserMedia.mockRejectedValue(new Error('NotFound'));
+
+    try {
+      await startMedia(mockSdk, { session, ...constraints });
+      fail('should have thrown');
+    } catch (e) {
+      expect(loggerSpy).toHaveBeenCalledWith(e, {
+        constraints,
+        opts: constraints,
+        sessionId: session.id,
+        conversationId: session.conversationId,
+        availableDevices
+      });
+    }
   });
 });
 
@@ -333,7 +373,7 @@ describe('checkAllTracksHaveEnded()', () => {
   });
 
   it('should be true if a track hasnt ended', () => {
-    const stream = new MockStream();
+    const stream = new MockStream(true);
     stream._tracks.forEach(track => track.readyState = 'ended');
     const activeTrack = new MockTrack();
     activeTrack.readyState = 'active';
@@ -477,9 +517,6 @@ describe('findCachedOutputDeviceById()', () => {
 describe('logDeviceChange()', () => {
   let devices;
   let action;
-  let mockAudioSender;
-  let mockVideoSender;
-  let mockVideoReceiver;
   let mockSession: IJingleSession;
   let expectedBasicInfo;
 
@@ -500,21 +537,9 @@ describe('logDeviceChange()', () => {
   }
 
   beforeEach(() => {
+    mockSession = new MockSession() as any as IJingleSession;
     devices = [];
     action = 'sessionStarted';
-    mockAudioSender = {};
-    mockVideoSender = {};
-    mockVideoReceiver = {};
-    mockSession = {
-      id: 'some-session-id',
-      conversationId: 'some-convo-id',
-      videoMuted: false,
-      audioMuted: false,
-      pc: {
-        getSenders: () => [mockAudioSender, mockVideoSender],
-        getReceivers: () => [mockVideoReceiver]
-      }
-    } as IJingleSession;
 
     /* set the basic log info to avoid repeating the basics a lot */
     expectedBasicInfo = {
@@ -522,9 +547,14 @@ describe('logDeviceChange()', () => {
       availableDevices: { outputDevices: [], audioDevices: [], videoDevices: [] },
       sessionId: mockSession.id,
       conversationId: mockSession.conversationId,
+
       currentVideoDevice: undefined,
       currentAudioDevice: undefined,
       currentOutputDevice: undefined,
+
+      currentVideoTrack: undefined,
+      currentAudioTrack: undefined,
+
       newVideoDevice: undefined,
       newAudioDevice: undefined,
       newOutputDevice: undefined,
@@ -539,7 +569,8 @@ describe('logDeviceChange()', () => {
 
       sessionVideoMute: mockSession.videoMuted,
       sessionAudioMute: mockSession.audioMuted,
-      hasDevicePermissions: true
+      hasDevicePermissions: true,
+      hasOutputDeviceSupport: false
     };
 
     mediaDevices.enumerateDevices.mockResolvedValue(devices);
@@ -550,6 +581,25 @@ describe('logDeviceChange()', () => {
   });
 
   it('should log basic session information', async () => {
+    /* load the devices into the cache */
+    await mediaUtils.getEnumeratedDevices(mockSdk, true);
+
+    mediaUtils.logDeviceChange(mockSdk, mockSession, action);
+
+    expect(mockSdk.logger.info).toHaveBeenCalledWith('media devices changing for session', expectedBasicInfo);
+  });
+
+  it('should skip logging info about screen share tracks', async () => {
+    const ssStream = new MockStream();
+    const ssTrack: any = new MockTrack('video');
+
+    ssTrack.label = 'Screen #1';
+    ssStream.addTrack(ssTrack);
+
+    /* setup the mock screenshare sender */
+    mockSession._screenShareStream = ssStream as any;
+    mockSession.addTrack(ssTrack);
+
     /* load the devices into the cache */
     await mediaUtils.getEnumeratedDevices(mockSdk, true);
 
@@ -586,23 +636,19 @@ describe('logDeviceChange()', () => {
 
   it('should log current devices being used', async () => {
     /* setup the mock senders */
-    mockVideoSender.track = {
-      label: mockVideoDevice2.label,
-      kind: 'video',
-      id: '12345'
-    };
-    mockAudioSender.track = {
-      label: mockAudioDevice2.label,
-      kind: 'audio',
-      id: '67890'
-    };
+    const mockVideoTrack = new MockTrack('video');
+    mockVideoTrack.label = mockVideoDevice2.label;
+
+    const mockAudioTrack = new MockTrack('audio');
+    mockAudioTrack.label = mockAudioDevice2.label;
+
+    mockSession.addTrack(mockVideoTrack as any);
+    mockSession.addTrack(mockAudioTrack as any);
 
     /* setup mock receivers */
-    mockVideoReceiver.track = {
-      label: 'Some label from the server',
-      kind: 'video',
-      id: '845784625'
-    };
+    const mockVideoReceiverTrack = new MockTrack('video');
+    mockSession.pc['_addReceiver'](mockVideoReceiverTrack);
+    mockSession.pc['_addReceiver']({}/* a receiver with a track with no id */);
 
     mockSession._outputAudioElement = {
       sinkId: mockOutputDevice2.deviceId
@@ -624,21 +670,52 @@ describe('logDeviceChange()', () => {
       currentVideoDevice: mockVideoDevice2,
       currentAudioDevice: mockAudioDevice2,
       currentOutputDevice: mockOutputDevice2,
+      currentVideoTrack: mockVideoTrack,
+      currentAudioTrack: mockAudioTrack,
       currentAudioElementSinkId: mockOutputDevice2.deviceId,
-      currentSessionSenderTracks: [mockAudioSender.track, mockVideoSender.track],
-      currentSessionReceiverTracks: [mockVideoReceiver.track]
+      currentSessionSenderTracks: [mockVideoTrack, mockAudioTrack],
+      currentSessionReceiverTracks: [mockVideoReceiverTrack]
+    });
+  });
+
+  it('should log extra info if provided', async () => {
+    /* setup new devices */
+    const requestedVideoDeviceId = 'video-device-id';
+    const requestedAudioDeviceId = 'audio-device-id';
+
+    /* setup a new stream */
+    const newVideoTrack = new MockTrack('video');
+    const newAudioTrack = new MockTrack('audio');
+    const newStream = new MockStream();
+    newStream.addTrack(newVideoTrack);
+    newStream.addTrack(newAudioTrack);
+
+    /* load the devices into the cache */
+    await mediaUtils.getEnumeratedDevices(mockSdk, true);
+
+    mediaUtils.logDeviceChange(mockSdk, mockSession, action, {
+      requestedNewMediaStream: newStream as any,
+      requestedVideoDeviceId,
+      requestedAudioDeviceId
+    });
+
+    expect(mockSdk.logger.info).toHaveBeenCalledWith('media devices changing for session', {
+      ...expectedBasicInfo,
+      requestedAudioDeviceId,
+      requestedVideoDeviceId,
+      requestedNewMediaStreamTracks: newStream.getTracks()
     });
   });
 
   it('should log new devices', async () => {
-    const mockVideoTrack = new MockTrack('video');
-    const mockAudioTrack = new MockTrack('audio');
-
     /* setup current devices as mock devices #1 */
+    const mockVideoTrack = new MockTrack('video');
     mockVideoTrack.label = mockVideoDevice1.label;
+    const mockAudioTrack = new MockTrack('audio');
     mockAudioTrack.label = mockAudioDevice1.label;
-    mockVideoSender.track = mockVideoTrack;
-    mockAudioSender.track = mockAudioTrack;
+
+    mockSession.addTrack(mockVideoTrack as any);
+    mockSession.addTrack(mockAudioTrack as any);
     mockSession._outputAudioElement = {
       sinkId: mockOutputDevice1.deviceId
     } as any;
@@ -661,7 +738,7 @@ describe('logDeviceChange()', () => {
     mediaUtils.logDeviceChange(mockSdk, mockSession, action, {
       toVideoTrack: mockToVideoTrack as any,
       toAudioTrack: mockToAudioTrack as any,
-      toOutputDeviceId: mockOutputDevice2.deviceId
+      requestedOutputDeviceId: mockOutputDevice2.deviceId
     });
 
     expect(mockSdk.logger.info).toHaveBeenCalledWith('media devices changing for session', {
@@ -669,11 +746,16 @@ describe('logDeviceChange()', () => {
       currentVideoDevice: mockVideoDevice1,
       currentAudioDevice: mockAudioDevice1,
       currentOutputDevice: mockOutputDevice1,
+      currentVideoTrack: mockVideoTrack,
+      currentAudioTrack: mockAudioTrack,
       newVideoDevice: mockVideoDevice2,
       newAudioDevice: mockAudioDevice2,
       newOutputDevice: mockOutputDevice2,
+      newAudioTrack: mockToAudioTrack,
+      newVideoTrack: mockToVideoTrack,
       currentAudioElementSinkId: mockOutputDevice1.deviceId,
-      currentSessionSenderTracks: mockSession.pc.getSenders().map(s => s.track)
+      currentSessionSenderTracks: mockSession.pc.getSenders().map(s => s.track),
+      requestedOutputDeviceId: mockOutputDevice2.deviceId
     });
   });
 });
@@ -874,12 +956,27 @@ describe('getValidDeviceId()', () => {
     expect(result).toBe(undefined);
   });
 
-  it("should return default 'audiooutput' device if no deviceId can be found", async () => {
+  it('should return default `audiooutput` device if no deviceId can be found', async () => {
     mockSdk._config.defaultOutputDeviceId = null;
 
     /* output device */
     const result = await mediaUtils.getValidDeviceId(mockSdk, 'audiooutput', 'non-existent-device-id');
     expect(result).toBe(mockOutputDevice1.deviceId);
+  });
+
+  it('should log session info', async () => {
+    const mockSession = new MockSession();
+    const sessions = [
+      mockSession,
+      undefined,
+    ];
+
+    await mediaUtils.getValidDeviceId(mockSdk, 'audioinput', 'non-existent-device-id', ...sessions as any);
+
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Using the system default'),
+      { sessions: [{ sessionId: mockSession.id, conversationId: mockSession.conversationId }] }
+    );
   });
 });
 
