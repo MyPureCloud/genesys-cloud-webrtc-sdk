@@ -540,7 +540,7 @@ export async function getValidDeviceId (
   ...sessions: IJingleSession[]
 ): Promise<string> {
   const devices = await getEnumeratedDevices(sdk);
-  const sessionIds: Array<{ conversationId: string, sessionId: string }> =
+  const sessionInfos: Array<{ conversationId: string, sessionId: string }> =
     sessions
       .filter(s => s)
       .map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
@@ -568,7 +568,7 @@ export async function getValidDeviceId (
   // log if we didn't find the requested deviceId
   if (!foundDevice) {
     if (typeof deviceId === 'string') {
-      sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, sessions: sessionIds });
+      sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, sessionInfos });
     }
 
     // then try to find the sdk default device (if it is not `null`)
@@ -576,13 +576,13 @@ export async function getValidDeviceId (
       foundDevice = availableDevices.find((d: MediaDeviceInfo) => d.deviceId === sdkConfigDefault);
       // log if we couldn't find the sdk default device
       if (!foundDevice) {
-        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, sessions: sessionIds });
+        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, sessionInfos });
       }
     }
   }
 
   if (!foundDevice) {
-    sdk.logger.info(`Using the system default ${kind} device`, { sessions: sessionIds });
+    sdk.logger.info(`Using the system default ${kind} device`, { sessionInfos });
 
     /*
       SANITY: There is no way to request "default" output device, so

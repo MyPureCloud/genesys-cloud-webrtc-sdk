@@ -243,11 +243,11 @@ describe('startMedia()', () => {
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Unable to find requested audioinput'),
-      { deviceId: audioDeviceId, sessions: [] }
+      { deviceId: audioDeviceId, sessionInfos: [] }
     );
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Unable to find requested videoinput'),
-      { deviceId: videoDeviceId, sessions: [] }
+      { deviceId: videoDeviceId, sessionInfos: [] }
     );
 
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
@@ -975,7 +975,7 @@ describe('getValidDeviceId()', () => {
 
     expect(mockSdk.logger.info).toHaveBeenCalledWith(
       expect.stringContaining('Using the system default'),
-      { sessions: [{ sessionId: mockSession.id, conversationId: mockSession.conversationId }] }
+      { sessionInfos: [{ sessionId: mockSession.id, conversationId: mockSession.conversationId }] }
     );
   });
 });
