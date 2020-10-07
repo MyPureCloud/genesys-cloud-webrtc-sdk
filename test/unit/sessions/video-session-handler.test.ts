@@ -842,7 +842,7 @@ describe('setVideoMute', () => {
   });
 
   it('mute: should not stop screen tracks', async () => {
-    session._screenShareStream = new MockStream() as any;
+    session._screenShareStream = new MockStream({ video: true }) as any;
     const track = session._screenShareStream.getTracks()[0];
     const outbound = new MockStream();
     outbound._tracks = [new MockTrack('audio')];
@@ -931,7 +931,7 @@ describe('setVideoMute', () => {
   });
 
   it('unmute: should respect skipServerUpdate param', async () => {
-    const stream = new MockStream();
+    const stream = new MockStream(true);
     const spy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(stream as any);
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
 
@@ -948,7 +948,7 @@ describe('setVideoMute', () => {
   });
 
   it('unmute: should add new media to session', async () => {
-    const stream = new MockStream();
+    const stream = new MockStream(true);
     const spy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(stream as any);
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
 
@@ -967,7 +967,7 @@ describe('setVideoMute', () => {
 
   it('unmute: should use unmuteDeviceId to request media', async () => {
     const unmuteDeviceId = 'device-id';
-    const stream = new MockStream();
+    const stream = new MockStream(true);
     const spy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(stream as any);
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
 
@@ -1110,7 +1110,7 @@ describe('startScreenShare', () => {
   let session: IJingleSession;
 
   beforeEach(() => {
-    displayMediaSpy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue(new MockStream() as any);
+    displayMediaSpy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue(new MockStream({ video: true }) as any);
     videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockResolvedValue();
     addReplaceTrackToSession = jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
     session = new MockSession() as any;
@@ -1178,7 +1178,7 @@ describe('stopScreenShare', () => {
 
   it('should stop screen share tracks and unmute video if resurrectVideoOnScreenShareEnd', async () => {
     session._resurrectVideoOnScreenShareEnd = true;
-    session._screenShareStream = new MockStream();
+    session._screenShareStream = new MockStream({ video: true });
 
     await handler.stopScreenShare(session);
 
@@ -1189,7 +1189,7 @@ describe('stopScreenShare', () => {
 
   it('should not unmute video if not resurrect', async () => {
     session.resurrectVideoOnScreenShareEnd = false;
-    session._screenShareStream = new MockStream();
+    session._screenShareStream = new MockStream({ video: true });
 
     const replaceSpy = jest.fn();
     jest.spyOn(session.pc, 'getSenders').mockReturnValue([{ track: session._screenShareStream._tracks[0], replaceTrack: replaceSpy }]);

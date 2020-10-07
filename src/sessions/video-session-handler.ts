@@ -423,12 +423,25 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       this.log(LogLevels.info, 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id });
 
       // look for a device to use, else use default
+      const videoDeviceConstraint = params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId;
+
+      logDeviceChange(this.sdk, session, 'unmutingVideo', {
+        requestedVideoDeviceId: videoDeviceConstraint
+      });
+
       const track = (
-        await startMedia(this.sdk, { video: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session })
+        await startMedia(this.sdk, { video: videoDeviceConstraint, session })
       ).getVideoTracks()[0];
+
+      logDeviceChange(this.sdk, session, 'changingDevices', {
+        toVideoTrack: track,
+        requestedVideoDeviceId: videoDeviceConstraint
+      });
 
       // add track to session
       await this.addReplaceTrackToSession(session, track);
+
+      logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
 
       // add sync track to local outbound referrence
       session._outboundStream.addTrack(track);

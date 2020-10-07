@@ -57,16 +57,15 @@ describe('updateOutgoingMedia()', () => {
     const session = new MockSession();
     session._outboundStream = new MockStream();
     const stream = new MockStream({ video: true, audio: true });
-    const spy = mockSdk.logger.info as jest.Mock;
+
+    const spy = jest.spyOn(mediaUtils, 'logDeviceChange');
 
     /* with a session and stream */
     await handler.updateOutgoingMedia(session as any, { stream: stream as any, videoDeviceId, audioDeviceId });
-    expect(spy).toBeCalledWith(/* LogLevels.info, */ 'updating outgoing media', {
-      conversationId: session.conversationId,
-      sessionId: session.id,
-      streamId: stream.id,
-      videoDeviceId,
-      audioDeviceId
+    expect(spy).toBeCalledWith(mockSdk, session, 'calledToChangeDevices', {
+      requestedNewMediaStream: stream,
+      requestedVideoDeviceId: videoDeviceId,
+      requestedAudioDeviceId: audioDeviceId
     });
 
     spy.mockReset();
@@ -74,12 +73,10 @@ describe('updateOutgoingMedia()', () => {
 
     /* with no stream */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId, audioDeviceId });
-    expect(spy).toBeCalledWith(/* LogLevels.info, */ 'updating outgoing media', {
-      conversationId: session.conversationId,
-      sessionId: session.id,
-      streamId: undefined,
-      videoDeviceId,
-      audioDeviceId
+    expect(spy).toBeCalledWith(mockSdk, session, 'calledToChangeDevices', {
+      requestedNewMediaStream: undefined,
+      requestedVideoDeviceId: videoDeviceId,
+      requestedAudioDeviceId: audioDeviceId
     });
   });
 
@@ -113,8 +110,14 @@ describe('updateOutgoingMedia()', () => {
       await handler.updateOutgoingMedia({} as IJingleSession, {});
       fail('should have thrown');
     } catch (e) {
-      expect(mockSdk.logger.warn).toHaveBeenCalled();
       expect(e.type).toBe(SdkErrorTypes.invalid_options);
+      expect(e.message).toBe('Options are not valid to update outgoing media');
+      expect(e.details).toEqual({
+        videoDeviceId: undefined,
+        audioDeviceId: undefined,
+        conversationId: undefined,
+        sessionId: undefined
+      });
     }
   });
 
@@ -367,19 +370,19 @@ describe('updateOutputDevice()', () => {
   it('should set the sinkId with the passed in deviceId', async () => {
     const session = new MockSession();
     const deviceId = 'new-output-device';
-    const spy = jest.fn();
-    jest.spyOn(mediaUtils, 'logDeviceChange').mockImplementation();
+    const setSinkIdSpy = jest.fn().mockResolvedValue(undefined);
 
-    session._outputAudioElement = { setSinkId: spy };
+    jest.spyOn(mediaUtils, 'logDeviceChange').mockImplementation();
+    session._outputAudioElement = { setSinkId: setSinkIdSpy };
 
     await handler.updateOutputDevice(session as any, deviceId);
     expect(mediaUtils.logDeviceChange).toHaveBeenCalledWith(
       mockSdk,
       session,
       'changingDevices',
-      { toOutputDeviceId: deviceId }
+      { requestedOutputDeviceId: deviceId }
     );
-    expect(spy).toHaveBeenCalledWith(deviceId);
+    expect(setSinkIdSpy).toHaveBeenCalledWith(deviceId);
   });
 });
 
@@ -541,7 +544,7 @@ describe('handleSessionInit', () => {
 describe('onSessionTerminated', () => {
   it('should clean up outboundStream and emit sessionEnded', () => {
     const session: any = new MockSession();
-    const stream = session._outboundStream = new MockStream();
+    const stream = session._outboundStream = new MockStream(true);
 
     const spy = jest.fn();
     mockSdk.on('sessionEnded', spy);
@@ -617,7 +620,7 @@ describe('endSession', () => {
 
 describe('addMediatoSession', () => {
   it('should add by tracks if has tranceiver functionality', async () => {
-    const stream = new MockStream();
+    const stream = new MockStream(true);
     jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(true);
 
     const mockSession: any = {

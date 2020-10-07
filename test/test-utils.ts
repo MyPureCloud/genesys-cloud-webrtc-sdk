@@ -79,7 +79,12 @@ export class MockSender {
   }
 }
 
-class MockReceiver { }
+class MockReceiver {
+  track: MockTrack;
+  constructor (track: MockTrack) {
+    this.track = track;
+  }
+}
 
 class MockPC extends WildEmitter {
   _mockSession: MockSession;
@@ -101,6 +106,10 @@ class MockPC extends WildEmitter {
   _addSender (track: MockTrack) {
     this._senders.push(new MockSender(track));
   }
+
+  _addReceiver (track: MockTrack) {
+    this._receivers.push(new MockReceiver(track))
+  }
 }
 
 class MockSession extends WildEmitter {
@@ -114,6 +123,7 @@ class MockSession extends WildEmitter {
   _outboundStream: any;
   _screenShareStream: MockStream;
   _outputAudioElement: any;
+  sessionType: SessionTypes;
   accept = jest.fn();
   addStream = jest.fn();
   end = jest.fn();
@@ -122,9 +132,10 @@ class MockSession extends WildEmitter {
   videoMuted: boolean = false;
   audioMuted: boolean = false;
 
-  constructor () {
+  constructor (sessionType?: SessionTypes) {
     super();
     this.id = this.sid;
+    this.sessionType = sessionType;
   }
   addTrack (track: MockTrack) {
     // this.tracks.push(track);
@@ -156,13 +167,16 @@ class MockTrack {
 }
 
 class MockStream {
-  constructor (constraints?: { video?: boolean, audio?: boolean }) {
-    if (!constraints) {
+  constructor (withMediaOrConstraints: { video?: boolean, audio?: boolean } | boolean = false) {
+    /* if true, add both types of media tracks */
+    if (withMediaOrConstraints === true) {
       this._tracks.push(new MockTrack('video'));
-    } else {
-      if (constraints.video) this._tracks.push(new MockTrack('video'));
-      if (constraints.audio) this._tracks.push(new MockTrack('audio'));
-    }
+      this._tracks.push(new MockTrack('audio'));
+      /* we have a `truthy` value */
+    } else if (withMediaOrConstraints) {
+      if (withMediaOrConstraints.video) this._tracks.push(new MockTrack('video'));
+      if (withMediaOrConstraints.audio) this._tracks.push(new MockTrack('audio'));
+    } /* else `falsey`, don't add any tracks */
   }
   id = random();
   _tracks: MockTrack[] = [];

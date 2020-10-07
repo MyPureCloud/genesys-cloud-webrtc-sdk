@@ -526,25 +526,32 @@ describe('updateOutgoingMediaForAllSessions()', () => {
 describe('updateOutputDeviceForAllSessions()', () => {
   it('should log and return if outputDeviceId cannot be found', async () => {
     const outputDeviceId = 'device-id';
+    const screenShareSession = new MockSession(SessionTypes.acdScreenShare);
+    const videoSession = new MockSession(SessionTypes.collaborateVideo);
+
     jest.spyOn(mediaUtils, 'getValidDeviceId').mockResolvedValue(undefined);
-    jest.spyOn(sessionManager, 'getAllActiveSessions');
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue([screenShareSession, videoSession] as any);
+    jest.spyOn(sessionManager, 'getSessionHandler');
 
     await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
 
-    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
-    expect(sessionManager.getAllActiveSessions).not.toHaveBeenCalled();
+    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId, videoSession);
+    expect(sessionManager.getSessionHandler).not.toHaveBeenCalled();
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Output deviceId not found. Not updating output media'),
-      { outputDeviceId }
+      {
+        sessions: [{ conversationId: videoSession.conversationId, sessionId: videoSession.id }],
+        outputDeviceId
+      }
     );
   });
 
   it('should call the handler to update all active, non-screenshare sessions', async () => {
     const outputDeviceId = 'device-id';
     const sessions = [
-      { id: '1', sessionType: SessionTypes.collaborateVideo },
-      { id: '2', sessionType: SessionTypes.softphone },
-      { id: '3', sessionType: SessionTypes.acdScreenShare }
+      new MockSession(SessionTypes.collaborateVideo),
+      new MockSession(SessionTypes.softphone),
+      new MockSession(SessionTypes.acdScreenShare),
     ];
     const mockSessionHandler = { updateOutputDevice: jest.fn() };
 
@@ -554,8 +561,7 @@ describe('updateOutputDeviceForAllSessions()', () => {
 
     await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
 
-    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId);
-    expect(sessionManager.getAllActiveSessions).toHaveBeenCalled();
+    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId, sessions[0], sessions[1]);
 
     sessions
       .filter(session => session.sessionType !== SessionTypes.acdScreenShare)

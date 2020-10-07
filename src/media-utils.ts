@@ -42,32 +42,51 @@ export const startDisplayMedia = function (): Promise<MediaStream> {
 export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
   const constraints: any = getStandardConstraints(opts);
 
-  const conversationId = opts.session && opts.session.conversationId;
-  const sessionId = opts.session && opts.session.id;
+  const conversationId = opts.session?.conversationId;
+  const sessionId = opts.session?.id;
 
   // if we are requesting video
   if (opts.video || opts.video === null) {
-    const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, conversationId);
+    const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, opts.session);
     if (videoDeviceId) {
       sdk.logger.info('Requesting video with deviceId', { deviceId: videoDeviceId, conversationId, sessionId });
       constraints.video.deviceId = {
-        exact: videoDeviceId
+        ideal: videoDeviceId
       };
     }
   }
 
   // if we are requesting audio
   if (opts.audio || opts.audio === null) {
-    const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, conversationId);
+    const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, opts.session);
     if (audioDeviceId) {
       sdk.logger.info('Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId, sessionId });
       constraints.audio.deviceId = {
-        exact: audioDeviceId
+        ideal: audioDeviceId
       };
     }
   }
 
-  return window.navigator.mediaDevices.getUserMedia(constraints);
+  const loggingExtras = {
+    constraints,
+    opts,
+    sessionId,
+    conversationId,
+    availableDevices: getCachedEnumeratedDevices()
+  };
+
+  /* if there was a session, we don't want to log it */
+  delete loggingExtras.opts.session;
+
+  /* log what we are about to request */
+  sdk.logger.info('requesting getUserMedia', { ...loggingExtras });
+
+  return window.navigator.mediaDevices.getUserMedia(constraints)
+    .catch(e => {
+      /* get the current devices (because they could have changed by the time we get here) */
+      sdk.logger.error(e, { ...loggingExtras, availableDevices: getCachedEnumeratedDevices() });
+      throw e;
+    });
 };
 
 /**
@@ -248,6 +267,18 @@ export const findCachedOutputDeviceById = (id?: string): MediaDeviceInfo | undef
   return getCachedEnumeratedDevices().outputDevices.find(d => d.deviceId === id);
 };
 
+export type LogDevicesAction =
+  /* devices used on session start */
+  'sessionStarted' |
+  /* when a function to update any type of media is called */
+  'calledToChangeDevices' |
+  /* right before media is updated */
+  'changingDevices' |
+  /* called after media has been updated successfully */
+  'successfullyChangedDevices' |
+  /* called right before unmuting video (since we have to spin up new media) */
+  'unmutingVideo';
+
 /**
  * Utility to log device changes. It will use the passed in `from` track _or_
  *  look up the currently used devices via the sender (based on labels) to see
@@ -267,30 +298,32 @@ export const findCachedOutputDeviceById = (id?: string): MediaDeviceInfo | undef
 export function logDeviceChange (
   sdk: GenesysCloudWebrtcSdk,
   session: IJingleSession,
-  action: 'sessionStarted' | 'changingDevices',
+  action: LogDevicesAction,
   devicesChange: {
-    toVideoTrack?: MediaStreamTrack,
-    fromVideoTrack?: MediaStreamTrack,
-    toAudioTrack?: MediaStreamTrack,
-    fromAudioTrack?: MediaStreamTrack,
-    toOutputDeviceId?: string
+    toVideoTrack?: MediaStreamTrack;
+    toAudioTrack?: MediaStreamTrack;
+    fromVideoTrack?: MediaStreamTrack;
+    fromAudioTrack?: MediaStreamTrack;
+    requestedOutputDeviceId?: string;
+    requestedVideoDeviceId?: string | boolean;
+    requestedAudioDeviceId?: string | boolean;
+    requestedNewMediaStream?: MediaStream;
   } = {}
 ): void {
   let currentVideoTrack: MediaStreamTrack;
   let currentAudioTrack: MediaStreamTrack;
   const currentOutputDeviceId: string = session._outputAudioElement?.sinkId;
   const screenShareTrackId = session._screenShareStream?.getVideoTracks()[0]?.id;
+  const pcSenders = session.pc.getSenders().filter(s => s.track && s.track.id && s.track.id !== screenShareTrackId);
 
   /* grab the currect device being used */
-  session.pc.getSenders()
-    .filter(s => s.track && s.track.id !== screenShareTrackId)
-    .forEach(sender => {
-      if (sender.track.kind === 'audio') {
-        currentAudioTrack = sender.track;
-      } else /* if (sender.track.kind === 'video') */ {
-        currentVideoTrack = sender.track;
-      }
-    });
+  pcSenders.forEach(sender => {
+    if (sender.track.kind === 'audio') {
+      currentAudioTrack = sender.track;
+    } else /* if (sender.track.kind === 'video') */ {
+      currentVideoTrack = sender.track;
+    }
+  });
 
   const availableDevices = getCachedEnumeratedDevices();
   const details = {
@@ -303,14 +336,32 @@ export function logDeviceChange (
     /* the device being switched from and/or currently being used.
       if a track was passed in, we will assume the caller knows what it is doing
       and we will use that track for logging. Otherwise, we will look up the device */
-    currentVideoDevice: devicesChange.fromVideoTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromVideoTrack.label } : findCachedDeviceByTrackLabel(currentVideoTrack),
-    currentAudioDevice: devicesChange.fromAudioTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromAudioTrack.label } : findCachedDeviceByTrackLabel(currentAudioTrack),
+    currentVideoDevice: devicesChange.fromVideoTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromVideoTrack.label }
+      : findCachedDeviceByTrackLabel(currentVideoTrack),
+    currentAudioDevice: devicesChange.fromAudioTrack ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromAudioTrack.label }
+      : findCachedDeviceByTrackLabel(currentAudioTrack),
     currentOutputDevice: findCachedOutputDeviceById(currentOutputDeviceId),
+
+    /* current tracks */
+    currentVideoTrack,
+    currentAudioTrack,
 
     /* the device being switched to */
     newVideoDevice: findCachedDeviceByTrackLabel(devicesChange.toVideoTrack),
     newAudioDevice: findCachedDeviceByTrackLabel(devicesChange.toAudioTrack),
-    newOutputDevice: findCachedOutputDeviceById(devicesChange.toOutputDeviceId),
+    newOutputDevice: findCachedOutputDeviceById(devicesChange.requestedOutputDeviceId),
+
+    /* the track being switched to */
+    newVideoTrack: devicesChange.toVideoTrack,
+    newAudioTrack: devicesChange.toAudioTrack,
+
+    /* potential media streamTracks we _want_ to switch to */
+    requestedNewMediaStreamTracks: devicesChange.requestedNewMediaStream?.getTracks(),
+
+    /* deviceIds requested */
+    requestedOutputDeviceId: devicesChange.requestedOutputDeviceId,
+    requestedVideoDeviceId: devicesChange.requestedVideoDeviceId,
+    requestedAudioDeviceId: devicesChange.requestedAudioDeviceId,
 
     /* sdk defaults */
     sdkDefaultVideoDeviceId: sdk._config.defaultVideoDeviceId,
@@ -319,14 +370,33 @@ export function logDeviceChange (
 
     /* other random stuff */
     currentAudioElementSinkId: currentOutputDeviceId,
-    currentSessionSenderTracks: session.pc.getSenders().filter(s => s.track).map(s => s.track),
-    currentSessionReceiverTracks: session.pc.getReceivers().filter(s => s.track).map(s => s.track),
+    currentSessionSenderTracks: pcSenders.map(s => s.track),
+    currentSessionReceiverTracks: session.pc.getReceivers().filter(s => s.track && s.track.id).map(s => s.track),
 
     /* other potentially useful information to log */
     sessionVideoMute: session.videoMuted,
     sessionAudioMute: session.audioMuted,
-    hasDevicePermissions: hasDevicePermissions(availableDevices)
+    hasDevicePermissions: hasDevicePermissions(availableDevices),
+    hasOutputDeviceSupport: hasOutputDeviceSupport()
   };
+
+  const keysToIgnoreIfBlank: Array<keyof typeof details> = [
+    'newVideoTrack',
+    'newAudioTrack',
+    'requestedAudioDeviceId',
+    'requestedVideoDeviceId',
+    'requestedOutputDeviceId',
+    'requestedNewMediaStreamTracks'
+  ];
+
+  /* trim off parts of logs that aren't needed if they are blank */
+  Object.keys(details)
+    .filter(k => keysToIgnoreIfBlank.includes(k as keyof typeof details))
+    .forEach(k => {
+      if (details[k] === undefined) {
+        delete details[k];
+      }
+    });
 
   sdk.logger.info('media devices changing for session', details);
 }
@@ -463,8 +533,17 @@ function hasDevicePermissions (devices: MediaDeviceInfo[] | IEnumeratedDevices):
  * @param kind desired device kind
  * @param deviceId `deviceId` for specific device, `true` for sdk default device, or `null` for system default
  */
-export async function getValidDeviceId (sdk: GenesysCloudWebrtcSdk, kind: MediaDeviceKind, deviceId: string | boolean | null, conversationId?: string): Promise<string> {
+export async function getValidDeviceId (
+  sdk: GenesysCloudWebrtcSdk,
+  kind: MediaDeviceKind,
+  deviceId: string | boolean | null,
+  ...sessions: IJingleSession[]
+): Promise<string> {
   const devices = await getEnumeratedDevices(sdk);
+  const sessionInfos: Array<{ conversationId: string, sessionId: string }> =
+    sessions
+      .filter(s => s)
+      .map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
 
   let availableDevices: MediaDeviceInfo[];
   let sdkConfigDefault: string | null;
@@ -489,7 +568,7 @@ export async function getValidDeviceId (sdk: GenesysCloudWebrtcSdk, kind: MediaD
   // log if we didn't find the requested deviceId
   if (!foundDevice) {
     if (typeof deviceId === 'string') {
-      sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, conversationId });
+      sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, sessionInfos });
     }
 
     // then try to find the sdk default device (if it is not `null`)
@@ -497,13 +576,13 @@ export async function getValidDeviceId (sdk: GenesysCloudWebrtcSdk, kind: MediaD
       foundDevice = availableDevices.find((d: MediaDeviceInfo) => d.deviceId === sdkConfigDefault);
       // log if we couldn't find the sdk default device
       if (!foundDevice) {
-        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, conversationId });
+        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, sessionInfos });
       }
     }
   }
 
   if (!foundDevice) {
-    sdk.logger.info(`Using the system default ${kind} device`, { conversationId });
+    sdk.logger.info(`Using the system default ${kind} device`, { sessionInfos });
 
     /*
       SANITY: There is no way to request "default" output device, so

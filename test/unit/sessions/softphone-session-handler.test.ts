@@ -134,8 +134,8 @@ describe('acceptSesion', () => {
     const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia');
 
     const element = {};
-    const mockOutgoingStream = new MockStream();
-    const mockIncomingStream = new MockStream();
+    const mockOutgoingStream = new MockStream({ audio: true });
+    const mockIncomingStream = new MockStream({ audio: true });
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
@@ -161,11 +161,11 @@ describe('acceptSesion', () => {
     const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia');
 
     const defaultElement = {};
-    const defaultStream = new MockStream();
+    const defaultStream = new MockStream({ audio: true });
 
     mockSdk._config.defaultAudioElement = defaultElement as any;
     mockSdk._config.defaultAudioStream = defaultStream as any;
-    const mockIncomingStream = new MockStream();
+    const mockIncomingStream = new MockStream({ audio: true });
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
@@ -187,10 +187,10 @@ describe('acceptSesion', () => {
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
-    const createdStream = new MockStream();
+    const createdStream = new MockStream({ audio: true });
     const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(createdStream as any);
 
-    const mockIncomingStream = new MockStream();
+    const mockIncomingStream = new MockStream({ audio: true });
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];

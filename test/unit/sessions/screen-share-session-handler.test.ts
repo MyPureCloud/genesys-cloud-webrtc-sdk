@@ -129,7 +129,7 @@ describe('handleSessionInit', () => {
     jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit').mockImplementation();
     const acceptSpy = jest.spyOn(handler, 'acceptSession');
 
-    const mockStream = (new MockStream() as any);
+    const mockStream = (new MockStream(true) as any);
     handler['_screenStreamPromise'] = Promise.resolve(mockStream);
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
@@ -149,7 +149,7 @@ describe('handleSessionInit', () => {
 
   it('should setup a terminated listener to stop _screenShareStream', async () => {
     const session: any = new MockSession();
-    const stream = (new MockStream() as any);
+    const stream = (new MockStream(true) as any);
     handler['_screenStreamPromise'] = Promise.resolve(stream);
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 

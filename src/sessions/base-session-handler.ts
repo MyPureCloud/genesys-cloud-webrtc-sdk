@@ -40,7 +40,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async proceedWithSession (session: IPendingSession): Promise<any> {
-    this.log(LogLevels.info, 'proceeding with proposed session', { conversationId: session.conversationId });
+    this.log(LogLevels.info, 'proceeding with proposed session', { conversationId: session.conversationId, sessionId: session.id });
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
@@ -97,7 +97,7 @@ export default abstract class BaseSessionHandler {
   }
 
   onSessionTerminated (session: IJingleSession, reason: IJingleReason): void {
-    this.log(LogLevels.info, 'handling session terminated', { conversationId: session.conversationId, reason });
+    this.log(LogLevels.info, 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id });
     if (session._outboundStream) {
       session._outboundStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     }
@@ -146,11 +146,19 @@ export default abstract class BaseSessionHandler {
   }
 
   async setVideoMute (session: IJingleSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, { conversationId: session.conversationId, params });
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params
+    });
   }
 
   async setAudioMute (session: IJingleSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, { conversationId: session.conversationId, params });
+    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params
+    });
   }
 
   /**
@@ -160,18 +168,20 @@ export default abstract class BaseSessionHandler {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): Promise<any> {
-    this.log(LogLevels.info, 'updating outgoing media', {
-      conversationId: session.conversationId,
-      sessionId: session.id,
-      streamId: options.stream ? options.stream.id : undefined,
-      videoDeviceId: options.videoDeviceId,
-      audioDeviceId: options.audioDeviceId
+    logDeviceChange(this.sdk, session, 'calledToChangeDevices', {
+      requestedNewMediaStream: options.stream,
+      requestedVideoDeviceId: options.videoDeviceId,
+      requestedAudioDeviceId: options.audioDeviceId
     });
 
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
-      this.log(LogLevels.warn, 'Options are not valid to update outgoing media', { videoDeviceId: options.videoDeviceId, audioDeviceId: options.audioDeviceId, conversationId: session.conversationId });
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options not valid to update outgoing media');
+      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
+        videoDeviceId: options.videoDeviceId,
+        audioDeviceId: options.audioDeviceId,
+        conversationId: session.conversationId,
+        sessionId: session.id
+      });
     }
 
     const updateVideo = (options.stream || options.videoDeviceId !== undefined) && !session.videoMuted;
@@ -245,11 +255,17 @@ export default abstract class BaseSessionHandler {
           */
           const userId = this.sdk._personDetails.id;
           if (updateAudio) {
-            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for audio', { sessionId: session.id, conversationId: session.conversationId });
+            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for audio', {
+              sessionId: session.id,
+              conversationId: session.conversationId
+            });
             session.mute(userId, 'audio');
           }
           if (updateVideo) {
-            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for video', { sessionId: session.id, conversationId: session.conversationId });
+            this.log(LogLevels.warn, 'User denied media permissions. Sending mute for video', {
+              sessionId: session.id,
+              conversationId: session.conversationId
+            });
             session.mute(userId, 'video');
           }
         }
@@ -260,7 +276,11 @@ export default abstract class BaseSessionHandler {
     /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
     stream.getTracks().forEach(track => {
       if (session.videoMuted && track.kind === 'video') {
-        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', { trackId: track.id, sessionId: session.id, conversationId: session.conversationId });
+        this.log(LogLevels.warn, 'Not using video track from stream because the session has video on mute', {
+          trackId: track.id,
+          sessionId: session.id,
+          conversationId: session.conversationId
+        });
         track.stop();
         stream.removeTrack(track);
       }
@@ -296,9 +316,11 @@ export default abstract class BaseSessionHandler {
         session._outboundStream.removeTrack(track);
       }
     });
+    logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
   }
 
-  async updateOutputDevice (session: IJingleSession, deviceId: string): Promise<undefined> {
+  async updateOutputDevice (session: IJingleSession, deviceId: string): Promise<void> {
+    logDeviceChange(this.sdk, session, 'calledToChangeDevices', { requestedOutputDeviceId: deviceId });
     const el: ExtendedHTMLAudioElement = session._outputAudioElement as ExtendedHTMLAudioElement;
 
     if (!el) {
@@ -311,8 +333,8 @@ export default abstract class BaseSessionHandler {
       throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
     }
 
-    logDeviceChange(this.sdk, session, 'changingDevices', { toOutputDeviceId: deviceId });
-    return el.setSinkId(deviceId);
+    logDeviceChange(this.sdk, session, 'changingDevices', { requestedOutputDeviceId: deviceId });
+    return el.setSinkId(deviceId).then(() => logDeviceChange(this.sdk, session, 'successfullyChangedDevices'));
   }
 
   /**

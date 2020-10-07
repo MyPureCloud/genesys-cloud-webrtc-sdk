@@ -310,7 +310,7 @@ describe('Client', () => {
     });
 
     it('should call session manager to start screenshare', async () => {
-      const media = new MockStream();
+      const media = new MockStream({ video: true });
       const { sdk } = mockApis({ guestSdk: true, withMedia: media });
 
       await sdk.initialize({ securityCode: '123454' });

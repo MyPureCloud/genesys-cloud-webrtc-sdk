@@ -151,15 +151,19 @@ export class SessionManager {
   }
 
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
-    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId) || '';
+    const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
+    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId, ...sessions) || '';
+    const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
 
     if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
-      this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { outputDeviceId });
+      this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { sessions: ids, outputDeviceId });
       return;
     }
 
-    const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
-    this.log(LogLevels.info, 'Updating output deviceId for all active sessions', { sessions: sessions.map(s => s.id), outputDeviceId: _outputDeviceId });
+    this.log(LogLevels.info, 'Updating output deviceId for all active sessions', {
+      sessions: ids,
+      outputDeviceId: _outputDeviceId
+    });
 
     const promises = sessions.map(session => {
       const handler = this.getSessionHandler({ jingleSession: session });
