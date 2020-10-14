@@ -1,3 +1,4 @@
+
 import { GenesysCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
@@ -13,9 +14,9 @@ import {
   IStartSessionParams,
   IAcceptSessionRequest,
   ISessionMuteRequest,
-  IJingleSession,
   IUpdateOutgoingMedia,
-  IStartVideoSessionParams
+  IStartVideoSessionParams,
+  IExtendedMediaSession
 } from '../types/interfaces';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -54,7 +55,7 @@ export class SessionManager {
   handleConversationUpdate (update: ConversationUpdate) {
     // only handle a conversation update if we can associate it with a session
     const sessions = Object.values(this.jingle.sessions);
-    (sessions as any).forEach((session: IJingleSession) => {
+    (sessions as any).forEach((session: IExtendedMediaSession) => {
       if (session.conversationId === update.id) {
         const handler = this.getSessionHandler({ sessionType: session.sessionType });
 
@@ -75,12 +76,12 @@ export class SessionManager {
     delete this.pendingSessions[sessionId];
   }
 
-  getSession (params: { id?: string, conversationId?: string }): IJingleSession {
-    let session: IJingleSession;
+  getSession (params: { id?: string, conversationId?: string }): IExtendedMediaSession {
+    let session: IExtendedMediaSession;
     if (params.id) {
-      session = this.jingle.sessions[params.id];
+      session = this.jingle.sessions[params.id] as IExtendedMediaSession;
     } else {
-      session = Object.values(this.jingle.sessions as IJingleSession[]).find((s: IJingleSession) => s.conversationId === params.conversationId);
+      session = (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
     }
 
     if (!session) {
@@ -90,9 +91,9 @@ export class SessionManager {
     return session;
   }
 
-  getAllActiveSessions (): IJingleSession[] {
-    return Object.values<IJingleSession>(this.jingle.sessions)
-      .filter((session: IJingleSession) => session.active);
+  getAllActiveSessions (): IExtendedMediaSession[] {
+    return Object.values<IExtendedMediaSession>(this.jingle.sessions as {key: IExtendedMediaSession})
+      .filter((session: IExtendedMediaSession) => session.state === 'active');
   }
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
@@ -232,7 +233,7 @@ export class SessionManager {
     await sessionHandler.rejectPendingSession(pendingSession);
   }
 
-  async onSessionInit (session: IJingleSession) {
+  async onSessionInit (session: IExtendedMediaSession) {
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
 
     if (sessionHandler.disabled) {
@@ -373,7 +374,7 @@ export class SessionManager {
 
           senders.forEach((sender) => {
             sender.track.stop();
-            promises.push(handler.removeMediaFromSession(jingleSession, sender.track));
+            promises.push(handler.removeMediaFromSession(jingleSession, sender));
             jingleSession._outboundStream.removeTrack(sender.track);
           });
         }

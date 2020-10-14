@@ -3,7 +3,7 @@ import StreamingClient from 'genesys-cloud-streaming-client';
 import { GenesysCloudWebrtcSdk } from './client';
 import { LogLevels } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
-import { IJingleSession, SubscriptionEvent } from './types/interfaces';
+import { IExtendedMediaSession, SubscriptionEvent } from './types/interfaces';
 import { ConversationUpdate } from './types/conversation-update';
 
 /**
@@ -82,7 +82,7 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
   on('rtcSessionError', this.emit.bind(this, 'error'));
   on('cancelIncomingRtcSession', (sessionId: string) => this.emit('cancelPendingSession', sessionId));
-  on('handledIncomingRtcSession', (session: IJingleSession) => this.emit('handledPendingSession', session));
+  on('handledIncomingRtcSession', (session: IExtendedMediaSession) => this.emit('handledPendingSession', session));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
   // other events

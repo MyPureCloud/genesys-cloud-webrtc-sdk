@@ -1,13 +1,13 @@
 import WebSocket from 'ws';
 import nock from 'nock';
-import WildEmitter from 'wildemitter';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
 import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
 import { SessionTypes, LogLevels } from '../src/types/enums';
-import { GenesysCloudWebrtcSdk } from '../src/client';
+import { GenesysCloudWebrtcSdk } from '../src/index';
+import { EventEmitter } from 'events';
 
 declare var global: {
   window: any,
@@ -27,7 +27,12 @@ Object.defineProperty(global, 'crypto', {
   }
 });
 
-export class SimpleMockSdk extends WildEmitter {
+export class SimpleMockSdk extends EventEmitter {
+  constructor () {
+    super();
+    this.on(EventEmitter.errorMonitor, () => null);
+  }
+
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
     logLevel: LogLevels.debug,
@@ -86,11 +91,10 @@ class MockReceiver {
   }
 }
 
-class MockPC extends WildEmitter {
+class MockPC extends EventTarget {
   _mockSession: MockSession;
   _senders: MockSender[] = [];
   _receivers: MockReceiver[] = [];
-  pc: any = {};
   constructor (session: MockSession) {
     super();
     // this._mockSession = session;
@@ -108,11 +112,11 @@ class MockPC extends WildEmitter {
   }
 
   _addReceiver (track: MockTrack) {
-    this._receivers.push(new MockReceiver(track))
+    this._receivers.push(new MockReceiver(track));
   }
 }
 
-class MockSession extends WildEmitter {
+class MockSession extends EventEmitter {
   streams: MockStream[] = [];
   tracks: MockTrack[] = [];
   id: any;
@@ -242,7 +246,6 @@ interface MockApiReturns {
   sendLogs: nock.Scope;
   patchConversation: nock.Scope;
   sdk: GenesysCloudWebrtcSdk;
-  websocket: WebSocket;
   mockCustomerData: ICustomerData;
 }
 
@@ -517,6 +520,12 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     sdk._config.optOutOfTelemetry = true;
   }
 
+  setupWss({ guestSdk, failStreaming });
+
+  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, mockCustomerData, notificationSubscription };
+}
+
+function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
   if (wss) {
     wss.close();
     wss = null;
@@ -524,7 +533,6 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   wss = new WebSocket.Server({
     port: 1234
   });
-  let websocket: WebSocket;
 
   let openSockets = 0;
   const hash = random().toString().substr(0, 4);
@@ -553,8 +561,8 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     fs.writeFileSync(fileName, JSON.stringify(json));
   };
 
-  wss.on('connection', function (ws: WebSocket & { __authSent: boolean }) {
-    websocket = ws;
+  wss.on('connection', function (websocket: WebSocket & { __authSent: boolean }) {
+    ws = websocket;
     ws.on('message', function (msg: string) {
       log('IN', msg);
       // console.error('⬆️', msg);
@@ -567,22 +575,22 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       };
       if (msg.indexOf('<open') === 0) {
         send('<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" xmlns:stream="http://etherx.jabber.org/streams" version="1.0" from="hawk" id="d6f681a3-358c-49df-819f-b231adb3cb97" xml:lang="en"></open>');
-        if (ws.__authSent) {
+        if (websocket.__authSent) {
           send(`<stream:features xmlns:stream="http://etherx.jabber.org/streams"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"></bind><session xmlns="urn:ietf:params:xml:ns:xmpp-session"></session></stream:features>`);
         } else {
-          if (guestSdk) {
+          if (opts.guestSdk) {
             send('<stream:features xmlns:stream="http://etherx.jabber.org/streams"><mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism>ANONYMOUS</mechanism></mechanisms></stream:features>');
           } else {
             send('<stream:features xmlns:stream="http://etherx.jabber.org/streams"><mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism>PLAIN</mechanism></mechanisms></stream:features>');
           }
         }
       } else if (msg.indexOf('<auth') === 0) {
-        if (failStreaming) {
+        if (opts.failStreaming) {
           send('<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></failure>');
         } else {
           send('<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>');
         }
-        ws.__authSent = true;
+        websocket.__authSent = true;
       } else if (msg.indexOf('<bind') !== -1) {
         const idRegexp = /id="(.*?)"/;
         const id = idRegexp.exec(msg)[1];
@@ -605,19 +613,18 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
         }
       } else if (msg.indexOf('<close') === 0) {
         send(`<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" version="1.0"></close>`);
+        ws.close();
       } else {
         console.warn('Incoming stanza that does not have a test handler to send a response', msg);
       }
     });
   });
   Object.defineProperty(global.window, 'WebSocket', { value: WebSocket, writable: true });
-  ws = websocket;
-
-  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, websocket, mockCustomerData, notificationSubscription };
 }
 
 export {
   mockApis,
+  setupWss,
   wss,
   ws,
   random,

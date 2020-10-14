@@ -1,9 +1,10 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IJingleSession } from '../types/interfaces';
+import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
 import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 import { pick } from 'lodash';
+import { JingleReason } from 'stanza/protocol';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
@@ -20,14 +21,14 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async handleSessionInit (session: IJingleSession): Promise<void> {
+  async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
     if (this.sdk._config.autoConnectSessions) {
       return this.acceptSession(session, { id: session.id });
     }
   }
 
-  async acceptSession (session: IJingleSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
     if (!stream) {
       this.log(LogLevels.debug, 'No mediaStream provided, starting media', { conversationId: session.conversationId });
@@ -42,8 +43,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
       session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, session.conversationId);
     } else {
-      session.on('peerStreamAdded', (session: IJingleSession, peerStream: MediaStream) => {
-        session._outputAudioElement = attachAudioMedia(this.sdk, peerStream, element, session.conversationId);
+      session.on('peerTrackAdded', (track: MediaStreamTrack, stream: MediaStream) => {
+        session._outputAudioElement = attachAudioMedia(this.sdk, stream, element, session.conversationId);
       });
     }
 
@@ -51,7 +52,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     logDeviceChange(this.sdk, session, 'sessionStarted');
   }
 
-  async endSession (session: IJingleSession): Promise<void> {
+  async endSession (session: IExtendedMediaSession): Promise<void> {
     try {
       const participant = await this.getParticipantForSession(session);
 
@@ -60,12 +61,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         data: JSON.stringify({ state: 'disconnected' })
       });
 
-      const terminatedPromise = new Promise<void>((resolve, reject) => {
+      const terminatedPromise = new Promise<JingleReason>((resolve) => {
         session.once('terminated', (reason) => {
           return resolve(reason);
-        });
-        session.once('error', error => {
-          return reject(error);
         });
       });
 
@@ -76,7 +74,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async endSessionFallback (session: IJingleSession): Promise<void> {
+  async endSessionFallback (session: IExtendedMediaSession): Promise<void> {
     this.log(LogLevels.info, 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId });
     try {
       await super.endSession(session);
@@ -85,7 +83,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async getParticipantForSession (session: IJingleSession): Promise<IConversationParticipant> {
+  async getParticipantForSession (session: IExtendedMediaSession): Promise<IConversationParticipant> {
     if (!session.pcParticipant) {
       const { body } = await requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}`);
       const participants: IConversationParticipant[] = body.participants.map((p: any) => {
@@ -106,7 +104,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return session.pcParticipant;
   }
 
-  async setAudioMute (session: IJingleSession, params: ISessionMuteRequest) {
+  async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest) {
     try {
       this.log(LogLevels.info, 'Muting audio', { conversationId: session.conversationId });
       const participant = await this.getParticipantForSession(session);

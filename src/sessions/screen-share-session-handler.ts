@@ -1,5 +1,5 @@
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams, IJingleSession, IUpdateOutgoingMedia } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
 import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
 import { throwSdkError, parseJwt, isAcdJid } from '../utils';
@@ -36,7 +36,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     /* request the display now, but handle it on session-init */
     this._screenStreamPromise = startDisplayMedia();
 
-    this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
+    await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
 
     return { conversationId: conversation.id };
   }
@@ -46,7 +46,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     await this.proceedWithSession(pendingSession);
   }
 
-  onTrackEnd (session: IJingleSession) {
+  onTrackEnd (session: IExtendedMediaSession) {
     this.log(LogLevels.debug, 'Track ended');
     if (checkAllTracksHaveEnded(session._screenShareStream)) {
       return this.endSession(session);
@@ -57,11 +57,11 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     mediaStream?.getTracks().forEach(t => t.stop());
   }
 
-  async handleSessionInit (session: IJingleSession): Promise<void> {
+  async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     try {
       await super.handleSessionInit(session);
 
-      session.on('terminated', (session: IJingleSession) => {
+      session.on('terminated', () => {
         /* just in case our session termintated, but didn't set _screenShareStream */
         this.endTracks(session._screenShareStream);
         /* cleanup our local state */
@@ -110,7 +110,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     }
   }
 
-  public updateOutgoingMedia (session: IJingleSession, options: IUpdateOutgoingMedia): never {
+  public updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
     this.log(LogLevels.warn, 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }

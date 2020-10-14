@@ -126,7 +126,9 @@ function getInputValue (inputId) {
 /* --------------------------- */
 
 function ready () {
-  webrtcSdk.startScreenShare();
+  if (!webrtcSdk._personDetails) {
+    webrtcSdk.startScreenShare();
+  }
   utils.writeToLog('webrtcSDK ready event emitted');
 }
 

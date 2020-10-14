@@ -217,33 +217,17 @@ Session level events are events emitted from the `session` objects themselves,
 not the SDK instance library. These can be used if you want lower level access
 and control.
 
-`session.on('terminated', (session, reason) => {})` - the session was terminated
+`session.on('terminated', (reason) => {})` - the session was terminated
 
 - arguments
-    - `Session session` - the session that triggered the event
     - `string reason` - the reason that the session was terminated; valid values
   are found [here](http://xmpp.org/extensions/xep-0166.html#def-reason)
 
-`session.on('change:connectionState', (session, connectionState) => {})` - the session's connection
+`session.on('connectionState', (connectionState) => {})` - the session's connection
 state has changed
 
 - arguments
-    - `Session session` - the session that triggered the event
     - `string connectionState`
-
-`session.on('change:interrupted', (session, interrupted) => {})` - the session's interrupted state
-has changed
-
-- arguments
-     - `Session session` - the session that triggered the event
-     - `Boolean interrupted` - the new interrupted state of the session
-
-`session.on('change:active', (session, active) => {})` - the session's active state
-has changed
-
-- arguments
-     - `session` - the session that triggered the event
-     - `Boolean active` - the new active state of the session
 
 `session.on('endOfCandidates' () => {})` - signals the end of candidate gathering; used to check for
 potential connection issues

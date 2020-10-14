@@ -1,14 +1,14 @@
 {
   "name": "genesys-cloud-webrtc-sdk",
-  "version": "4.1.2",
+  "version": "5.0.0",
   "description": "client for the interfacing with Genesys Cloud WebRTC",
   "repository": "https://github.com/mypurecloud/genesys-cloud-webrtc-sdk",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "dist/src/client.js",
-  "typings": "dist/src/client.d.ts",
+  "main": "dist/src/index.js",
+  "typings": "dist/src/index.d.ts",
   "files": [
     "dist"
   ],
@@ -46,14 +46,14 @@
     "browserama": "^3.1.1",
     "core-js": "^3.6.5",
     "genesys-cloud-client-logger": "^1.0.3",
-    "genesys-cloud-streaming-client": "^12.0.2",
+    "genesys-cloud-streaming-client": "^13.0.0-branch.stanza12.14",
     "lodash": "^4.17.15",
     "purecloud-platform-client-v2": "^92.0.0",
     "safe-json-stringify": "^1.2.0",
+    "strict-event-emitter-types": "^2.0.0",
     "superagent": "^6.1.0",
-    "uuid": "^3.3.2",
-    "webrtc-stats-gatherer": "^8.0.2",
-    "wildemitter": "^1.2.1"
+    "typescript": "^4.0.5",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
@@ -91,7 +91,6 @@
     "ts-jest": "^26.0.0",
     "tslint": "^5.18.0",
     "tslint-config-semistandard": "^8.0.1",
-    "typescript": "^3.9.6",
     "uglify-js": "^3.6.0",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",
