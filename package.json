@@ -48,7 +48,7 @@
     "genesys-cloud-client-logger": "^1.0.3",
     "genesys-cloud-streaming-client": "^12.0.2",
     "lodash": "^4.17.15",
-    "purecloud-platform-client-v2": "^92.0.0",
+    "purecloud-platform-client-v2": "^96.0.0",
     "safe-json-stringify": "^1.2.0",
     "superagent": "^6.1.0",
     "uuid": "^3.3.2",
