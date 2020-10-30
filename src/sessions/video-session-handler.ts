@@ -126,6 +126,16 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       .filter((receiver) => receiver.track && receiver.track.kind === 'video')
       .map((receiver) => receiver.track.id);
 
+    /**
+     * Firefox messes the trackIds up from what is actually in the sdp offer.
+     * Need to pull it from the offer to accurately match the track.sinks
+     */
+    const incomingVideoMsidTrackId = this.getTrackIdFromSdp(session.pc.pc.remoteDescription.sdp, 'video');
+
+    if (incomingVideoMsidTrackId) {
+      incomingVideoTrackIds.push(incomingVideoMsidTrackId);
+    }
+
     const onScreenParticipants: Array<{ userId: string }> = [];
     mediaUpdateEvent.eventBody.participants.forEach((updateParticipant: IMediaChangeEventParticipant) => {
       const matchingVideoTracks = updateParticipant.tracks
@@ -161,16 +171,26 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   }
 
   updateSpeakers (session: IJingleSession, mediaUpdateEvent: IMediaChangeEvent) {
-    const incomingVideoTrackIds = session.pc.getReceivers()
+    const incomingAudioTrackIds = session.pc.getReceivers()
       .filter((receiver) => receiver.track && receiver.track.kind === 'audio')
       .map((receiver) => receiver.track.id);
+
+    /**
+     * Firefox messes the trackIds up from what is actually in the sdp offer.
+     * Need to pull it from the offer to accurately match the track.sinks
+     */
+    const incomingAudioMsidTrackId = this.getTrackIdFromSdp(session.pc.pc.remoteDescription.sdp, 'audio');
+
+    if (incomingAudioMsidTrackId) {
+      incomingAudioTrackIds.push(incomingAudioMsidTrackId);
+    }
 
     const speakingParticipants: Array<{ userId: string }> = [];
     mediaUpdateEvent.eventBody.participants.forEach((updateParticipant: IMediaChangeEventParticipant) => {
       const matchingAudioTracks = updateParticipant.tracks
         .filter((track) => track.mediaType === 'audio')
         .filter((track) => {
-          const intersectingTracks = intersection(track.sinks, incomingVideoTrackIds);
+          const intersectingTracks = intersection(track.sinks, incomingAudioTrackIds);
           return intersectingTracks.length;
         });
 
@@ -625,5 +645,31 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     element.autoplay = true;
     element.srcObject = createNewStreamWithTrack(track);
     return element;
+  }
+
+  /**
+   * Parse the trackId from a passed in SDP for a given media type
+   *
+   * SDP will look like:
+   * ```
+   * // global stuff...
+   * m=audio 1 UDP/TLS/RTP/SAVPF 96
+   * // info about the audio offer...
+   * a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071 19d58781-f708-4945-be91-2758052273bd
+   * m=video 1 UDP/TLS/RTP/SAVPF 97 98
+   * // info about the video offer...
+   * a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071 1e3d9e8b-d407-47ee-8dcf-6b5912889a28
+   * ```
+   *
+   * `m=` acts as the delimiter for each audio/video track in the offer
+   * `a=misd:{ID for the media stream} {ID for the media track (this is what we will look for)}
+   *
+   * @param sdp to parse
+   * @param kind media type to look for
+   */
+  getTrackIdFromSdp (sdp: string, kind: 'video' | 'audio'): string {
+    return sdp?.split('m=')
+      .find(s => s.startsWith(kind))?.split('\n')
+      .find(s => s.startsWith('a=msid:'))?.split(' ')[1]?.trim();
   }
 }
