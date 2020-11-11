@@ -341,7 +341,7 @@ export default abstract class BaseSessionHandler {
     if (sender) {
       await sender.replaceTrack(track);
     } else {
-      await (session.addTrack as any)(track);
+      await session.addTrack(track);
       sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
     }
 
