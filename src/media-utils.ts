@@ -47,15 +47,14 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
 
   const conversationId = opts.session?.conversationId;
   const sessionId = opts.session?.id;
+  const isFirefox = browserama.isFirefox;
 
   // if we are requesting video
   if (opts.video || opts.video === null) {
     const videoDeviceId = await getValidDeviceId(sdk, 'videoinput', opts.video, opts.session);
     if (videoDeviceId) {
       sdk.logger.info('Requesting video with deviceId', { deviceId: videoDeviceId, conversationId, sessionId });
-      constraints.video.deviceId = {
-        ideal: videoDeviceId
-      };
+      constraints.video.deviceId = isFirefox ? { exact: videoDeviceId } : { ideal: videoDeviceId };
     }
   }
 
@@ -64,14 +63,13 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
     const audioDeviceId = await getValidDeviceId(sdk, 'audioinput', opts.audio, opts.session);
     if (audioDeviceId) {
       sdk.logger.info('Requesting audio with deviceId', { deviceId: audioDeviceId, conversationId, sessionId });
-      constraints.audio.deviceId = {
-        ideal: audioDeviceId
-      };
+      constraints.audio.deviceId = isFirefox ? { exact: audioDeviceId } : { ideal: audioDeviceId };
     }
   }
 
   const loggingExtras = {
     constraints,
+    isFirefox,
     opts,
     sessionId,
     conversationId,

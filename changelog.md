@@ -5,17 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.2...HEAD)
+
 ### Breaking Changes
 * The SDK no longer supports legacy stream-based actions. Minimum required versions can be found here: https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addTransceiver
 * `SDK.on('error' ...)` has been changed to `SDK.on('sdkError' ...)`
 
+### Changed
+* Remove stats-gatherer so it can be moved up the dependency tree
+* Updated to latest streaming-client
+
 ### Fixed
 * [PCM-1454](https://inindca.atlassian.net/browse/PCM-1454) – fix talker change events in Firefox. Root cause, the trackIds on FF RTCReceivers did not match the conversation tracks[].sinks for participants. Solution is to parse the remote SDP offer to attain the trackId from the msid.
-
-### Maintenance
-* Merged dependabot PRs
-
-### Fixed
 * [PCM-1440](https://inindca.atlassian.net/browse/PCM-1440) – changed `getUserMedia` [constraints](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia) with a deviceId to be `ideal` rather than `exact` to avoid `NotFound` errors if called with a bad deviceId. Example:
 ``` js
 constraints = {
@@ -24,10 +24,7 @@ constraints = {
   }
 };
 ```
-
-### Changed
-* Remove stats-gatherer so it can be moved up the dependency tree
-* Updated to latest streaming-client
+* [PCM-1462](https://inindca.atlassian.net/browse/PCM-1462) – Firefox does not switch camera when deviceId uses `ideal`. Switched to `exact` if the browser is Firefox
 
 ### Maintenance
 * Merged dependabot PRs
