@@ -1,3 +1,4 @@
+
 import { GenesysCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
@@ -13,9 +14,9 @@ import {
   IStartSessionParams,
   IAcceptSessionRequest,
   ISessionMuteRequest,
-  IJingleSession,
   IUpdateOutgoingMedia,
-  IStartVideoSessionParams
+  IStartVideoSessionParams,
+  IExtendedMediaSession
 } from '../types/interfaces';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -33,7 +34,7 @@ export class SessionManager {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
 
     sdk._config.allowedSessionTypes.forEach((sessionType) => {
-      this.log(LogLevels.info, 'Allow session type', { sessionType });
+      this.log('info', 'Allow session type', { sessionType });
       const handler = this.getSessionHandler({ sessionType });
       handler.disabled = false;
     });
@@ -54,7 +55,7 @@ export class SessionManager {
   handleConversationUpdate (update: ConversationUpdate) {
     // only handle a conversation update if we can associate it with a session
     const sessions = Object.values(this.jingle.sessions);
-    (sessions as any).forEach((session: IJingleSession) => {
+    (sessions as any).forEach((session: IExtendedMediaSession) => {
       if (session.conversationId === update.id) {
         const handler = this.getSessionHandler({ sessionType: session.sessionType });
 
@@ -75,12 +76,12 @@ export class SessionManager {
     delete this.pendingSessions[sessionId];
   }
 
-  getSession (params: { id?: string, conversationId?: string }): IJingleSession {
-    let session: IJingleSession;
+  getSession (params: { id?: string, conversationId?: string }): IExtendedMediaSession {
+    let session: IExtendedMediaSession;
     if (params.id) {
-      session = this.jingle.sessions[params.id];
+      session = this.jingle.sessions[params.id] as IExtendedMediaSession;
     } else {
-      session = Object.values(this.jingle.sessions as IJingleSession[]).find((s: IJingleSession) => s.conversationId === params.conversationId);
+      session = (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
     }
 
     if (!session) {
@@ -90,9 +91,9 @@ export class SessionManager {
     return session;
   }
 
-  getAllActiveSessions (): IJingleSession[] {
-    return Object.values<IJingleSession>(this.jingle.sessions)
-      .filter((session: IJingleSession) => session.active);
+  getAllActiveSessions (): IExtendedMediaSession[] {
+    return Object.values<IExtendedMediaSession>(this.jingle.sessions as {key: IExtendedMediaSession})
+      .filter((session: IExtendedMediaSession) => session.state === 'active');
   }
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
@@ -142,7 +143,7 @@ export class SessionManager {
     const { videoDeviceId, audioDeviceId } = options;
     const sessions = this.getAllActiveSessions();
 
-    this.log(LogLevels.info, 'Updating outgoing deviceId(s) for all active sessions', { sessions: sessions.map(s => s.id), videoDeviceId, audioDeviceId });
+    this.log('info', 'Updating outgoing deviceId(s) for all active sessions', { sessions: sessions.map(s => s.id), videoDeviceId, audioDeviceId });
 
     const promises = sessions.map(session => {
       return this.updateOutgoingMedia({ session, videoDeviceId, audioDeviceId });
@@ -156,11 +157,11 @@ export class SessionManager {
     const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
 
     if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
-      this.log(LogLevels.warn, 'Output deviceId not found. Not updating output media', { sessions: ids, outputDeviceId });
+      this.log('warn', 'Output deviceId not found. Not updating output media', { sessions: ids, outputDeviceId });
       return;
     }
 
-    this.log(LogLevels.info, 'Updating output deviceId for all active sessions', {
+    this.log('info', 'Updating output deviceId for all active sessions', {
       sessions: ids,
       outputDeviceId: _outputDeviceId
     });
@@ -184,12 +185,12 @@ export class SessionManager {
       return;
     }
 
-    this.log(LogLevels.info, 'onPendingSession', sessionInfo);
+    this.log('info', 'onPendingSession', sessionInfo);
 
     const existingSession = this.getPendingSession(sessionInfo.sessionId);
 
     if (existingSession) {
-      this.log(LogLevels.info, 'duplicate session invitation, ignoring', sessionInfo);
+      this.log('info', 'duplicate session invitation, ignoring', sessionInfo);
       return;
     }
 
@@ -232,7 +233,7 @@ export class SessionManager {
     await sessionHandler.rejectPendingSession(pendingSession);
   }
 
-  async onSessionInit (session: IJingleSession) {
+  async onSessionInit (session: IExtendedMediaSession) {
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
 
     if (sessionHandler.disabled) {
@@ -302,7 +303,7 @@ export class SessionManager {
             d => d.label === track.label && d.kind.slice(0, 5) === track.kind
           );
           if (deviceExists) {
-            this.log(LogLevels.debug, 'sessions outgoing track still has available device',
+            this.log('debug', 'sessions outgoing track still has available device',
               { deviceLabel: track.label, kind: track.kind, sessionId: session.id });
             return;
           }
@@ -311,7 +312,7 @@ export class SessionManager {
           currVal[track.kind] = true;
           updates.set(session.id, currVal);
 
-          this.log(LogLevels.info, 'session lost media device and will attempt to switch devices',
+          this.log('info', 'session lost media device and will attempt to switch devices',
             { conversationId: session.conversationId, sessionId: session.id, kind: track.kind, deviceLabel: track.label });
         });
 
@@ -324,7 +325,7 @@ export class SessionManager {
         if (!deviceExists) {
           updateOutputDeviceForAllSessions = true;
 
-          this.log(LogLevels.info, 'session lost output device and will attempt to switch device',
+          this.log('info', 'session lost output device and will attempt to switch device',
             { conversationId: session.conversationId, sessionId: session.id, kind: 'output' });
         }
       }
@@ -332,7 +333,7 @@ export class SessionManager {
 
     /* if there are not sessions to updated, log and we are done */
     if (!updates.size && !updateOutputDeviceForAllSessions) {
-      this.log(LogLevels.debug, 'no active sessions have outgoing tracks that need to have the device updated',
+      this.log('debug', 'no active sessions have outgoing tracks that need to have the device updated',
         { sessionIds: sessions.map(s => s.id) });
       return;
     }
@@ -349,7 +350,7 @@ export class SessionManager {
         if (videoDevices.length) {
           opts.videoDeviceId = true;
         } else {
-          this.log(LogLevels.warn, 'no available video devices to switch to. setting video to mute for session',
+          this.log('warn', 'no available video devices to switch to. setting video to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'video' });
           promises.push(
             handler.setVideoMute(jingleSession, { mute: true, id: jingleSession.id })
@@ -362,7 +363,7 @@ export class SessionManager {
         if (audioDevices.length) {
           opts.audioDeviceId = true;
         } else {
-          this.log(LogLevels.warn, 'no available audio devices to switch to. setting audio to mute for session',
+          this.log('warn', 'no available audio devices to switch to. setting audio to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'audio' });
           promises.push(
             handler.setAudioMute(jingleSession, { mute: true, id: jingleSession.id })
@@ -373,7 +374,7 @@ export class SessionManager {
 
           senders.forEach((sender) => {
             sender.track.stop();
-            promises.push(handler.removeMediaFromSession(jingleSession, sender.track));
+            promises.push(handler.removeMediaFromSession(jingleSession, sender));
             jingleSession._outboundStream.removeTrack(sender.track);
           });
         }

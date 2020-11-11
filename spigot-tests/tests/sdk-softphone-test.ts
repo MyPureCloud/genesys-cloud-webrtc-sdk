@@ -1,11 +1,12 @@
 /* global describe, it, beforeEach, after */
 
-import { testUtils, callUtils } from 'genesyscloud-spigot';
-import { getNewSdkConnection } from '../utils/utils';
+import GenesysCloudWebrtcSdk from '../../dist/src/client';
+import { IExtendedMediaSession } from '../../dist/src/types/interfaces';
+import * as testUtils from './utils/test-utils';
 
 const logger = testUtils.getLogger();
 
-let sdk;
+let sdk: GenesysCloudWebrtcSdk;
 let activeCall;
 
 describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
@@ -13,32 +14,27 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     this.timeout(5000);
 
     if (activeCall) {
-      return callUtils.disconnectCall(activeCall);
-    }
-
-    if (sdk) {
-      sdk.off('sessionStarted');
-      sdk.off('cancelPendingSession');
-      sdk.off('pendingSession');
-      sdk._autoConnectSessions = true;
+      return testUtils.disconnectCall(activeCall);
     }
   });
 
-  after(async function () {
+  afterEach(async function () {
     this.timeout(5000);
+    sdk.removeAllListeners();
 
     await sdk.disconnect();
+    sdk = null;
   });
 
-  async function sdkTestCall (phoneNumber, options = {}) {
+  async function sdkTestCall (phoneNumber, options: { inbound?: boolean, manual?: boolean, waitForDisconnect?: boolean, ignore?: boolean, sdkDisconnect?: boolean, user?: string } = {}) {
     this.timeout(this.callDelay + testUtils.getConfig().validationTimeout * 10);
     if (!sdk) {
-      sdk = await getNewSdkConnection();
+      sdk = await testUtils.getNewSdkConnection();
       logger.log('SDK connected', sdk);
     }
     let conversationId;
     // Convert session events to promise so we can await them
-    const sessionEvents = new Promise((resolve, reject) => {
+    const sessionEvents: Promise<IExtendedMediaSession> = new Promise((resolve, reject) => {
       setTimeout(() => reject(new Error(`Timeout waiting for ${options.inbound ? 'inbound' : 'outbound'} call to connect`)), testUtils.getConfig().validationTimeout);
 
       if (options.inbound) {
@@ -50,7 +46,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
           // As soon as a call is requested, accept the propose
           sdk.on('pendingSession', async function (options) {
             conversationId = options.conversationId;
-            sdk.acceptPendingSession(options.id);
+            await sdk.acceptPendingSession(options.id);
           });
         }
       }
@@ -81,7 +77,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
 
     if (phoneNumber && !options.inbound) {
       // Make the call
-      conversationId = await callUtils.makeCall({
+      conversationId = await testUtils.makeCall({
         phoneNumber: options.user ? undefined : phoneNumber,
         callUserId: options.user ? phoneNumber : undefined
       });
@@ -96,26 +92,26 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     }
 
     // convert peerStreamAdded event to promise
-    const peerStreamAdded = new Promise((resolve, reject) => {
+    const peerTrackAdded = new Promise((resolve, reject) => {
       setTimeout(() => reject(new Error('Timeout waiting for remote stream')), testUtils.getConfig().validationTimeout);
       if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
         return resolve(session.streams[0]);
       }
-      session.on('peerStreamAdded', async (session, stream) => {
-        logger.log('peerStreamAdded', { session });
+      session.on('peerTrackAdded', async (track, stream) => {
+        logger.log('peerTrackAdded', { track });
         resolve(stream);
       });
     });
 
     activeCall = conversationId;
-    await peerStreamAdded;
+    await peerTrackAdded;
 
     const autoAttachedMediaEl = await testUtils.pollForTruthy(() => document.querySelector('audio.__pc-webrtc-inbound'));
     if (!autoAttachedMediaEl) {
       throw new Error('Failed to find auto attached media');
     }
     logger.log('validating stream', { activeCall });
-    await callUtils.validateStream(session, autoAttachedMediaEl.srcObject,
+    await testUtils.validateStream(session, autoAttachedMediaEl.srcObject,
       ((options.sdkDisconnect || options.waitForDisconnect) ? null : activeCall), false);
     logger.log('stream validated');
 

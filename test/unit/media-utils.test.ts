@@ -4,7 +4,7 @@ import browserama from 'browserama';
 import * as mediaUtils from '../../src/media-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack, MockSession } from '../test-utils';
-import { IEnumeratedDevices, IJingleSession } from '../../src/types/interfaces';
+import { IEnumeratedDevices, IExtendedMediaSession } from '../../src/types/interfaces';
 import { SdkErrorTypes } from '../../src/types/enums';
 import { startMedia } from '../../src/media-utils';
 
@@ -417,11 +417,12 @@ describe('checkHasTransceiverFunctionality()', () => {
   });
 
   it('should gracefully handle the case where getTransceivers doesnt exist', () => {
-    Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', { get: () => false });
+    let val = null;
+    Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', { get: () => val, set: (v) => val = v });
 
     class Fake { }
 
-    window.RTCPeerConnection = Fake as any;
+    window.RTCPeerConnection = null;
     expect(mediaUtils.checkHasTransceiverFunctionality()).toBeFalsy();
   });
 });
@@ -517,7 +518,7 @@ describe('findCachedOutputDeviceById()', () => {
 describe('logDeviceChange()', () => {
   let devices;
   let action;
-  let mockSession: IJingleSession;
+  let mockSession: IExtendedMediaSession;
   let expectedBasicInfo;
 
   /* utility to add a device to be enumerated _and_ add it to basic info to log */
@@ -537,7 +538,7 @@ describe('logDeviceChange()', () => {
   }
 
   beforeEach(() => {
-    mockSession = new MockSession() as any as IJingleSession;
+    mockSession = new MockSession() as any as IExtendedMediaSession;
     devices = [];
     action = 'sessionStarted';
 
@@ -898,7 +899,7 @@ describe('getEnumeratedDevices()', () => {
   });
 
   it('should throw if enumerateDevices() fails', async () => {
-    mediaDevices.enumerateDevices.mockImplementation(() => { throw new Error('Failure'); })
+    mediaDevices.enumerateDevices.mockImplementation(() => { throw new Error('Failure'); });
 
     try {
       const val = await mediaUtils.getEnumeratedDevices(mockSdk);

@@ -6,10 +6,11 @@ window.crypto = {
 };
 
 import { GenesysCloudWebrtcSdk } from '../../src/client';
-import { IJingleSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
+import { IExtendedMediaSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
+  setupWss,
   wss,
   random,
   closeWebSocketServer,
@@ -34,6 +35,7 @@ function disconnectSdk (sdk: GenesysCloudWebrtcSdk): Promise<any> {
     // wait and then call disconnect
     await wait(50);
     await sdk.disconnect();
+
     // wait for a reply from the server
     await wait(50);
     res();
@@ -52,7 +54,7 @@ describe('Client', () => {
 
   afterEach(async () => {
     if (ws) {
-      (ws as WebSocket).close()
+      (ws as WebSocket).close();
       ws = null;
     }
     if (wss) {
@@ -137,6 +139,7 @@ describe('Client', () => {
     it('fetches org and person details, sets up the streaming connection', async () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
+
       getOrg.done();
       getUser.done();
       getChannel.done();
@@ -145,7 +148,7 @@ describe('Client', () => {
       sdk._config.optOutOfTelemetry = true;
 
       await disconnectSdk(sdk);
-    });
+    }, 30000);
 
     it('should disconnect if initialize is called again', async () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
@@ -158,9 +161,16 @@ describe('Client', () => {
       mockGetUserApi({ nockScope: getUser });
       mockGetChannelApi({ nockScope: getChannel });
       mockNotificationSubscription({ nockScope: notificationSubscription });
-      await sdk.initialize();
-      expect(disconnectSpy).toHaveBeenCalled();
+      const promise = new Promise((resolve) => {
+        sdk.once('disconnected', async () => {
+          setupWss();
+          expect(disconnectSpy).toHaveBeenCalled();
+          resolve();
+        });
+      });
 
+      await sdk.initialize();
+      await promise;
       await disconnectSdk(sdk);
     });
 
@@ -292,7 +302,11 @@ describe('Client', () => {
         await promise;
       }
 
-      await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
+      try {
+        await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
+      } catch (e) {
+        console.info('got an error as expected');
+      }
 
       await disconnectSdk(sdk);
     });
@@ -518,7 +532,7 @@ describe('Client', () => {
       const { sdk } = mockApis();
       const options: IUpdateOutgoingMedia = {
         sessionId: 'session-id',
-        session: {} as IJingleSession,
+        session: {} as IExtendedMediaSession,
         stream: {} as MediaStream,
         videoDeviceId: 'video-id',
         audioDeviceId: 'audio-id'
@@ -591,7 +605,6 @@ describe('Client', () => {
         audioDeviceId: options.audioDeviceId
       });
       expect(updateOutputDeviceForAllSessionsSpy).toHaveBeenCalledWith(options.outputDeviceId);
-
 
       await disconnectSdk(sdk);
     });
@@ -669,6 +682,8 @@ describe('Client', () => {
 
       expect(updateOutgoingMediaForAllSessionsSpy).not.toHaveBeenCalled();
       expect(updateOutputDeviceForAllSessionsSpy).not.toHaveBeenCalled();
+
+      await disconnectSdk(sdk);
     });
   });
 
@@ -706,11 +721,12 @@ describe('Client', () => {
       const { sdk } = mockApis();
       await sdk.initialize();
 
-      sdk._streamingConnection.disconnect = jest.fn();
-
+      jest.spyOn(sdk._streamingConnection, 'disconnect');
 
       await sdk.disconnect();
       expect(sdk._streamingConnection.disconnect).toHaveBeenCalledTimes(1);
+
+      await disconnectSdk(sdk);
 
       // for for the response for disconnect
       await wait(50);
@@ -739,7 +755,7 @@ describe('Client', () => {
       ]);
 
       await disconnectSdk(sdk);
-    });
+    }, 10000);
   });
 
   describe('_refreshIceServers()', () => {
@@ -751,9 +767,9 @@ describe('Client', () => {
       sdk._streamingConnection.connected = false;
       expect(sdk.connected).toBe(false);
 
-      sdk._streamingConnection._webrtcSessions.refreshIceServers = jest.fn();
+      sdk._streamingConnection.webrtcSessions.refreshIceServers = jest.fn();
       await sdk._refreshIceServers();
-      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
+      expect(sdk._streamingConnection.webrtcSessions.refreshIceServers).not.toHaveBeenCalled();
 
       await disconnectSdk(sdk);
     }, 150000);
@@ -765,9 +781,9 @@ describe('Client', () => {
       sdk._streamingConnection.connected = true;
       expect(sdk.connected).toBe(true);
 
-      jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(undefined));
+      jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(undefined));
       await sdk._refreshIceServers();
-      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
+      expect(sdk._streamingConnection.webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshIceServersInterval).toBeTruthy();
 
       await disconnectSdk(sdk);
@@ -779,9 +795,9 @@ describe('Client', () => {
 
       sdk._streamingConnection.connected = true;
       expect(sdk.connected).toBe(true);
-      expect(sdk._streamingConnection.webrtcSessions.config.iceTransportPolicy).toEqual('all');
+      expect(sdk._streamingConnection._webrtcSessions.config.iceTransportPolicy).toEqual('all');
 
-      jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(
+      jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(
         [
           {
             'host': 'turn.use1.dev-pure.cloud',
@@ -802,9 +818,9 @@ describe('Client', () => {
         ]
       ));
       await sdk._refreshIceServers();
-      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
+      expect(sdk._streamingConnection.webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       expect(sdk._refreshIceServersInterval).toBeTruthy();
-      expect(sdk._streamingConnection.webrtcSessions.config.iceTransportPolicy).toEqual('relay');
+      expect(sdk._streamingConnection._webrtcSessions.config.iceTransportPolicy).toEqual('relay');
 
       await disconnectSdk(sdk);
     });
@@ -816,15 +832,15 @@ describe('Client', () => {
       sdk._streamingConnection.connected = true;
       expect(sdk.connected).toBe(true);
 
-      const promise = new Promise(resolve => sdk.on('error', resolve));
-      jest.spyOn(sdk._streamingConnection._webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.reject(new Error('fail')));
+      const promise = new Promise(resolve => sdk.on('sdkError', resolve));
+      jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.reject(new Error('fail')));
       try {
         await sdk._refreshIceServers();
         fail('should have thrown');
       } catch (e) {
         expect(e).toBeTruthy();
       }
-      expect(sdk._streamingConnection._webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
+      expect(sdk._streamingConnection.webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
       await promise;
 
       await disconnectSdk(sdk);

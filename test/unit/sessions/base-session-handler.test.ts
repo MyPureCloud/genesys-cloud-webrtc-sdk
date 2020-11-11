@@ -4,7 +4,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes, JingleReasons, LogLevels } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
-import { IJingleSession } from '../../../src/types/interfaces';
+import { IExtendedMediaSession } from '../../../src/types/interfaces';
 import browserama from 'browserama';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
@@ -107,7 +107,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should log and throw error if we do not have a video or audio deviceId', async () => {
     try {
-      await handler.updateOutgoingMedia({} as IJingleSession, {});
+      await handler.updateOutgoingMedia(new MockSession() as any, {});
       fail('should have thrown');
     } catch (e) {
       expect(e.type).toBe(SdkErrorTypes.invalid_options);
@@ -115,8 +115,8 @@ describe('updateOutgoingMedia()', () => {
       expect(e.details).toEqual({
         videoDeviceId: undefined,
         audioDeviceId: undefined,
-        conversationId: undefined,
-        sessionId: undefined
+        conversationId: expect.anything(),
+        sessionId: expect.anything()
       });
     }
   });
@@ -358,13 +358,7 @@ describe('updateOutputDevice()', () => {
     const session = new MockSession();
     session._outputAudioElement = {};
 
-    try {
-      await handler.updateOutputDevice(session as any, 'deviceId');
-      fail('should have thrown');
-    } catch (e) {
-      expect(e.type).toBe(SdkErrorTypes.not_supported);
-      expect(e.message).toEqual(expect.stringContaining('Cannot set sink id in unsupported browser'));
-    }
+    await expect(handler.updateOutputDevice(session as any, 'deviceId')).rejects.toThrow(/Cannot set sink id in unsupported browser/);
   });
 
   it('should set the sinkId with the passed in deviceId', async () => {
@@ -423,6 +417,31 @@ describe('rejectPendingSession', () => {
 });
 
 describe('handleSessionInit', () => {
+  it('should log connectionStateChanges', async () => {
+    const session: any = new MockSession();
+    session.conversationId = null;
+    session.fromUserId = null;
+
+    const pendingSession = createPendingSession();
+    pendingSession.fromUserId = 'fake';
+    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
+
+    const eventSpy = jest.fn();
+    mockSdk.on('sessionStarted', eventSpy);
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    const sessionId = '123abc';
+    const conversationId = 'convoabc';
+
+    session.sid = sessionId;
+    session.conversationId = conversationId;
+
+    await handler.handleSessionInit(session);
+    session.emit('connectionState', 'connected');
+
+    expect(logSpy).toHaveBeenCalledWith('info', 'connection state change', { state: 'connected', conversationId, sid: sessionId });
+  });
+
   it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {
     const session: any = new MockSession();
     session.conversationId = null;
@@ -441,91 +460,6 @@ describe('handleSessionInit', () => {
     expect(session.conversationId).toEqual(pendingSession.conversationId);
     expect(session.fromUserId).toEqual('fake');
     expect(eventSpy).toHaveBeenCalled();
-    expect(session._statsGatherer).toBeTruthy();
-  });
-
-  it('should set up stats listener', async () => {
-    const session: any = new MockSession();
-    const pendingSession = createPendingSession();
-    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
-
-    await handler.handleSessionInit(session);
-
-    const spy: jest.Mock = mockSdk.logger.info as any;
-    spy.mockReset();
-
-    const fakeData = {};
-    session._statsGatherer.emit('stats', fakeData);
-
-    const logCall = spy.mock.calls[0];
-    expect(logCall[0]).toContain('session:stats');
-    expect(logCall[1].conversationId).toBe(session.conversationId);
-  });
-
-  it('should set up traces listener', async () => {
-    const session: any = new MockSession();
-    const pendingSession = createPendingSession();
-    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
-
-    await handler.handleSessionInit(session);
-
-    const spy: jest.Mock = mockSdk.logger.warn as any;
-    spy.mockReset();
-
-    const fakeData = {};
-    session._statsGatherer.emit('traces', fakeData);
-
-    const logCall = spy.mock.calls[0];
-    expect(logCall[0]).toContain('session:trace');
-    expect(logCall[1].conversationId).toBe(session.conversationId);
-  });
-
-  it('should set up change:active listener', async () => {
-    const session: any = new MockSession();
-    const pendingSession = createPendingSession();
-    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
-
-    await handler.handleSessionInit(session);
-
-    jest.spyOn(session._statsGatherer, 'collectInitialConnectionStats');
-
-    const spy: jest.Mock = mockSdk.logger.info as any;
-    spy.mockReset();
-
-    session.emit('change:active', session, true);
-
-    const logCall = spy.mock.calls[0];
-    expect(logCall[0]).toContain('change:active');
-
-    const { conversationId, sid, active } = logCall[1];
-    expect(conversationId).toBe(session.conversationId);
-    expect(sid).toBe(session.id);
-    expect(active).toBeTruthy();
-    expect(session._statsGatherer.collectInitialConnectionStats).toHaveBeenCalled();
-  });
-
-  it('should not collectInitialStats if not active', async () => {
-    const session: any = new MockSession();
-    const pendingSession = createPendingSession();
-    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
-
-    await handler.handleSessionInit(session);
-
-    jest.spyOn(session._statsGatherer, 'collectInitialConnectionStats');
-
-    const spy: jest.Mock = mockSdk.logger.info as any;
-    spy.mockReset();
-
-    session.emit('change:active', session, false);
-
-    const logCall = spy.mock.calls[0];
-    expect(logCall[0]).toContain('change:active');
-
-    const { conversationId, sid, active } = logCall[1];
-    expect(conversationId).toBe(session.conversationId);
-    expect(sid).toBe(session.id);
-    expect(active).toBeFalsy();
-    expect(session._statsGatherer.collectInitialConnectionStats).not.toHaveBeenCalled();
   });
 
   it('should set up terminated listener', async () => {
@@ -570,14 +504,13 @@ describe('acceptSession', () => {
 
     await handler.acceptSession(session, params);
 
-    expect(logSpy).toHaveBeenCalledWith(LogLevels.info, 'accepting session', {
+    expect(logSpy).toHaveBeenCalledWith('info', 'accepting session', {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,
       params
     });
   });
-
 
   it('should set the sinkId in supported browsers to the default output device', async () => {
     const session: any = new MockSession();
@@ -607,15 +540,6 @@ describe('endSession', () => {
     await promise;
     expect(session.end).toHaveBeenCalled();
   });
-
-  it('should reject with error', async () => {
-    const session: any = new MockSession();
-    const promise = handler.endSession(session);
-    const fakeErr = new Error('fake');
-    session.emit('error', fakeErr);
-    await expect(promise).rejects.toThrow();
-    expect(session.end).toHaveBeenCalled();
-  });
 });
 
 describe('addMediatoSession', () => {
@@ -624,57 +548,41 @@ describe('addMediatoSession', () => {
     jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(true);
 
     const mockSession: any = {
-      addTrack: jest.fn(),
-      addStream: jest.fn()
+      pc: {
+        addTrack: jest.fn(),
+        addStream: jest.fn()
+      }
     };
 
     await handler.addMediaToSession(mockSession, stream as any);
 
-    expect(mockSession.addTrack).toHaveBeenCalled();
-    expect(mockSession.addStream).not.toHaveBeenCalled();
+    expect(mockSession.pc.addTrack).toHaveBeenCalled();
   });
 
-  it('should use streams if doesn\'t have transceivers and legacyFallback is enabled', async () => {
-    const stream = new MockStream();
+  it('should throw error if not capable of track actions', async () => {
     jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(false);
+    const stream = new MockStream(false);
 
     const mockSession: any = {
-      addTrack: jest.fn(),
-      addStream: jest.fn()
+      pc: {
+        addTrack: jest.fn(),
+        addStream: jest.fn()
+      }
     };
 
-    await handler.addMediaToSession(mockSession, stream as any);
-
-    expect(mockSession.addTrack).not.toHaveBeenCalled();
-    expect(mockSession.addStream).toHaveBeenCalled();
-  });
-
-  it('should throw if no tranceivers and legacy fallback not allowed', async () => {
-    const stream = new MockStream();
-    jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(false);
-
-    const mockSession: any = {
-      addTrack: jest.fn(),
-      addStream: jest.fn()
-    };
-
-    await expect(handler.addMediaToSession(mockSession, stream as any, false)).rejects.toThrowError(/Track based actions are required/);
-    expect(mockSession.addTrack).not.toHaveBeenCalled();
-    expect(mockSession.addStream).not.toHaveBeenCalled();
+    await expect(handler.addMediaToSession(mockSession, stream as any)).rejects.toThrow(/Track based actions are required/);
   });
 });
 
 describe('removeMediaFromSession', () => {
   it('should remove the track from the session', async () => {
-    const s = {
-      removeTrack: jest.fn().mockResolvedValue(null)
+    const sender = {
+      replaceTrack: jest.fn().mockResolvedValue(null)
     };
 
-    const track = {};
+    await handler.removeMediaFromSession({} as any, sender as any);
 
-    await handler.removeMediaFromSession(s as any, track as any);
-
-    expect(s.removeTrack).toHaveBeenCalledWith(track);
+    expect(sender.replaceTrack).toHaveBeenCalledWith(null);
   });
 });
 

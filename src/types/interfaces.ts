@@ -1,6 +1,18 @@
 import { LogLevels, SessionTypes, JingleReasons } from './enums';
-import WildEmitter from 'wildemitter';
-import WebrtcStatsGatherer from 'webrtc-stats-gatherer';
+import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
+import { SdkError } from '../utils';
+import { JingleReason } from 'stanza/protocol';
+
+// extend the emittable events
+declare module 'genesys-cloud-streaming-client' {
+  export interface SessionEvents {
+    participantsUpdate: IParticipantsUpdate;
+    activeVideoParticipantsUpdate: IOnScreenParticipantsUpdate;
+    speakersUpdate: ISpeakersUpdate;
+    incomingMedia: void;
+    pinnedParticipant: { participantId: string | null };
+  }
+}
 
 export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
 
@@ -71,7 +83,7 @@ export interface IMediaRequestOptions {
   /**
    * This is just to be able to associate logs to a specific session. This is primarily for internal use an not generally needed.
    */
-  session?: IJingleSession;
+  session?: IExtendedMediaSession;
 }
 
 export interface IOutgoingMediaDeviceIds {
@@ -100,7 +112,7 @@ export interface IUpdateOutgoingMedia {
   /** session id (this _OR_ `session` is required) */
   sessionId?: string;
   /** session (this _OR_ `sessionId` is required) */
-  session?: IJingleSession;
+  session?: IExtendedMediaSession;
   /* stream with desired media */
   stream?: MediaStream;
   /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
@@ -205,33 +217,16 @@ export interface IConversationParticipant {
   confined: boolean;
 }
 
-export interface IJingleSession extends WildEmitter {
+export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   id: string;
-  sid: string;
-  peerID: string;
   originalRoomJid: string;
   conversationId: string;
-  active: boolean;
   sessionType: SessionTypes;
-  streams: MediaStream[];
-  tracks: MediaStreamTrack[];
-  accept: () => void;
-  end: () => void;
-  addTrack: (track: MediaStreamTrack) => Promise<void>;
-  addStream: (stream: MediaStream) => Promise<void>;
-  removeTrack: (track: MediaStreamTrack) => Promise<void>;
-  replaceTrack: (newTrack: MediaStreamTrack, oldTrack?: MediaStreamTrack) => Promise<void>;
-  mute: (userId: string, mediaType: 'video' | 'audio') => void;
-  unmute: (userId: string, mediaType: 'video' | 'audio') => void;
-  pc: {
-    getSenders: () => RTCRtpSender[],
-    getReceivers: () => RTCRtpReceiver[],
-    pc: RTCPeerConnection
-  };
-  pcParticipant?: IConversationParticipant;
-  fromUserId?: string;
+  active: boolean;
   videoMuted?: boolean;
   audioMuted?: boolean;
+  fromUserId?: string;
+  pcParticipant?: IConversationParticipant;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;
   pinParticipantVideo?: (participantId: string) => Promise<void>;
@@ -239,7 +234,6 @@ export interface IJingleSession extends WildEmitter {
   _outboundStream?: MediaStream;
   _screenShareStream?: MediaStream;
   _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
-  _statsGatherer?: WebrtcStatsGatherer;
   _lastParticipantsUpdate?: IParticipantsUpdate;
   _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
 }
@@ -285,4 +279,19 @@ export interface ISpeakersUpdate {
 
 export interface IJingleReason {
   condition: JingleReasons;
+}
+
+export interface SdkEvents {
+  sdkError: SdkError;
+  trace: (...args: any[]) => void;
+  connected: (info: { reconnect: boolean }) => void;
+  ready: void;
+  disconnected: (info: any) => void;
+
+  // session related stuff
+  pendingSession: IPendingSession;
+  sessionStarted: IExtendedMediaSession;
+  sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
+  handledPendingSession: IExtendedMediaSession;
+  cancelPendingSession: (sessionId: string) => void;
 }

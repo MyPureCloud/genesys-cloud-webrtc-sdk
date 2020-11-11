@@ -4,7 +4,7 @@ import {
   IPendingSession,
   IAcceptSessionRequest,
   ISessionMuteRequest,
-  IJingleSession,
+  IExtendedMediaSession,
   IParticipantUpdate,
   IParticipantsUpdate,
   IOnScreenParticipantsUpdate,
@@ -61,7 +61,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const participant = conversationUpdate.participants.find((p) => p.userId === this.sdk._personDetails.id);
 
     if (!participant) {
-      this.log(LogLevels.warn, 'Failed to find current user in the conversation update');
+      this.log('warn', 'Failed to find current user in the conversation update');
       return null;
     }
 
@@ -78,7 +78,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     };
   }
 
-  handleConversationUpdate (session: IJingleSession, conversationUpdate: ConversationUpdate): void {
+  handleConversationUpdate (session: IExtendedMediaSession, conversationUpdate: ConversationUpdate): void {
     super.handleConversationUpdate(session, conversationUpdate);
     session.pcParticipant = this.findLocalParticipantInConversationUpdate(conversationUpdate);
 
@@ -121,7 +121,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     session.emit('participantsUpdate', update);
   }
 
-  updateParticipantsOnScreen (session: IJingleSession, mediaUpdateEvent: IMediaChangeEvent) {
+  updateParticipantsOnScreen (session: IExtendedMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
     const incomingVideoTrackIds = session.pc.getReceivers()
       .filter((receiver) => receiver.track && receiver.track.kind === 'video')
       .map((receiver) => receiver.track.id);
@@ -130,7 +130,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
      * Firefox messes the trackIds up from what is actually in the sdp offer.
      * Need to pull it from the offer to accurately match the track.sinks
      */
-    const incomingVideoMsidTrackId = this.getTrackIdFromSdp(session.pc.pc.remoteDescription.sdp, 'video');
+    const incomingVideoMsidTrackId = this.getTrackIdFromSdp(session.pc.remoteDescription.sdp, 'video');
 
     if (incomingVideoMsidTrackId) {
       incomingVideoTrackIds.push(incomingVideoMsidTrackId);
@@ -170,7 +170,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     session.emit('activeVideoParticipantsUpdate', update);
   }
 
-  updateSpeakers (session: IJingleSession, mediaUpdateEvent: IMediaChangeEvent) {
+  updateSpeakers (session: IExtendedMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
     const incomingAudioTrackIds = session.pc.getReceivers()
       .filter((receiver) => receiver.track && receiver.track.kind === 'audio')
       .map((receiver) => receiver.track.id);
@@ -179,7 +179,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
      * Firefox messes the trackIds up from what is actually in the sdp offer.
      * Need to pull it from the offer to accurately match the track.sinks
      */
-    const incomingAudioMsidTrackId = this.getTrackIdFromSdp(session.pc.pc.remoteDescription.sdp, 'audio');
+    const incomingAudioMsidTrackId = this.getTrackIdFromSdp(session.pc.remoteDescription.sdp, 'audio');
 
     if (incomingAudioMsidTrackId) {
       incomingAudioTrackIds.push(incomingAudioMsidTrackId);
@@ -232,7 +232,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       return { conversationId: response.body.conversationId };
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
-      this.log(LogLevels.error, 'Failed to request video session', err);
+      this.log('error', 'Failed to request video session', err);
       return Promise.reject(err);
     }
   }
@@ -240,7 +240,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     // if we requested the session dont emit a pending session
     if (this.requestedSessions[pendingSession.originalRoomJid]) {
-      this.log(LogLevels.debug, 'Propose received for requested video session, accepting automatically', pendingSession);
+      this.log('debug', 'Propose received for requested video session, accepting automatically', pendingSession);
       delete this.requestedSessions[pendingSession.originalRoomJid];
       await this.proceedWithSession(pendingSession);
       return;
@@ -248,19 +248,19 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (isPeerVideoJid(pendingSession.address)) {
       if (pendingSession.fromUserId === this.sdk._personDetails.id) {
-        this.log(LogLevels.info, 'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
+        this.log('info', 'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
         return;
       }
 
-      this.log(LogLevels.info, 'Propose received for incoming peer video', pendingSession);
+      this.log('info', 'Propose received for incoming peer video', pendingSession);
     } else {
-      this.log(LogLevels.debug, 'Propose received for a video session that is not a peer session and wasn\'t started by this client, ignoring.', pendingSession);
+      this.log('debug', 'Propose received for a video session that is not a peer session and wasn\'t started by this client, ignoring.', pendingSession);
       return;
     }
     await super.handlePropose(pendingSession);
   }
 
-  async handleSessionInit (session: IJingleSession): Promise<any> {
+  async handleSessionInit (session: IExtendedMediaSession): Promise<any> {
     session.startScreenShare = this.startScreenShare.bind(this, session);
     session.stopScreenShare = this.stopScreenShare.bind(this, session);
     session.pinParticipantVideo = this.pinParticipantVideo.bind(this, session);
@@ -269,7 +269,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   }
 
   // doc: acceptSession requires a video and audio element either provided or default
-  async acceptSession (session: IJingleSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const audioElement = params.audioElement || this.sdk._config.defaultAudioElement;
     if (!audioElement) {
       throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { conversationId: session.conversationId });
@@ -304,18 +304,18 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
 
-    await this.addMediaToSession(session, stream, false);
+    await this.addMediaToSession(session, stream);
 
     // make sure we have an audio and video sender so we don't have to renego later
     this.setupTransceivers(session);
 
     const attachParams = { audioElement, videoElement };
 
-    const handleIncomingTracks = (session: IJingleSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
+    const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
       if (!Array.isArray(tracks)) tracks = [tracks];
 
       for (const track of tracks) {
-        this.log(LogLevels.info, 'Incoming track', {
+        this.log('info', 'Incoming track', {
           track,
           conversationId: session.conversationId,
           sessionId: session.id
@@ -332,82 +332,88 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       session.emit('incomingMedia');
     };
 
-    if (session.tracks.length) {
-      handleIncomingTracks(session, session.tracks);
+    const tracks = session.pc.getReceivers()
+      .filter(receiver => receiver.track)
+      .map(receiver => receiver.track);
+
+    if (tracks.length) {
+      handleIncomingTracks(session, tracks);
     } else {
-      session.on('peerTrackAdded', (session: IJingleSession, track: MediaStreamTrack) => {
+      session.on('peerTrackAdded', (track: MediaStreamTrack) => {
         handleIncomingTracks(session, track);
       });
     }
 
     await super.acceptSession(session, params);
-    this.setInitialMuteStates(session);
+    await this.setInitialMuteStates(session);
 
     logDeviceChange(this.sdk, session, 'sessionStarted');
   }
 
-  setInitialMuteStates (session: IJingleSession): void {
+  async setInitialMuteStates (session: IExtendedMediaSession): Promise<void> {
     const userId = this.sdk._personDetails.id;
+
+    let videoMute = Promise.resolve();
+    let audioMute = Promise.resolve();
 
     const videoSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'video');
     if (!videoSender || !videoSender.track.enabled) {
       session.videoMuted = true;
-      this.log(LogLevels.info, 'Sending initial video mute', { conversationId: session.conversationId, sessionId: session.id });
-      session.mute(userId, 'video');
-    } else {
-      session.videoMuted = false;
+      this.log('info', 'Sending initial video mute', { conversationId: session.conversationId, sessionId: session.id });
+      videoMute = session.mute(userId as any, 'video');
     }
 
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
     if (!audioSender || !audioSender.track.enabled) {
       session.audioMuted = true;
-      this.log(LogLevels.info, 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id });
-      session.mute(userId, 'audio');
-    } else {
-      session.audioMuted = false;
+      this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id });
+      audioMute = session.mute(userId as any, 'audio');
     }
+
+    await Promise.all([videoMute, audioMute]);
   }
 
-  setupTransceivers (session: IJingleSession) {
+  setupTransceivers (session: IExtendedMediaSession) {
     // not supported in edge at time of writing https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addTransceiver
-    if (!session.pc.pc.addTransceiver) {
-      this.log(LogLevels.warn, 'addTransceiver not supported, video experience may be sub optimal', {
+    if (!session.pc.addTransceiver) {
+      this.log('warn', 'addTransceiver not supported, video experience may be sub optimal', {
         conversationId: session.conversationId,
         sessionId: session.id
       });
       return;
     }
 
-    const videoTransceiver = session.pc.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'video');
+    const videoTransceiver = session.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'video');
     if (!videoTransceiver) {
-      session.pc.pc.addTransceiver('video', { direction: 'sendrecv' });
+      session.pc.addTransceiver('video', { direction: 'sendrecv' });
     } else {
       videoTransceiver.direction = 'sendrecv';
     }
 
-    const audioTransceiver = session.pc.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'audio');
+    const audioTransceiver = session.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'audio');
     if (!audioTransceiver) {
-      session.pc.pc.addTransceiver('audio', { direction: 'sendrecv' });
+      session.pc.addTransceiver('audio', { direction: 'sendrecv' });
     } else {
       audioTransceiver.direction = 'sendrecv';
     }
   }
 
-  async endSession (session: IJingleSession) {
+  async endSession (session: IExtendedMediaSession) {
     await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
     await super.endSession(session);
     session.pc.getSenders().map((sender) => {
       if (sender.track) {
+
         sender.track.stop();
       }
     });
   }
 
-  async setVideoMute (session: IJingleSession, params: ISessionMuteRequest, skipServerUpdate?: boolean) {
+  async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean) {
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
     if (replayMuteRequest) {
-      this.log(LogLevels.warn, 'Replaying video mute request since the local state already matches the requested state', {
+      this.log('warn', 'Replaying video mute request since the local state already matches the requested state', {
         conversationId: session.conversationId,
         sessionId: session.id
       });
@@ -421,13 +427,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       const track = session._outboundStream.getVideoTracks().find(t => t);
 
       if (!track) {
-        this.log(LogLevels.warn, 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId });
+        this.log('warn', 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId });
       } else {
         const sender = this.getSendersByTrackType(session, 'video')
           .find((sender) => sender.track && sender.track.id === track.id);
 
         if (sender) {
-          await this.removeMediaFromSession(session, sender.track);
+          await this.removeMediaFromSession(session, sender);
         }
 
         track.stop();
@@ -435,12 +441,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       }
 
       if (!skipServerUpdate) {
-        session.mute(userId, 'video');
+        await session.mute(userId as any, 'video');
       }
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      this.log(LogLevels.info, 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id });
+      this.log('info', 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id });
 
       // look for a device to use, else use default
       const videoDeviceConstraint = params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId;
@@ -467,19 +473,19 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       session._outboundStream.addTrack(track);
 
       if (!skipServerUpdate) {
-        session.unmute(userId, 'video');
+        await session.unmute(userId as any, 'video');
       }
     }
 
     session.videoMuted = !!params.mute;
   }
 
-  async setAudioMute (session: IJingleSession, params: ISessionMuteRequest) {
+  async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest) {
     const replayMuteRequest = !!session.audioMuted === !!params.mute;
 
     // if conversation is already muted, we wont get an update so dont wait for one
     if (replayMuteRequest) {
-      this.log(LogLevels.warn, 'Replaying audio mute request since the local state already matches the requested state', { conversationId: session.conversationId });
+      this.log('warn', 'Replaying audio mute request since the local state already matches the requested state', { conversationId: session.conversationId });
     }
 
     const userId = this.sdk._personDetails.id;
@@ -487,7 +493,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const outgoingTracks = this.getSendersByTrackType(session, 'audio').map(sender => sender.track);
 
     outgoingTracks.forEach((track) => {
-      this.log(LogLevels.info, `${params.mute ? 'Muting' : 'Unmuting'} audio track`, {
+      this.log('info', `${params.mute ? 'Muting' : 'Unmuting'} audio track`, {
         trackId: track.id,
         conversationId: session.conversationId,
         sessionId: session.id
@@ -497,14 +503,14 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (params.mute) {
       if (!outgoingTracks.length) {
-        this.log(LogLevels.warn, 'Unable to find any outgoing audio tracks to mute', { sessionId: session.id, conversationId: session.conversationId });
+        this.log('warn', 'Unable to find any outgoing audio tracks to mute', { sessionId: session.id, conversationId: session.conversationId });
       } else {
-        session.mute(userId, 'audio');
+        await session.mute(userId as any, 'audio');
       }
     } else {
       // make sure there's audio to unmute. if not, create it.
       if (!outgoingTracks.length) {
-        this.log(LogLevels.info, 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id, conversationId: session.conversationId });
+        this.log('info', 'No outoing audio to unmute, creating and adding media to session', { sessionId: session.id, conversationId: session.conversationId });
 
         // if params.unmuteDeviceId is `undefined`, use sdk defaults
         const track = (
@@ -513,28 +519,28 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         await this.addReplaceTrackToSession(session, track);
       }
 
-      session.unmute(userId, 'audio');
+      await session.unmute(userId as any, 'audio');
     }
 
     session.audioMuted = !!params.mute;
 
     // if they passed in an unmute device id, we will switch to that device (if we unmuted audio)
     if (params.unmuteDeviceId !== undefined && !session.audioMuted) {
-      this.log(LogLevels.info, 'switching mic device', { sessionId: session.id, conversationId: session.conversationId });
+      this.log('info', 'switching mic device', { sessionId: session.id, conversationId: session.conversationId });
 
       await this.sdk.updateOutgoingMedia({ audioDeviceId: params.unmuteDeviceId });
     }
   }
 
-  handleMediaChangeEvent (session: IJingleSession, event: IMediaChangeEvent) {
+  handleMediaChangeEvent (session: IExtendedMediaSession, event: IMediaChangeEvent) {
     this.updateParticipantsOnScreen(session, event);
     this.updateSpeakers(session, event);
   }
 
-  async startScreenShare (session: IJingleSession) {
+  async startScreenShare (session: IExtendedMediaSession) {
     session._resurrectVideoOnScreenShareEnd = !session.videoMuted;
     try {
-      this.log(LogLevels.info, 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId });
+      this.log('info', 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId });
 
       const stream = await startDisplayMedia();
       session._screenShareStream = stream;
@@ -552,7 +558,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       this.sessionManager.webrtcSessions.notifyScreenShareStart(session);
     } catch (err) {
       if (!err) {
-        return this.log(LogLevels.info, 'screen selection cancelled', { conversationId: session.conversationId, sessionId: session.id });
+        return this.log('info', 'screen selection cancelled', { conversationId: session.conversationId, sessionId: session.id });
       }
 
       throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
@@ -563,9 +569,9 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async stopScreenShare (session: IJingleSession): Promise<void> {
+  async stopScreenShare (session: IExtendedMediaSession): Promise<void> {
     if (!session._screenShareStream) {
-      this.log(LogLevels.error, 'No screen share stream to stop', { conversationId: session.conversationId, sessionId: session.id });
+      this.log('error', 'No screen share stream to stop', { conversationId: session.conversationId, sessionId: session.id });
       return;
     }
 
@@ -573,7 +579,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
 
     if (session._resurrectVideoOnScreenShareEnd) {
-      this.log(LogLevels.info, 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id });
+      this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id });
       await this.setVideoMute(session, { id: session.id, mute: false }, true);
     } else {
       await sender.replaceTrack(null);
@@ -584,7 +590,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
   }
 
-  async pinParticipantVideo (session: IJingleSession, participantId?: string) {
+  async pinParticipantVideo (session: IExtendedMediaSession, participantId?: string) {
     if (!session.pcParticipant) {
       throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
         conversation: session.conversationId,
@@ -606,13 +612,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         streamType: 'video'
       });
 
-      this.log(LogLevels.info, 'Pinning video for participant', {
+      this.log('info', 'Pinning video for participant', {
         conversationId: session.conversationId,
         sessionId: session.id,
         participantId
       });
     } else {
-      this.log(LogLevels.info, 'Unpinning all participants', {
+      this.log('info', 'Unpinning all participants', {
         conversationId: session.conversationId,
         sessionId: session.id,
         participantId

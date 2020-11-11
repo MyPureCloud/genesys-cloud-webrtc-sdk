@@ -1,6 +1,5 @@
 /// <reference path="types/libs.ts" />
 
-import WildEmitter from 'wildemitter';
 import {
   ISdkConstructOptions,
   ILogger,
@@ -12,7 +11,8 @@ import {
   IPersonDetails,
   IMediaRequestOptions,
   IMediaDeviceIds,
-  IUpdateOutgoingMedia
+  IUpdateOutgoingMedia,
+  SdkEvents
 } from './types/interfaces';
 import StreamingClient from 'genesys-cloud-streaming-client';
 
@@ -25,6 +25,8 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { startMedia, startDisplayMedia } from './media-utils';
+import { EventEmitter } from 'events';
+import StrictEventEmitter from 'strict-event-emitter-types';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -67,7 +69,7 @@ function validateOptions (options: ISdkConstructOptions): string | null {
 /**
  * SDK to interact with GenesysCloud WebRTC functionality
  */
-export class GenesysCloudWebrtcSdk extends WildEmitter {
+export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
 
   public logger: ILogger;
 
@@ -117,7 +119,7 @@ export class GenesysCloudWebrtcSdk extends WildEmitter {
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
-      logLevel: options.logLevel || LogLevels.info,
+      logLevel: options.logLevel || 'info',
       optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
       allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
       wsHost: options.wsHost
@@ -133,7 +135,7 @@ export class GenesysCloudWebrtcSdk extends WildEmitter {
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
-    this.on('error', this.logger.error.bind(this.logger));
+    this.on('sdkError', this.logger.error.bind(this.logger));
     this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
     this.on('cancelPendingSession', this.logger.info.bind(this.logger, 'cancelPendingSession'));
     this.on('handledPendingSession', this.logger.info.bind(this.logger, 'handledPendingSession'));
@@ -183,13 +185,13 @@ export class GenesysCloudWebrtcSdk extends WildEmitter {
       const getOrg = requestApi.call(this, '/organizations/me')
         .then(({ body }) => {
           this._orgDetails = body;
-          this.logger.debug(LogLevels.debug, 'Organization details', body);
+          this.logger.debug('debug', 'Organization details', body);
         });
 
       const getPerson = requestApi.call(this, '/users/me')
         .then(({ body }) => {
           this._personDetails = body;
-          this.logger.debug(LogLevels.debug, 'Person details', body);
+          this.logger.debug('debug', 'Person details', body);
         });
 
       httpRequests.push(getOrg);
@@ -417,14 +419,14 @@ export class GenesysCloudWebrtcSdk extends WildEmitter {
   /**
    * Disconnect the streaming connection
    */
-  public disconnect (): Promise<void> {
+  public disconnect (): Promise<any> {
     return this._streamingConnection.disconnect();
   }
 
   /**
    * Reconnect the streaming connection
    */
-  public reconnect (): Promise<void> {
+  public reconnect (): Promise<any> {
     return this._streamingConnection.reconnect();
   }
 
@@ -435,7 +437,7 @@ export class GenesysCloudWebrtcSdk extends WildEmitter {
     }
 
     try {
-      const services = (await this._streamingConnection._webrtcSessions.refreshIceServers()) || [];
+      const services = (await this._streamingConnection.webrtcSessions.refreshIceServers()) || [];
 
       if (!services.length) {
         this.logger.error(new Error('refreshIceServers yielded no results'));
@@ -445,7 +447,7 @@ export class GenesysCloudWebrtcSdk extends WildEmitter {
       const stunServers = services.filter((service) => service.type === 'stun');
       if (!stunServers.length) {
         this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
-        this._streamingConnection.webrtcSessions.config.iceTransportPolicy = 'relay';
+        this._streamingConnection._webrtcSessions.config.iceTransportPolicy = 'relay';
       }
     } catch (err) {
       const errorMessage = 'GenesysCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';

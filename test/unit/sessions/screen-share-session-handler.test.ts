@@ -6,7 +6,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media-utils';
 import * as utils from '../../../src/utils';
-import { IJingleSession } from '../../../src/types/interfaces';
+import { IExtendedMediaSession } from '../../../src/types/interfaces';
 
 let handler: ScreenShareSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -96,7 +96,7 @@ describe('handleSessionInit', () => {
   it('should end session and clean up any media if session init fails', async () => {
     const endSession = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockImplementation();
     const endTracks = jest.spyOn(handler, 'endTracks');
-    const session: IJingleSession = new MockSession() as any;
+    const session: IExtendedMediaSession = new MockSession() as any;
     const stream = new MockStream();
 
     jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit').mockRejectedValue(new Error('error'));
@@ -115,7 +115,7 @@ describe('handleSessionInit', () => {
   it('should throw if there is not a pending media screen promise', async () => {
     jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockImplementation();
     jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit').mockImplementation();
-    const session: IJingleSession = new MockSession() as any;
+    const session: IExtendedMediaSession = new MockSession() as any;
 
     try {
       await handler.handleSessionInit(session);
@@ -135,7 +135,7 @@ describe('handleSessionInit', () => {
 
     jest.spyOn((mockStream as MockStream)._tracks[0], 'addEventListener');
 
-    const session: IJingleSession = new MockSession() as any;
+    const session: IExtendedMediaSession = new MockSession() as any;
 
     try {
       await handler.handleSessionInit(session);
