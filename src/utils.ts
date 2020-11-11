@@ -25,7 +25,7 @@ export class SdkError extends Error {
 
 export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): void {
   const error = new SdkError(errorType, message, details);
-  this.emit('error', error);
+  this.emit('sdkError', error);
   throw error;
 };
 

@@ -7,13 +7,7 @@ export enum SdkErrorTypes {
   session = 'session'
 }
 
-export enum LogLevels {
-  log = 'log',
-  debug = 'debug',
-  info = 'info',
-  warn = 'warn',
-  error = 'error'
-}
+export type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error';
 
 export enum SessionTypes {
   softphone = 'softphone',

@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia, IJingleSession, IEnumeratedDevices } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia, IExtendedMediaSession, IEnumeratedDevices } from '../../../src/types/interfaces';
 import * as mediaUtils from '../../../src/media-utils';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
@@ -68,7 +68,7 @@ describe('handleConversationUpdate', () => {
         2: session2,
         3: session3
       }
-    };
+    } as any;
 
     const spy = jest.fn();
     const fakeHandler = { handleConversationUpdate: spy };
@@ -103,7 +103,7 @@ describe('handleConversationUpdate', () => {
         2: session2,
         3: session3
       }
-    };
+    } as any;
 
     const spy = jest.fn();
     const fakeHandler = { handleConversationUpdate: spy, disabled: true };
@@ -127,7 +127,7 @@ describe('getSession', () => {
 
     mockSdk._streamingConnection._webrtcSessions.jingleJs = {
       sessions: { [session1.sid]: session1, [session2.sid]: session2 }
-    };
+    } as any;
   });
 
   it('should get session by sessionId', () => {
@@ -458,13 +458,13 @@ describe('setAudioMute', () => {
 describe('getAllActiveSessions()', () => {
   it('should return all active sessions as an array', () => {
     const sessionsObject = {
-      'session-1': { id: 'session-1', active: true },
-      'session-2': { id: 'session-2', active: true },
-      'session-3': { id: 'session-3', active: false },
+      'session-1': { id: 'session-1', state: 'active' },
+      'session-2': { id: 'session-2', state: 'active' },
+      'session-3': { id: 'session-3', state: 'new' },
     };
     const expectedArray = [sessionsObject['session-1'], sessionsObject['session-2']];
 
-    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject };
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject } as any;
     expect(sessionManager.getAllActiveSessions()).toEqual(expectedArray);
   });
 });
@@ -573,13 +573,13 @@ describe('updateOutputDeviceForAllSessions()', () => {
 });
 
 describe('validateOutgoingMediaTracks()', () => {
-  let sessions: IJingleSession[];
+  let sessions: IExtendedMediaSession[];
   let devices: IEnumeratedDevices;
   let mockSessionHandler: BaseSessionHandler;
 
-  let mockGetAllSessions: jest.SpyInstance<IJingleSession[]>;
+  let mockGetAllSessions: jest.SpyInstance<IExtendedMediaSession[]>;
   let mockGetEnumeratedDevices: jest.SpyInstance<Promise<IEnumeratedDevices>>;
-  let mockGetSession: jest.SpyInstance<IJingleSession>;
+  let mockGetSession: jest.SpyInstance<IExtendedMediaSession>;
   let mockGetSessionHandler: jest.SpyInstance<BaseSessionHandler>;
 
   beforeEach(() => {
@@ -746,7 +746,8 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
 
     /* should also remove audio tracks because setAudioMute does not remove them (setVideoMute does) */
-    expect(mockSessionHandler.removeMediaFromSession).toHaveBeenCalledWith(session, mockAudioTrack);
+    const expectedSender = session.pc.getSenders().find(s => s.track === mockAudioTrack as any);
+    expect(mockSessionHandler.removeMediaFromSession).toHaveBeenCalledWith(session, expectedSender);
     expect(mockAudioTrack.stop).toHaveBeenCalled();
     expect(session._outboundStream.removeTrack).toHaveBeenCalledWith(mockAudioTrack);
   });

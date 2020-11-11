@@ -1,7 +1,7 @@
 import browserama from 'browserama';
 
 import { GenesysCloudWebrtcSdk } from './client';
-import { IMediaRequestOptions, IEnumeratedDevices, IJingleSession } from './types/interfaces';
+import { IMediaRequestOptions, IEnumeratedDevices, IExtendedMediaSession } from './types/interfaces';
 import { SdkErrorTypes } from './types/enums';
 import { throwSdkError } from './utils';
 
@@ -311,7 +311,7 @@ export type LogDevicesAction =
  */
 export function logDeviceChange (
   sdk: GenesysCloudWebrtcSdk,
-  session: IJingleSession,
+  session: IExtendedMediaSession,
   action: LogDevicesAction,
   devicesChange: {
     toVideoTrack?: MediaStreamTrack;
@@ -551,7 +551,7 @@ export async function getValidDeviceId (
   sdk: GenesysCloudWebrtcSdk,
   kind: MediaDeviceKind,
   deviceId: string | boolean | null,
-  ...sessions: IJingleSession[]
+  ...sessions: IExtendedMediaSession[]
 ): Promise<string> {
   const devices = await getEnumeratedDevices(sdk);
   const sessionInfos: Array<{ conversationId: string, sessionId: string }> =

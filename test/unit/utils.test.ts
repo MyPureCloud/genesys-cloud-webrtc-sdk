@@ -15,7 +15,7 @@ beforeEach(() => {
 describe('throwSdkError', () => {
   it('should emit the error', () => {
     const spy = jest.fn();
-    sdk.on('error', spy);
+    sdk.on('sdkError', spy);
 
     expect(() => utils.throwSdkError.call(sdk, SdkErrorTypes.generic, 'fake')).toThrowError(/fake/);
   });
