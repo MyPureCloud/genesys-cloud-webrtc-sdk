@@ -142,7 +142,11 @@ export class SessionManager {
     const { videoDeviceId, audioDeviceId } = options;
     const sessions = this.getAllActiveSessions();
 
-    this.log(LogLevels.info, 'Updating outgoing deviceId(s) for all active sessions', { sessions: sessions.map(s => s.id), videoDeviceId, audioDeviceId });
+    this.log(LogLevels.info, 'Updating outgoing deviceId(s) for all active sessions', {
+      sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId })),
+      videoDeviceId,
+      audioDeviceId
+    });
 
     const promises = sessions.map(session => {
       return this.updateOutgoingMedia({ session, videoDeviceId, audioDeviceId });

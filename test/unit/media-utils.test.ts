@@ -253,19 +253,55 @@ describe('startMedia()', () => {
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
   });
 
+  it('should retry video if an AbortError is received', async () => {
+    const expected1stConstraints = {
+      video: Object.assign({ frameRate: { ideal: 30 }, googNoiseReduction: true }, defaultResolution),
+      audio: false,
+    };
+    const expected2ndConstraints = {
+      video: {
+        googNoiseReduction: true,
+        frameRate: { ideal: 30 },
+        height: { ideal: 720 },
+        width: { ideal: 1280 }
+      },
+      audio: false,
+    };
+
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+
+    /* FF will throw this error in some hardware configs using a dock */
+    const error = new Error('Starting video failed');
+    error.name = 'AbortError';
+    mediaDevices.getUserMedia.mockRejectedValueOnce(error);
+
+    await mediaUtils.startMedia(mockSdk, { video: true });
+
+    expect(mediaDevices.getUserMedia).toHaveBeenNthCalledWith(1, expected1stConstraints);
+    expect(mediaDevices.getUserMedia).toHaveBeenNthCalledWith(2, expected2ndConstraints);
+
+    expect(mockSdk.logger.error).toHaveBeenCalled();
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('starting video was aborted. trying again with a lower resolution'),
+      expect.any(Object)
+    );
+  });
+
   it('should log errors', async () => {
     const constraints = { video: false, audio: false };
     const session: any = new MockSession();
     const availableDevices = mediaUtils.getCachedEnumeratedDevices();
+    const error = new Error('NotFound')
 
     const loggerSpy = jest.spyOn(mockSdk.logger, 'error');
-    mediaDevices.getUserMedia.mockRejectedValue(new Error('NotFound'));
+    mediaDevices.getUserMedia.mockRejectedValue(error);
 
     try {
       await startMedia(mockSdk, { session, ...constraints });
       fail('should have thrown');
     } catch (e) {
       expect(loggerSpy).toHaveBeenCalledWith(e, {
+        error,
         constraints,
         opts: constraints,
         sessionId: session.id,
