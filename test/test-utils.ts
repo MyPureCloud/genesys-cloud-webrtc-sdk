@@ -35,7 +35,7 @@ export class SimpleMockSdk extends EventEmitter {
 
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
-    logLevel: LogLevels.debug,
+    logLevel: 'debug',
     wsHost: 'wshost',
     allowedSessionTypes: Object.values(SessionTypes)
   };

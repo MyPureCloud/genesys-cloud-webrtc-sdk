@@ -9,7 +9,7 @@ pipeline {
     }
     stages {
         stage('Test') {
-            agent { node 'dev_mesos' }
+            agent { node 'dev_v2' }
             steps {
                 sh """
                     # Check out the latest npm-utils
@@ -20,7 +20,6 @@ pipeline {
 
                     npm install -g npm
                     npm install --silent
-                    npm run build
 
                     cd spigot-tests
 
@@ -41,7 +40,7 @@ pipeline {
                         git clone git@bitbucket.org:inindca/xunit-to-tcdb.git
                         cd xunit-to-tcdb
                         npm install --silent
-                        npm start -- -f ../spigot-tests/reports/xunit-0.xml -a ${ENVIRONMENT} -s
+                        npm start -- -f ../spigot-tests/reports/xunit.xml -a ${ENVIRONMENT} -s
                     """
                 }
             }

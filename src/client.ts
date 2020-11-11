@@ -119,7 +119,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
       iceTransportPolicy: options.iceTransportPolicy || 'all',
-      logLevel: options.logLevel || LogLevels.info,
+      logLevel: options.logLevel || 'info',
       optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
       allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
       wsHost: options.wsHost
@@ -185,13 +185,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       const getOrg = requestApi.call(this, '/organizations/me')
         .then(({ body }) => {
           this._orgDetails = body;
-          this.logger.debug(LogLevels.debug, 'Organization details', body);
+          this.logger.debug('debug', 'Organization details', body);
         });
 
       const getPerson = requestApi.call(this, '/users/me')
         .then(({ body }) => {
           this._personDetails = body;
-          this.logger.debug(LogLevels.debug, 'Person details', body);
+          this.logger.debug('debug', 'Person details', body);
         });
 
       httpRequests.push(getOrg);

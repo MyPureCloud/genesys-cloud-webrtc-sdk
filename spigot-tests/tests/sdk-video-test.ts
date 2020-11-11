@@ -1,34 +1,30 @@
-/* global describe, it, beforeEach, afterEach */
-
-import { testUtils } from 'genesyscloud-spigot';
+import * as testUtils from './utils/test-utils';
 import { v4 as uuid } from 'uuid';
+import { IExtendedMediaSession } from '../../dist/src/types/interfaces';
 
-import { getNewSdkConnection } from '../utils/utils';
 const logger = testUtils.getLogger();
 
-let sdk;
+let sdk: any;
 let context;
 
 describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
   beforeEach(async function () {
     this.timeout(10000);
     context = testUtils.getContext();
-    sdk = await getNewSdkConnection();
+    sdk = await testUtils.getNewSdkConnection();
   });
 
   afterEach(async function () {
     this.timeout(10000);
     if (sdk) {
-      sdk.off('sessionStarted');
-      sdk.off('cancelPendingSession');
-      sdk.off('pendingSession');
+      sdk.removeAllListeners();
       sdk._config.autoConnectSessions = true;
       await sdk.disconnect();
       sdk = null;
     }
   });
 
-  async function testVideo (roomJid, options = {}) {
+  async function testVideo (roomJid, options: { inbound?: boolean, manual?: boolean, waitForDisconnect?: boolean, ignore?: boolean, sdkDisconnect?: boolean } = {}) {
     this.timeout(this.callDelay + testUtils.getConfig().validationTimeout * 10);
 
     let conversationId;
@@ -38,7 +34,7 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
     const videoElement = document.createElement('video');
     videoElement.classList.add(randomId + '-video');
     // Convert session events to promise so we can await them
-    const sessionEvents = new Promise(async (resolve, reject) => {
+    const sessionEvents: Promise<IExtendedMediaSession> = new Promise(async (resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`Timeout waiting for ${options.inbound ? 'inbound' : 'outbound'} call to connect. conversationId: ${conversationId}`)), testUtils.getConfig().validationTimeout);
 
       // Resolve when the session arrives, short circuiting the timeout/reject
@@ -101,6 +97,6 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
   it('can connect group video', async function () {
     this.timeout(20000);
     const roomJid = testUtils.getRandomVideoRoomJid(context.jid);
-    await testVideo.call(this, roomJid);
+    await testVideo.call(this, roomJid, { sdkDisconnect: true, waitForDisconnect: true });
   });
 });

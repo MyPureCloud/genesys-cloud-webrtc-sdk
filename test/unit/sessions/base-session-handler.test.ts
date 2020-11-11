@@ -439,7 +439,7 @@ describe('handleSessionInit', () => {
     await handler.handleSessionInit(session);
     session.emit('connectionState', 'connected');
 
-    expect(logSpy).toHaveBeenCalledWith(LogLevels.info, 'connection state change', { state: 'connected', conversationId, sid: sessionId });
+    expect(logSpy).toHaveBeenCalledWith('info', 'connection state change', { state: 'connected', conversationId, sid: sessionId });
   });
 
   it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {
@@ -504,7 +504,7 @@ describe('acceptSession', () => {
 
     await handler.acceptSession(session, params);
 
-    expect(logSpy).toHaveBeenCalledWith(LogLevels.info, 'accepting session', {
+    expect(logSpy).toHaveBeenCalledWith('info', 'accepting session', {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,

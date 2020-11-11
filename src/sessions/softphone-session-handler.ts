@@ -31,9 +31,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
     if (!stream) {
-      this.log(LogLevels.debug, 'No mediaStream provided, starting media', { conversationId: session.conversationId });
+      this.log('debug', 'No mediaStream provided, starting media', { conversationId: session.conversationId });
       stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true, session });
-      this.log(LogLevels.debug, 'Media started', { conversationId: session.conversationId });
+      this.log('debug', 'Media started', { conversationId: session.conversationId });
     }
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
@@ -69,13 +69,13 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
       await Promise.all([patchPromise, terminatedPromise]);
     } catch (err) {
-      this.log(LogLevels.error, 'Failed to end session gracefully', { conversationId: session.conversationId, error: err });
+      this.log('error', 'Failed to end session gracefully', { conversationId: session.conversationId, error: err });
       return this.endSessionFallback(session);
     }
   }
 
   async endSessionFallback (session: IExtendedMediaSession): Promise<void> {
-    this.log(LogLevels.info, 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId });
+    this.log('info', 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId });
     try {
       await super.endSession(session);
     } catch (err) {
@@ -106,7 +106,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest) {
     try {
-      this.log(LogLevels.info, 'Muting audio', { conversationId: session.conversationId });
+      this.log('info', 'Muting audio', { conversationId: session.conversationId });
       const participant = await this.getParticipantForSession(session);
 
       await requestApi.call(this.sdk, `/conversations/calls/${session.conversationId}/participants/${participant.id}`, {

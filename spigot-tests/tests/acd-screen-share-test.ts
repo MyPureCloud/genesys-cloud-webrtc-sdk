@@ -1,28 +1,30 @@
-/* global describe, it, before, afterEach, after */
-import { testUtils, callUtils } from 'genesyscloud-spigot';
-
-import { GenesysCloudWebrtcSdk } from '../../dist/src/client';
-import * as utils from '../utils/utils';
+import * as testUtils from './utils/test-utils';
+import { IExtendedMediaSession } from '../../dist/src/types/interfaces';
+import GenesysCloudWebrtcSdk from '../../dist/src/client';
+import Client from 'genesys-cloud-streaming-client';
 
 const logger = testUtils.getLogger();
 
 describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]', function () {
   let config;
-  let client;
+  let client: Client;
   let context;
-  let sdk;
+  let sdk: GenesysCloudWebrtcSdk;
   let activeConversation;
 
   before(async function () {
     this.timeout(10000);
     context = testUtils.getContext();
-    client = await utils.getConnectedStreamingClient(context.authToken);
+    client = await testUtils.getConnectedStreamingClient(context.authToken);
+    logger.info('test streaming client connected');
     config = testUtils.getConfig();
-    const iceServers = await client.webrtcSessions.refreshIceServers();
-    if (!iceServers.length) {
-      throw new Error('No ICE Servers received');
-    }
-    sdk = new GenesysCloudWebrtcSdk({
+    // const iceServers = await client.webrtcSessions.refreshIceServers();
+    // if (!iceServers.length) {
+    //   throw new Error('No ICE Servers received');
+    // }
+    // sdk = await testUtils.getNewSdkConnection();
+
+    sdk = new (window as any).GenesysCloudWebrtcSdk({
       environment: config.envHost,
       organizationId: context.org.id,
       logLevel: 'debug',
@@ -36,11 +38,10 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     this.timeout(10000);
     if (activeConversation) {
       logger.log(`Active conversation found. Disconnecting call '${activeConversation.id}'.`);
-      await callUtils.disconnectCall(activeConversation.id, true);
+      await testUtils.disconnectCall(activeConversation.id, true);
       logger.log(`Active conversation disconnected '${activeConversation.id}'`);
     }
-    client.webrtcSessions.off('*');
-    client.webrtcSessions.off('incomingRtcSession');
+    client._webrtcSessions.removeAllListeners();
   });
 
   after(async function () {
@@ -58,13 +59,15 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
   it('should share screen via access code', async function () {
     this.timeout(100000);
 
+    // await testUtils.wait(15000);
+
     // create the call to get conversation information
 
     if (!context.userQueues || !context.userQueues.length) {
       throw new Error('No user queues configured for this user');
     }
 
-    activeConversation = await callUtils.testCall(this, client, { phoneNumber: config.outboundNumber, callFromQueueId: context.userQueues[0].id });
+    activeConversation = await testUtils.testCall(this, client, { phoneNumber: config.outboundNumber, callFromQueueId: context.userQueues[0].id });
     logger.log('screen share activeConversation', activeConversation);
 
     const customer = activeConversation.participants.find(p => p.purpose === 'customer' || p.purpose === 'voicemail');
@@ -75,10 +78,10 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     });
     logger.log('CODES result', codeData);
 
-    sdk.on('*', logger.log.bind(logger, 'sdk:event'));
+    // sdk.on('*', logger.log.bind(logger, 'sdk:event'));
     sdk.on('sessionStarted', (session) => {
       logger.log('sdk.sessionStarted', session);
-      window.session = session;
+      (window as any).session = session;
     });
 
     await sdk.initialize({ securityCode: codeData.addCommunicationCode });
@@ -89,17 +92,21 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     const jwt = testUtils.parseJwt(sdk._customerData.jwt);
     const jid = jwt.data.jid;
 
-    const gotAgentSession = new Promise((resolve, reject) => {
+    const gotAgentSession: Promise<IExtendedMediaSession> = new Promise((resolve, reject) => {
       testUtils.rejectTimeout(reject, 'Agent Session', config.validationTimeout * 10);
       client.webrtcSessions.on('incomingRtcSession', session => {
         logger.log('Got agent incoming session', session);
         session.accept();
+        session.on('stats', (stats) => {
+          logger.info('acd-screenshare-stats', stats);
+        });
         resolve(session);
       });
       client.webrtcSessions.on('*', logger.log.bind(logger, 'agentSessionEvent'));
+
     });
 
-    client.webrtcSessions.initiateRtcSession({
+    await client.webrtcSessions.initiateRtcSession({
       jid,
       mediaPurpose: 'screenShare',
       conversationId: codeData.conversation.id,
@@ -111,19 +118,25 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
 
     await testUtils.timeout(4000);
 
-    const peerStreamAdded = new Promise((resolve, reject) => {
+    const peerStreamAdded: Promise<MediaStream> = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Timeout waiting for remote stream')), config.validationTimeout);
       const hasIncomingVideo = agentSession.pc.getReceivers().filter((receiver) => receiver.track && receiver.track.kind === 'video');
       if (hasIncomingVideo) {
-        return callUtils.attachStream(agentSession.streams[0], false, 'agent received intial customer stream').then(() => {
+        return testUtils.attachStream(agentSession.streams[0], false, 'agent received intial customer stream').then(() => {
           clearTimeout(timer);
           return resolve(agentSession.streams[0]);
         });
       }
-      agentSession.on('peerTrackAdded', async (session, stream) => {
-        logger.log('peerTrackAdded', { session });
+
+      logger.info('waiting on peerTrackAdded', agentSession);
+
+      agentSession.on('peerTrackAdded', async (track) => {
+        logger.log('peerTrackAdded', { track });
         logger.log('peerTrackAdded -> attaching stream');
-        await callUtils.attachStream(stream, false, 'agent received customer stream');
+
+        const stream = new MediaStream();
+        stream.addTrack(track);
+        await testUtils.attachStream(stream, false, 'agent received customer stream');
         clearTimeout(timer);
         resolve(stream);
       });
@@ -133,6 +146,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
 
     await testUtils.timeout(config.callDelay);
     await testUtils.getConversationDetails(codeData.conversation.id);
-    await callUtils.validateVideoStream(agentSession, agentStream, null);
+    await testUtils.validateVideoStream(agentSession, agentStream);
+    agentSession.end();
   });
 });

@@ -23,7 +23,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       mediaPurpose: SessionTypes.acdScreenShare
     };
 
-    this.log(LogLevels.info, 'starting acd screen share session', opts);
+    this.log('info', 'starting acd screen share session', opts);
 
     /* if we had existing media, clean it up */
     try {
@@ -47,7 +47,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
   }
 
   onTrackEnd (session: IExtendedMediaSession) {
-    this.log(LogLevels.debug, 'Track ended');
+    this.log('debug', 'Track ended');
     if (checkAllTracksHaveEnded(session._screenShareStream)) {
       return this.endSession(session);
     }
@@ -76,7 +76,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         // if autoConnectSessions is 'false' and we have a guest, throw an error
         //  guests should auto accept screen share session
         const errMsg = '`autoConnectSession` must be set to "true" for guests';
-        this.log(LogLevels.error, errMsg, { sessionId: session.id, conversationId: session.conversationId });
+        this.log('error', errMsg, { sessionId: session.id, conversationId: session.conversationId });
         throw new Error(errMsg);
       }
 
@@ -92,7 +92,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
 
-      this.log(LogLevels.debug, 'Adding stream to the session and setting it to _screenShareStream', { sessionId: session.id, conversationId: session.conversationId });
+      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', { sessionId: session.id, conversationId: session.conversationId });
 
       await this.addMediaToSession(session, stream);
       await this.acceptSession(session, { id: session.id });
@@ -111,7 +111,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
   }
 
   public updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
-    this.log(LogLevels.warn, 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
+    this.log('warn', 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }
 }
