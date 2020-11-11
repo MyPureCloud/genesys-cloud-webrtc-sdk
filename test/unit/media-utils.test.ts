@@ -287,6 +287,45 @@ describe('startMedia()', () => {
     );
   });
 
+  it('should throw if retrying video for AbortError fails', async () => {
+    const expected1stConstraints = {
+      video: Object.assign({ frameRate: { ideal: 30 }, googNoiseReduction: true }, defaultResolution),
+      audio: false,
+    };
+    const expected2ndConstraints = {
+      video: {
+        googNoiseReduction: true,
+        frameRate: { ideal: 30 },
+        height: { ideal: 720 },
+        width: { ideal: 1280 }
+      },
+      audio: false,
+    };
+
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+
+    /* FF will throw this error in some hardware configs using a dock */
+    const error = new Error('Starting video failed');
+    error.name = 'AbortError';
+    mediaDevices.getUserMedia.mockRejectedValue(error);
+
+    try {
+      await mediaUtils.startMedia(mockSdk, { video: true });
+      fail('should have thrown');
+    } catch (e) {
+      expect(e).toBe(error);
+    }
+
+    expect(mediaDevices.getUserMedia).toHaveBeenNthCalledWith(1, expected1stConstraints);
+    expect(mediaDevices.getUserMedia).toHaveBeenNthCalledWith(2, expected2ndConstraints);
+
+    expect(mockSdk.logger.error).toHaveBeenCalled();
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('starting video was aborted. trying again with a lower resolution'),
+      expect.any(Object)
+    );
+  });
+
   it('should log errors', async () => {
     const constraints = { video: false, audio: false };
     const session: any = new MockSession();
