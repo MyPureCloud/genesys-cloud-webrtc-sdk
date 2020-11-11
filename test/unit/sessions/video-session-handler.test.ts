@@ -290,10 +290,13 @@ describe('mediaUpdateEvent', () => {
 
     session = {
       pc: {
+        remoteDescription: {
+          sdp: 'v=0\notherstuff'
+        },
         getReceivers: jest.fn().mockReturnValue([
           { track: { kind: 'video', id: incomingVideoId } },
           { track: { kind: 'audio', id: incomingAudioId } }
-        ])
+        ]),
       },
       emit: jest.fn()
     };
@@ -314,6 +317,24 @@ describe('mediaUpdateEvent', () => {
 
       handler.updateParticipantsOnScreen(session, mediaEvent);
       expect(session.emit).not.toHaveBeenCalled();
+    });
+
+    it('should be able to match using the trackId from the sdp (for Firefox)', () => {
+      session.pc.getReceivers.mockReturnValue([
+        { track: { kind: 'video', id: '{some-firefox-track-id}' } }
+      ]);
+      jest.spyOn(handler, 'getTrackIdFromSdp').mockReturnValue(incomingVideoId);
+
+      handler.updateParticipantsOnScreen(session, mediaEvent);
+
+      const expected = {
+        participants: [
+          { userId: sendingUser }
+        ]
+      };
+
+      expect(session.emit).toHaveBeenCalledWith('activeVideoParticipantsUpdate', expected);
+      session.emit.mockReset();
     });
 
     it('should emit if participantCount has not changed but on screen has', () => {
@@ -348,6 +369,16 @@ describe('mediaUpdateEvent', () => {
 
   describe('updateSpeakers', () => {
     it('should send out speaker update', () => {
+      handler.updateSpeakers(session, mediaEvent);
+      expect(session.emit).toHaveBeenCalledWith('speakersUpdate', { speakers: [{ userId: sendingUser }] });
+    });
+
+    it('should be able to match using the trackId from the sdp (for Firefox) and send the speaker update', () => {
+      session.pc.getReceivers.mockReturnValue([
+        { track: { kind: 'audio', id: '{some-firefox-track-id}' } }
+      ]);
+      jest.spyOn(handler, 'getTrackIdFromSdp').mockReturnValue(incomingAudioId);
+
       handler.updateSpeakers(session, mediaEvent);
       expect(session.emit).toHaveBeenCalledWith('speakersUpdate', { speakers: [{ userId: sendingUser }] });
     });
@@ -1311,5 +1342,42 @@ describe('pinParticipantVideo', () => {
     };
     expect(utils.requestApi).toHaveBeenCalledWith(expect.anything(), expectedParams);
     expect(eventSpy).toHaveBeenCalledWith({ participantId: null });
+  });
+});
+
+describe('getTrackIdFromSdp()', () => {
+  it('should return `undefined` for bad sdps', () => {
+    let sdp: string;
+    /* no sdp */
+    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(undefined);
+
+    /* no delimiters */
+    sdp = 'v=0';
+    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(undefined);
+
+    /* no requested media type */
+    sdp = `v=0
+m=video 1 UDP/TLS/RTP/SAVPF 96
+a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071 19d58781-f708-4945-be91-2758052273bd`;
+    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(undefined);
+
+    /* no msid */
+    sdp = `v=0
+m=audio 1 UDP/TLS/RTP/SAVPF 96`;
+    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(undefined);
+
+    /* no track */
+    sdp = `v=0
+m=audio 1 UDP/TLS/RTP/SAVPF 96
+a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071`;
+    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(undefined);
+  });
+
+  it('should return the trackId for a given media type', () => {
+    const trackId = '19d58781-f708-4945-be91-2758052273bd';
+    const sdp = `v=0
+m=audio 1 UDP/TLS/RTP/SAVPF 96
+a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071 ${trackId} `; /* should trim this blank space */
+    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(trackId);
   });
 });
