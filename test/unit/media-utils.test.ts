@@ -131,6 +131,7 @@ describe('startMedia()', () => {
     await mediaUtils.startMedia(mockSdk, { ...opts, session });
     expect(mockSdk.logger.info).toHaveBeenCalledWith('requesting getUserMedia', {
       opts,
+      isFirefox: false,
       constraints: { video: false, audio: false },
       sessionId: session.id,
       conversationId: session.conversationId,
@@ -210,6 +211,25 @@ describe('startMedia()', () => {
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
     Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+  });
+
+  it('should request audio and video by deviceId in Firefox using `exact`', async () => {
+    const videoDeviceId = mockVideoDevice2.deviceId;
+    const audioDeviceId = mockAudioDevice1.deviceId;
+    const expectedConstraints = {
+      video: Object.assign({ frameRate: { ideal: 30 }, deviceId: { exact: videoDeviceId } }, defaultResolution),
+      audio: { deviceId: { exact: audioDeviceId } },
+    };
+
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
+    Object.defineProperty(browserama, 'isFirefox', { get: () => true });
+
+    await mediaUtils.startMedia(mockSdk, { video: videoDeviceId, audio: audioDeviceId });
+
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(expectedConstraints);
+
+    Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
+    Object.defineProperty(browserama, 'isFirefox', { get: () => false });
   });
 
   it('should use the requested frameRate', async () => {
@@ -342,6 +362,7 @@ describe('startMedia()', () => {
       expect(loggerSpy).toHaveBeenCalledWith(e, {
         error,
         constraints,
+        isFirefox: false,
         opts: constraints,
         sessionId: session.id,
         conversationId: session.conversationId,
