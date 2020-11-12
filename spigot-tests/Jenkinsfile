@@ -9,7 +9,7 @@ pipeline {
     }
     stages {
         stage('Test') {
-            agent { node 'dev_v2' }
+            agent { node 'dev_mesos' }
             steps {
                 sh """
                     # Check out the latest npm-utils
