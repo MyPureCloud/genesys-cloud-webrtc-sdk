@@ -14,7 +14,10 @@ const DEFAULT_VIDEO_RESOLUTION = {
     ideal: 4096
   }
 };
-
+const LOWER_VIDEO_RESOLUTION = {
+  height: { ideal: 720 },
+  width: { ideal: 1280 }
+};
 export let _hasTransceiverFunctionality: boolean | null = null;
 let isListeningForDeviceChanges = false;
 
@@ -84,7 +87,18 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
   return window.navigator.mediaDevices.getUserMedia(constraints)
     .catch(e => {
       /* get the current devices (because they could have changed by the time we get here) */
-      sdk.logger.error(e, { ...loggingExtras, availableDevices: getCachedEnumeratedDevices() });
+      sdk.logger.error(e, { error: e, ...loggingExtras, availableDevices: getCachedEnumeratedDevices() });
+
+      /* FF throws this error for cameras connected through a dock.. sometimes */
+      if (e.name === 'AbortError' && e.message === 'Starting video failed') {
+        /* if we are requesting video and we haven't already tried with a lower resolution */
+        if (opts.video && opts.videoResolution !== LOWER_VIDEO_RESOLUTION) {
+          opts.videoResolution = LOWER_VIDEO_RESOLUTION;
+          sdk.logger.warn('starting video was aborted. trying again with a lower resolution', loggingExtras);
+          return startMedia(sdk, opts);
+        }
+      }
+
       throw e;
     });
 };
