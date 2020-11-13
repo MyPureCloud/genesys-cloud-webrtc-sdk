@@ -33,7 +33,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'spigot-tests/reports/xunit-0.xml'
+                    junit 'spigot-tests/reports/xunit.xml'
                     sh """
                         # Record results in TCDB
                         source ./npm-utils/scripts/jenkins-pre-build.sh 12.16.1 &> jenkins-pre.log

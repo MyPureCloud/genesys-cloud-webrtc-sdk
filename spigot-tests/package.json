@@ -19,7 +19,7 @@
     "glob": "^7.1.6",
     "json-stringify-safe": "^5.0.1",
     "mkdirp": "^1.0.4",
-    "puppeteer": "^5.4.1",
+    "puppeteer": "^1.20.0",
     "rimraf": "^3.0.2",
     "rollup": "^2.33.1",
     "rollup-plugin-node-builtins": "^2.1.2",

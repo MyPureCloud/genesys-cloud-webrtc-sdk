@@ -19,8 +19,8 @@ let config: TestConfig;
 const defaultDevConfig = {
   OAUTH_CLIENT_ID: 'ff22e32c-2948-4ff4-8f2c-1c379d28e84d',
   ORG: 'TEST-valve-1ym37mj1kao',
-  USERNAME: '',
-  PASSWORD: '',
+  USERNAME: 'agent-7-1ym37mj1kao@example.com',
+  PASSWORD: 'fV-qIe4HZtGM1yLr}^',
   ENV_HOST: 'inindca.com'
 };
 
