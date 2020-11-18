@@ -476,9 +476,10 @@ describe('handleSessionInit', () => {
 });
 
 describe('onSessionTerminated', () => {
-  it('should clean up outboundStream and emit sessionEnded', () => {
+  it('should clean up outboundStream and screenStream and emit sessionEnded', () => {
     const session: any = new MockSession();
     const stream = session._outboundStream = new MockStream(true);
+    const screenStream = session._screenShareStream = new MockStream(true);
 
     const spy = jest.fn();
     mockSdk.on('sessionEnded', spy);
@@ -486,6 +487,7 @@ describe('onSessionTerminated', () => {
     handler.onSessionTerminated(session, { condition: JingleReasons.success });
 
     expect(stream._tracks[0].stop).toHaveBeenCalled();
+    expect(screenStream._tracks[0].stop).toHaveBeenCalled();
     expect(spy).toHaveBeenCalled();
   });
 });
