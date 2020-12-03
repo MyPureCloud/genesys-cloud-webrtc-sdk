@@ -58,6 +58,12 @@ function connectEventHandlers () {
   webrtcSdk.on('endOfCandidates', endOfCandidates);
   webrtcSdk.on('disconnected', disconnected);
   webrtcSdk.on('connected', connected);
+  // webrtcSdk.on('audioTrackVolume', handleAudioChange);
+}
+
+function handleAudioChange (info) {
+  // console.log(info);
+  // document.getElementById('log-data').value += `audioTrackInput: { volume: ${info.volume}  trackId: ${info.track.id}}\n`;
 }
 
 function _getLogHeader (functionName) {

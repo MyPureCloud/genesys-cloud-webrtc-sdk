@@ -84,6 +84,12 @@ export interface IMediaRequestOptions {
    * This is just to be able to associate logs to a specific session. This is primarily for internal use an not generally needed.
    */
   session?: IExtendedMediaSession;
+  /**
+   * Emit volume change events for audio tracks.
+   * 
+   * default = `true` 
+   */
+  emitAudioVolume?: boolean;
 }
 
 export interface IOutgoingMediaDeviceIds {
@@ -287,6 +293,9 @@ export interface SdkEvents {
   connected: (info: { reconnect: boolean }) => void;
   ready: void;
   disconnected: (info: any) => void;
+
+  /* media, device, permission stuff */
+  audioTrackVolume: (details: { stream: MediaStream, track: MediaStreamTrack, volume: number, sessionId: string }) => void;
 
   // session related stuff
   pendingSession: IPendingSession;

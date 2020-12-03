@@ -83,6 +83,10 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
   sdk.logger.info('requesting getUserMedia', { ...loggingExtras });
 
   return window.navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+      stream.getAudioTracks().forEach(track => monitorAudioInput(sdk, stream, track, sessionId));
+      return stream;
+    })
     .catch(e => {
       /* get the current devices (because they could have changed by the time we get here) */
       sdk.logger.error(e, { error: e, ...loggingExtras, availableDevices: getCachedEnumeratedDevices() });
@@ -99,6 +103,58 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
 
       throw e;
     });
+};
+
+const tracksBeingMonitored: { [key: string]: any } = {};
+
+const monitorAudioInput = (sdk: GenesysCloudWebrtcSdk, stream: MediaStream, track: MediaStreamTrack, sessionId?: string) => {
+  if (tracksBeingMonitored[track.id]) {
+    return;
+  }
+
+  /* setup tear down monitors */
+  const stopTrack = track.stop.bind(track);
+  track.stop = () => {
+    console.log('stopping track from track.stop()', track);
+    clearAudioInputMonitor(track.id);
+    stopTrack();
+  };
+  track.onended = (e) => {
+    clearAudioInputMonitor(track.id);
+    console.log('stopping track from track.onended', track);
+  };
+
+  const audioContext = new AudioContext();
+  const audioSource = audioContext.createMediaStreamSource(stream);
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 512;
+  analyser.minDecibels = -127;
+  analyser.maxDecibels = 0;
+  analyser.smoothingTimeConstant = 0.4;
+  audioSource.connect(analyser);
+  const volumes = new Uint8Array(analyser.frequencyBinCount);
+  const volumeCallback = () => {
+    analyser.getByteFrequencyData(volumes);
+    let volumeSum = 0;
+    for (const volume of volumes)
+      volumeSum += volume;
+    const averageVolume = volumeSum / volumes.length;
+    // Value range: 127 = analyser.maxDecibels - analyser.minDecibels;
+    // volumeVisualizer.style.setProperty('--volume', (averageVolume * 100 / 127) + '%');
+    sdk.emit('audioTrackVolume', { stream, track, volume: averageVolume, sessionId });
+  };
+
+  tracksBeingMonitored[track.id] = setInterval(volumeCallback, 100);
+};
+
+const clearAudioInputMonitor = (trackId: string) => {
+  const intervalId = tracksBeingMonitored[trackId];
+  if (!intervalId) {
+    return;
+  }
+
+  clearInterval(intervalId);
+  delete tracksBeingMonitored[trackId];
 };
 
 /**
