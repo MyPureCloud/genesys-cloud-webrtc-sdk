@@ -84,7 +84,9 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
 
   return window.navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => {
-      stream.getAudioTracks().forEach(track => monitorAudioInput(sdk, stream, track, sessionId));
+      if (sdk._config.monitorMicVolume) {
+        stream.getAudioTracks().forEach(track => monitorMicVolume(sdk, stream, track, sessionId));
+      }
       return stream;
     })
     .catch(e => {
@@ -107,7 +109,11 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
 
 const tracksBeingMonitored: { [key: string]: any } = {};
 
-const monitorAudioInput = (sdk: GenesysCloudWebrtcSdk, stream: MediaStream, track: MediaStreamTrack, sessionId?: string) => {
+/**
+ * This will eventually also be implemented on the session in base-session-handler.ts#startSession/acceptSession
+ * TODO: that will happen with the media re-write
+ */
+const monitorMicVolume = (sdk: GenesysCloudWebrtcSdk, stream: MediaStream, track: MediaStreamTrack, sessionId?: string) => {
   if (tracksBeingMonitored[track.id]) {
     return;
   }
@@ -136,12 +142,11 @@ const monitorAudioInput = (sdk: GenesysCloudWebrtcSdk, stream: MediaStream, trac
   const volumeCallback = () => {
     analyser.getByteFrequencyData(volumes);
     let volumeSum = 0;
-    for (const volume of volumes)
+    for (const volume of volumes) {
       volumeSum += volume;
+    }
     const averageVolume = volumeSum / volumes.length;
-    // Value range: 127 = analyser.maxDecibels - analyser.minDecibels;
-    // volumeVisualizer.style.setProperty('--volume', (averageVolume * 100 / 127) + '%');
-    sdk.emit('audioTrackVolume', { stream, track, volume: averageVolume, sessionId });
+    sdk.emit('audioTrackVolume', { stream, track, volume: averageVolume, sessionId, muted: !track.enabled || track.muted });
   };
 
   tracksBeingMonitored[track.id] = setInterval(volumeCallback, 100);
