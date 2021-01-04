@@ -122,7 +122,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       logLevel: options.logLevel || 'info',
       optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
       allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
-      wsHost: options.wsHost
+      wsHost: options.wsHost,
+      monitorMicVolume: !!options.monitorMicVolume // default to false
     };
 
     this._orgDetails = { id: options.organizationId };

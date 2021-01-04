@@ -35,6 +35,7 @@ export interface ISdkConstructOptions {
   defaultAudioDeviceId?: string | null;
   defaultOutputDeviceId?: string | null;
   allowedSessionTypes?: SessionTypes[];
+  monitorMicVolume?: boolean;
 }
 
 /**
@@ -58,6 +59,7 @@ export interface ISdkConfig {
   optOutOfTelemetry?: boolean;
   allowedSessionTypes?: SessionTypes[];
   customIceServersConfig?: RTCConfiguration;
+  monitorMicVolume?: boolean;
 }
 
 export interface IMediaRequestOptions {
@@ -84,6 +86,12 @@ export interface IMediaRequestOptions {
    * This is just to be able to associate logs to a specific session. This is primarily for internal use an not generally needed.
    */
   session?: IExtendedMediaSession;
+  /**
+   * Emit volume change events for audio tracks.
+   *
+   * default = `true`
+   */
+  emitAudioVolume?: boolean;
 }
 
 export interface IOutgoingMediaDeviceIds {
@@ -288,6 +296,9 @@ export interface SdkEvents {
   ready: void;
   disconnected: (info: any) => void;
 
+  /* media, device, permission stuff */
+  audioTrackVolume: (details: { stream: MediaStream, track: MediaStreamTrack, volume: number, sessionId: string, muted: boolean }) => void;
+
   // session related stuff
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
@@ -295,3 +306,5 @@ export interface SdkEvents {
   handledPendingSession: IExtendedMediaSession;
   cancelPendingSession: (sessionId: string) => void;
 }
+
+export type MicVolumeEvent = Parameters<SdkEvents['audioTrackVolume']>[0];
