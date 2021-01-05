@@ -84,7 +84,7 @@ export const startMedia = async function (sdk: GenesysCloudWebrtcSdk, opts: IMed
 
   return window.navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => {
-      if (sdk._config.monitorMicVolume) {
+      if (sdk._config.media.monitorMicVolume) {
         stream.getAudioTracks().forEach(track => monitorMicVolume(sdk, stream, track, sessionId));
       }
       return stream;
@@ -437,9 +437,9 @@ export function logDeviceChange (
     requestedAudioDeviceId: devicesChange.requestedAudioDeviceId,
 
     /* sdk defaults */
-    sdkDefaultVideoDeviceId: sdk._config.defaultVideoDeviceId,
-    sdkDefaultAudioDeviceId: sdk._config.defaultAudioDeviceId,
-    sdkDefaultOutputDeviceId: sdk._config.defaultOutputDeviceId,
+    sdkDefaultVideoDeviceId: sdk._config.defaults.videoDeviceId,
+    sdkDefaultAudioDeviceId: sdk._config.defaults.audioDeviceId,
+    sdkDefaultOutputDeviceId: sdk._config.defaults.outputDeviceId,
 
     /* other random stuff */
     currentAudioElementSinkId: currentOutputDeviceId,
@@ -624,13 +624,13 @@ export async function getValidDeviceId (
 
   if (kind === 'videoinput') {
     availableDevices = devices.videoDevices.slice();
-    sdkConfigDefault = sdk._config.defaultVideoDeviceId;
+    sdkConfigDefault = sdk._config.defaults.videoDeviceId;
   } else if (kind === 'audioinput') {
     availableDevices = devices.audioDevices.slice();
-    sdkConfigDefault = sdk._config.defaultAudioDeviceId;
+    sdkConfigDefault = sdk._config.defaults.audioDeviceId;
   } else {
     availableDevices = devices.outputDevices.slice();
-    sdkConfigDefault = sdk._config.defaultOutputDeviceId;
+    sdkConfigDefault = sdk._config.defaults.outputDeviceId;
   }
 
   // if a deviceId was passed in, try to use it
@@ -649,7 +649,7 @@ export async function getValidDeviceId (
       foundDevice = availableDevices.find((d: MediaDeviceInfo) => d.deviceId === sdkConfigDefault);
       // log if we couldn't find the sdk default device
       if (!foundDevice) {
-        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaultAudioDeviceId, sessionInfos });
+        sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, { deviceId: sdk._config.defaults.audioDeviceId, sessionInfos });
       }
     }
   }

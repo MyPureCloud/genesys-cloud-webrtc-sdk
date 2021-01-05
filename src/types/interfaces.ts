@@ -16,51 +16,234 @@ declare module 'genesys-cloud-streaming-client' {
 
 export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
 
-export interface ISdkConstructOptions {
+/**
+ * SDK configuration options for construction a new instance
+ */
+export interface ISdkConfig {
+  /** 
+   * Domain to use. 
+   * 
+   * Optional: default is `mypurecloud.com`. 
+   * 
+   * Available Options: 
+   * ``` ts
+   *  'mypurecloud.com',
+   *  'mypurecloud.com.au',
+   *  'mypurecloud.jp',
+   *  'mypurecloud.de',
+   *  'mypurecloud.ie',
+   *  'usw2.pure.cloud',
+   *  'cac1.pure.cloud',
+   *  'euw2.pure.cloud',
+   *  'apne2.pure.cloud'
+   */
   environment?: string;
+  /** 
+   * Access token received from authentication. 
+   *  Required for authenticated users (aka agent). 
+   */
   accessToken?: string;
+  /** 
+   * Organization ID (aka the GUID).
+   *  Required for unauthenticated users (aka guest).
+   */
   organizationId?: string;
+  /** 
+   * WebSocket Host. 
+   * Optional: defaults to `wss://streaming.{environment}` 
+   */
   wsHost?: string;
+  /** 
+   * Auto connect softphone sessions
+   * Optional: default `true`
+   * 
+   * Note: This is required to be true for guest screen share
+   */
   autoConnectSessions?: boolean;
-  iceServers?: RTCConfiguration;
-  iceTransportPolicy?: RTCIceTransportPolicy;
-  logLevel?: LogLevels;
-  logger?: ILogger;
-  optOutOfTelemetry?: boolean;
+  /** 
+   * Disable auto answering softphone calls. By default softphone
+   *  calls will be auth answered unless this is set to `true`
+   *  
+   * Optional: default `false`
+   */
   disableAutoAnswer?: boolean;
-  defaultAudioElement?: HTMLAudioElement;
-  defaultAudioStream?: MediaStream;
-  defaultVideoElement?: HTMLVideoElement;
-  defaultVideoDeviceId?: string | null;
-  defaultAudioDeviceId?: string | null;
-  defaultOutputDeviceId?: string | null;
+  /** 
+   * Desired log level. 
+   * Available options: 
+   * ``` ts
+   *  type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
+   * ```
+   * 
+   * Optional: defaults to `'info'` 
+   */
+  logLevel?: LogLevels;
+  /** 
+   * Logger to use. Must implement the `ILogger` interface. 
+   * ``` ts
+   * interface ILogger {
+   *    log (message: string | Error, details?: any, skipServer?: boolean): void;
+   *    debug (message: string | Error, details?: any, skipServer?: boolean): void;
+   *    info (message: string | Error, details?: any, skipServer?: boolean): void;
+   *    warn (message: string | Error, details?: any, skipServer?: boolean): void;
+   *    error (message: string | Error, details?: any, skipServer?: boolean): void;
+   * }
+   * ```
+   * 
+   * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
+   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`) 
+   *  and outputs them in the console.
+   */
+  logger?: ILogger;
+  /** 
+   * Opt out of sending logs to sumo. Logs are only sent to sumo 
+   *  if a custom logger is _not_ provided. The default logger will
+   *  send logs to sumo unless this option is `true`
+   * 
+   * Optional: default `false`
+   */
+  optOutOfTelemetry?: boolean;
+  /** 
+   * Allowed session types the sdk instance should handle.
+   *  Only session types listed here will be handled. 
+   * Available options passed in as an array:
+   * ``` ts
+   * enum SessionTypes {
+   *    softphone = 'softphone',
+   *    collaborateVideo = 'collaborateVideo',
+   *    acdScreenShare = 'screenShare'
+   * }
+   * ```
+   * 
+   * example: 
+   * ``` ts
+   * import { SessionTypes } from 'genesys-cloud-webrtc-sdk/dist/src/types/enums';
+   * 
+   * new GenesysCloudWebrtcSdk({
+   *    allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
+   *    // other config options
+   * });
+   * ```
+   *
+   * Optional: defaults to all session types.
+   */
   allowedSessionTypes?: SessionTypes[];
-  monitorMicVolume?: boolean;
+
+  /** media related configuration */
+  media?: {
+    /**
+     * When `true` all audio tracks created via the SDK 
+     *  will have their volumes monitored and emited. 
+     *  See `sdk.media` events for more details. 
+     * Optional: defaults to `false`
+     */
+    monitorMicVolume?: boolean;
+    /**
+     * Determine how the SDK should request permissions for audio (aka microphone). 
+     *  - `'none'`: the sdk will not attempt to check or gain permissions
+     *  - `'proactive'`: the sdk will attempt to check and gain permissions 
+     *      when `sdk.initialize()` is called. An error will be thrown if 
+     *      permissions fail. 
+     *  - `'required'`: same funcationality as `'proactive'` except the 
+     *      consumer will _NOT_ be allowed to use the sdk if the permission
+     *      check fails. This can be useful if the media type is required
+     *      for functionality (ex: `'audio'` being necessary for softphone calls)
+     * 
+     * Optional: defaults to `'none'`
+     */
+    microphonePermissionMode?: 'none' | 'proactive' | 'required';
+    /**
+     * Determine how the SDK should request permissions for video (aka camera).
+     *  - `'none'`: the sdk will not attempt to check or gain permissions
+     *  - `'proactive'`: the sdk will attempt to check and gain permissions 
+     *      when `sdk.initialize()` is called. An error will be thrown if 
+     *      permissions fail. 
+     *  - `'required'`: same funcationality as `'proactive'` except the 
+     *      consumer will _NOT_ be allowed to use the sdk if the permission
+     *      check fails. This can be useful if the media type is required
+     *      for functionality (ex: `'video'` being necessary for video calls)
+     * 
+     * Optional: defaults to `'none'`
+     */
+    cameraPermissionMode?: 'none' | 'proactive' | 'required';
+  };
+
+  /** defaults for various media related functionality */
+  defaults?: {
+    /**
+     * A default audio stream to accept softphone sessions with
+     *  if no audio stream was used when accepting the session
+     *  (ie: `sdk.acceptSession({ id: 'session-id', mediaStream })`)
+     * 
+     * Optional: no default
+     */
+    audioStream?: MediaStream;
+    /**
+     * HTML Audio Element to attach incoming audio streamsto. 
+     *  Default: the sdk will create one and place it 
+     *    in the DOM
+     * 
+     * Optional: no default
+     */
+    audioElement?: HTMLAudioElement;
+    /**
+     * HTML Video Element to attach incoming video streams to. 
+     *  A video element is required for accepting incoming video
+     *  calls. If no video element is passed into `sdk.acceptSession()`, 
+     *  this default element will be used. 
+     * 
+     * Optional: no default
+     */
+    videoElement?: HTMLVideoElement;
+    /**
+     * Video resolution to default to when requesting 
+     *  video media. 
+     * 
+     * Note: if the resolution causes getUserMedia to fail
+     *  (which can happen sometimes in some browsers), the 
+     *  SDK will retry _without_ the resolution request. 
+     *  This means this setting may or may not be used if 
+     *  depending on the browser. 
+     * 
+     * Optional: no default
+     */
+    videoResolution?: {
+      width: ConstrainULong,
+      height: ConstrainULong
+    };
+    /**
+     * Default video device ID to use when starting camera media. 
+     *  - `string` to request media for device
+     *  - `null | falsey` to request media system default device
+     * 
+     * Optional: defaults to `null`
+     */
+    videoDeviceId?: string | null;
+    /**
+     * Default audio device ID to use when starting microphone media. 
+     *  - `string` to request media for device
+     *  - `null | falsey` to request media system default device
+     * 
+     * Optional: defaults to `null`
+     */
+    audioDeviceId?: string | null;
+    /**
+     * Default output device ID to use when starting camera media. 
+     *  - `string` ID for output media device to use
+     *  - `null | falsey` to request media system default device
+     *  
+     * Note: Not all browsers support output devices. System default
+     *  for output devices is always an empty string (ex: `''`)
+     * 
+     * Optional: defaults to `null`
+     */
+    outputDeviceId?: string | null;
+  }
 }
 
 /**
  * if defaultAudioElement is provided, it will be used to play incoming call audio *unless* it already has a source in which case the sdk will create a temporary audio element for the call.
  * defaultAudioStream is the outgoing mediaStream for softphone calls. If not provided, one will be created during `acceptSession`. the sdk will not clean up provided streams
  */
-export interface ISdkConfig {
-  environment?: string;
-  accessToken?: string;
-  wsHost: string;
-  disableAutoAnswer?: boolean;
-  autoConnectSessions?: boolean;
-  defaultAudioElement?: HTMLAudioElement;
-  defaultAudioStream?: MediaStream;
-  defaultVideoElement?: HTMLVideoElement;
-  defaultVideoDeviceId?: string | null;
-  defaultAudioDeviceId?: string | null;
-  defaultOutputDeviceId?: string | null;
-  iceTransportPolicy?: RTCIceTransportPolicy;
-  logLevel?: LogLevels;
-  optOutOfTelemetry?: boolean;
-  allowedSessionTypes?: SessionTypes[];
-  customIceServersConfig?: RTCConfiguration;
-  monitorMicVolume?: boolean;
-}
 
 export interface IMediaRequestOptions {
   /**
@@ -70,6 +253,9 @@ export interface IMediaRequestOptions {
    * - `false` | `undefined` to not request/update this type of media
    */
   video?: boolean | string | null;
+  /**
+   * Video resolution to request from getUserMedia
+   */
   videoResolution?: {
     width: ConstrainULong,
     height: ConstrainULong

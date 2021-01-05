@@ -14,7 +14,7 @@ import {
   IStartVideoSessionParams
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
-import { SessionTypes, LogLevels, SdkErrorTypes, CommunicationStates } from '../types/enums';
+import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange } from '../media-utils';
 import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
@@ -270,12 +270,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   // doc: acceptSession requires a video and audio element either provided or default
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    const audioElement = params.audioElement || this.sdk._config.defaultAudioElement;
+    const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     if (!audioElement) {
       throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { conversationId: session.conversationId });
     }
 
-    const videoElement = params.videoElement || this.sdk._config.defaultVideoElement;
+    const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
     if (!videoElement) {
       throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { conversationId: session.conversationId });
     }

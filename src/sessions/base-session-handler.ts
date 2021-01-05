@@ -91,7 +91,7 @@ export default abstract class BaseSessionHandler {
       sessionId: session.id,
       params
     };
-    const outputDeviceId = this.sdk._config.defaultOutputDeviceId || '';
+    const outputDeviceId = this.sdk._config.defaults.outputDeviceId || '';
     const isSupported = hasOutputDeviceSupport();
 
     /* if we have an audio element _and_ are in a supported browser */

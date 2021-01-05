@@ -1,10 +1,9 @@
 /// <reference path="types/libs.ts" />
 
 import {
-  ISdkConstructOptions,
+  ISdkConfig,
   ILogger,
   ICustomerData,
-  ISdkConfig,
   IEndSessionRequest,
   IAcceptSessionRequest,
   ISessionMuteRequest,
@@ -22,7 +21,7 @@ import {
 } from './client-private';
 import { requestApi, throwSdkError, SdkError } from './utils';
 import { setupLogging } from './logging';
-import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
+import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { startMedia, startDisplayMedia } from './media-utils';
 import { EventEmitter } from 'events';
@@ -40,29 +39,43 @@ const ENVIRONMENTS = [
   'apne2.pure.cloud'
 ];
 
+const MEDIA_PERMISSION_MODES = ['none', 'proactive', 'required'];
+
 /**
  * Validate SDK construct options.
  *  Returns `null` if no errors,
  *    returns `string` with error message if there are errors
  * @param options
  */
-function validateOptions (options: ISdkConstructOptions): string | null {
+function validateOptions (options: ISdkConfig): string | null {
   if (!options) {
     return 'Options required to create an instance of the SDK';
   }
 
+  const logger = (options.logger || console);
   if (!options.accessToken && !options.organizationId) {
     return 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.';
   }
 
   if (!options.environment) {
-    (options.logger || console).warn('No environment provided, using mypurecloud.com');
+    logger.warn('No environment provided, using mypurecloud.com');
     options.environment = 'mypurecloud.com';
   }
 
   if (ENVIRONMENTS.indexOf(options.environment) === -1) {
     (options.logger || console).warn('Environment is not in the standard list. You may not be able to connect.');
   }
+
+  /* validate permission request modes */
+  (['cameraPermissionMode', 'microphonePermissionMode'] as Array<keyof typeof options.media>)
+    .forEach(key => {
+      const value = options.media[key];
+      if (value && !MEDIA_PERMISSION_MODES.includes(value as string)) {
+        logger.warn(`Invalid permission mode for media.${key}. Setting to default.`);
+        delete options.media[key];
+      }
+    });
+
   return null;
 }
 
@@ -98,8 +111,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return !this._config.accessToken;
   }
 
-  constructor (options: ISdkConstructOptions) {
+  constructor (options: ISdkConfig) {
     super();
+
+    options.media = options.media || {};
+    options.defaults = options.defaults || {};
 
     const errorMsg = validateOptions(options);
     if (errorMsg) {
@@ -107,32 +123,40 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     }
 
     this._config = {
-      accessToken: options.accessToken,
-      autoConnectSessions: options.autoConnectSessions !== false, // default true
-      customIceServersConfig: options.iceServers,
-      defaultAudioElement: options.defaultAudioElement,
-      defaultAudioStream: options.defaultAudioStream,
-      defaultVideoElement: options.defaultVideoElement,
-      defaultVideoDeviceId: options.defaultVideoDeviceId || null,
-      defaultAudioDeviceId: options.defaultAudioDeviceId || null,
-      defaultOutputDeviceId: options.defaultOutputDeviceId || null,
-      disableAutoAnswer: options.disableAutoAnswer || false, // default false
       environment: options.environment,
-      iceTransportPolicy: options.iceTransportPolicy || 'all',
+      accessToken: options.accessToken,
+      wsHost: options.wsHost,
+      organizationId: options.organizationId,
+      autoConnectSessions: options.autoConnectSessions !== false, // default true
       logLevel: options.logLevel || 'info',
+      disableAutoAnswer: options.disableAutoAnswer || false, // default false
       optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
       allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
-      wsHost: options.wsHost,
-      monitorMicVolume: !!options.monitorMicVolume // default to false
+
+      /* media related config */
+      media: {
+        monitorMicVolume: !!options.media.monitorMicVolume, // default to false
+        microphonePermissionMode: options.media.microphonePermissionMode || 'none',
+        cameraPermissionMode: options.media.cameraPermissionMode || 'none'
+      },
+
+      /* defaults */
+      defaults: {
+        audioStream: options.defaults.audioStream,
+        audioElement: options.defaults.audioElement,
+        videoElement: options.defaults.videoElement,
+        videoResolution: options.defaults.videoResolution,
+        videoDeviceId: options.defaults.videoDeviceId || null,
+        audioDeviceId: options.defaults.audioDeviceId || null,
+        outputDeviceId: options.defaults.outputDeviceId || null,
+      }
     };
 
     this._orgDetails = { id: options.organizationId };
 
     setupLogging.call(this, options.logger);
 
-    if (options.iceTransportPolicy) {
-      this.logger.warn('Setting iceTransportPolicy manually is deprecated and will be removed soon.');
-    }
+    this._config.logger = this.logger;
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
@@ -322,17 +346,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     if (updateVideo) {
       this.logger.info('Updating defaultVideoDeviceId', { defaultVideoDeviceId: options.videoDeviceId });
-      this._config.defaultVideoDeviceId = options.videoDeviceId;
+      this._config.defaults.videoDeviceId = options.videoDeviceId;
     }
 
     if (updateAudio) {
       this.logger.info('Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
-      this._config.defaultAudioDeviceId = options.audioDeviceId;
+      this._config.defaults.audioDeviceId = options.audioDeviceId;
     }
 
     if (updateOutput) {
       this.logger.info('Updating defaultOutputDeviceId', { defaultOutputDeviceId: options.outputDeviceId });
-      this._config.defaultOutputDeviceId = options.outputDeviceId;
+      this._config.defaults.outputDeviceId = options.outputDeviceId;
     }
 
     if (typeof options.updateActiveSessions === 'boolean' && options.updateActiveSessions) {
@@ -345,8 +369,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       if (updateVideo || updateAudio) {
         const opts = {
-          videoDeviceId: updateVideo ? this._config.defaultVideoDeviceId : undefined,
-          audioDeviceId: updateAudio ? this._config.defaultAudioDeviceId : undefined
+          videoDeviceId: updateVideo ? this._config.defaults.videoDeviceId : undefined,
+          audioDeviceId: updateAudio ? this._config.defaults.audioDeviceId : undefined
         };
 
         promises.push(
@@ -356,7 +380,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       if (updateOutput) {
         promises.push(
-          this.sessionManager.updateOutputDeviceForAllSessions(this._config.defaultOutputDeviceId)
+          this.sessionManager.updateOutputDeviceForAllSessions(this._config.defaults.outputDeviceId)
         );
       }
 

@@ -29,7 +29,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
+    let stream = params.mediaStream || this.sdk._config.defaults.audioStream;
     if (!stream) {
       this.log('debug', 'No mediaStream provided, starting media', { conversationId: session.conversationId });
       stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true, session });
@@ -38,7 +38,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
 
-    const element = params.audioElement || this.sdk._config.defaultAudioElement;
+    const element = params.audioElement || this.sdk._config.defaults.audioElement;
 
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
       session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, session.conversationId);
