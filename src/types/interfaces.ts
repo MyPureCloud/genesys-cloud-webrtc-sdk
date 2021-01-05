@@ -36,6 +36,7 @@ export interface ISdkConfig {
    *  'cac1.pure.cloud',
    *  'euw2.pure.cloud',
    *  'apne2.pure.cloud'
+   * ```
    */
   environment?: string;
   /** 
@@ -269,7 +270,8 @@ export interface IMediaRequestOptions {
    */
   audio?: boolean | string | null;
   /**
-   * This is just to be able to associate logs to a specific session. This is primarily for internal use an not generally needed.
+   * This is just to be able to associate logs to a specific session. 
+   *  This is primarily for internal use and not generally needed.
    */
   session?: IExtendedMediaSession;
   /**
@@ -294,12 +296,6 @@ export interface IMediaDeviceIds {
   audioDeviceId?: string | null;
   /** `deviceId` for audio output, `true` for sdk default output, or `null` for system default */
   outputDeviceId?: string | null;
-}
-
-export interface IEnumeratedDevices {
-  videoDevices: MediaDeviceInfo[];
-  audioDevices: MediaDeviceInfo[];
-  outputDevices: MediaDeviceInfo[];
 }
 
 export interface IUpdateOutgoingMedia {
@@ -368,6 +364,11 @@ export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
 
 export interface IEndSessionRequest {
   id?: string;
+  conversationId?: string;
+}
+
+export interface ISessionAndConversationIds {
+  sessionId?: string;
   conversationId?: string;
 }
 
@@ -482,9 +483,6 @@ export interface SdkEvents {
   ready: void;
   disconnected: (info: any) => void;
 
-  /* media, device, permission stuff */
-  audioTrackVolume: (details: { stream: MediaStream, track: MediaStreamTrack, volume: number, sessionId: string, muted: boolean }) => void;
-
   // session related stuff
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
@@ -493,4 +491,68 @@ export interface SdkEvents {
   cancelPendingSession: (sessionId: string) => void;
 }
 
-export type MicVolumeEvent = Parameters<SdkEvents['audioTrackVolume']>[0];
+/**
+ * Events emitted on `sdk.media`
+ */
+export interface SdkMediaEvents {
+  /**
+   * Event emitted for microphone volume changes. Event includes the 
+   *  media stream, media track, volume average, if the mic is muted,
+   *  and the sessionId (if available). 
+   * 
+   * The sessionId will only be available if the media was created 
+   *  with a sessionId passed in. 
+   */
+  audioTrackVolume: (details: { track: MediaStreamTrack, volume: number, sessionId: string, muted: boolean }) => void;
+
+  /**
+   * Event emitted whenever the media state changes. 
+   *  `event.eventType` will match the other event that
+   *    was emitted on.
+   * 
+   * Example: if the devices changed, the following will emit:
+   * 
+   * `sdk.media.on('state', evt => // evt.eventType === 'devices')`
+   *  which means that the `'devices'` event will also emit
+   * `sdk.media.on('devices', evt => // same event)`
+   */
+  state: SdkMediaStateWithType;
+
+  /**
+   * Event emitted
+   */
+  devices: SdkMediaStateWithType;
+}
+export type SdkMediaStateWithType = MediaState & {
+  eventType: keyof SdkMediaEvents
+};
+
+export type MicVolumeEvent = Parameters<SdkMediaEvents['audioTrackVolume']>[0];
+
+export type MediaState = {
+  /** list of all available devices */
+  devices: MediaDeviceInfo[];
+  /** 
+   * list of all old devices. This will only 
+   *  differ from `devices` if `devices` 
+   *  changed. This is useful for diffing
+   *  which devices changed
+   */
+  oldDevices: MediaDeviceInfo[];
+  /** list of all available audio devices */
+  audioDevices: MediaDeviceInfo[];
+  /** list of all available video devices */
+  videoDevices: MediaDeviceInfo[];
+  /** list of all available output devices */
+  outputDevices: MediaDeviceInfo[];
+  /** whether the browser supports output devices */
+  hasOutputDeviceSupport: boolean;
+  /** does at least one video device exist */
+  hasMic: boolean;
+  /** does at least one audio device exist */
+  hasCamera: boolean;
+  /** does the sdk have browser permissions for audio/microphone */
+  hasMicPermissions: boolean;
+  /** does the sdk have browser permissions for video/camera */
+  hasCameraPermissions: boolean;
+};

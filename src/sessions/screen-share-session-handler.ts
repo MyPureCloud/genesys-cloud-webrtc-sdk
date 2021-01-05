@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
-import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
-import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
+import { SessionTypes, SdkErrorTypes } from '../types/enums';
+import { checkAllTracksHaveEnded } from '../media/media-utils';
 import { throwSdkError, parseJwt, isAcdJid } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
@@ -34,7 +34,12 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     this._screenStreamPromise = null;
 
     /* request the display now, but handle it on session-init */
-    this._screenStreamPromise = startDisplayMedia();
+    // TODO: document this. calling `sdk.startScreenShare()` will no longer 
+    //    throw an error is the user cancels the screen prompt. You 
+    //    have to listen for sdkErrors. Maybe this should be refactored?
+    // It has to be this way because FF will only allow this require if 
+    //    it is tied to a user action (like a button click to startSession)
+    this._screenStreamPromise = this.sdk.media.startDisplayMedia();
 
     await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
 

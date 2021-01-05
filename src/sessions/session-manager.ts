@@ -6,7 +6,6 @@ import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
-import { getValidDeviceId, getEnumeratedDevices, hasOutputDeviceSupport } from '../media-utils';
 import {
   IPendingSession,
   ISessionInfo,
@@ -157,7 +156,7 @@ export class SessionManager {
 
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
     const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
-    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId, ...sessions) || '';
+    const _outputDeviceId = this.sdk.media.getValidDeviceId('audiooutput', outputDeviceId, ...sessions) || '';
     const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
 
     if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
@@ -284,7 +283,7 @@ export class SessionManager {
   }
   async validateOutgoingMediaTracks () {
     const sessions = this.getAllActiveSessions();
-    const { videoDevices, audioDevices, outputDevices } = await getEnumeratedDevices(this.sdk);
+    const { videoDevices, audioDevices, outputDevices, hasOutputDeviceSupport } = this.sdk.media.getState();
     const updates = new Map<string, { video?: boolean, audio?: boolean }>();
     const promises = [];
 
@@ -321,7 +320,7 @@ export class SessionManager {
         });
 
       /* check output device */
-      if (hasOutputDeviceSupport() && session._outputAudioElement) {
+      if (hasOutputDeviceSupport && session._outputAudioElement) {
         const deviceExists = outputDevices.find(
           d => d.deviceId === session._outputAudioElement.sinkId
         );

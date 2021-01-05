@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 * Updated configuration options for constructing an SDK instance
+* Moved `sdk.createMedia(opts)` to `sdk.media.startMedia(opts)`
+* Moved `sdk.getDisplayMedia(opts)` to `sdk.media.startDisplayMedia(opts)`
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.1...HEAD)
 

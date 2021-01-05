@@ -1,7 +1,7 @@
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession } from '../types/interfaces';
-import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
-import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
+import { SessionTypes, SdkErrorTypes } from '../types/enums';
+import { attachAudioMedia, logDeviceChange } from '../media/media-utils';
 import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 import { pick } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
@@ -32,19 +32,19 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     let stream = params.mediaStream || this.sdk._config.defaults.audioStream;
     if (!stream) {
       this.log('debug', 'No mediaStream provided, starting media', { conversationId: session.conversationId });
-      stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true, session });
+      stream = await this.sdk.media.startMedia({ audio: params.audioDeviceId || true, session });
       this.log('debug', 'Media started', { conversationId: session.conversationId });
     }
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
 
     const element = params.audioElement || this.sdk._config.defaults.audioElement;
-
+    const ids = { conversationId: session.conversationId, sessionId: session.id };
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, session.conversationId);
+      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, ids);
     } else {
       session.on('peerTrackAdded', (track: MediaStreamTrack, stream: MediaStream) => {
-        session._outputAudioElement = attachAudioMedia(this.sdk, stream, element, session.conversationId);
+        session._outputAudioElement = attachAudioMedia(this.sdk, stream, element, ids);
       });
     }
 

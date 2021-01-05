@@ -15,7 +15,7 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange } from '../media-utils';
+import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
 import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -282,22 +282,22 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream;
     if (!stream) {
-      const devices = await getEnumeratedDevices(this.sdk);
+      const { hasCamera, hasMic } = this.sdk.media.getState();
       const mediaParams: IMediaRequestOptions = {
         audio: params.audioDeviceId || true,
         video: params.videoDeviceId || true,
         session
       };
 
-      if (!devices.videoDevices.length) {
+      if (!hasCamera) {
         mediaParams.video = false;
       }
 
-      if (!devices.audioDevices.length) {
+      if (!hasMic) {
         mediaParams.audio = false;
       }
 
-      stream = await startMedia(this.sdk, mediaParams);
+      stream = await this.sdk.media.startMedia(mediaParams);
     }
 
     session._outboundStream = stream;
@@ -456,7 +456,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       });
 
       const track = (
-        await startMedia(this.sdk, { video: videoDeviceConstraint, session })
+        await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
       ).getVideoTracks()[0];
 
       logDeviceChange(this.sdk, session, 'changingDevices', {
@@ -514,7 +514,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
         // if params.unmuteDeviceId is `undefined`, use sdk defaults
         const track = (
-          await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session })
+          await this.sdk.media.startMedia({ audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session })
         ).getAudioTracks()[0];
         await this.addReplaceTrackToSession(session, track);
       }
@@ -542,7 +542,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     try {
       this.log('info', 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId });
 
-      const stream = await startDisplayMedia();
+      const stream = await this.sdk.media.startDisplayMedia();
       session._screenShareStream = stream;
 
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
