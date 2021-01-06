@@ -148,11 +148,19 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
-    this.on('sdkError', this.logger.error.bind(this.logger));
     this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
     this.on('cancelPendingSession', this.logger.info.bind(this.logger, 'cancelPendingSession'));
     this.on('handledPendingSession', this.logger.info.bind(this.logger, 'handledPendingSession'));
     this.on('trace', this.logger.info.bind(this.logger));
+    this.on('sdkError', (error) => {
+      /* this prints it more readable in the console */
+      this.logger.error('sdkError', {
+        name: error.name,
+        message: error.message,
+        type: error.type,
+        details: error.details
+      });
+    });
 
     this._connected = false;
     this._streamingConnection = null;

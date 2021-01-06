@@ -4,7 +4,8 @@ export enum SdkErrorTypes {
   http = 'http',
   invalid_options = 'invalid_options',
   not_supported = 'not_supported',
-  session = 'session'
+  session = 'session',
+  media = 'media',
 }
 
 export type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error';

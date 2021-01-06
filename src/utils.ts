@@ -23,6 +23,29 @@ export class SdkError extends Error {
   }
 }
 
+/**
+ * This will create an `SdkError`, emit the error on `sdk.on('sdkError', error)`,
+ *  and return the error. It will not `throw` the error. It is up to the caller 
+ *  on what to do with it. 
+ * @param this sdk instance
+ * @param errorType SdkError type
+ * @param message message as string or Error instance
+ * @param details any additional details to log with the error
+ */
+export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): SdkError {
+  const error = new SdkError(errorType, message, details);
+  this.emit('sdkError', error);
+  return error;
+};
+
+/**
+ * This will create an `SdkError`, emit the error on `sdk.on('sdkError', error)`,
+ *  and `throw` the error. 
+ * @param this sdk instance
+ * @param errorType SdkError type
+ * @param message message as string or Error instance
+ * @param details any additional details to log with the error
+ */
 export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): void {
   const error = new SdkError(errorType, message, details);
   this.emit('sdkError', error);

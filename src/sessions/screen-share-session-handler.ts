@@ -2,7 +2,7 @@ import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { checkAllTracksHaveEnded } from '../media/media-utils';
-import { throwSdkError, parseJwt, isAcdJid } from '../utils';
+import { throwSdkError, parseJwt, isAcdJid, createAndEmitSdkError } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;
@@ -12,7 +12,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     return isAcdJid(jid);
   }
 
-  async startSession (startParams: IStartSessionParams): Promise<{ conversationId: string }> {
+  async startSession (startParams: IStartSessionParams): Promise<MediaStream> {
     const { jwt, conversation, sourceCommunicationId } = this.sdk._customerData;
 
     const jid = parseJwt(jwt).data.jid;
@@ -34,19 +34,11 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     this._screenStreamPromise = null;
 
     /* request the display now, but handle it on session-init */
-    // TODO: document this. calling `sdk.startScreenShare()` will no longer 
-    //    throw an error is the user cancels the screen prompt. You 
-    //    have to listen for sdkErrors. Maybe this should be refactored?
-    //    It would honestly make more sense to return this media promise
-    //    rather than the conversationId. It was returning promise before
-    //    so it is weird not to do that now...
-    // It has to be this way because FF will only allow this require if 
-    //    it is tied to a user action (like a button click to startSession)
     this._screenStreamPromise = this.sdk.media.startDisplayMedia();
 
     await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
 
-    return { conversationId: conversation.id };
+    return this._screenStreamPromise;
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
@@ -79,17 +71,17 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       if (!this.sdk.isGuest) {
         throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
       }
-
+      const sessionInfo = { sessionId: session.id, conversationId: session.conversationId };
       if (!this.sdk._config.autoConnectSessions) {
         // if autoConnectSessions is 'false' and we have a guest, throw an error
         //  guests should auto accept screen share session
         const errMsg = '`autoConnectSession` must be set to "true" for guests';
-        this.log('error', errMsg, { sessionId: session.id, conversationId: session.conversationId });
-        throw new Error(errMsg);
+        throwSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { ...sessionInfo });
       }
 
       if (!this._screenStreamPromise) {
-        throw new Error('No pending or active screen share media promise');
+        const errMsg = 'No pending or active screen share media promise';
+        throwSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { ...sessionInfo });
       }
 
       const stream = await this._screenStreamPromise;
@@ -100,7 +92,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
 
-      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', { sessionId: session.id, conversationId: session.conversationId });
+      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', { ...sessionInfo });
 
       await this.addMediaToSession(session, stream);
       await this.acceptSession(session, { id: session.id });

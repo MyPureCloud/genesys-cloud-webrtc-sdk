@@ -4,7 +4,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { throwSdkError } from '../utils';
+import { throwSdkError, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 import {
   IPendingSession,
@@ -228,7 +228,7 @@ export default abstract class BaseSessionHandler {
           we need to update the mute states on the session. The implementing
           app will need to handle the error and react appropriately
         */
-        if (e.name === 'NotAllowedError') {
+        if (e.name === 'NotAllowedError') { // TODO: check these... 
           /*
             at this point, there is no active media so we just need to tell the server we are muted
             realistically, the implementing app should kick them out of the conference
@@ -248,6 +248,7 @@ export default abstract class BaseSessionHandler {
 
           await Promise.all([audioMute, videoMute]);
         }
+        createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
         throw e;
       }
     }

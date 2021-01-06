@@ -5,6 +5,8 @@ import browserama from 'browserama';
 
 import GenesysCloudWebrtcSdk from '../client';
 import { IExtendedMediaSession, IMediaRequestOptions, MediaState, SdkMediaEvents } from '../types/interfaces';
+import { createAndEmitSdkError } from '../utils';
+import { SdkErrorTypes } from '../types/enums';
 
 declare var window: {
   navigator: {
@@ -97,7 +99,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       ? window.navigator.mediaDevices.getDisplayMedia(constraints)
       : window.navigator.mediaDevices.getUserMedia(constraints);
 
-    const stream = await promise;
+    const stream = await promise.catch(e => {
+      /* we want to emit errors on `sdk.on('sdkError')` */
+      createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
+      throw e;
+    });
+
     stream.getTracks().forEach(t => this.allMediaTracksCreated.push(t));
     return stream;
   }
@@ -268,6 +275,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         }
       }
 
+      /* just want to emit the error, but want to return the original error from gUM */
+      createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
       throw e;
     };
   }

@@ -271,13 +271,14 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   // doc: acceptSession requires a video and audio element either provided or default
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
+    const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { conversationId: session.conversationId });
+      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { ...sessionInfo });
     }
 
     const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
     if (!videoElement) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { conversationId: session.conversationId });
+      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { ...sessionInfo });
     }
 
     let stream = params.mediaStream;
