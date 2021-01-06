@@ -21,7 +21,6 @@
     "build:src": "tsc -p . && node copy-version.js",
     "build:cdn": "webpack --env.cdn && webpack --env.cdn --env.production",
     "build:module": "webpack && webpack --env.production",
-    "build-sample": "./test/test-pages/build.sh",
     "build:sample": "./test/test-pages/build.sh",
     "build:watch": "tsc -p . && webpack --watch",
     "build-run-local": "concurrently \"./test/test-pages/build-dev.sh\" \"npm start\"",

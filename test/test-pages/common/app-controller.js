@@ -1,10 +1,6 @@
 import sdkHandler from './sdk-controller';
 import utils from './utils';
 
-function clearLog () {
-  document.getElementById('log-data').value = '';
-}
-
 function initControls () {
   /* softphone */
   document.getElementById('outbound-call-start').addEventListener('click', sdkHandler.makeOutboundCall);
@@ -39,10 +35,22 @@ function initControls () {
   document.getElementById('update-output-media').addEventListener('click', sdkHandler.updateOutputMediaDevice);
   document.getElementById('update-defaults').addEventListener('click', () => sdkHandler.updateDefaultDevices(parseDeviceDefaultOptions()));
 
+  /* media related */
+  document.getElementById('media-devices-header').addEventListener('click', () => toggleDisplayNone('media-devices'));
+  document.getElementById('media-state-header').addEventListener('click', () => toggleDisplayNone('media-state'));
+  document.getElementById('get-current-media-state').addEventListener('click', () => sdkHandler.getCurrentMediaState());
+  document.getElementById('request-mic-permissions').addEventListener('click', () => sdkHandler.requestMicPermissions());
+  document.getElementById('request-camera-permissions').addEventListener('click', () => sdkHandler.requestCameraPermissions());
+  document.getElementById('enumerate-devices').addEventListener('click', () => sdkHandler.enumerateDevices());
+
   /* misc */
   document.getElementById('disconnect-sdk').addEventListener('click', disconnect);
-  document.getElementById('clear-log').addEventListener('click', clearLog);
-  document.getElementById('media-devices-header').addEventListener('click', () => toggleDisplayNone('media-devices'));
+  document.getElementById('clear-media-state-log').addEventListener('click', () => clearLog('media-state-log-data'));
+  document.getElementById('clear-log').addEventListener('click', () => clearLog('log-data'));
+}
+
+function clearLog (elId = 'log-data') {
+  document.getElementById(elId).value = '';
 }
 
 function parseDeviceDefaultOptions () {
@@ -131,9 +139,6 @@ function initialize (environmentData, conversationsApi, noAuth) {
   if (!noAuth) {
     initControls();
   }
-  initDevices();
-
-  window.navigator.mediaDevices.ondevicechange = initDevices;
 
   sdkHandler.initWebrtcSDK(environmentData, conversationsApi, noAuth)
     .then(() => {

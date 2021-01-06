@@ -12,7 +12,6 @@ import {
   IAcceptSessionRequest,
   ISessionMuteRequest,
   IPersonDetails,
-  IMediaRequestOptions,
   IMediaDeviceIds,
   IUpdateOutgoingMedia,
   SdkEvents
@@ -66,16 +65,6 @@ function validateOptions (options: ISdkConfig): string | null {
     (options.logger || console).warn('Environment is not in the standard list. You may not be able to connect.');
   }
 
-  /* validate permission request modes */
-  (['cameraPermissionMode', 'microphonePermissionMode'] as Array<keyof typeof options.media>)
-    .forEach(key => {
-      const value = options.media[key];
-      if (value && !MEDIA_PERMISSION_MODES.includes(value as string)) {
-        logger.warn(`Invalid permission mode for media.${key}. Setting to default.`);
-        delete options.media[key];
-      }
-    });
-
   return null;
 }
 
@@ -83,8 +72,6 @@ function validateOptions (options: ISdkConfig): string | null {
  * SDK to interact with GenesysCloud WebRTC functionality
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
-
-
   logger: ILogger;
 
   readonly VERSION = '[AIV]{version}[/AIV]';
@@ -138,8 +125,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       /* media related config */
       media: {
         monitorMicVolume: !!options.media.monitorMicVolume, // default to false
-        microphonePermissionMode: options.media.microphonePermissionMode || 'none',
-        cameraPermissionMode: options.media.cameraPermissionMode || 'none'
       },
 
       /* defaults */

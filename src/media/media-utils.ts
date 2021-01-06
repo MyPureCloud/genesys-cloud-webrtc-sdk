@@ -55,7 +55,7 @@ export const attachAudioMedia = function (
  *  RTC transceivers. 
  */
 export const checkHasTransceiverFunctionality = function (): boolean {
-  if (_hasTransceiverFunctionality !== undefined) {
+  if (typeof _hasTransceiverFunctionality === 'boolean') {
     return _hasTransceiverFunctionality;
   }
 
@@ -63,7 +63,7 @@ export const checkHasTransceiverFunctionality = function (): boolean {
     /* make sure we are capable to use tracks */
     const dummyRtcPeerConnection = new RTCPeerConnection();
     /* if this function exists we should be good */
-    this.hasTransceiverFunctionality = !!dummyRtcPeerConnection.getTransceivers;
+    _hasTransceiverFunctionality = !!dummyRtcPeerConnection.getTransceivers;
     dummyRtcPeerConnection.close();
   } catch (err) {
     _hasTransceiverFunctionality = false;

@@ -37,6 +37,9 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     // TODO: document this. calling `sdk.startScreenShare()` will no longer 
     //    throw an error is the user cancels the screen prompt. You 
     //    have to listen for sdkErrors. Maybe this should be refactored?
+    //    It would honestly make more sense to return this media promise
+    //    rather than the conversationId. It was returning promise before
+    //    so it is weird not to do that now...
     // It has to be this way because FF will only allow this require if 
     //    it is tied to a user action (like a button click to startSession)
     this._screenStreamPromise = this.sdk.media.startDisplayMedia();

@@ -138,34 +138,7 @@ export interface ISdkConfig {
      * Optional: defaults to `false`
      */
     monitorMicVolume?: boolean;
-    /**
-     * Determine how the SDK should request permissions for audio (aka microphone). 
-     *  - `'none'`: the sdk will not attempt to check or gain permissions
-     *  - `'proactive'`: the sdk will attempt to check and gain permissions 
-     *      when `sdk.initialize()` is called. An error will be thrown if 
-     *      permissions fail. 
-     *  - `'required'`: same funcationality as `'proactive'` except the 
-     *      consumer will _NOT_ be allowed to use the sdk if the permission
-     *      check fails. This can be useful if the media type is required
-     *      for functionality (ex: `'audio'` being necessary for softphone calls)
-     * 
-     * Optional: defaults to `'none'`
-     */
-    microphonePermissionMode?: 'none' | 'proactive' | 'required';
-    /**
-     * Determine how the SDK should request permissions for video (aka camera).
-     *  - `'none'`: the sdk will not attempt to check or gain permissions
-     *  - `'proactive'`: the sdk will attempt to check and gain permissions 
-     *      when `sdk.initialize()` is called. An error will be thrown if 
-     *      permissions fail. 
-     *  - `'required'`: same funcationality as `'proactive'` except the 
-     *      consumer will _NOT_ be allowed to use the sdk if the permission
-     *      check fails. This can be useful if the media type is required
-     *      for functionality (ex: `'video'` being necessary for video calls)
-     * 
-     * Optional: defaults to `'none'`
-     */
-    cameraPermissionMode?: 'none' | 'proactive' | 'required';
+    // TODO: should we add a `disableMediaRetry` for hail mary attempts when media fails? 
   };
 
   /** defaults for various media related functionality */
@@ -261,6 +234,9 @@ export interface IMediaRequestOptions {
     width: ConstrainULong,
     height: ConstrainULong
   };
+  /**
+   * Video frame rate to request from getUserMedia
+   */
   videoFrameRate?: ConstrainDouble;
   /**
    * - `string` to request media from device
@@ -275,11 +251,13 @@ export interface IMediaRequestOptions {
    */
   session?: IExtendedMediaSession;
   /**
-   * Emit volume change events for audio tracks.
-   *
-   * default = `true`
+   * Emit volume change events for audio tracks. This
+   *  will override the SDK default configuration
+   *  of `monitorMicVolume`.
+   * 
+   * Default is SDK config's `monitorMicVolume` value
    */
-  emitAudioVolume?: boolean;
+  monitorMicVolume?: boolean;
 }
 
 export interface IOutgoingMediaDeviceIds {
@@ -508,7 +486,7 @@ export interface SdkMediaEvents {
   /**
    * Event emitted whenever the media state changes. 
    *  `event.eventType` will match the other event that
-   *    was emitted on.
+   *    is emitted on.
    * 
    * Example: if the devices changed, the following will emit:
    * 
@@ -519,9 +497,23 @@ export interface SdkMediaEvents {
   state: SdkMediaStateWithType;
 
   /**
-   * Event emitted
+   * Event when devices change. 
+   * 
+   * Note: this will only fire when devices change. 
+   *  For example: if `sdk.media.enumerateDevices()` is 
+   *  called multiple times, `sdk.media.on('devices', evt)
+   *  will only fire once _unless_ the devices are different
+   *  on subsequent enumerations. This ensures `enumerateDevices()`
+   *  can be called many times without the event emitting
+   *  with duplicate data. 
+   * 
    */
   devices: SdkMediaStateWithType;
+
+  /**
+   * Event when media permissions change
+   */
+  permissions: SdkMediaStateWithType;
 }
 export type SdkMediaStateWithType = MediaState & {
   eventType: keyof SdkMediaEvents
@@ -555,4 +547,8 @@ export type MediaState = {
   hasMicPermissions: boolean;
   /** does the sdk have browser permissions for video/camera */
   hasCameraPermissions: boolean;
+  /** if permissions have been requested by the sdk */
+  micPermissionsRequested: boolean;
+  /** if permissions have been requested by the sdk */
+  cameraPermissionsRequested: boolean;
 };
