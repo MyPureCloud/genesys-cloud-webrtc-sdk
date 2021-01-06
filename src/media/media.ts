@@ -117,6 +117,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  with each desired media type _before_ using `startMedia`. This will ensure 
    *  all media permissions have been granted before starting media. 
    * 
+   * If `retry` is `true` (which is default), the SDK will attempt to call 
+   *  `startMedia()` again on any failures. Two notes about this behavior: 
+   *    1) It will _not_ retry permissions errors
+   *    2) It will retry media with system defaults and no other options
+   *        (such as `deviceId`s, `videoFrameRate`, & `videoResolution`)
+   * 
    * Warning: if `sdk.media.requestPermissions(type)` has NOT been called before 
    *  calling `startMedia`, this function will call `sdk.media.requestPermissions(type)`.
    *  If calling `startMedia` with both `audio` and `video` _before_ requesting permissions,
@@ -125,8 +131,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  not attempt to gain permissions for `video` – the error will stop execution. 
    * 
    * @param opts video and/or audio default device or deviceId. Defaults to `{video: true, audio: true}`
+   * @param retry whether the sdk should retry on an error
    */
-  async startMedia (opts: IMediaRequestOptions = { video: true, audio: true }): Promise<MediaStream> {
+  async startMedia (opts: IMediaRequestOptions = { video: true, audio: true }, retry: boolean = true): Promise<MediaStream> {
     /* this will set media type to `truthy` if `null` was passed in */
     const constraints: any = this.getStandardConstraints(opts);
     const conversationId = opts.session?.conversationId;
@@ -177,6 +184,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         conversationId,
         mediaTracks: mediaStreamFromPermissions.getTracks()
       });
+      return mediaStreamFromPermissions;
     }
 
     /* if we are requesting video */
@@ -257,13 +265,11 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           this.setPermissions({ hasMicPermissions: false });
         }
       }
-      /**
-       * Add setPermissions logic
-       * and an if block at the beginning for notRequestinPerms yet
-       */
-
-      /* FF throws this error for cameras connected through a dock.. sometimes */
-      if (e.name === 'AbortError' && e.message === 'Starting video failed') {
+      /* CAMERA ERROR */
+      else if (
+        /* FF throws this error for cameras connected through a dock.. sometimes */
+        e.name === 'AbortError' && e.message === 'Starting video failed'
+      ) {
         /**
          * if we are requesting video with a set resolution, try without it 
          *  (FF and docks can cause this resolution error) 
@@ -274,8 +280,23 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           return this.startMedia(opts);
         }
       }
+      /* RETRY FOR OTHER ERRORS */
+      else if (retry) {
+        if (requestingAudio) {
+          opts.audio = null; // `null` == System Default
+        }
+        if (requestingVideo) {
+          opts.video = null; // `null` == System Default
+          /* this ensures the sdk defaults aren't used */
+          opts.videoResolution = {} as any;
+          opts.videoFrameRate = {};
+        }
 
-      /* just want to emit the error, but want to return the original error from gUM */
+        this.sdk.logger.warn('starting media failed. attempting retry with system defaults', { ...loggingExtras, opts });
+        return this.startMedia(opts, false); // don't retry after this one 
+      }
+
+      /* only want to emit the error. still want to throw the original error from gUM */
       createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
       throw e;
     };
@@ -378,7 +399,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     delete optionsToLog.session;
 
 
-    this.sdk.logger.info('requiesting media to gain permissions', { options: optionsToLog });
+    this.sdk.logger.info('requesting media to gain permissions', { options: optionsToLog });
 
     const stream = await this.startMedia(options);
 
@@ -490,19 +511,13 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       this.sdk.logger.info(`Using the system default ${kind} device`, { sessionInfos });
 
       /*
-        SANITY: There is no way to request "default" output device, so
-          we have to return the id of the first output device.
-
-          I _think_ you can request default by just using an empty string. 
-            Going to try that. 
-
+        SANITY: In chrome an empty string is the system default output device.
           For mic/camera, we just return `undefined` because gUM will
           automatically find the default device (the defaults are different
             between Chrome and FF)
       */
       if (kind === 'audiooutput') {
-        // TODO: test this change out
-        foundDevice = /* availableDevices[0] ||  */{ deviceId: '' } as MediaDeviceInfo;
+        foundDevice = { deviceId: '' } as MediaDeviceInfo;
       }
     }
 

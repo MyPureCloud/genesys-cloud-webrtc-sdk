@@ -113,7 +113,7 @@ video {
   width: 100%;
 }
 .pid {
-  width: calc(10% - 50px);
+  width: 5%;
   height: 10px;
   display: inline-block;
 }
