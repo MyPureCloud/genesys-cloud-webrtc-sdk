@@ -6,17 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.3...HEAD)
 
 
-# [v5.0.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.2...v5.0.3)
+# [v5.0.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.2...v5.0.3)
 ### Fixed
-* [PCM-1498] bump streaming-client to fix ice transport policy issue
+* [PCM-1498](https://inindca.atlassian.net/browse/PCM-1498) bump streaming-client to fix ice transport policy issue
 
 # [v5.0.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.1...v5.0.2)
 ### Fixed
-* [PCM-1474] bump streaming-client
+* [PCM-1474](https://inindca.atlassian.net/browse/PCM-1474) bump streaming-client
 
 # [v5.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.0...v5.0.1)
 ### Fixed
-* [PCM-1471] clean up screenShareStream if session ends while sharing screen
+* [PCM-1471](https://inindca.atlassian.net/browse/PCM-1471) clean up screenShareStream if session ends while sharing screen
 
 # [v5.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.2...v5.0.0)
 ### Breaking Changes
