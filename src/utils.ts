@@ -16,8 +16,15 @@ export class SdkError extends Error {
 
   // ignoring this due to a coverage issue relating to babel. https://github.com/Microsoft/TypeScript/issues/13029
   /* istanbul ignore next */
-  constructor (errorType: SdkErrorTypes | null, message: string | null, details?: any) {
-    super(message);
+  constructor (errorType: SdkErrorTypes | null, messageOrError: string | Error, details?: any) {
+    /* if a Error is passed in, use its message and name properties */
+    const isError = messageOrError && messageOrError instanceof Error;
+    super(isError ? (messageOrError as any).message : messageOrError);
+
+    if (isError) {
+      this.name = (messageOrError as any).name;
+    }
+
     this.type = errorType || SdkErrorTypes.generic;
     this.details = details;
   }
@@ -32,8 +39,8 @@ export class SdkError extends Error {
  * @param message message as string or Error instance
  * @param details any additional details to log with the error
  */
-export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): SdkError {
-  const error = new SdkError(errorType, message, details);
+export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, messageOrError?: string | Error, details?: any): SdkError {
+  const error = new SdkError(errorType, messageOrError, details);
   this.emit('sdkError', error);
   return error;
 };
@@ -46,10 +53,8 @@ export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, erro
  * @param message message as string or Error instance
  * @param details any additional details to log with the error
  */
-export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, message: string | null, details?: any): void {
-  const error = new SdkError(errorType, message, details);
-  this.emit('sdkError', error);
-  throw error;
+export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, messageOrError?: string | Error, details?: any): void {
+  throw createAndEmitSdkError.call(this, errorType, messageOrError, details);
 };
 
 export const buildUri = function (this: GenesysCloudWebrtcSdk, path: string, version: string = 'v2'): string {
