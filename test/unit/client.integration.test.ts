@@ -6,7 +6,7 @@ window.crypto = {
 };
 
 import { GenesysCloudWebrtcSdk } from '../../src/client';
-import { IExtendedMediaSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
+import { IExtendedMediaSession, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds, ISdkConfig } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
@@ -18,11 +18,11 @@ import {
   mockGetOrgApi,
   mockGetChannelApi,
   mockNotificationSubscription,
-  wait
+  wait,
+  MockSession
 } from '../test-utils';
 import { SdkError } from '../../src/utils';
-import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
-import * as mediaUtils from '../../src/media-utils';
+import { SdkErrorTypes, SessionTypes } from '../../src/types/enums';
 
 let { ws } = require('../test-utils');
 
@@ -31,7 +31,7 @@ function getMockLogger () {
 }
 
 function disconnectSdk (sdk: GenesysCloudWebrtcSdk): Promise<any> {
-  return new Promise(async res => {
+  return new Promise<void>(async res => {
     // wait and then call disconnect
     await wait(50);
     await sdk.disconnect();
@@ -88,7 +88,7 @@ describe('Client', () => {
         accessToken: '1234',
         environment: 'mypurecloud.con',
         logger: getMockLogger() as any
-      } as ISdkConstructOptions);
+      } as ISdkConfig);
 
       expect(sdk2.logger.warn).toHaveBeenCalled();
     });
@@ -99,38 +99,31 @@ describe('Client', () => {
         environment: 'mypurecloud.com',
         logLevel: 'error',
         logger: getMockLogger() as any
-      } as ISdkConstructOptions);
+      } as ISdkConfig);
       expect(sdk.logger.warn).not.toHaveBeenCalled();
     });
 
     it('sets up options with defaults', () => {
-      const sdk = new GenesysCloudWebrtcSdk({ accessToken: '1234' } as ISdkConstructOptions);
+      const sdk = new GenesysCloudWebrtcSdk({ accessToken: '1234' } as ISdkConfig);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
-      expect(typeof sdk._config.customIceServersConfig).toBe('undefined');
-      expect(sdk._config.iceTransportPolicy).toBe('all');
       expect(sdk.isGuest).toBe(false);
     });
 
     it('sets up options when provided', () => {
       const logger = getMockLogger();
-      const iceServers = [];
       const sdk = new GenesysCloudWebrtcSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
-        iceServers: iceServers as any,
-        iceTransportPolicy: 'relay',
         logger: logger as any
-      } as ISdkConstructOptions);
+      } as ISdkConfig);
 
       expect(sdk.logger).toBe(logger);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.ie');
       expect(sdk._config.autoConnectSessions).toBe(false);
-      expect(sdk._config.customIceServersConfig).toBe(iceServers);
-      expect(sdk._config.iceTransportPolicy).toBe('relay');
       expect(sdk.isGuest).toBe(false);
     });
   });
@@ -161,7 +154,7 @@ describe('Client', () => {
       mockGetUserApi({ nockScope: getUser });
       mockGetChannelApi({ nockScope: getChannel });
       mockNotificationSubscription({ nockScope: notificationSubscription });
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         sdk.once('disconnected', async () => {
           setupWss();
           expect(disconnectSpy).toHaveBeenCalled();
@@ -285,7 +278,7 @@ describe('Client', () => {
         if (!transformedArgs) {
           transformedArgs = args;
         }
-        const promise = new Promise(resolve => {
+        const promise = new Promise<void>(resolve => {
           const handler = (...eventArgs) => {
             expect(transformedArgs).toEqual(eventArgs);
             sdk.off(eventName, handler);
@@ -453,50 +446,6 @@ describe('Client', () => {
     });
   });
 
-  describe('createMedia()', () => {
-    it('should throw if no media requested', async () => {
-      const spy = jest.spyOn(mediaUtils, 'startMedia');
-
-      const { sdk } = mockApis();
-      await expect(sdk.createMedia({} as any)).rejects.toThrowError(/called with at least one media type/);
-      expect(spy).not.toHaveBeenCalled();
-
-      await expect((sdk.createMedia as any)()).rejects.toThrowError(/called with at least one media type/);
-      expect(spy).not.toHaveBeenCalled();
-
-      await expect(sdk.createMedia({ video: false, audio: false })).rejects.toThrowError(/called with at least one media type/);
-      expect(spy).not.toHaveBeenCalled();
-
-      await expect(sdk.createMedia({ video: undefined, audio: false })).rejects.toThrowError(/called with at least one media type/);
-      expect(spy).not.toHaveBeenCalled();
-
-      await expect(sdk.createMedia({ video: false, audio: undefined })).rejects.toThrowError(/called with at least one media type/);
-      expect(spy).not.toHaveBeenCalled();
-    });
-
-    it('proxies the call to the mediaUtils', async () => {
-      const { sdk } = mockApis();
-      await sdk.initialize();
-
-      jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue({} as any);
-
-      const params = { video: true };
-      await sdk.createMedia(params);
-      expect(mediaUtils.startMedia).toHaveBeenCalledWith(sdk, params);
-
-      await disconnectSdk(sdk);
-    });
-  });
-
-  describe('getDisplayMedia()', () => {
-    it('should call through to startDisplayMedia', async () => {
-      const { sdk } = mockApis();
-      const spy = jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue({} as any);
-      await sdk.getDisplayMedia();
-      expect(spy).toHaveBeenCalled();
-    });
-  });
-
   describe('updateOutputDevice()', () => {
     it('should call through to the sessionManager', async () => {
       const { sdk } = mockApis();
@@ -557,9 +506,9 @@ describe('Client', () => {
       await sdk.initialize();
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk._config.defaultAudioDeviceId).toBe(null);
-      expect(sdk._config.defaultVideoDeviceId).toBe(null);
-      expect(sdk._config.defaultOutputDeviceId).toBe(null);
+      expect(sdk._config.defaults.audioDeviceId).toBe(null);
+      expect(sdk._config.defaults.videoDeviceId).toBe(null);
+      expect(sdk._config.defaults.outputDeviceId).toBe(null);
 
 
       await disconnectSdk(sdk);
@@ -576,9 +525,9 @@ describe('Client', () => {
       await sdk.initialize();
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk._config.defaultAudioDeviceId).toBe(options.audioDeviceId);
-      expect(sdk._config.defaultVideoDeviceId).toBe(options.videoDeviceId);
-      expect(sdk._config.defaultOutputDeviceId).toBe(options.outputDeviceId);
+      expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
+      expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
 
 
       await disconnectSdk(sdk);
@@ -731,31 +680,40 @@ describe('Client', () => {
       // for for the response for disconnect
       await wait(50);
     });
+  });
 
-    it('_config.customIceServersConfig | gets reset if the client refreshes ice servers', async () => {
+  describe('destroy()', () => {
+    it('should log, end all sessions, remove listeners, destory media, and disconnect ws', async () => {
       const { sdk } = mockApis();
       await sdk.initialize();
-      sdk._config.customIceServersConfig = [{ something: 'junk' }] as RTCConfiguration;
 
-      sdk.sessionManager.jingle.iceServers = [{ urls: ['turn:mypurecloud.com'] }];
+      const session1 = new MockSession();
+      const session2 = new MockSession();
 
-      await sdk._streamingConnection.webrtcSessions.refreshIceServers();
-      const actual = sdk.sessionManager.jingle.iceServers;
-      expect(actual).toEqual([
-        {
-          type: 'turn',
-          urls: 'turn:turn.us-east-1.mypurecloud.com:3456',
-          username: 'turnuser:12395',
-          credential: 'akskdfjka='
-        },
-        {
-          type: 'stun',
-          urls: 'stun:turn.us-east-1.mypurecloud.com:3456'
-        }
-      ]);
+      sdk.sessionManager.jingle.sessions = {
+        [session1.id]: session1,
+        [session2.id]: session2,
+      } as { [key: string]: any };
 
-      await disconnectSdk(sdk);
-    }, 10000);
+      const endSessionSpy = jest.spyOn(sdk.sessionManager, 'endSession').mockResolvedValue(null);
+      const removeAllListenersSpy = jest.spyOn(sdk, 'removeAllListeners');
+      const mediaDestroySpy = jest.spyOn(sdk.media, 'destroy').mockReturnValue();
+      const disconnectSpy = jest.spyOn(sdk, 'disconnect');
+
+      await sdk.destroy();
+
+      expect(sdk.logger.info).toHaveBeenCalledWith('destroying webrtc sdk', {
+        activeSessions: [
+          { sessionId: session1.id, conversationId: session1.conversationId },
+          { sessionId: session2.id, conversationId: session2.conversationId },
+        ]
+      });
+      expect(endSessionSpy).toHaveBeenCalledWith(session1);
+      expect(endSessionSpy).toHaveBeenCalledWith(session2);
+      expect(removeAllListenersSpy).toHaveBeenCalled();
+      expect(mediaDestroySpy).toHaveBeenCalled();
+      expect(disconnectSpy).toHaveBeenCalled();
+    });
   });
 
   describe('_refreshIceServers()', () => {
@@ -795,7 +753,8 @@ describe('Client', () => {
 
       sdk._streamingConnection.connected = true;
       expect(sdk.connected).toBe(true);
-      expect(sdk._streamingConnection._webrtcSessions.config.iceTransportPolicy).toEqual('all');
+      /* iceTransportPolicy is no longer a sdk config option. it is only set if only turn servers are received */
+      expect(sdk._streamingConnection._webrtcSessions.config.iceTransportPolicy).toBe(undefined);
 
       jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(
         [

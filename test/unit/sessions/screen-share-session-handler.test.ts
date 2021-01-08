@@ -4,7 +4,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
-import * as mediaUtils from '../../../src/media-utils';
+import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import { IExtendedMediaSession } from '../../../src/types/interfaces';
 
@@ -46,7 +46,7 @@ describe('startSession', () => {
     mockSdk._customerData = data;
 
     /* spy on utility functions */
-    jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue(stream as any);
+    jest.spyOn(mockSdk.media, 'startDisplayMedia').mockResolvedValue(stream as any);
     jest.spyOn(utils, 'parseJwt').mockReturnValue({ data: { jid } });
   });
 
@@ -158,7 +158,7 @@ describe('handleSessionInit', () => {
 
 
     session.emit('terminated', session, true);
-    const sessionTerminated = new Promise(res => session.once('terminated', res()));
+    const sessionTerminated = new Promise<void>(res => session.once('terminated', res()));
 
     await sessionTerminated;
     expect(session._screenShareStream).toBe(stream);

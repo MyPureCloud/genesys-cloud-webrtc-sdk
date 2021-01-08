@@ -3,17 +3,21 @@ import nock from 'nock';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-
-import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
-import { SessionTypes, LogLevels } from '../src/types/enums';
-import { GenesysCloudWebrtcSdk } from '../src/index';
 import { EventEmitter } from 'events';
+
+import { ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
+import { SessionTypes } from '../src/types/enums';
+import { GenesysCloudWebrtcSdk } from '../src/index';
+import { SdkMedia } from '../src/media/media';
 
 declare var global: {
   window: any,
   document: any,
   crypto: any
 } & NodeJS.Global;
+
+/* spy here and in the constructor because some tests restoreMocks before initializing a SimpleMockSdk */
+jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
 
 // polyfill window.getRandomValues() for node (because we are using jest)
 Object.defineProperty(global, 'crypto', {
@@ -31,13 +35,20 @@ export class SimpleMockSdk extends EventEmitter {
   constructor () {
     super();
     this.on(EventEmitter.errorMonitor, () => null);
+
+    /* have to spy here to avoid issues with tests that restore mocks before initializing a SimplemockSdk */
+    jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
+    this.media = new SdkMedia(this as any as GenesysCloudWebrtcSdk);
   }
 
+  media: SdkMedia;
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
     logLevel: 'debug',
     wsHost: 'wshost',
-    allowedSessionTypes: Object.values(SessionTypes)
+    allowedSessionTypes: Object.values(SessionTypes),
+    defaults: {},
+    media: {}
   };
   _personDetails = {
     id: 'USER_GUID'
@@ -135,6 +146,7 @@ class MockSession extends EventEmitter {
   unmute = jest.fn();
   videoMuted: boolean = false;
   audioMuted: boolean = false;
+  state = 'active';
 
   constructor (sessionType?: SessionTypes) {
     super();
@@ -494,9 +506,9 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     accessToken: guestSdk ? undefined : '1234',
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
+    logger: { debug: jest.fn(), log: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
-  } as ISdkConstructOptions;
+  } as ISdkConfig;
 
   const sdk = new GenesysCloudWebrtcSdk(sdkOpts);
 

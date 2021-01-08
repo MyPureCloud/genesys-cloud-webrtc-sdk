@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v6.0.0]()
 
+### Added
+* Added `sdk.media` class to handle and emit media related tasks
+* Added `sdk.media.on(...)` event emitter
+* Added permissions and device management housed in `sdk.media`
+
 ### Changed
 * Started migrating docs to use typescript definitions
 
