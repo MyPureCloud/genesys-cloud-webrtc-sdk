@@ -7,7 +7,8 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "dist/src/index.js",
+  "main": "dist/genesys-cloud-webrtc-sdk.js",
+  "module": "dist/src/index.js",
   "typings": "dist/src/index.d.ts",
   "files": [
     "dist"
@@ -46,7 +47,7 @@
     "browserama": "^3.1.1",
     "core-js": "^3.7.0",
     "genesys-cloud-client-logger": "^1.0.3",
-    "genesys-cloud-streaming-client": "^13.0.3",
+    "genesys-cloud-streaming-client": "^13.0.5",
     "lodash": "^4.17.15",
     "purecloud-platform-client-v2": "^97.0.0",
     "safe-json-stringify": "^1.2.0",

@@ -1,5 +1,5 @@
 // this will need to be pipeline-library@master when the pr merges
-@Library('pipeline-library@SECDEV-592_implement-snyk-for-webappPipeline') _
+@Library('pipeline-library') _
 
 webappPipeline {
     slaveLabel = 'dev_v2'
