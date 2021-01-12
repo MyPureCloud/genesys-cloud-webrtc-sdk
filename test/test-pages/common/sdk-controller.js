@@ -279,7 +279,7 @@ async function sessionStarted (session) {
       }
 
       console.log({ videoOpts });
-      mediaStream = await webrtcSdk.createMedia(videoOpts);
+      mediaStream = await webrtcSdk.startMedia(videoOpts);
     }
 
     const sessionEventsToLog = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];

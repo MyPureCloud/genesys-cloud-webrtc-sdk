@@ -3,7 +3,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import { throwSdkError } from '../utils';
+import { createAndEmitSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
 import {
@@ -84,7 +84,7 @@ export class SessionManager {
     }
 
     if (!session) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
     }
 
     return session;
@@ -95,6 +95,10 @@ export class SessionManager {
       .filter((session: IExtendedMediaSession) => session.state === 'active');
   }
 
+  getAllJingleSessions (): IExtendedMediaSession[] {
+    return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession });
+  }
+
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
@@ -103,14 +107,14 @@ export class SessionManager {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
 
       if (!fromJid) {
-        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'getSessionHandler was called without any identifying information', params);
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'getSessionHandler was called without any identifying information', params);
       }
 
       handler = this.sessionHandlers.find((handler) => handler.shouldHandleSessionByJid(fromJid));
     }
 
     if (!handler) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to find session handler for session', params);
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to find session handler for session', params);
     }
 
     return handler;
@@ -120,7 +124,7 @@ export class SessionManager {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     if (handler.disabled) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
     }
 
     return handler.startSession(startSessionParams);
@@ -216,7 +220,7 @@ export class SessionManager {
     const pendingSession = this.getPendingSession(sessionId);
 
     if (!pendingSession) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -228,7 +232,7 @@ export class SessionManager {
     const pendingSession = this.getPendingSession(sessionId);
 
     if (!pendingSession) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -249,7 +253,7 @@ export class SessionManager {
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
     if (!params || !params.id) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
     }
 
     const session = this.getSession({ id: params.id });
@@ -259,7 +263,7 @@ export class SessionManager {
 
   async endSession (params: IEndSessionRequest) {
     if (!params.id && !params.conversationId) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
     }
 
     const session = this.getSession(params);

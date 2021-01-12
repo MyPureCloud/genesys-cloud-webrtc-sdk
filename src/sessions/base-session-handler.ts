@@ -4,7 +4,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { throwSdkError, createAndEmitSdkError } from '../utils';
+import { createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 import {
   IPendingSession,
@@ -37,7 +37,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
@@ -126,7 +126,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -134,7 +134,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -156,7 +156,7 @@ export default abstract class BaseSessionHandler {
 
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
         videoDeviceId: options.videoDeviceId,
         audioDeviceId: options.audioDeviceId,
         conversationId: session.conversationId,
@@ -228,7 +228,7 @@ export default abstract class BaseSessionHandler {
           we need to update the mute states on the session. The implementing
           app will need to handle the error and react appropriately
         */
-        if (e.name === 'NotAllowedError') { // TODO: check these... 
+        if (e.name === 'NotAllowedError') {
           /*
             at this point, there is no active media so we just need to tell the server we are muted
             realistically, the implementing app should kick them out of the conference
@@ -248,7 +248,7 @@ export default abstract class BaseSessionHandler {
 
           await Promise.all([audioMute, videoMute]);
         }
-        createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
+        /* don't need to emit this error because `startMedia()` did */
         throw e;
       }
     }
@@ -310,7 +310,7 @@ export default abstract class BaseSessionHandler {
 
     if (typeof el.setSinkId === 'undefined') {
       const err = 'Cannot set sink id in unsupported browser';
-      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
     }
 
     logDeviceChange(this.sdk, session, 'changingDevices', { requestedOutputDeviceId: deviceId });
@@ -333,7 +333,7 @@ export default abstract class BaseSessionHandler {
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
     }
 
     await Promise.all(promises);

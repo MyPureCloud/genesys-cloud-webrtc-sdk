@@ -45,18 +45,6 @@ export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, erro
   return error;
 };
 
-/**
- * This will create an `SdkError`, emit the error on `sdk.on('sdkError', error)`,
- *  and `throw` the error. 
- * @param this sdk instance
- * @param errorType SdkError type
- * @param message message as string or Error instance
- * @param details any additional details to log with the error
- */
-export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, messageOrError?: string | Error, details?: any): void {
-  throw createAndEmitSdkError.call(this, errorType, messageOrError, details);
-};
-
 export const buildUri = function (this: GenesysCloudWebrtcSdk, path: string, version: string = 'v2'): string {
   path = path.replace(/^\/+|\/+$/g, ''); // trim leading/trailing /
   return `https://api.${this._config.environment}/api/${version}/${path}`;

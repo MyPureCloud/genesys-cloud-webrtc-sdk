@@ -16,7 +16,7 @@ import {
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
-import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
+import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
 /**
@@ -273,12 +273,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { ...sessionInfo });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { ...sessionInfo });
     }
 
     const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
     if (!videoElement) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { ...sessionInfo });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { ...sessionInfo });
     }
 
     let stream = params.mediaStream;
@@ -562,7 +562,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         return this.log('info', 'screen selection cancelled', { conversationId: session.conversationId, sessionId: session.id });
       }
 
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
         conversationId: session.conversationId,
         sessionId: session.id,
         error: err
@@ -593,7 +593,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   async pinParticipantVideo (session: IExtendedMediaSession, participantId?: string) {
     if (!session.pcParticipant) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
         conversation: session.conversationId,
         sessionId: session.id,
         participantId
@@ -630,7 +630,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await requestApi.call(this.sdk, uri, { method, data });
       session.emit('pinnedParticipant', { participantId: participantId || null });
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', {
         conversationId: session.conversationId,
         sessionId: session.id,
         error: err

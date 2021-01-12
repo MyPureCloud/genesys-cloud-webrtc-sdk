@@ -18,12 +18,9 @@ To use the SDK with OAuth scopes, you will need the following scopes enabled:
 
 These can be set in Genesys Cloud > Admin > Integrations > OAuth > Scope.  Note that the scope options are not available when the "Grant Type" option is set to "Client Credentials"
 
-#### Behavior notes
-
-- **Not Yet Supported** – 
-
 #### Constructor
 
+TODO: figure out how to make markdown work for docs and code comments
 
 ``` ts
 new GenesysCloudWebrtcSdk(options: ISdkConfig);
@@ -252,16 +249,6 @@ interface ISdkConfig {
   }
 }
 ```
-
-##### Not Yet Supported
-- `Boolean sessionSurvivability`: **not yet supported**: Optional, default true
-    - By default, the SDK will keep all active sessions active if the WebSocket disconnects.
-It is the consuming application's responsibility to end all pending or active sessions after a
-disconnect in the event that it doesn't recover. This behavior can be disabled by providing
-`sessionSurvivability: false` in the SDK constructor options. If this is set to false, if
-the WebSocket connection drops, all active WebRTC connections will be disconnected.
-
-- `Boolean autoAnswerOutboundCalls`: **not yet supported**: Optional, default true; See [softphone behavior notes]
 
 #### Methods
 

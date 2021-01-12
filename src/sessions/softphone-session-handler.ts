@@ -1,10 +1,11 @@
+import { pick } from 'lodash';
+import { JingleReason } from 'stanza/protocol';
+
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { attachAudioMedia, logDeviceChange } from '../media/media-utils';
-import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
-import { pick } from 'lodash';
-import { JingleReason } from 'stanza/protocol';
+import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
@@ -79,7 +80,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     try {
       await super.endSession(session);
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, error: err });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, error: err });
     }
   }
 
@@ -95,7 +96,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       const participant = participants.find((p) => p.userId === this.sdk._personDetails.id);
 
       if (!participant) {
-        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
       }
 
       session.pcParticipant = participant;
@@ -114,7 +115,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         data: JSON.stringify({ muted: params.mute })
       });
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId: session.conversationId, params, err });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId: session.conversationId, params, err });
     }
   }
 }

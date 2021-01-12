@@ -20,7 +20,7 @@ import {
   setupStreamingClient,
   proxyStreamingClientEvents
 } from './client-private';
-import { requestApi, throwSdkError, SdkError } from './utils';
+import { requestApi, createAndEmitSdkError, SdkError } from './utils';
 import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
@@ -38,8 +38,6 @@ const ENVIRONMENTS = [
   'apne2.pure.cloud'
 ];
 
-const MEDIA_PERMISSION_MODES = ['none', 'proactive', 'required'];
-
 /**
  * Validate SDK construct options.
  *  Returns `null` if no errors,
@@ -51,13 +49,12 @@ function validateOptions (options: ISdkConfig): string | null {
     return 'Options required to create an instance of the SDK';
   }
 
-  const logger = (options.logger || console);
   if (!options.accessToken && !options.organizationId) {
     return 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.';
   }
 
   if (!options.environment) {
-    logger.warn('No environment provided, using mypurecloud.com');
+    (options.logger || console).warn('No environment provided, using mypurecloud.com');
     options.environment = 'mypurecloud.com';
   }
 
@@ -103,39 +100,39 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   constructor (options: ISdkConfig) {
     super();
 
-    options.media = options.media || {};
-    options.defaults = options.defaults || {};
 
     const errorMsg = validateOptions(options);
     if (errorMsg) {
       throw new SdkError(SdkErrorTypes.invalid_options, errorMsg);
     }
 
+    /* grab copies or valid objects */
+    const mediaOptions = options.media || {};
+    const defaultsOptions = options.defaults || {};
+
     this._config = {
-      environment: options.environment,
-      accessToken: options.accessToken,
-      wsHost: options.wsHost,
-      organizationId: options.organizationId,
-      autoConnectSessions: options.autoConnectSessions !== false, // default true
-      logLevel: options.logLevel || 'info',
-      disableAutoAnswer: options.disableAutoAnswer || false, // default false
-      optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
-      allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
+      ...options,
+      /* set defaults */
+      ...{
+        autoConnectSessions: options.autoConnectSessions !== false, // default true
+        logLevel: options.logLevel || 'info',
+        disableAutoAnswer: options.disableAutoAnswer || false, // default false
+        optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
+        allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
 
-      /* media related config */
-      media: {
-        monitorMicVolume: !!options.media.monitorMicVolume, // default to false
-      },
+        /* media related config */
+        media: {
+          ...mediaOptions,
+          monitorMicVolume: !!mediaOptions.monitorMicVolume, // default to false
+        },
 
-      /* defaults */
-      defaults: {
-        audioStream: options.defaults.audioStream,
-        audioElement: options.defaults.audioElement,
-        videoElement: options.defaults.videoElement,
-        videoResolution: options.defaults.videoResolution,
-        videoDeviceId: options.defaults.videoDeviceId || null,
-        audioDeviceId: options.defaults.audioDeviceId || null,
-        outputDeviceId: options.defaults.outputDeviceId || null,
+        /* sdk defaults */
+        defaults: {
+          ...defaultsOptions,
+          videoDeviceId: defaultsOptions.videoDeviceId || null,
+          audioDeviceId: defaultsOptions.audioDeviceId || null,
+          outputDeviceId: defaultsOptions.outputDeviceId || null,
+        }
       }
     };
 
@@ -172,7 +169,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  - guest's need a securityCode
    * @param opts optional initialize options
    */
-
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
     let httpRequests: Promise<any>[] = [];
     if (this.isGuest) {
@@ -199,7 +195,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           this._customerData = opts;
         });
       } else {
-        throwSdkError.call(this, SdkErrorTypes.invalid_options, '`securityCode` is required to initialize the SDK as a guest');
+        throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, '`securityCode` is required to initialize the SDK as a guest');
       }
 
       httpRequests.push(guestPromise);
@@ -223,7 +219,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     try {
       await Promise.all(httpRequests);
     } catch (err) {
-      throwSdkError.call(this, SdkErrorTypes.http, err.message, err);
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
     }
 
     try {
@@ -231,7 +227,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       await proxyStreamingClientEvents.call(this);
       this.emit('ready');
     } catch (err) {
-      throwSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
     }
   }
 
@@ -239,12 +235,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Start a screen share. Currently, guest is the only supported screen share.
    *  `initialize()` must be called first.
    */
-
   async startScreenShare (): Promise<{ conversationId: string }> {
     if (this.isGuest) {
       return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
     } else {
-      throwSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
   }
 
@@ -254,12 +249,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param roomJid jid of the conference to join. Can be made up if starting a new conference but must adhere to the format: <lowercase string>@conference.<lowercase string>
    * @param inviteeJid jid of a user to invite to this conference.
    */
-
   async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
     if (!this.isGuest) {
       return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
     } else {
-      throwSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }
   }
 
@@ -271,7 +265,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *    - This does _not_ update the sdk `defaultOutputDeviceId`
    * @param deviceId `deviceId` for audio output, `true` for sdk default output, or `null` for system default
    */
-
   updateOutputDevice (deviceId: string | true | null): Promise<void> {
     return this.sessionManager.updateOutputDeviceForAllSessions(deviceId);
   }
@@ -289,11 +282,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * @param updateOptions device(s) to update
    */
-
   updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void> {
     if (!updateOptions ||
       (!updateOptions.stream && !updateOptions.videoDeviceId && !updateOptions.audioDeviceId)) {
-      throwSdkError.call(this, SdkErrorTypes.invalid_options, 'updateOutgoingMedia must be called with a MediaStream, a videoDeviceId, or an audioDeviceId');
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, 'updateOutgoingMedia must be called with a MediaStream, a videoDeviceId, or an audioDeviceId');
     }
     return this.sessionManager.updateOutgoingMedia(updateOptions);
   }
@@ -315,7 +307,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * @param options default device(s) to update
    */
-
   async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
     const updateVideo = options.videoDeviceId !== undefined;
     const updateAudio = options.audioDeviceId !== undefined;
@@ -373,7 +364,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
    *  attempt to use the sdk `defaultVideoDeviceId` as the device
    */
-
   async setVideoMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setVideoMute(muteOptions);
   }
@@ -387,7 +377,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  audio stream, it will unmute and attempt to use the sdk `defaultAudioDeviceId`
    *  at the device
    */
-
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setAudioMute(muteOptions);
   }
@@ -396,7 +385,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Accept a pending session based on the passed in ID.
    * @param opts object with mediaStream and/or audioElement to attach to session
    */
-
   async acceptPendingSession (sessionId: string): Promise<void> {
     await this.sessionManager.proceedWithSession(sessionId);
   }
@@ -410,7 +398,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Accept a pending session based on the passed in ID.
    * @param opts object with mediaStream and/or audioElement to attach to session
    */
-
   async acceptSession (opts: IAcceptSessionRequest): Promise<void> {
     await this.sessionManager.acceptSession(opts);
   }
@@ -419,7 +406,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * End an active session based on the session ID _or_ conversation ID (one is required)
    * @param opts object with session ID _or_ conversation ID
    */
-
   async endSession (opts: IEndSessionRequest): Promise<void> {
     return this.sessionManager.endSession(opts);
   }
@@ -427,7 +413,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   /**
    * Disconnect the streaming connection
    */
-
   disconnect (): Promise<any> {
     return this._streamingConnection.disconnect();
   }
@@ -435,11 +420,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   /**
    * Reconnect the streaming connection
    */
-
   reconnect (): Promise<any> {
     return this._streamingConnection.reconnect();
   }
-
 
   /**
    * Ends all active sessions, disconnects the 
@@ -451,9 +434,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  created after this is called. 
    */
   async destroy (): Promise<any> {
-    // TODO: lots of things
+    const activeSessions = this.sessionManager.getAllJingleSessions();
+    this.logger.info('destroying webrtc sdk', {
+      activeSessions: activeSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
+    });
+
+    await Promise.all(activeSessions.map(s => this.sessionManager.endSession(s)));
+
     this.removeAllListeners();
-    this.media.destory();
+    this.media.destroy();
+    await this.disconnect();
   }
 
   async _refreshIceServers () {
@@ -478,7 +468,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     } catch (err) {
       const errorMessage = 'GenesysCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
       this.logger.warn(errorMessage, err);
-      throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
     }
   }
 

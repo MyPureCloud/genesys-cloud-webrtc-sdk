@@ -1289,7 +1289,7 @@ describe('pinParticipantVideo', () => {
   });
 
   it('should throw if request fails', async () => {
-    const errorSpy = jest.spyOn(utils, 'throwSdkError');
+    const errorSpy = jest.spyOn(utils, 'createAndEmitSdkError');
     const fakeErr = { message: 'someError' };
     jest.spyOn(utils, 'requestApi').mockRejectedValue(fakeErr);
 

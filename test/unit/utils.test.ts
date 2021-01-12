@@ -47,15 +47,6 @@ describe('createAndEmitSdkError', () => {
   });
 });
 
-describe('throwSdkError', () => {
-  it('should emit the error', () => {
-    const spy = jest.fn();
-    sdk.on('sdkError', spy);
-
-    expect(() => utils.throwSdkError.call(sdk, SdkErrorTypes.generic, 'fake')).toThrowError(/fake/);
-  });
-});
-
 describe('buildUri', () => {
   it('should trim leading and trailing slashes', () => {
     expect(utils.buildUri.call(sdk, 'test')).toEqual(`${baseUri}/test`);

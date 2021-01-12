@@ -2,7 +2,7 @@ import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { checkAllTracksHaveEnded } from '../media/media-utils';
-import { throwSdkError, parseJwt, isAcdJid, createAndEmitSdkError } from '../utils';
+import { createAndEmitSdkError, parseJwt, isAcdJid } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;
@@ -69,19 +69,19 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       });
 
       if (!this.sdk.isGuest) {
-        throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
       }
       const sessionInfo = { sessionId: session.id, conversationId: session.conversationId };
       if (!this.sdk._config.autoConnectSessions) {
         // if autoConnectSessions is 'false' and we have a guest, throw an error
         //  guests should auto accept screen share session
         const errMsg = '`autoConnectSession` must be set to "true" for guests';
-        throwSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { ...sessionInfo });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { sessionInfo });
       }
 
       if (!this._screenStreamPromise) {
         const errMsg = 'No pending or active screen share media promise';
-        throwSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { ...sessionInfo });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { sessionInfo });
       }
 
       const stream = await this._screenStreamPromise;
@@ -92,7 +92,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
 
-      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', { ...sessionInfo });
+      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', { sessionInfo });
 
       await this.addMediaToSession(session, stream);
       await this.acceptSession(session, { id: session.id });
@@ -106,12 +106,12 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         /* no-op: if the promise rejected, we don't care at this point */
       }
       this._screenStreamPromise = null;
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Screen share session init failed', err);
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Screen share session init failed', err);
     }
   }
 
   public updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
-    throw throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }
 }

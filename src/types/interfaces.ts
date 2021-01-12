@@ -39,21 +39,25 @@ export interface ISdkConfig {
    * ```
    */
   environment?: string;
+
   /** 
    * Access token received from authentication. 
    *  Required for authenticated users (aka agent). 
    */
   accessToken?: string;
+
   /** 
    * Organization ID (aka the GUID).
    *  Required for unauthenticated users (aka guest).
    */
   organizationId?: string;
+
   /** 
    * WebSocket Host. 
    * Optional: defaults to `wss://streaming.{environment}` 
    */
   wsHost?: string;
+
   /** 
    * Auto connect softphone sessions
    * Optional: default `true`
@@ -61,6 +65,7 @@ export interface ISdkConfig {
    * Note: This is required to be true for guest screen share
    */
   autoConnectSessions?: boolean;
+
   /** 
    * Disable auto answering softphone calls. By default softphone
    *  calls will be auth answered unless this is set to `true`
@@ -68,6 +73,7 @@ export interface ISdkConfig {
    * Optional: default `false`
    */
   disableAutoAnswer?: boolean;
+
   /** 
    * Desired log level. 
    * Available options: 
@@ -78,6 +84,7 @@ export interface ISdkConfig {
    * Optional: defaults to `'info'` 
    */
   logLevel?: LogLevels;
+
   /** 
    * Logger to use. Must implement the `ILogger` interface. 
    * ``` ts
@@ -95,6 +102,7 @@ export interface ISdkConfig {
    *  and outputs them in the console.
    */
   logger?: ILogger;
+
   /** 
    * Opt out of sending logs to sumo. Logs are only sent to sumo 
    *  if a custom logger is _not_ provided. The default logger will
@@ -103,6 +111,7 @@ export interface ISdkConfig {
    * Optional: default `false`
    */
   optOutOfTelemetry?: boolean;
+
   /** 
    * Allowed session types the sdk instance should handle.
    *  Only session types listed here will be handled. 
@@ -131,9 +140,11 @@ export interface ISdkConfig {
 
   /** media related configuration */
   media?: {
+
     /**
      * When `true` all audio tracks created via the SDK 
-     *  will have their volumes monitored and emited. 
+     *  will have their volumes monitored and emited on
+     *  `sdk.media.on('audioTrackVolume', evt)`. 
      *  See `sdk.media` events for more details. 
      * Optional: defaults to `false`
      */
@@ -143,6 +154,7 @@ export interface ISdkConfig {
 
   /** defaults for various media related functionality */
   defaults?: {
+
     /**
      * A default audio stream to accept softphone sessions with
      *  if no audio stream was used when accepting the session
@@ -151,6 +163,7 @@ export interface ISdkConfig {
      * Optional: no default
      */
     audioStream?: MediaStream;
+
     /**
      * HTML Audio Element to attach incoming audio streamsto. 
      *  Default: the sdk will create one and place it 
@@ -159,6 +172,7 @@ export interface ISdkConfig {
      * Optional: no default
      */
     audioElement?: HTMLAudioElement;
+
     /**
      * HTML Video Element to attach incoming video streams to. 
      *  A video element is required for accepting incoming video
@@ -168,6 +182,7 @@ export interface ISdkConfig {
      * Optional: no default
      */
     videoElement?: HTMLVideoElement;
+
     /**
      * Video resolution to default to when requesting 
      *  video media. 
@@ -184,6 +199,7 @@ export interface ISdkConfig {
       width: ConstrainULong,
       height: ConstrainULong
     };
+
     /**
      * Default video device ID to use when starting camera media. 
      *  - `string` to request media for device
@@ -192,6 +208,7 @@ export interface ISdkConfig {
      * Optional: defaults to `null`
      */
     videoDeviceId?: string | null;
+
     /**
      * Default audio device ID to use when starting microphone media. 
      *  - `string` to request media for device
@@ -200,6 +217,7 @@ export interface ISdkConfig {
      * Optional: defaults to `null`
      */
     audioDeviceId?: string | null;
+
     /**
      * Default output device ID to use when starting camera media. 
      *  - `string` ID for output media device to use
@@ -221,35 +239,52 @@ export interface ISdkConfig {
 
 export interface IMediaRequestOptions {
   /**
+   * Desired video constraint
    * - `string` to request media from device
    * - `true` to request media from sdk default device
    * - `null` to request media from system default device
    * - `false` | `undefined` to not request/update this type of media
    */
   video?: boolean | string | null;
+
   /**
-   * Video resolution to request from getUserMedia
+   * Video resolution to request from getUserMedia. 
+   * 
+   * Default is SDK configured resolution. `false` will 
+   *  explicitly not use the sdk default
    */
   videoResolution?: {
     width: ConstrainULong,
     height: ConstrainULong
-  };
+  } | false;
+
   /**
-   * Video frame rate to request from getUserMedia
+   * Video frame rate to request from getUserMedia. It 
+   *  will use the browser `ideal` property for video
+   *  constraints. Example, if is set `videoFrameRate: 45`
+   *  then the translated constraint to `getUserMedia` will
+   *  be `video: { frameRate: { ideal: 45 } }`
+   * 
+   * Defaults to 30. `false` will explicitly not any 
+   *  frameRate
    */
-  videoFrameRate?: ConstrainDouble;
+  videoFrameRate?: ConstrainDouble | false;
+
   /**
+   * Desired audio constraint
    * - `string` to request media from device
    * - `true` to request media from sdk default device
    * - `null` to request media from system default device
    * - `false` | `undefined` to not request/update this type of media
    */
   audio?: boolean | string | null;
+
   /**
    * This is just to be able to associate logs to a specific session. 
    *  This is primarily for internal use and not generally needed.
    */
   session?: IExtendedMediaSession;
+
   /**
    * Emit volume change events for audio tracks. This
    *  will override the SDK default configuration
@@ -515,13 +550,16 @@ export interface SdkMediaEvents {
    */
   permissions: SdkMediaStateWithType;
 }
-export type SdkMediaStateWithType = MediaState & {
-  eventType: keyof SdkMediaEvents
+
+export type SdkMediaEventTypes = keyof SdkMediaEvents;
+
+export type SdkMediaStateWithType = SdkMediaState & {
+  eventType: SdkMediaEventTypes;
 };
 
 export type MicVolumeEvent = Parameters<SdkMediaEvents['audioTrackVolume']>[0];
 
-export type MediaState = {
+export type SdkMediaState = {
   /** list of all available devices */
   devices: MediaDeviceInfo[];
   /** 
