@@ -273,12 +273,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { ...sessionInfo });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', sessionInfo);
     }
 
     const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
     if (!videoElement) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { ...sessionInfo });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', sessionInfo);
     }
 
     let stream = params.mediaStream;
@@ -402,12 +402,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   async endSession (session: IExtendedMediaSession) {
     await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
     await super.endSession(session);
-    session.pc.getSenders().map((sender) => {
-      if (sender.track) {
-
-        sender.track.stop();
-      }
-    });
+    session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean) {

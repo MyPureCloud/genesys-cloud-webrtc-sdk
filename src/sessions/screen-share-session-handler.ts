@@ -76,12 +76,12 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         // if autoConnectSessions is 'false' and we have a guest, throw an error
         //  guests should auto accept screen share session
         const errMsg = '`autoConnectSession` must be set to "true" for guests';
-        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { sessionInfo });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, sessionInfo);
       }
 
       if (!this._screenStreamPromise) {
         const errMsg = 'No pending or active screen share media promise';
-        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, { sessionInfo });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, sessionInfo);
       }
 
       const stream = await this._screenStreamPromise;
@@ -92,7 +92,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         track.addEventListener('ended', this.onTrackEnd.bind(this, session));
       });
 
-      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', { sessionInfo });
+      this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', sessionInfo);
 
       await this.addMediaToSession(session, stream);
       await this.acceptSession(session, { id: session.id });

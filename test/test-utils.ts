@@ -163,16 +163,19 @@ class MockSession extends EventEmitter {
 }
 
 class MockTrack {
-  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
-    this.kind = kind;
-    this.label = label || '';
-  }
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
   id = random();
   kind = 'video';
-  stop = jest.fn();
   label: string;
+  enabled = true;
+  muted = false;
+  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
+    this.kind = kind;
+    this.label = label || '';
+  }
+
+  stop = jest.fn();
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
   }
@@ -214,6 +217,28 @@ class MockStream {
     const index = this._tracks.findIndex(t => t.id === track.id);
     this._tracks.splice(index, 1);
   }
+}
+
+export class MockAudioContext {
+  createMediaStreamSource (stream: MediaStream | MockStream): MockAudioSource {
+    return new MockAudioSource();
+  }
+  createAnalyser (): MockAnalyser {
+    return new MockAnalyser();
+  }
+}
+
+export class MockAudioSource {
+  connect (_analyzer: MockAnalyser) { }
+}
+
+export class MockAnalyser {
+  fftSize: number;
+  minDecibels: number;
+  maxDecibels: number;
+  smoothingTimeConstant: number;
+  frequencyBinCount = 10;
+  getByteFrequencyData (array: Uint8Array): void { }
 }
 
 export function addTrackToMockStream (stream: MockStream, trackKind: 'video' | 'audio'): string {
@@ -278,6 +303,12 @@ let ws: WebSocket;
 
 function random (): string {
   return `${Math.random()}`.split('.')[1];
+}
+
+export function getRandomIntInclusive (min: number, max: number): number {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
 function timeout (n: number): Promise<void> {
@@ -550,7 +581,7 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
   const hash = random().toString().substr(0, 4);
 
   const log = (direction: 'IN' | 'OUT', message: string) => {
-    /* this function can be useful to debug WS messages */
+    /* this function can be useful for debugging WS messages */
     return;
     const fileName = path.resolve('test/unit', './test-log.json');
 

@@ -87,7 +87,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       mappedDevices,
       oldDevices,
     });
-    const deviceListsMatched = this.doDevicesMatch(oldDevices, enumeratedDevices);
+    const deviceListsMatched = this.doDeviceListsMatch(oldDevices, enumeratedDevices);
 
     /* if the devices changed or we want to force emit them */
     if (!deviceListsMatched || forceEmit) {
@@ -172,6 +172,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     const loggingExtras = {
       mediaReqOptions: { ...mediaReqOptions, session: undefined },
+      retryOnFailure,
       conversationId,
       sessionId,
       micPermissionsRequested,
@@ -179,6 +180,14 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     };
 
     let mediaStream: MediaStream;
+
+    this.sdk.logger.info('calling sdk.media.startMedia()', loggingExtras);
+
+    /* if we aren't requesting any media, call through to gUM to throw an error */
+    if (!requestingAudio && !requestingVideo) {
+      /* 'none' will throw the error we want – make sure to set `retry` to `false` */
+      return this.startSingleMedia('none', mediaReqOptions, false);
+    }
 
     /**
      * `startMedia` will always request 1 media type at a time. If permissions have not been
@@ -298,7 +307,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     preserveMedia = false,
     options?: IMediaRequestOptions
   ): Promise<MediaStream | void> {
-    options = options || {};
+    const optionsCopy = (options && { ...options }) || {};
     const oppositeMediaType = mediaType === 'audio' ? 'video' : 'audio';
     const permissionsReqKey: keyof SdkMediaState = mediaType === 'audio'
       ? 'micPermissionsRequested'
@@ -307,28 +316,30 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       ? 'hasMicPermissions'
       : 'hasCameraPermissions';
 
-    /* first load devices */
-    await this.enumerateDevices();
-
-    this.setPermissions({ [permissionsReqKey]: true });
     /* make sure the options are valid */
-    if (options[mediaType] === undefined || options[mediaType] === false) {
-      options[mediaType] = true;
+    if (optionsCopy[mediaType] === undefined || optionsCopy[mediaType] === false) {
+      optionsCopy[mediaType] = true;
     }
-    options[oppositeMediaType] = false;
+    optionsCopy[oppositeMediaType] = false;
 
     /* delete the session off this before logging */
     const optionsToLog = {
-      ...options,
+      mediaType,
+      preserveMedia,
+      requestOptions: { ...optionsCopy, session: undefined },
       sessionId: options?.session?.id,
       conversationId: options?.session?.conversationId
     };
-    delete optionsToLog.session;
 
+    /* we have to set that we have requested permissions to prevent an infinite loop with `startMedia()` */
+    this.setPermissions({ [permissionsReqKey]: true });
 
-    this.sdk.logger.info('requesting media to gain permissions', { options: optionsToLog });
+    /* first load devices */
+    await this.enumerateDevices();
 
-    const stream = await this.startMedia(options);
+    this.sdk.logger.info('requesting media to gain permissions', optionsToLog);
+
+    const stream = await this.startMedia(optionsCopy);
 
     /**
      * if we get here, it means we have permissions
@@ -352,7 +363,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     this.sdk.logger.info('finished requesting media permissions. destroying media', {
       mediaTracks,
-      options: optionsToLog
+      ...optionsToLog
     });
     mediaTracks.forEach(t => t.stop());
   }
@@ -404,15 +415,16 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     if (!foundDevice) {
       /* log if we didn't find the requested deviceId */
       if (typeof deviceId === 'string') {
-        this.sdk.logger.warn(`Unable to find requested ${kind} deviceId`, { deviceId, sessionInfos });
+        this.sdk.logger.warn(`Unable to find requested deviceId`, { kind, deviceId, sessionInfos });
       }
 
       /* try to find the sdk default device (if it is not `null`) */
-      if (sdkConfigDefaultDeviceId !== null) {
+      if (sdkConfigDefaultDeviceId) {
         foundDevice = availableDevices.find((d: MediaDeviceInfo) => d.deviceId === sdkConfigDefaultDeviceId);
         /* log if we couldn't find the sdk default device */
         if (!foundDevice) {
-          this.sdk.logger.warn(`Unable to find the sdk default ${kind} deviceId`, {
+          this.sdk.logger.warn(`Unable to find the sdk default deviceId`, {
+            kind,
             deviceId: sdkConfigDefaultDeviceId,
             sessionInfos
           });
@@ -421,7 +433,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     }
 
     if (!foundDevice) {
-      this.sdk.logger.info(`Using the system default ${kind} device`, { sessionInfos });
+      this.sdk.logger.info('Unable to find a valid deviceId', {
+        kind,
+        requestedDeviceId: deviceId,
+        sdkConfigDefaultDeviceId,
+        sessionInfos
+      });
     }
 
     return foundDevice ? foundDevice.deviceId : undefined;
@@ -481,7 +498,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return this.getDevices().find(d =>
       d.label === track.label && `${d.kind.substr(0, 5)}` === track.kind
     );
-  };
+  }
 
   /**
    * Look through the cached devices and match based on
@@ -490,9 +507,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * @param track media stream track with the label to search for
    */
   doesDeviceExistInCache (device?: MediaDeviceInfo): boolean {
-    if (!device) return;
+    if (!device) return false;
     return this.getDevices().some(cachedDevice => this.compareDevices(device, cachedDevice));
-  };
+  }
 
   /**
    * Look through the cached output devices and match based on
@@ -502,7 +519,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   findCachedOutputDeviceById (id?: string): MediaDeviceInfo | undefined {
     return this.getState().outputDevices.find(d => d.deviceId === id);
-  };
+  }
 
   /**
    * This will remove all media listeners, stop any existing media, 
@@ -552,7 +569,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
   private setStateAndEmit (newState: Partial<SdkMediaState>, eventType: SdkMediaEventTypes) {
     /* set the new state */
-    this.state = { ...this.state, ...newState };
+    this.state = { ...this.state, ...cloneDeep(newState) };
     /* grab a copy of it to emit */
     const stateCopy = this.getState();
     /* emit on 'state' and the specific eventType */
@@ -565,18 +582,6 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       return;
     }
 
-    /* setup tear down monitors */
-    const stopTrack = track.stop.bind(track);
-    track.stop = () => {
-      this.sdk.logger.debug('stopping track from track.stop()', track);
-      this.clearAudioInputMonitor(track.id);
-      stopTrack();
-    };
-    track.onended = (e) => {
-      this.clearAudioInputMonitor(track.id);
-      this.sdk.logger.debug('stopping track from track.onended', track);
-    };
-
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioSource = audioContext.createMediaStreamSource(stream);
     const analyser = audioContext.createAnalyser();
@@ -588,10 +593,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const volumes = new Uint8Array(analyser.frequencyBinCount);
     const volumeCallback = () => {
       analyser.getByteFrequencyData(volumes);
-      let volumeSum = 0;
-      for (const volume of volumes) {
-        volumeSum += volume;
-      }
+      const volumeSum = volumes.reduce((total, current) => total + current, 0);
       const averageVolume = volumeSum / volumes.length;
       this.emit('audioTrackVolume', { track, volume: averageVolume, sessionId, muted: !track.enabled || track.muted });
     };
@@ -761,7 +763,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return devices;
   }
 
-  private doDevicesMatch (deviceList1: MediaDeviceInfo[], deviceList2: MediaDeviceInfo[]): boolean {
+  private doDeviceListsMatch (deviceList1: MediaDeviceInfo[], deviceList2: MediaDeviceInfo[]): boolean {
     if (deviceList1.length !== deviceList2.length) {
       return false;
     }
@@ -815,7 +817,34 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  - sdk deviceId not found (or there was no default), try system default
    *  - if all those failed _or_ retry was turned off, throw
    */
-  private async startSingleMedia (mediaType: 'audio' | 'video', mediaRequestOptions: IMediaRequestOptions, retryOnFailure: boolean = true): Promise<MediaStream> {
+  /**
+   * This function will request gUM one media type at a time. It has the 
+   *  following behavior: 
+   *  * determine the exact media constraints for gUM
+   *  * set the opposite media type to `false` (ensuring 
+   *      only one media type is requested)
+   *  * request gUM 
+   * 
+   * It will handle retries in the following pattern: 
+   *  * permissions errors are not retried
+   *  * if retryOnFailure is `false`, it will not retry
+   *  * on select video errors for unacceptable video resolutions
+   *      it will retry without resolutions
+   *  * on all other it will retry the media type with: 
+   *    * sdk default deviceId (if present)
+   *    * system default deviceId
+   *  * if all retry attempts were exhausted, it throws
+   *      the last error received
+   * 
+   * @param mediaType media type of request from gUM
+   * @param mediaRequestOptions sdk media request options
+   * @param retryOnFailure attempt to retry on gUM failure
+   */
+  private async startSingleMedia (
+    mediaType: 'audio' | 'video' | 'none',
+    mediaRequestOptions: IMediaRequestOptions,
+    retryOnFailure: boolean = true
+  ): Promise<MediaStream> {
     const reqOptionsCopy = { ...mediaRequestOptions };
     const conversationId = reqOptionsCopy.session?.conversationId;
     const sessionId = reqOptionsCopy.session?.id;
@@ -823,9 +852,13 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const requestingAudio = mediaType === 'audio';
     const requestingVideo = mediaType === 'video';
 
-    const sdkDefaultDeviceId = requestingAudio
+    const getCurrentSdkDefault = () => requestingAudio
       ? this.sdk._config.defaults.audioDeviceId
-      : this.sdk._config.defaults.videoDeviceId;
+      : requestingVideo
+        ? this.sdk._config.defaults.videoDeviceId
+        : undefined;
+
+    let sdkDefaultDeviceId = getCurrentSdkDefault();
 
     const constraints: MediaStreamConstraints = this.getStandardConstraints(reqOptionsCopy);
 
@@ -843,11 +876,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       const state = this.getState();
       return {
         mediaRequestOptions: { ...reqOptionsCopy, session: undefined },
+        retryOnFailure,
         mediaType,
         constraints,
         sessionId,
         conversationId,
-        sdkDefaultDeviceId,
+        sdkDefaultDeviceId: getCurrentSdkDefault(),
         availableDevices: this.getDevices(),
         permissions: {
           micPermissionsRequested: state.micPermissionsRequested,
@@ -858,18 +892,21 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       };
     };
 
-    this.sdk.logger.info('requesting getUserMedia', { ...getLoggingExtras() });
+    this.sdk.logger.info('requesting getUserMedia', getLoggingExtras());
 
     try {
-      const stream = await window.navigator.mediaDevices.getUserMedia(constraints)
+      const stream = await window.navigator.mediaDevices.getUserMedia(constraints);
       this.trackMedia(stream, reqOptionsCopy.monitorMicVolume, sessionId);
-      this.sdk.logger.info('returning media from getUserMedia.', {
+      this.sdk.logger.info('returning media from getUserMedia', {
         ...getLoggingExtras(),
         mediaTracks: stream.getTracks()
       });
 
       return stream;
     } catch (e) {
+      /* refetch the sdk default – it could have changed by the time we get here  */
+      sdkDefaultDeviceId = getCurrentSdkDefault();
+
       /* PERMISSIONS ERRORS */
       if (this.isPermissionsError(e)) {
         const permissionsKey: keyof SdkMediaState = requestingAudio
@@ -904,6 +941,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         newOptions.videoResolution = false; // this will ensure SDK defaults aren't used
         this.sdk.logger.warn('starting video was aborted. trying again without a video resolution constraint', {
           ...getLoggingExtras(),
+          error: e,
           options: { ...newOptions, session: undefined }
         });
         return this.startSingleMedia('video', newOptions, true);
@@ -919,11 +957,11 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           typeof reqOptionsCopy[mediaType] === 'string' &&
           /* we have a valid sdk default */
           sdkDefaultDeviceId &&
-          /* the sdk default does not match the requested */
+          /* the sdk default device does not match the requested device */
           sdkDefaultDeviceId !== reqOptionsCopy[mediaType]
         ) {
           /* we will try with the sdk defaults */
-          newOptions[mediaType] = true; /* sdk default */
+          newOptions[mediaType] = sdkDefaultDeviceId; /* sdk default */
           newRetryOnFailure = true;
         }
         /* if we haven't already tried system default, try it */
@@ -932,29 +970,35 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           newOptions[mediaType] = null; /* system default */
           newRetryOnFailure = false;
         }
-        /* there is nothing left to retry with, throw the error */
+        /* we've already requested with system defaults (`null`). 
+          there is nothing left to retry with, throw the error */
         else {
           newOptions[mediaType] = false; /* placeholder for if statement (for logging) */
         }
 
-        /* if this isn't false, we can retry */
-        if (newOptions[mediaType] !== false) {
-          /* if it was video, we don't want resolution and only default frameRate (or none if that was requested) */
-          if (requestingVideo) {
-            newOptions.videoResolution = false;
-            newOptions.videoFrameRate = newOptions.videoResolution === false
-              ? false : undefined; /* `undefined` will use SDK default of `ideal: 30` */
-          }
+        /* if it was video, we don't want resolution and only default frameRate (or none if that was requested) */
+        if (requestingVideo) {
+          newOptions.videoResolution = false;
+          newOptions.videoFrameRate = newOptions.videoFrameRate === false
+            ? false : undefined; /* `undefined` will use SDK default of `ideal: 30` */ // here
+        }
 
+        /* this means we still have valid retry paramters */
+        if (newOptions[mediaType] !== false) {
           this.sdk.logger.warn('starting media failed. attempting retry with different mediaRequestOptions', {
             ...getLoggingExtras(),
+            error: e,
+            retryOnFailure: newRetryOnFailure,
             mediaRequestOptions: { ...newOptions, session: undefined }
           });
+
           return this.startSingleMedia(mediaType, newOptions, newRetryOnFailure);
         }
 
-        this.sdk.logger.warn('starting media failed. not attempting retry', {
+        /* if `newOptions[mediaType] !== false`, we've already retied with system default – we want to throw the error */
+        this.sdk.logger.warn('starting media failed. no valid retry parameters available', {
           ...getLoggingExtras(),
+          error: e,
           mediaRequestOptions: { ...newOptions, session: undefined }
         });
       }
@@ -1011,5 +1055,4 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       (error.name === 'NotFoundError' && error.message === 'The object can not be found here.')
     );
   }
-
 }

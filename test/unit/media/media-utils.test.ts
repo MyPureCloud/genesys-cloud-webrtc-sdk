@@ -2,7 +2,7 @@
 import * as mediaUtils from '../../../src/media/media-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack, MockSession } from '../../test-utils';
-import { IExtendedMediaSession, SdkMediaState } from '../../../src/types/interfaces';
+import { IExtendedMediaSession } from '../../../src/types/interfaces';
 
 const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1', label: 'Mock Video Device #1' } as MediaDeviceInfo;
 const mockVideoDevice2 = { kind: 'videoinput', deviceId: 'mockVideoDevice2', label: 'Mock Video Device #2' } as MediaDeviceInfo;
@@ -10,32 +10,12 @@ const mockAudioDevice1 = { kind: 'audioinput', deviceId: 'mockAudioDevice1', lab
 const mockAudioDevice2 = { kind: 'audioinput', deviceId: 'mockAudioDevice2', label: 'Mock Mic Device #2' } as MediaDeviceInfo;
 const mockOutputDevice1 = { kind: 'audiooutput', deviceId: 'mockOutputDevice1', label: 'Mock Speaker Device #1' } as MediaDeviceInfo;
 const mockOutputDevice2 = { kind: 'audiooutput', deviceId: 'mockOutputDevice2', label: 'Mock Speaker Device #2' } as MediaDeviceInfo;
-const mockedDevices = [
-  mockVideoDevice1,
-  mockVideoDevice2,
-  mockAudioDevice1,
-  mockAudioDevice2,
-  mockOutputDevice1,
-  mockOutputDevice2
-];
+
 
 let mockSdk: GenesysCloudWebrtcSdk;
-let mediaDevices: {
-  getDisplayMedia: jest.SpyInstance,
-  getUserMedia: jest.SpyInstance,
-  enumerateDevices: jest.SpyInstance
-};
-
 beforeEach(() => {
   jest.clearAllMocks();
   mockSdk = new SimpleMockSdk() as any;
-  mediaDevices = (window.navigator as any).mediaDevices = {
-    getDisplayMedia: jest.fn(),
-    getUserMedia: jest.fn().mockResolvedValue({}),
-    enumerateDevices: jest.fn().mockResolvedValue(mockedDevices),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn()
-  };
 });
 
 afterAll(() => {
