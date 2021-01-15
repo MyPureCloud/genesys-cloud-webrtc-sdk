@@ -68,21 +68,39 @@ function validateOptions (options: ISdkConfig): string | null {
 /**
  * SDK to interact with GenesysCloud WebRTC functionality
  */
-export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
+export class GenesysCloudWebrtcSdk extends /** @ignore */(EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
   logger: ILogger;
 
-  readonly VERSION = '[AIV]{version}[/AIV]';
+  // /** @ignore */
+  _emitType: any;
 
+  /** @ignore */
+  _emitterType: any;
+
+  readonly VERSION = '[AIV]{version}[/AIV]';
+  /** @ignore */
   _connected: boolean;
+  /** @ignore */
   _streamingConnection: StreamingClient;
+  /** @ignore */
   _orgDetails: any;
+  /** @ignore */
   _personDetails: IPersonDetails;
+  /** @ignore */
   _clientId: string;
+  /** @ignore */
   _customerData: ICustomerData;
+  /** @ignore */
   _hasConnected: boolean;
+  /** @ignore */
   _refreshIceServersInterval: NodeJS.Timeout;
+  /** @ignore */
   _config: ISdkConfig;
   sessionManager: SessionManager;
+  /**
+   * Instance of the SdkMedia class for media related management and shims. 
+   * {@link media/SdkMedia}
+   */
   media: SdkMedia;
 
   get isInitialized (): boolean {
