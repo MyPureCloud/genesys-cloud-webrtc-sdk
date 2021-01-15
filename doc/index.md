@@ -18,237 +18,46 @@ To use the SDK with OAuth scopes, you will need the following scopes enabled:
 
 These can be set in Genesys Cloud > Admin > Integrations > OAuth > Scope.  Note that the scope options are not available when the "Grant Type" option is set to "Client Credentials"
 
+#### Behavior notes
+
+- By default, the SDK will keep all active sessions active if the WebSocket disconnects.
+It is the consuming application's responsibility to end all pending or active sessions after a
+disconnect in the event that it doesn't recover. This behavior can be disabled by providing
+`sessionSurvivability: false` in the SDK constructor options. If this is set to false, if
+the WebSocket connection drops, all active WebRTC connections will be disconnected.
+
 #### Constructor
 
-TODO: figure out how to make markdown work for docs and code comments
+`new GenesysCloudWebrtcSdk(options)`
 
-``` ts
-new GenesysCloudWebrtcSdk(options: ISdkConfig);
+- parameters
+  - `Object options` with properties:
+    - `String environment`: Required; `mypurecloud.com || mypurecloud.ie ||
+        mypurecloud.jp || mypurecloud.de || mypurecloud.com.au || usw2.pure.cloud`
+    - One of the following is required:
+      - `String accessToken`: access token for the authenticated user
+      - `String organizationId`: organization ID (used for unauthenticated user)
 
-/**
- * SDK configuration options for construction a new instance
- */
-interface ISdkConfig {
-  /** 
-   * Domain to use. 
-   * 
-   * Optional: default is `mypurecloud.com`. 
-   * 
-   * Available Options: 
-   * ``` ts
-   *  'mypurecloud.com',
-   *  'mypurecloud.com.au',
-   *  'mypurecloud.jp',
-   *  'mypurecloud.de',
-   *  'mypurecloud.ie',
-   *  'usw2.pure.cloud',
-   *  'cac1.pure.cloud',
-   *  'euw2.pure.cloud',
-   *  'apne2.pure.cloud'
-   */
-  environment?: string;
-  /** 
-   * Access token received from authentication. 
-   *  Required for authenticated users (aka agent). 
-   */
-  accessToken?: string;
-  /** 
-   * Organization ID (aka the GUID).
-   *  Required for unauthenticated users (aka guest).
-   */
-  organizationId?: string;
-  /** 
-   * WebSocket Host. 
-   * Optional: defaults to `wss://streaming.{environment}` 
-   */
-  wsHost?: string;
-  /** 
-   * Auto connect softphone sessions
-   * Optional: default `true`
-   * 
-   * Note: This is required to be true for guest screen share
-   */
-  autoConnectSessions?: boolean;
-  /** 
-   * Disable auto answering softphone calls. By default softphone
-   *  calls will be auth answered unless this is set to `true`
-   *  
-   * Optional: default `false`
-   */
-  disableAutoAnswer?: boolean;
-  /** 
-   * Desired log level. 
-   * Available options: 
-   * ``` ts
-   *  type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
-   * ```
-   * 
-   * Optional: defaults to `'info'` 
-   */
-  logLevel?: LogLevels;
-  /** 
-   * Logger to use. Must implement the `ILogger` interface. 
-   * ``` ts
-   * interface ILogger {
-   *    log (message: string | Error, details?: any, skipServer?: boolean): void;
-   *    debug (message: string | Error, details?: any, skipServer?: boolean): void;
-   *    info (message: string | Error, details?: any, skipServer?: boolean): void;
-   *    warn (message: string | Error, details?: any, skipServer?: boolean): void;
-   *    error (message: string | Error, details?: any, skipServer?: boolean): void;
-   * }
-   * ```
-   * 
-   * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
-   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`) 
-   *  and outputs them in the console.
-   */
-  logger?: ILogger;
-  /** 
-   * Opt out of sending logs to sumo. Logs are only sent to sumo 
-   *  if a custom logger is _not_ provided. The default logger will
-   *  send logs to sumo unless this option is `true`
-   * 
-   * Optional: default `false`
-   */
-  optOutOfTelemetry?: boolean;
-  /** 
-   * Allowed session types the sdk instance should handle.
-   *  Only session types listed here will be handled. 
-   * Available options passed in as an array:
-   * ``` ts
-   * enum SessionTypes {
-   *    softphone = 'softphone',
-   *    collaborateVideo = 'collaborateVideo',
-   *    acdScreenShare = 'screenShare'
-   * }
-   * ```
-   * 
-   * example: 
-   * ``` ts
-   * import { SessionTypes } from 'genesys-cloud-webrtc-sdk/dist/src/types/enums';
-   * 
-   * new GenesysCloudWebrtcSdk({
-   *    allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
-   *    // other config options
-   * });
-   * ```
-   *
-   * Optional: defaults to all session types.
-   */
-  allowedSessionTypes?: SessionTypes[];
-
-  /** media related configuration */
-  media?: {
-    /**
-     * When `true` all audio tracks created via the SDK 
-     *  will have their volumes monitored and emited. 
-     *  See `sdk.media` events for more details. 
-     * Optional: defaults to `false`
-     */
-    monitorMicVolume?: boolean;
-    /**
-     * Determine how the SDK should request permissions for audio (aka microphone). 
-     *  - `'none'`: the sdk will not attempt to check or gain permissions
-     *  - `'proactive'`: the sdk will attempt to check and gain permissions 
-     *      when `sdk.initialize()` is called. An error will be thrown if 
-     *      permissions fail. 
-     *  - `'required'`: same funcationality as `'proactive'` except the 
-     *      consumer will _NOT_ be allowed to use the sdk if the permission
-     *      check fails. This can be useful if the media type is required
-     *      for functionality (ex: `'audio'` being necessary for softphone calls)
-     * 
-     * Optional: defaults to `'none'`
-     */
-    microphonePermissionMode?: 'none' | 'proactive' | 'required';
-    /**
-     * Determine how the SDK should request permissions for video (aka camera).
-     *  - `'none'`: the sdk will not attempt to check or gain permissions
-     *  - `'proactive'`: the sdk will attempt to check and gain permissions 
-     *      when `sdk.initialize()` is called. An error will be thrown if 
-     *      permissions fail. 
-     *  - `'required'`: same funcationality as `'proactive'` except the 
-     *      consumer will _NOT_ be allowed to use the sdk if the permission
-     *      check fails. This can be useful if the media type is required
-     *      for functionality (ex: `'video'` being necessary for video calls)
-     * 
-     * Optional: defaults to `'none'`
-     */
-    cameraPermissionMode?: 'none' | 'proactive' | 'required';
-  };
-
-  /** defaults for various media related functionality */
-  defaults?: {
-    /**
-     * A default audio stream to accept softphone sessions with
-     *  if no audio stream was used when accepting the session
-     *  (ie: `sdk.acceptSession({ id: 'session-id', mediaStream })`)
-     * 
-     * Optional: no default
-     */
-    audioStream?: MediaStream;
-    /**
-     * HTML Audio Element to attach incoming audio streamsto. 
-     *  Default: the sdk will create one and place it 
-     *    in the DOM
-     * 
-     * Optional: no default
-     */
-    audioElement?: HTMLAudioElement;
-    /**
-     * HTML Video Element to attach incoming video streams to. 
-     *  A video element is required for accepting incoming video
-     *  calls. If no video element is passed into `sdk.acceptSession()`, 
-     *  this default element will be used. 
-     * 
-     * Optional: no default
-     */
-    videoElement?: HTMLVideoElement;
-    /**
-     * Video resolution to default to when requesting 
-     *  video media. 
-     * 
-     * Note: if the resolution causes getUserMedia to fail
-     *  (which can happen sometimes in some browsers), the 
-     *  SDK will retry _without_ the resolution request. 
-     *  This means this setting may or may not be used if 
-     *  depending on the browser. 
-     * 
-     * Optional: no default
-     */
-    videoResolution?: {
-      width: ConstrainULong,
-      height: ConstrainULong
-    };
-    /**
-     * Default video device ID to use when starting camera media. 
-     *  - `string` to request media for device
-     *  - `null | falsey` to request media system default device
-     * 
-     * Optional: defaults to `null`
-     */
-    videoDeviceId?: string | null;
-    /**
-     * Default audio device ID to use when starting microphone media. 
-     *  - `string` to request media for device
-     *  - `null | falsey` to request media system default device
-     * 
-     * Optional: defaults to `null`
-     */
-    audioDeviceId?: string | null;
-    /**
-     * Default output device ID to use when starting camera media. 
-     *  - `string` ID for output media device to use
-     *  - `null | falsey` to request media system default device
-     *  
-     * Note: Not all browsers support output devices. System default
-     *  for output devices is always an empty string (ex: `''`)
-     * 
-     * Optional: defaults to `null`
-     */
-    outputDeviceId?: string | null;
-  }
-}
-```
+    Advanced options:
+    - `Boolean sessionSurvivability`: **not yet supported**: Optional, default true; see Behavior Notes
+        above
+    - `Boolean autoAnswerOutboundCalls`: **not yet supported**: Optional, default true; See [softphone behavior notes]
+    - `Boolean autoConnectSessions`: Optional, default true; whether or not
+        the SDK should auto connect the sessions.
+    - `Array[IceServerConfiguration] iceServers`: Custom ICE server configuration.
+        See https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
+    - `HTMLAudioElement defaultAudioElement`: Optional, default element to which inbound audio is attached to
+    - `HTMLVideoElement defaultVideoElement`: Optional, default element to which inbound video is attached to
+    - `MediaStream defaultAudioStream`: Optional, audio stream to be used for outbound calls
+    - `String | Null defaultVideoDeviceId`: Optional, default video device ID or `null` for system default\*
+    - `String | Null defaultAudioDeviceId`: Optional, default audio device ID or `null` for system default\*
+    - `String | Null defaultOutputDeviceId`: Optional, default output device ID or `null` for system default (this is the only time `null` is allowed for output device)\*
+    - `RTCConfiguration iceTransportPolicy`: [DEPRECATED in 3.0.1, to be removed soon] Set the ICE transport policy
+        See https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration
+    - `String logLevel`: Optional, desired log level. Available options: `debug`, `log`, `info`, `warn`, `error`
+    - `Object logger`: Optional, desired logger. Default, `console`. Must contain methods: `debug`, `log`, `info`, `warn`, `error`
+    - `String wsHost`: Optional, websocket host
+    - `SessionTypes[] allowedSessionTypes`: Optional, *defaults to all session types* if not provided. If provided, only the provided types will be handled by the sdk and all others will be ignored.
 
 #### Methods
 
