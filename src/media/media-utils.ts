@@ -22,10 +22,10 @@ export const getOrCreateAudioMediaElement = function (): HTMLAudioElement {
 };
 
 /**
- * Attach an audio stream to the given audio element. 
- *  If no element is provided, a new element will be 
- *  created and attached to the DOM. 
- * 
+ * Attach an audio stream to the given audio element.
+ *  If no element is provided, a new element will be
+ *  created and attached to the DOM.
+ *
  * @param sdk sdk instance
  * @param stream audio stream to attach
  * @param audioElement optional audio element to attach stream to
@@ -51,8 +51,8 @@ export const attachAudioMedia = function (
 };
 
 /**
- * Utility method to check if the browser supports 
- *  RTC transceivers. 
+ * Utility method to check if the browser supports
+ *  RTC transceivers.
  */
 export const checkHasTransceiverFunctionality = function (): boolean {
   if (typeof _hasTransceiverFunctionality === 'boolean') {
@@ -73,7 +73,7 @@ export const checkHasTransceiverFunctionality = function (): boolean {
 
 /**
  * Utility method to check all tracks on a given stream
- *  to determine if all tracks have ended. 
+ *  to determine if all tracks have ended.
  * @param stream to check tracks on
  */
 export const checkAllTracksHaveEnded = function (stream: MediaStream): boolean {
@@ -85,7 +85,7 @@ export const checkAllTracksHaveEnded = function (stream: MediaStream): boolean {
 };
 
 /**
- * Utility method to create a new stream and add 
+ * Utility method to create a new stream and add
  *  the passed in track
  * @param track media track to add
  */

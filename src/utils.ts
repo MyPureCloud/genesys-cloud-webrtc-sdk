@@ -32,8 +32,8 @@ export class SdkError extends Error {
 
 /**
  * This will create an `SdkError`, emit the error on `sdk.on('sdkError', error)`,
- *  and return the error. It will not `throw` the error. It is up to the caller 
- *  on what to do with it. 
+ *  and return the error. It will not `throw` the error. It is up to the caller
+ *  on what to do with it.
  * @param this sdk instance
  * @param errorType SdkError type
  * @param message message as string or Error instance

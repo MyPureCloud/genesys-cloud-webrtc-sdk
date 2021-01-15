@@ -20,12 +20,12 @@ export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key
  * SDK configuration options for construction a new instance
  */
 export interface ISdkConfig {
-  /** 
-   * Domain to use. 
-   * 
-   * Optional: default is `mypurecloud.com`. 
-   * 
-   * Available Options: 
+  /**
+   * Domain to use.
+   *
+   * Optional: default is `mypurecloud.com`.
+   *
+   * Available Options:
    * ``` ts
    *  'mypurecloud.com',
    *  'mypurecloud.com.au',
@@ -40,53 +40,53 @@ export interface ISdkConfig {
    */
   environment?: string;
 
-  /** 
-   * Access token received from authentication. 
-   *  Required for authenticated users (aka agent). 
+  /**
+   * Access token received from authentication.
+   *  Required for authenticated users (aka agent).
    */
   accessToken?: string;
 
-  /** 
+  /**
    * Organization ID (aka the GUID).
    *  Required for unauthenticated users (aka guest).
    */
   organizationId?: string;
 
-  /** 
-   * WebSocket Host. 
-   * Optional: defaults to `wss://streaming.{environment}` 
+  /**
+   * WebSocket Host.
+   * Optional: defaults to `wss://streaming.{environment}`
    */
   wsHost?: string;
 
-  /** 
+  /**
    * Auto connect softphone sessions
    * Optional: default `true`
-   * 
+   *
    * Note: This is required to be true for guest screen share
    */
   autoConnectSessions?: boolean;
 
-  /** 
+  /**
    * Disable auto answering softphone calls. By default softphone
    *  calls will be auth answered unless this is set to `true`
-   *  
+   *
    * Optional: default `false`
    */
   disableAutoAnswer?: boolean;
 
-  /** 
-   * Desired log level. 
-   * Available options: 
+  /**
+   * Desired log level.
+   * Available options:
    * ``` ts
    *  type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
    * ```
-   * 
-   * Optional: defaults to `'info'` 
+   *
+   * Optional: defaults to `'info'`
    */
   logLevel?: LogLevels;
 
-  /** 
-   * Logger to use. Must implement the `ILogger` interface. 
+  /**
+   * Logger to use. Must implement the `ILogger` interface.
    * ``` ts
    * interface ILogger {
    *    log (message: string | Error, details?: any, skipServer?: boolean): void;
@@ -96,25 +96,25 @@ export interface ISdkConfig {
    *    error (message: string | Error, details?: any, skipServer?: boolean): void;
    * }
    * ```
-   * 
+   *
    * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
-   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`) 
+   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`)
    *  and outputs them in the console.
    */
   logger?: ILogger;
 
-  /** 
-   * Opt out of sending logs to sumo. Logs are only sent to sumo 
+  /**
+   * Opt out of sending logs to sumo. Logs are only sent to sumo
    *  if a custom logger is _not_ provided. The default logger will
    *  send logs to sumo unless this option is `true`
-   * 
+   *
    * Optional: default `false`
    */
   optOutOfTelemetry?: boolean;
 
-  /** 
+  /**
    * Allowed session types the sdk instance should handle.
-   *  Only session types listed here will be handled. 
+   *  Only session types listed here will be handled.
    * Available options passed in as an array:
    * ``` ts
    * enum SessionTypes {
@@ -123,11 +123,11 @@ export interface ISdkConfig {
    *    acdScreenShare = 'screenShare'
    * }
    * ```
-   * 
-   * example: 
+   *
+   * example:
    * ``` ts
    * import { SessionTypes } from 'genesys-cloud-webrtc-sdk/dist/src/types/enums';
-   * 
+   *
    * new GenesysCloudWebrtcSdk({
    *    allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
    *    // other config options
@@ -142,14 +142,14 @@ export interface ISdkConfig {
   media?: {
 
     /**
-     * When `true` all audio tracks created via the SDK 
+     * When `true` all audio tracks created via the SDK
      *  will have their volumes monitored and emited on
-     *  `sdk.media.on('audioTrackVolume', evt)`. 
-     *  See `sdk.media` events for more details. 
+     *  `sdk.media.on('audioTrackVolume', evt)`.
+     *  See `sdk.media` events for more details.
      * Optional: defaults to `false`
      */
     monitorMicVolume?: boolean;
-    // TODO: should we add a `disableMediaRetry` for hail mary attempts when media fails? 
+    // TODO: should we add a `disableMediaRetry` for hail mary attempts when media fails?
   };
 
   /** defaults for various media related functionality */
@@ -159,40 +159,40 @@ export interface ISdkConfig {
      * A default audio stream to accept softphone sessions with
      *  if no audio stream was used when accepting the session
      *  (ie: `sdk.acceptSession({ id: 'session-id', mediaStream })`)
-     * 
+     *
      * Optional: no default
      */
     audioStream?: MediaStream;
 
     /**
-     * HTML Audio Element to attach incoming audio streamsto. 
-     *  Default: the sdk will create one and place it 
+     * HTML Audio Element to attach incoming audio streamsto.
+     *  Default: the sdk will create one and place it
      *    in the DOM
-     * 
+     *
      * Optional: no default
      */
     audioElement?: HTMLAudioElement;
 
     /**
-     * HTML Video Element to attach incoming video streams to. 
+     * HTML Video Element to attach incoming video streams to.
      *  A video element is required for accepting incoming video
-     *  calls. If no video element is passed into `sdk.acceptSession()`, 
-     *  this default element will be used. 
-     * 
+     *  calls. If no video element is passed into `sdk.acceptSession()`,
+     *  this default element will be used.
+     *
      * Optional: no default
      */
     videoElement?: HTMLVideoElement;
 
     /**
-     * Video resolution to default to when requesting 
-     *  video media. 
-     * 
+     * Video resolution to default to when requesting
+     *  video media.
+     *
      * Note: if the resolution causes getUserMedia to fail
-     *  (which can happen sometimes in some browsers), the 
-     *  SDK will retry _without_ the resolution request. 
-     *  This means this setting may or may not be used if 
-     *  depending on the browser. 
-     * 
+     *  (which can happen sometimes in some browsers), the
+     *  SDK will retry _without_ the resolution request.
+     *  This means this setting may or may not be used if
+     *  depending on the browser.
+     *
      * Optional: no default
      */
     videoResolution?: {
@@ -201,35 +201,35 @@ export interface ISdkConfig {
     };
 
     /**
-     * Default video device ID to use when starting camera media. 
+     * Default video device ID to use when starting camera media.
      *  - `string` to request media for device
      *  - `null | falsey` to request media system default device
-     * 
+     *
      * Optional: defaults to `null`
      */
     videoDeviceId?: string | null;
 
     /**
-     * Default audio device ID to use when starting microphone media. 
+     * Default audio device ID to use when starting microphone media.
      *  - `string` to request media for device
      *  - `null | falsey` to request media system default device
-     * 
+     *
      * Optional: defaults to `null`
      */
     audioDeviceId?: string | null;
 
     /**
-     * Default output device ID to use when starting camera media. 
+     * Default output device ID to use when starting camera media.
      *  - `string` ID for output media device to use
      *  - `null | falsey` to request media system default device
-     *  
+     *
      * Note: Not all browsers support output devices. System default
      *  for output devices is always an empty string (ex: `''`)
-     * 
+     *
      * Optional: defaults to `null`
      */
     outputDeviceId?: string | null;
-  }
+  };
 }
 
 /**
@@ -248,9 +248,9 @@ export interface IMediaRequestOptions {
   video?: boolean | string | null;
 
   /**
-   * Video resolution to request from getUserMedia. 
-   * 
-   * Default is SDK configured resolution. `false` will 
+   * Video resolution to request from getUserMedia.
+   *
+   * Default is SDK configured resolution. `false` will
    *  explicitly not use the sdk default
    */
   videoResolution?: {
@@ -259,13 +259,13 @@ export interface IMediaRequestOptions {
   } | false;
 
   /**
-   * Video frame rate to request from getUserMedia. It 
+   * Video frame rate to request from getUserMedia. It
    *  will use the browser `ideal` property for video
    *  constraints. Example, if is set `videoFrameRate: 45`
    *  then the translated constraint to `getUserMedia` will
    *  be `video: { frameRate: { ideal: 45 } }`
-   * 
-   * Defaults to 30. `false` will explicitly not any 
+   *
+   * Defaults to 30. `false` will explicitly not any
    *  frameRate
    */
   videoFrameRate?: ConstrainDouble | false;
@@ -280,7 +280,7 @@ export interface IMediaRequestOptions {
   audio?: boolean | string | null;
 
   /**
-   * This is just to be able to associate logs to a specific session. 
+   * This is just to be able to associate logs to a specific session.
    *  This is primarily for internal use and not generally needed.
    */
   session?: IExtendedMediaSession;
@@ -289,7 +289,7 @@ export interface IMediaRequestOptions {
    * Emit volume change events for audio tracks. This
    *  will override the SDK default configuration
    *  of `monitorMicVolume`.
-   * 
+   *
    * Default is SDK config's `monitorMicVolume` value
    */
   monitorMicVolume?: boolean;
@@ -509,22 +509,22 @@ export interface SdkEvents {
  */
 export interface SdkMediaEvents {
   /**
-   * Event emitted for microphone volume changes. Event includes the 
+   * Event emitted for microphone volume changes. Event includes the
    *  media stream, media track, volume average, if the mic is muted,
-   *  and the sessionId (if available). 
-   * 
-   * The sessionId will only be available if the media was created 
-   *  with a sessionId passed in. 
+   *  and the sessionId (if available).
+   *
+   * The sessionId will only be available if the media was created
+   *  with a sessionId passed in.
    */
   audioTrackVolume: (details: { track: MediaStreamTrack, volume: number, sessionId: string, muted: boolean }) => void;
 
   /**
-   * Event emitted whenever the media state changes. 
+   * Event emitted whenever the media state changes.
    *  `event.eventType` will match the other event that
    *    is emitted on.
-   * 
+   *
    * Example: if the devices changed, the following will emit:
-   * 
+   *
    * `sdk.media.on('state', evt => // evt.eventType === 'devices')`
    *  which means that the `'devices'` event will also emit
    * `sdk.media.on('devices', evt => // same event)`
@@ -532,16 +532,16 @@ export interface SdkMediaEvents {
   state: SdkMediaStateWithType;
 
   /**
-   * Event when devices change. 
-   * 
-   * Note: this will only fire when devices change. 
-   *  For example: if `sdk.media.enumerateDevices()` is 
+   * Event when devices change.
+   *
+   * Note: this will only fire when devices change.
+   *  For example: if `sdk.media.enumerateDevices()` is
    *  called multiple times, `sdk.media.on('devices', evt)
    *  will only fire once _unless_ the devices are different
    *  on subsequent enumerations. This ensures `enumerateDevices()`
    *  can be called many times without the event emitting
-   *  with duplicate data. 
-   * 
+   *  with duplicate data.
+   *
    */
   devices: SdkMediaStateWithType;
 
@@ -562,9 +562,9 @@ export type MicVolumeEvent = Parameters<SdkMediaEvents['audioTrackVolume']>[0];
 export type SdkMediaState = {
   /** list of all available devices */
   devices: MediaDeviceInfo[];
-  /** 
-   * list of all old devices. This will only 
-   *  differ from `devices` if `devices` 
+  /**
+   * list of all old devices. This will only
+   *  differ from `devices` if `devices`
    *  changed. This is useful for diffing
    *  which devices changed
    */

@@ -44,7 +44,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       hasCameraPermissions: false,
       micPermissionsRequested: false,
       cameraPermissionsRequested: false,
-      hasOutputDeviceSupport: this.hasOutputDeviceSupport(),
+      hasOutputDeviceSupport: this.hasOutputDeviceSupport()
     };
 
     /* for testing's sake, moved additional logic into a separate function */
@@ -56,22 +56,22 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   // ================================================================
 
   /**
-   * Call to enumerate available devices. This will update the 
+   * Call to enumerate available devices. This will update the
    *  cache of devices and emit events on `'state'` & `'devices'`
-   * 
+   *
    * If the devices returned from the browser are the same as the cached
    *  devices, a new event will _NOT_ emit. To force an emit pass in `true`.
-   * 
+   *
    * It is _highly_ recommended that `sdk.media.requestMediaPermissions(type)`
    *  be called at least once to ensure devices are loaded correctly _after_
    *  permissions are granted. `requestMediaPermissions()` will call
-   *  `enumerateDevices()` before and after requesting permissions. 
-   * 
+   *  `enumerateDevices()` before and after requesting permissions.
+   *
    * Note: if media permissions have not been granted by the browser,
-   *  enumerated devices will not return the full list of devices 
-   *  and/or the devices will not have ids/labels (varies per browser). 
-   * 
-   * @param forceEmit force an event to emit if the devices 
+   *  enumerated devices will not return the full list of devices
+   *  and/or the devices will not have ids/labels (varies per browser).
+   *
+   * @param forceEmit force an event to emit if the devices
    *  have not changed from the cached devices
    */
   async enumerateDevices (forceEmit: boolean = false): Promise<MediaDeviceInfo[]> {
@@ -85,7 +85,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     this.sdk.logger.debug('enumerated and mapped devices', {
       enumeratedDevices,
       mappedDevices,
-      oldDevices,
+      oldDevices
     });
     const deviceListsMatched = this.doDeviceListsMatch(oldDevices, enumeratedDevices);
 
@@ -117,45 +117,45 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Create media with video and/or audio. See `interface IMediaRequestOptions`  
-   *  for more information about available options. 
-   * 
+   * Create media with video and/or audio. See `interface IMediaRequestOptions`
+   *  for more information about available options.
+   *
    * It is _highly_ recommended that `sdk.media.requestPermissions('audio' | 'video')` be called
-   *  with each desired media type _before_ using `startMedia`. This will ensure 
-   *  all media permissions have been granted before starting media. 
-   * 
+   *  with each desired media type _before_ using `startMedia`. This will ensure
+   *  all media permissions have been granted before starting media.
+   *
    * `getUserMedia` is requested one media type at a time. If requesting both `audio`
-   *  and `video`, `getUserMedia` will be called two times – 1st with `audio` and 2nd 
-   *  with `video`. The two calls will be combined into a single `MediaStream` and 
-   *  returned to the caller. If one of the media types fail, execution of this 
-   *  function will stop and the error thrown (any successful media will be destroyed). 
-   *  This is is line with `getUserMedia`'s current behavior in the browser. 
-   * 
-   * If `retryOnFailure` is `true` (default), the SDK will have the following behavior: 
-   *  1. If the fail was due to a Permissions issue, it will _NOT_ retry 
+   *  and `video`, `getUserMedia` will be called two times -- 1st with `audio` and 2nd
+   *  with `video`. The two calls will be combined into a single `MediaStream` and
+   *  returned to the caller. If one of the media types fail, execution of this
+   *  function will stop and the error thrown (any successful media will be destroyed).
+   *  This is is line with `getUserMedia`'s current behavior in the browser.
+   *
+   * If `retryOnFailure` is `true` (default), the SDK will have the following behavior:
+   *  1. If the fail was due to a Permissions issue, it will _NOT_ retry
    *  2. For `video` only: some browsers/hardward configurations throw an error
    *      for invalid resolution requests. If `video` was requested with a
-   *      `videoResolution` value (could be a SDK default), it will retry 
-   *      video with the same passed in value but with _no_ resolution. 
+   *      `videoResolution` value (could be a SDK default), it will retry
+   *      video with the same passed in value but with _no_ resolution.
    *  3. If a deviceId was requested and there was a failure, this will retry
    *      media with the SDK default deviceId for that media type.
-   *  4. If the SDK default deviceId fails (or it didn't exist), then this 
-   *      will retry with system defaults and no other options (such as `deviceId`s, 
+   *  4. If the SDK default deviceId fails (or it didn't exist), then this
+   *      will retry with system defaults and no other options (such as `deviceId`s,
    *      `videoFrameRate`, & `videoResolution`)
    *  5. If system defaults fails, it will throw the error and stop attempting
-   *      to retry. 
-   * 
-   * Note: if using `retryOnFailure` it is recommended to get the track labels of 
-   *  the returned tracks to ensure you received the desired device. This works in 
-   *  line with the browser option of `deviceId: { ideal: 'device-id-string' }`. 
-   * 
-   * Warning: if `sdk.media.requestPermissions(type)` has NOT been called before 
+   *      to retry.
+   *
+   * Note: if using `retryOnFailure` it is recommended to get the track labels of
+   *  the returned tracks to ensure you received the desired device. This works in
+   *  line with the browser option of `deviceId: { ideal: 'device-id-string' }`.
+   *
+   * Warning: if `sdk.media.requestPermissions(type)` has NOT been called before
    *  calling `startMedia`, `startMedia` will call `sdk.media.requestPermissions(type)`.
    *  If calling `startMedia` with both `audio` and `video` _before_ requesting permissions,
    *  `startMedia` will attempt to gain permissions for `audio` first and then `video` (because
-   *  media permissions must be requested one at a time). If `audio` fails, it will 
-   *  not attempt to gain permissions for `video` – the error will stop execution. 
-   * 
+   *  media permissions must be requested one at a time). If `audio` fails, it will
+   *  not attempt to gain permissions for `video` – the error will stop execution.
+   *
    * @param mediaReqOptions video and/or audio default device or deviceId. Defaults to `{video: true, audio: true}`
    * @param retryOnFailure whether the sdk should retry on an error
    */
@@ -185,18 +185,18 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     /* if we aren't requesting any media, call through to gUM to throw an error */
     if (!requestingAudio && !requestingVideo) {
-      /* 'none' will throw the error we want – make sure to set `retry` to `false` */
+      /* 'none' will throw the error we want so make sure to set `retry` to `false` */
       return this.startSingleMedia('none', mediaReqOptions, false);
     }
 
     /**
      * `startMedia` will always request 1 media type at a time. If permissions have not been
-     *  requested yet, it will call to `requestMediaPermissions()` (which will in turn call here) 
-     *  or `startMedia` will call through to `startSingleMedia`. 
-     * Either way, it will concat the media tracks into a single stream and return it. 
-     * 
+     *  requested yet, it will call to `requestMediaPermissions()` (which will in turn call here)
+     *  or `startMedia` will call through to `startSingleMedia`.
+     * Either way, it will concat the media tracks into a single stream and return it.
+     *
      * If `startMedia` was called with both media types and only 1 fails, stop() the successful
-     *  media type and throw the error. 
+     *  media type and throw the error.
      */
     if (requestingAudio) {
       /* determine how to call through to startSingleMedia */
@@ -243,42 +243,42 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Function to gain permissions for a given media type. This function should 
-   *  be called early after constructing the SDK and _before_ calling 
-   *  `sdk.media.startMedia()` to ensure permissions are granted. 
-   * 
+   * Function to gain permissions for a given media type. This function should
+   *  be called early after constructing the SDK and _before_ calling
+   *  `sdk.media.startMedia()` to ensure permissions are granted.
+   *
    * This function will call through to `startMedia` to get a media stream
-   *  for the desired media permissions. That is the only surefire way to 
-   *  gain permissions across all browsers & platforms. 
-   * 
+   *  for the desired media permissions. That is the only surefire way to
+   *  gain permissions across all browsers & platforms.
+   *
    * It will also call through to `sdk.media.enumerateDevices()` to ensure
-   *  all devices have been loaded after permissions have been granted. 
-   * 
-   * The media state will be updated with permissions and an event emitted 
+   *  all devices have been loaded after permissions have been granted.
+   *
+   * The media state will be updated with permissions and an event emitted
    *  on `sdk.media.on('permissions', evt)` with any outcomes
-   * 
-   * An error will be thrown if permissions are not granted by either the browser 
-   *  or the OS (specifically for macOS). With the one exception of the microphone 
-   *  permission on the OS level. If the microphone permission has not be granted on 
-   *  the OS level, macOS will still allow the browser to attain an audio track for 
-   *  the microphone. However, the track will act as if it is in a "hardware mute" 
-   *  state. There is no API available for the browser to know the microphone is 
-   *  in a "hardware mute" state. To see if a microphone _may_ be in a "hardware mute" 
-   *  state, you can listen for microphone volume events on 
+   *
+   * An error will be thrown if permissions are not granted by either the browser
+   *  or the OS (specifically for macOS). With the one exception of the microphone
+   *  permission on the OS level. If the microphone permission has not be granted on
+   *  the OS level, macOS will still allow the browser to attain an audio track for
+   *  the microphone. However, the track will act as if it is in a "hardware mute"
+   *  state. There is no API available for the browser to know the microphone is
+   *  in a "hardware mute" state. To see if a microphone _may_ be in a "hardware mute"
+   *  state, you can listen for microphone volume events on
    *  `sdk.media.on('audioTrackVolume', evt)` and add logic to respond to no volume
-   *  coming through the microhpone. 
-   * 
-   * If `preserveMedia` is `true`, the media stream attained through the 
+   *  coming through the microhpone.
+   *
+   * If `preserveMedia` is `true`, the media stream attained through the
    *  `startMedia()` will be returned to the caller. If not, the media will
-   *  be destroyed. 
-   * 
+   *  be destroyed.
+   *
    * `options` can be any valid deviceId or other media options defined in
-   *  `interface IMediaRequestOptions`. These options will be passed to 
+   *  `interface IMediaRequestOptions`. These options will be passed to
    *  the `startMedia()` call (which is used to gain permissions)
-   * 
+   *
    * Note: the default option for the media type will be `true` (which is SDK default
-   *  device). If a value of `false` or `undefined` is passed in, it will 
-   *  always use `true`. Any options for the other media type will be ignored. 
+   *  device). If a value of `false` or `undefined` is passed in, it will
+   *  always use `true`. Any options for the other media type will be ignored.
    * Example:
    * ``` ts
    * await requestMediaPermissions(
@@ -288,9 +288,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *     audio: false,
    *     video: 'some-video-device-id',
    *     videoFrameRate: 30
-   *   }  
+   *   }
    * );
-   * // since type === 'audio', the options will be converted to: 
+   * // since type === 'audio', the options will be converted to:
    * {
    *   // a valid option must be set (`false|undefined` are invalid)
    *   audio: true,
@@ -300,7 +300,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * ```
    * @param mediaType media type to request permissions for (`'audio' | 'video'`)
    * @param preserveMedia flag to return media after permissions pass
-   * @param options optional, advanced options to request media with. 
+   * @param options optional, advanced options to request media with.
    */
   async requestMediaPermissions (
     mediaType: 'audio' | 'video',
@@ -369,10 +369,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Get a valid deviceId – `undefined` is returned if none was found. 
+   * Get a valid deviceId – `undefined` is returned if none was found.
    *
    * This will follow the steps looking for a device:
-   *  1. If `deviceId` is a `string`, it will look for that device and 
+   *  1. If `deviceId` is a `string`, it will look for that device and
    *      return it if found
    *  2. If device could not be found _or_ `deviceId` was not a `string`,
    *      it will look for the sdk default device
@@ -480,7 +480,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * This will return all active media tracks that 
+   * This will return all active media tracks that
    *  were created by the SDK
    */
   getAllActiveMediaTracks (): MediaStreamTrack[] {
@@ -489,8 +489,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
   /**
    * Look through the cached devices and match based on
-   *  the passed in track's `kind` and `label`. Returns the 
-   *  found device or `undefined` if the device could not be found. 
+   *  the passed in track's `kind` and `label`. Returns the
+   *  found device or `undefined` if the device could not be found.
    * @param track media stream track with the label to search for
    */
   findCachedDeviceByTrackLabel (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
@@ -502,8 +502,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
   /**
    * Look through the cached devices and match based on
-   *  the passed in track's `kind` and `label`. Returns the 
-   *  found device or `undefined` if the device could not be found. 
+   *  the passed in track's `kind` and `label`. Returns the
+   *  found device or `undefined` if the device could not be found.
    * @param track media stream track with the label to search for
    */
   doesDeviceExistInCache (device?: MediaDeviceInfo): boolean {
@@ -514,7 +514,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   /**
    * Look through the cached output devices and match based on
    *  the passed in output deviceId. Returns the found device
-   *  or `undefined` if the device could not be found. 
+   *  or `undefined` if the device could not be found.
    * @param id output deviceId
    */
   findCachedOutputDeviceById (id?: string): MediaDeviceInfo | undefined {
@@ -522,12 +522,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * This will remove all media listeners, stop any existing media, 
+   * This will remove all media listeners, stop any existing media,
    *  and stop listening for device changes.
-   * 
+   *
    * WARNING: calling this effectively renders this SDK
-   *  instance useless. A new instance will need to be 
-   *  created after this has been called. 
+   *  instance useless. A new instance will need to be
+   *  created after this has been called.
    */
   destroy () {
     this.removeAllListeners();
@@ -542,6 +542,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * loads devices and listens for devicechange events
    */
   private initialize () {
+    /* tslint:disable-next-line:no-floating-promises */
     this.enumerateDevices();
     window.navigator.mediaDevices.addEventListener('devicechange', this.handleDeviceChange.bind(this));
   }
@@ -559,7 +560,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       audioDevices,
       videoDevices,
       hasCamera: !!videoDevices.length,
-      hasMic: !!audioDevices.length,
+      hasMic: !!audioDevices.length
     }, 'devices');
   }
 
@@ -612,7 +613,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   private hasGetDisplayMedia (): boolean {
-    return !!(window.navigator?.mediaDevices?.getDisplayMedia)
+    return !!(window.navigator?.mediaDevices?.getDisplayMedia);
   }
 
   private hasOutputDeviceSupport (): boolean {
@@ -620,25 +621,25 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Build valid getUserMedia constraints for passed in SDK media 
-   *  request options. Behavior is as follows: 
-   * 
+   * Build valid getUserMedia constraints for passed in SDK media
+   *  request options. Behavior is as follows:
+   *
    * - If media type (`audio|video`) is `undefined|false`, the media
    *    type will be set to `false`
-   * - If media type is a `string`, it will set the media type 
-   *    deviceId as `exact` to the passed in string. Ex. 
+   * - If media type is a `string`, it will set the media type
+   *    deviceId as `exact` to the passed in string. Ex.
    *    `video: { deviceId: { exact: options.video } }`
    * - If media type is `true` _and_ there is an SDK default deviceId
    *    for that media type, it will set the deviceId to the SDK
-   *    default. 
-   * - If media type is `null` or `true` with no SDK default, the 
+   *    default.
+   * - If media type is `null` or `true` with no SDK default, the
    *    system default will be requested by using a `truthy` value.
-   * 
-   * Note: `videoResolution` and `videoFrameRate` will use the passed 
-   *  in value or SDK defaults, _unless_ `false` is passed in which 
-   *  will always override defaults and not use these properties at 
-   *  all in the gUM request. 
-   * 
+   *
+   * Note: `videoResolution` and `videoFrameRate` will use the passed
+   *  in value or SDK defaults, _unless_ `false` is passed in which
+   *  will always override defaults and not use these properties at
+   *  all in the gUM request.
+   *
    * @param options media request options
    */
   private getStandardConstraints (options: IMediaRequestOptions): MediaStreamConstraints {
@@ -662,29 +663,20 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     /* `false|undefined` means don't request */
     if (options.audio === false || options.audio === undefined) {
       constraints.audio = false;
-    }
-    /* any string value is a deviceId, so we will use that */
-    else if (typeof options.audio === 'string') {
+    } else if (typeof options.audio === 'string') {
       constraints.audio.deviceId = { exact: options.audio };
-    }
-    /* `true` is sdkDefault, but only if sdkDefault is a string – sdkDefault == `null` is sys default */
-    else if (options.audio === true && typeof this.sdk._config.defaults.audioDeviceId === 'string') {
+    } else if (options.audio === true && typeof this.sdk._config.defaults.audioDeviceId === 'string') {
       constraints.audio.deviceId = { exact: this.sdk._config.defaults.audioDeviceId };
     } /* any other truthy value is system default */
 
     /* `false|undefined` means don't request */
     if (options.video === false || options.video === undefined) {
       constraints.video = false;
-    }
-    /* any string value is a deviceId, so we will use that */
-    else if (typeof options.video === 'string') {
+    } else if (typeof options.video === 'string') {
       constraints.video.deviceId = { exact: options.video };
-    }
-    /* `true` is sdkDefault, but only if sdkDefault is a string – sdkDefault == `null` is sys default */
-    else if (options.video === true && typeof this.sdk._config.defaults.videoDeviceId === 'string') {
+    } else if (options.video === true && typeof this.sdk._config.defaults.videoDeviceId === 'string') {
       constraints.video.deviceId = { exact: this.sdk._config.defaults.videoDeviceId };
     }  /* any other truthy value is system default */
-
 
     /* video resolution and frameRate */
     if (constraints.video) {
@@ -740,9 +732,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     /**
      * If a new device exists in the old device list _and_ has
      *  a label in the old list, we will use the old one instead
-     *  of the new one because the new devices are not always 
+     *  of the new one because the new devices are not always
      *  guaranteed to have labels. That happens in FF if permissions
-     *  are not remembered and we enumerate devices again (and we 
+     *  are not remembered and we enumerate devices again (and we
      *  don't have an active media stream)
      */
     const devices = [];
@@ -780,7 +772,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Compare the two devices to see if they are the same device. 
+   * Compare the two devices to see if they are the same device.
    * @param d1 first device
    * @param d2 second device
    */
@@ -800,17 +792,17 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Left finsihing this function. Here is what we talked about: 
-   * 
+   * Left finsihing this function. Here is what we talked about:
+   *
    * startMedia will always request 1 media type at a time. If permissions have not been
-   *  requested yet, it will call to `requestMediaPermissions()` (which will in turn call here) 
-   *  or it will call through to here (startSingleMedia). 
-   * Either way, it will concat the media tracks into a single stream and return it. 
-   * 
+   *  requested yet, it will call to `requestMediaPermissions()` (which will in turn call here)
+   *  or it will call through to here (startSingleMedia).
+   * Either way, it will concat the media tracks into a single stream and return it.
+   *
    * If `startMedia` was called with both media types and only 1 fails, stop() the successful
-   *  media type and throw the error. 
-   * 
-   * `startSingleMedia` needs to implement retry attempts in this order: 
+   *  media type and throw the error.
+   *
+   * `startSingleMedia` needs to implement retry attempts in this order:
    *  - failed for permissions, throw (don't retry)
    *  - if retry is off, throw
    *  - failed for deviceId not found, try sdk default
@@ -818,24 +810,24 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  - if all those failed _or_ retry was turned off, throw
    */
   /**
-   * This function will request gUM one media type at a time. It has the 
-   *  following behavior: 
+   * This function will request gUM one media type at a time. It has the
+   *  following behavior:
    *  * determine the exact media constraints for gUM
-   *  * set the opposite media type to `false` (ensuring 
+   *  * set the opposite media type to `false` (ensuring
    *      only one media type is requested)
-   *  * request gUM 
-   * 
-   * It will handle retries in the following pattern: 
+   *  * request gUM
+   *
+   * It will handle retries in the following pattern:
    *  * permissions errors are not retried
    *  * if retryOnFailure is `false`, it will not retry
    *  * on select video errors for unacceptable video resolutions
    *      it will retry without resolutions
-   *  * on all other it will retry the media type with: 
+   *  * on all other it will retry the media type with:
    *    * sdk default deviceId (if present)
    *    * system default deviceId
    *  * if all retry attempts were exhausted, it throws
    *      the last error received
-   * 
+   *
    * @param mediaType media type of request from gUM
    * @param mediaRequestOptions sdk media request options
    * @param retryOnFailure attempt to retry on gUM failure
@@ -866,7 +858,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     if (requestingAudio) { constraints.video = false; }
     if (requestingVideo) { constraints.audio = false; }
 
-    /* if this value is is not set, use the sdk config's value – otherwise keep the `truthy/falsey` value */
+    /* if this value is is not set, use the sdk config's value. otherwise keep the `truthy/falsey` value */
     if (!reqOptionsCopy.hasOwnProperty('monitorMicVolume')) {
       reqOptionsCopy.monitorMicVolume = this.sdk._config.media.monitorMicVolume;
     }
@@ -904,7 +896,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
       return stream;
     } catch (e) {
-      /* refetch the sdk default – it could have changed by the time we get here  */
+      /* refetch the sdk default because it could have changed by the time we get here */
       sdkDefaultDeviceId = getCurrentSdkDefault();
 
       /* PERMISSIONS ERRORS */
@@ -925,9 +917,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           error: e
         });
         /* we aren't handling this error because we want Permissions errors to throw */
-      }
-      /* CAMERA ERROR */
-      else if (
+      } else if (
         /* NOTE: we don't have to check media type here because the error message lists 'video' */
         /* FF throws this error for cameras connected through a dock.. sometimes */
         e.name === 'AbortError' && e.message === 'Starting video failed' &&
@@ -945,9 +935,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           options: { ...newOptions, session: undefined }
         });
         return this.startSingleMedia('video', newOptions, true);
-      }
-      /* RETRY FOR OTHER ERRORS */
-      else if (retryOnFailure) {
+      } else if (retryOnFailure) {
         const newOptions = { ...reqOptionsCopy };
         let newRetryOnFailure = true;
 
@@ -963,17 +951,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           /* we will try with the sdk defaults */
           newOptions[mediaType] = sdkDefaultDeviceId; /* sdk default */
           newRetryOnFailure = true;
-        }
-        /* if we haven't already tried system default, try it */
-        else if (reqOptionsCopy[mediaType] !== null) {
-          /* try with the system defaults – do not retry if this fails */
+        } else if (reqOptionsCopy[mediaType] !== null) {
+          /* try with the system defaults, do not retry if this fails */
           newOptions[mediaType] = null; /* system default */
           newRetryOnFailure = false;
-        }
-        /* we've already requested with system defaults (`null`). 
-          there is nothing left to retry with, throw the error */
-        else {
-          newOptions[mediaType] = false; /* placeholder for if statement (for logging) */
+        } else {
+          newOptions[mediaType] = false; /* placeholder to indicate system default already attempted */
         }
 
         /* if it was video, we don't want resolution and only default frameRate (or none if that was requested) */
@@ -995,7 +978,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           return this.startSingleMedia(mediaType, newOptions, newRetryOnFailure);
         }
 
-        /* if `newOptions[mediaType] !== false`, we've already retied with system default – we want to throw the error */
+        /* if `newOptions[mediaType] !== false`, we've already retied with system default. we want to throw the error */
         this.sdk.logger.warn('starting media failed. no valid retry parameters available', {
           ...getLoggingExtras(),
           error: e,
@@ -1016,7 +999,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
       /* throw the original error */
       throw e;
-    };
+    }
   }
 
   private trackMedia (stream: MediaStream, monitorAudio: boolean = false, sessionId?: string): void {
@@ -1031,7 +1014,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       const remove = () => {
         this.allMediaTracksCreated.delete(track.id);
         this.clearAudioInputMonitor(track.id);
-      }
+      };
 
       track.stop = () => {
         this.sdk.logger.debug('stopping track from track.stop()', track);

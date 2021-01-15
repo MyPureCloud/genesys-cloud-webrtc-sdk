@@ -5,7 +5,7 @@ export enum SdkErrorTypes {
   invalid_options = 'invalid_options',
   not_supported = 'not_supported',
   session = 'session',
-  media = 'media',
+  media = 'media'
 }
 
 export type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error';

@@ -100,7 +100,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   constructor (options: ISdkConfig) {
     super();
 
-
     const errorMsg = validateOptions(options);
     if (errorMsg) {
       throw new SdkError(SdkErrorTypes.invalid_options, errorMsg);
@@ -123,7 +122,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         /* media related config */
         media: {
           ...mediaOptions,
-          monitorMicVolume: !!mediaOptions.monitorMicVolume, // default to false
+          monitorMicVolume: !!mediaOptions.monitorMicVolume // default to false
         },
 
         /* sdk defaults */
@@ -131,7 +130,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           ...defaultsOptions,
           videoDeviceId: defaultsOptions.videoDeviceId || null,
           audioDeviceId: defaultsOptions.audioDeviceId || null,
-          outputDeviceId: defaultsOptions.outputDeviceId || null,
+          outputDeviceId: defaultsOptions.outputDeviceId || null
         }
       }
     };
@@ -389,7 +388,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     await this.sessionManager.proceedWithSession(sessionId);
   }
 
-
   async rejectPendingSession (sessionId: string): Promise<void> {
     await this.sessionManager.rejectPendingSession(sessionId);
   }
@@ -425,13 +423,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Ends all active sessions, disconnects the 
-   *  streaming-client, removes all event listeners, 
+   * Ends all active sessions, disconnects the
+   *  streaming-client, removes all event listeners,
    *  and cleans up media.
-   * 
+   *
    * WARNING: calling this effectively renders this SDK
-   *  instance useless. A new instance will need to be 
-   *  created after this is called. 
+   *  instance useless. A new instance will need to be
+   *  created after this is called.
    */
   async destroy (): Promise<any> {
     const activeSessions = this.sessionManager.getAllJingleSessions();
