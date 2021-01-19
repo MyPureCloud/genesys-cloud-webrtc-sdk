@@ -28,6 +28,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private state: SdkMediaState;
   private audioTracksBeingMonitored: { [trackId: string]: any } = {};
   private allMediaTracksCreated = new Map<string, MediaStreamTrack>();
+  private funcRefForDeviceListner: any;
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super();
@@ -185,8 +186,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     /* if we aren't requesting any media, call through to gUM to throw an error */
     if (!requestingAudio && !requestingVideo) {
-      /* 'none' will throw the error we want so make sure to set `retry` to `false` */
-      return this.startSingleMedia('none', mediaReqOptions, false);
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options,
+        'WebrtcSdk.media.startMedia must be called with at least one of audio or video request parameters',
+        mediaReqOptions
+      );
     }
 
     /**
@@ -531,7 +534,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   destroy () {
     this.removeAllListeners();
-    window.navigator.mediaDevices.removeEventListener('devicechange', this.handleDeviceChange.bind(this));
+    window.navigator.mediaDevices.removeEventListener('devicechange', this.funcRefForDeviceListner);
     this.allMediaTracksCreated.forEach(t => t.stop());
   }
 
@@ -544,7 +547,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private initialize () {
     /* tslint:disable-next-line:no-floating-promises */
     this.enumerateDevices();
-    window.navigator.mediaDevices.addEventListener('devicechange', this.handleDeviceChange.bind(this));
+    this.funcRefForDeviceListner = this.handleDeviceChange.bind(this);
+    window.navigator.mediaDevices.addEventListener('devicechange', this.funcRefForDeviceListner);
   }
 
   private setDevices (devices: MediaDeviceInfo[]) {
@@ -833,7 +837,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * @param retryOnFailure attempt to retry on gUM failure
    */
   private async startSingleMedia (
-    mediaType: 'audio' | 'video' | 'none',
+    mediaType: 'audio' | 'video',
     mediaRequestOptions: IMediaRequestOptions,
     retryOnFailure: boolean = true
   ): Promise<MediaStream> {
@@ -846,9 +850,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     const getCurrentSdkDefault = () => requestingAudio
       ? this.sdk._config.defaults.audioDeviceId
-      : requestingVideo
-        ? this.sdk._config.defaults.videoDeviceId
-        : undefined;
+      : this.sdk._config.defaults.videoDeviceId;
 
     let sdkDefaultDeviceId = getCurrentSdkDefault();
 

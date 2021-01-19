@@ -390,17 +390,19 @@ describe('SdkMedia', () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: true, cameraPermissionsRequested: true });
       const requestOptions: IMediaRequestOptions = { /* no constraints */ };
-      const error = new TypeError("Failed to execute 'getUserMedia' on 'MediaDevices': At least one of audio and video must be requested");
+      const sdkError = new SdkError(
+        SdkErrorTypes.invalid_options,
+        'WebrtcSdk.media.startMedia must be called with at least one of audio or video request parameters',
+        requestOptions
+      );
 
-      /* setup our mocks */
-      startSingleMediaSpy.mockRejectedValue(error);
 
       try {
         await sdkMedia.startMedia(requestOptions);
         fail('should have thrown');
       } catch (e) {
-        expect(startSingleMediaSpy).toHaveBeenCalledWith('none', {}, false);
-        expect(e).toBe(error);
+        expect(startSingleMediaSpy).not.toHaveBeenCalled();
+        expect(e).toEqual(sdkError);
       }
     });
   });
@@ -773,8 +775,18 @@ describe('SdkMedia', () => {
       sdkMedia.destroy();
 
       expect(sdkMedia.removeAllListeners).toHaveBeenCalled();
-      expect(navigatorMediaDevicesMock.removeEventListener).toHaveBeenCalledWith('devicechange', expect.any(Function));
+      expect(navigatorMediaDevicesMock.removeEventListener)
+        .toHaveBeenCalledWith('devicechange', undefined);
       expect(mockTrack.stop).toHaveBeenCalled();
+    });
+
+    it('should remove `devicechange` listener if it exists', () => {
+      sdkMedia['funcRefForDeviceListner'] = (() => { /* mock out a bound function */ }).bind(this);
+
+      sdkMedia.destroy();
+
+      expect(navigatorMediaDevicesMock.removeEventListener)
+        .toHaveBeenCalledWith('devicechange', sdkMedia['funcRefForDeviceListner']);
     });
   });
 
@@ -786,7 +798,8 @@ describe('SdkMedia', () => {
       sdkMedia['initialize']();
 
       expect(enumerateDevicesSpy).toHaveBeenCalled();
-      expect(navigatorMediaDevicesMock.addEventListener).toHaveBeenCalledWith('devicechange', expect.any(Function));
+      expect(navigatorMediaDevicesMock.addEventListener)
+        .toHaveBeenCalledWith('devicechange', sdkMedia['funcRefForDeviceListner']);
     });
   });
 
@@ -1356,18 +1369,6 @@ describe('SdkMedia', () => {
       startSingleMediaFn = sdkMedia['startSingleMedia'].bind(sdkMedia);
       getUserMediaSpy = jest.spyOn(window.navigator.mediaDevices, 'getUserMedia')
         .mockResolvedValue(new MockStream() as any as MediaStream);
-    });
-
-    it('should throw an error from gUM is "none" was passed in as the media type', async () => {
-      const error = createError('TypeError', "Failed to execute 'getUserMedia' on 'MediaDevices': At least one of audio and video must be requested");
-      getUserMediaSpy.mockRejectedValue(error);
-
-      try {
-        await startSingleMediaFn('none', { audio: true, video: true }, false);
-        fail('should have thrown');
-      } catch (e) {
-        expect(e).toBe(error);
-      }
     });
 
     it('should track media stream returned and log appropriate messages', async () => {
