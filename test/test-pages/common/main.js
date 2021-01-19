@@ -12,3 +12,11 @@ document.getElementById('clear-log').addEventListener('click', controller.clearL
 
 // Pre-populate outbound call input with something to test
 document.getElementById('outbound-phone-number').value = '*86';
+
+/* populate any existing jid */
+const oldRoomJid = localStorage.getItem('sdk_room_jid');
+
+if (oldRoomJid) {
+  document.getElementById('video-jid').value = oldRoomJid;
+}
+

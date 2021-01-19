@@ -108,3 +108,12 @@ video {
 .start-controls {
   margin-top: 20px;
 }
+
+.pids-wrapper{
+  width: 100%;
+}
+.pid {
+  width: 5%;
+  height: 10px;
+  display: inline-block;
+}

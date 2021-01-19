@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [v6.0.0]()
+
+### Added
+* Added `sdk.media` class to handle and emit media related tasks
+* Added `sdk.media.on(...)` event emitter
+* Added permissions and device management housed in `sdk.media`
+
+### Changed
+* Started migrating docs to use typescript definitions
+
+### Breaking Change
+* Updated configuration options for constructing an SDK instance
+* Moved `sdk.createMedia(opts)` to `sdk.media.startMedia(opts)`
+* Moved `sdk.getDisplayMedia(opts)` to `sdk.media.startDisplayMedia(opts)`
+
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.1...HEAD)
 
 # [v5.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.0...v5.0.1)

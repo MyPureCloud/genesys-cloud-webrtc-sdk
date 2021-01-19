@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe('setupLogging', () => {
-  it('should not create a logger if one is passed in', async () => {
+  it('should not create a logger if one is passed in', () => {
     const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger');
     sdk._config = {} as any;
     setupLogging.call(sdk, {} as any);
@@ -23,7 +23,7 @@ describe('setupLogging', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('should not create logger if noTelemetry', async () => {
+  it('should not create logger if noTelemetry', () => {
     const spy = jest.spyOn(genesysCloudClientLogger, 'createLogger');
     sdk._config = { optOutOfTelemetry: true } as any;
     setupLogging.call(sdk);

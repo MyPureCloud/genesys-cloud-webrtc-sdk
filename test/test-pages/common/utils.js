@@ -1,7 +1,15 @@
-function writeToLog (output) {
-  let timeStamp = new Date().toString();
-  let stampedOutput = '\n' + timeStamp + '\n' + output + '\n';
-  document.getElementById('log-data').value += stampedOutput;
+function writeToMediaStateLog (output) {
+  writeToLog(output, 'media-state-log-data');
+}
+
+function writeToLog (output, elId = 'log-data') {
+  const timeStamp = new Date().toString();
+  const stampedOutput = '\n' + timeStamp + '\n' + output + '\n';
+  const el = document.getElementById(elId)
+  if (el) {
+    const currentValue = el.value;
+    el.value = stampedOutput + currentValue;
+  }
 }
 
 function getAccessToken () {
@@ -21,5 +29,6 @@ function getAccessToken () {
 
 export default {
   writeToLog: writeToLog,
+  writeToMediaStateLog: writeToMediaStateLog,
   getAccessToken: getAccessToken
 };

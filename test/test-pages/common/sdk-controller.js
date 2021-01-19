@@ -8,7 +8,6 @@ let videoOpts;
 let currentSessionId;
 let webrtcSdk;
 let conversationsApi;
-let securityKey;
 
 function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
   let options = {};
@@ -30,6 +29,8 @@ function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
 
   options.environment = environmentData.uri;
   options.logLevel = 'info';
+
+  options.media = { monitorMicVolume: true };
 
   const SDK = GenesysCloudWebrtcSdk || getSdk();
   webrtcSdk = new SDK(options);
@@ -58,6 +59,83 @@ function connectEventHandlers () {
   webrtcSdk.on('endOfCandidates', endOfCandidates);
   webrtcSdk.on('disconnected', disconnected);
   webrtcSdk.on('connected', connected);
+
+  /* media related */
+  webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
+  webrtcSdk.media.on('state', handleMediaStateChanges);
+}
+
+function requestMicPermissions () {
+  return webrtcSdk.media.requestMediaPermissions('audio');
+}
+
+function requestCameraPermissions () {
+  return webrtcSdk.media.requestMediaPermissions('video');
+}
+
+function enumerateDevices () {
+  return webrtcSdk.media.enumerateDevices(true);
+}
+
+function logMediaState (state) {
+  utils.writeToMediaStateLog(JSON.stringify(state, null, 2));
+  console.log('mediaState', state);
+}
+
+function getCurrentMediaState () {
+  const state = webrtcSdk.media.getState();
+  logMediaState(state);
+
+
+  /* if it was a device change, fill the device selectors */
+  if (state.eventType === 'devices') {
+    const addOptions = (elId, options, skipSysDefault = false) => {
+      const element = document.querySelector('select#' + elId);
+      let innerHtml = skipSysDefault ? '' : '<option value="">System Default</option>';
+      const newOpts = options.map(opt => `<option value="${opt.deviceId}">${opt.label}</option>`);
+      innerHtml += newOpts.join('\n');
+      element.innerHTML = innerHtml;
+    };
+
+    addOptions('audio-devices', state.audioDevices);
+    addOptions('video-devices', state.videoDevices);
+    addOptions('output-devices', state.outputDevices, true);
+  }
+}
+
+function handleMediaStateChanges (state) {
+  logMediaState(state);
+
+  /* if it was a device change, fill the device selectors */
+  if (state.eventType === 'devices') {
+    const addOptions = (elId, devices) => {
+      const element = document.querySelector('select#' + elId);
+      const currentElValue = element.value;
+      const devicesWithIdsAndLabels = devices.filter(d => d.deviceId && d.label);
+      let innerHtml = `<option ${!devicesWithIdsAndLabels.length ? 'selected' : ''} value="">System Default</option>`;
+      const newOpts = devicesWithIdsAndLabels.map(device => {
+        return `<option ${currentElValue === device.deviceId ? 'selected' : ''} value="${device.deviceId}">${device.label}</option>`;
+      });
+      innerHtml += newOpts.join('\n');
+      element.innerHTML = innerHtml;
+    };
+
+    addOptions('audio-devices', state.audioDevices);
+    addOptions('video-devices', state.videoDevices);
+    addOptions('output-devices', state.outputDevices);
+  }
+}
+
+function handleAudioChange (info) {
+  let allPids = document.querySelectorAll('.pid');
+  let amountOfPids = Math.round(info.volume / 10);
+  let elementsRange = Array.from(allPids).slice(0, amountOfPids);
+  for (var i = 0; i < allPids.length; i++) {
+    allPids[i].style.backgroundColor = "#e6e7e8";
+  }
+  for (var i = 0; i < elementsRange.length; i++) {
+    elementsRange[i].style.backgroundColor = "#69ce2b";
+  }
 }
 
 function _getLogHeader (functionName) {
@@ -201,7 +279,7 @@ async function sessionStarted (session) {
       }
 
       console.log({ videoOpts });
-      mediaStream = await webrtcSdk.createMedia(videoOpts);
+      mediaStream = await webrtcSdk.startMedia(videoOpts);
     }
 
     const sessionEventsToLog = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
@@ -365,6 +443,8 @@ async function startVideoConference ({ noAudio, noVideo, mediaStream, useConstra
       throw new Error(message);
     }
 
+    localStorage.setItem('sdk_room_jid', roomJid);
+
     webrtcSdk.startVideoConference(roomJid, getInputValue('invitee-jid'));
   }
 
@@ -396,6 +476,10 @@ function pinParticipantVideo () {
 }
 
 export default {
+  getCurrentMediaState,
+  requestMicPermissions,
+  requestCameraPermissions,
+  enumerateDevices,
   makeOutboundCall,
   startVideoConference,
   setVideoMute,

@@ -2,6 +2,7 @@ import { SimpleMockSdk, MOCK_CUSTOMER_DATA } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { SdkError } from '../../src/utils';
 import nock = require('nock');
 
 let sdk: GenesysCloudWebrtcSdk;
@@ -12,12 +13,37 @@ beforeEach(() => {
   sdk = new SimpleMockSdk() as any;
 });
 
-describe('throwSdkError', () => {
-  it('should emit the error', () => {
+describe('SdkError', () => {
+  it('should create with defaults', () => {
+    const sdkError = new SdkError(null, 'erroring');
+    expect(sdkError.name).toBe('Error');
+    expect(sdkError.type).toBe('generic');
+    expect(sdkError.message).toBe('erroring');
+    expect(sdkError.details).toBe(undefined);
+  });
+
+  it('should "extend" any base error passed in', () => {
+    const origError = new TypeError('Cannot use array here');
+    const details = { sessionId: '123' };
+    const sdkError = new SdkError(SdkErrorTypes.invalid_options, origError, details);
+
+    expect(sdkError.name).toBe('TypeError');
+    expect(sdkError.type).toBe('invalid_options');
+    expect(sdkError.message).toBe('Cannot use array here');
+    expect(sdkError.details).toBe(details);
+  });
+});
+
+describe('createAndEmitSdkError', () => {
+  it('should emit and return an SdkError', () => {
     const spy = jest.fn();
+    const origError = new Error('Something broke');
     sdk.on('sdkError', spy);
 
-    expect(() => utils.throwSdkError.call(sdk, SdkErrorTypes.generic, 'fake')).toThrowError(/fake/);
+    expect(
+      utils.createAndEmitSdkError.call(sdk, SdkErrorTypes.generic, origError)
+    ).toEqual(origError);
+    expect(spy).toHaveBeenCalledWith(origError);
   });
 });
 

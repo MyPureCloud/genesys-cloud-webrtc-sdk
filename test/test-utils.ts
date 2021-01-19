@@ -3,17 +3,21 @@ import nock from 'nock';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-
-import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
-import { SessionTypes, LogLevels } from '../src/types/enums';
-import { GenesysCloudWebrtcSdk } from '../src/index';
 import { EventEmitter } from 'events';
+
+import { ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
+import { SessionTypes } from '../src/types/enums';
+import { GenesysCloudWebrtcSdk } from '../src/index';
+import { SdkMedia } from '../src/media/media';
 
 declare var global: {
   window: any,
   document: any,
   crypto: any
 } & NodeJS.Global;
+
+/* spy here and in the constructor because some tests restoreMocks before initializing a SimpleMockSdk */
+jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
 
 // polyfill window.getRandomValues() for node (because we are using jest)
 Object.defineProperty(global, 'crypto', {
@@ -31,13 +35,20 @@ export class SimpleMockSdk extends EventEmitter {
   constructor () {
     super();
     this.on(EventEmitter.errorMonitor, () => null);
+
+    /* have to spy here to avoid issues with tests that restore mocks before initializing a SimplemockSdk */
+    jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
+    this.media = new SdkMedia(this as any as GenesysCloudWebrtcSdk);
   }
 
+  media: SdkMedia;
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
     logLevel: 'debug',
     wsHost: 'wshost',
-    allowedSessionTypes: Object.values(SessionTypes)
+    allowedSessionTypes: Object.values(SessionTypes),
+    defaults: {},
+    media: {}
   };
   _personDetails = {
     id: 'USER_GUID'
@@ -135,6 +146,7 @@ class MockSession extends EventEmitter {
   unmute = jest.fn();
   videoMuted: boolean = false;
   audioMuted: boolean = false;
+  state = 'active';
 
   constructor (sessionType?: SessionTypes) {
     super();
@@ -151,16 +163,19 @@ class MockSession extends EventEmitter {
 }
 
 class MockTrack {
-  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
-    this.kind = kind;
-    this.label = label || '';
-  }
   _listeners: { event: string, callback: Function }[] = [];
   readyState = 'ended';
   id = random();
   kind = 'video';
-  stop = jest.fn();
   label: string;
+  enabled = true;
+  muted = false;
+  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
+    this.kind = kind;
+    this.label = label || '';
+  }
+
+  stop = jest.fn();
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
   }
@@ -202,6 +217,28 @@ class MockStream {
     const index = this._tracks.findIndex(t => t.id === track.id);
     this._tracks.splice(index, 1);
   }
+}
+
+export class MockAudioContext {
+  createMediaStreamSource (stream: MediaStream | MockStream): MockAudioSource {
+    return new MockAudioSource();
+  }
+  createAnalyser (): MockAnalyser {
+    return new MockAnalyser();
+  }
+}
+
+export class MockAudioSource {
+  connect (_analyzer: MockAnalyser) { }
+}
+
+export class MockAnalyser {
+  fftSize: number;
+  minDecibels: number;
+  maxDecibels: number;
+  smoothingTimeConstant: number;
+  frequencyBinCount = 10;
+  getByteFrequencyData (array: Uint8Array): void { }
 }
 
 export function addTrackToMockStream (stream: MockStream, trackKind: 'video' | 'audio'): string {
@@ -266,6 +303,12 @@ let ws: WebSocket;
 
 function random (): string {
   return `${Math.random()}`.split('.')[1];
+}
+
+export function getRandomIntInclusive (min: number, max: number): number {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
 function timeout (n: number): Promise<void> {
@@ -494,9 +537,9 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     accessToken: guestSdk ? undefined : '1234',
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
-    logger: { debug () { }, log () { }, info () { }, warn () { }, error () { } }
+    logger: { debug: jest.fn(), log: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
-  } as ISdkConstructOptions;
+  } as ISdkConfig;
 
   const sdk = new GenesysCloudWebrtcSdk(sdkOpts);
 
@@ -538,7 +581,7 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
   const hash = random().toString().substr(0, 4);
 
   const log = (direction: 'IN' | 'OUT', message: string) => {
-    /* this function can be useful to debug WS messages */
+    /* this function can be useful for debugging WS messages */
     return;
     const fileName = path.resolve('test/unit', './test-log.json');
 

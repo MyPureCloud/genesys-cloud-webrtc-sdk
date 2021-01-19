@@ -18,7 +18,6 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
 
   const connectionOptions: any = {
     signalIceConnected: true,
-    iceTransportPolicy: this._config.iceTransportPolicy,
     host: this._config.wsHost || `wss://streaming.${this._config.environment}`,
     apiHost: this._config.environment,
     logger: this.logger
@@ -42,7 +41,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
   const connection = new StreamingClient(connectionOptions);
   this._streamingConnection = connection;
 
-  const initialPromise = new Promise((resolve) => {
+  const initialPromise = new Promise<void>((resolve) => {
     connection.on('connected', async () => {
       this.emit('connected', { reconnect: this._hasConnected });
       this.logger.info('GenesysCloud streaming client connected', { reconnect: this._hasConnected });

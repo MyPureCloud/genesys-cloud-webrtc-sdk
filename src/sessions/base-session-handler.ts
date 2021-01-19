@@ -1,11 +1,19 @@
+import { JingleReason } from 'stanza/protocol';
+
 import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IExtendedMediaSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
-import { checkHasTransceiverFunctionality, hasOutputDeviceSupport, logDeviceChange, startMedia } from '../media-utils';
-import { throwSdkError } from '../utils';
+import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
+import { createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
-import { JingleReason } from 'stanza/protocol';
+import {
+  IPendingSession,
+  IStartSessionParams,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IExtendedMediaSession,
+  IUpdateOutgoingMedia
+} from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -29,7 +37,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
@@ -91,8 +99,8 @@ export default abstract class BaseSessionHandler {
       sessionId: session.id,
       params
     };
-    const outputDeviceId = this.sdk._config.defaultOutputDeviceId || '';
-    const isSupported = hasOutputDeviceSupport();
+    const outputDeviceId = this.sdk._config.defaults.outputDeviceId || '';
+    const isSupported = this.sdk.media.getState().hasOutputDeviceSupport;
 
     /* if we have an audio element _and_ are in a supported browser */
     if (session._outputAudioElement && isSupported) {
@@ -118,7 +126,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -126,7 +134,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -148,7 +156,7 @@ export default abstract class BaseSessionHandler {
 
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
         videoDeviceId: options.videoDeviceId,
         audioDeviceId: options.audioDeviceId,
         conversationId: session.conversationId,
@@ -208,7 +216,7 @@ export default abstract class BaseSessionHandler {
 
     if (!stream) {
       try {
-        stream = await startMedia(this.sdk, {
+        stream = await this.sdk.media.startMedia({
           audio: options.audioDeviceId,
           /* if video is muted, we don't want to request it */
           video: !session.videoMuted && options.videoDeviceId,
@@ -240,6 +248,7 @@ export default abstract class BaseSessionHandler {
 
           await Promise.all([audioMute, videoMute]);
         }
+        /* don't need to emit this error because `startMedia()` did */
         throw e;
       }
     }
@@ -301,7 +310,7 @@ export default abstract class BaseSessionHandler {
 
     if (typeof el.setSinkId === 'undefined') {
       const err = 'Cannot set sink id in unsupported browser';
-      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
     }
 
     logDeviceChange(this.sdk, session, 'changingDevices', { requestedOutputDeviceId: deviceId });
@@ -324,7 +333,7 @@ export default abstract class BaseSessionHandler {
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
     }
 
     await Promise.all(promises);
