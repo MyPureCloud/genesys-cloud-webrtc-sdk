@@ -860,7 +860,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     /* if this value is is not set, use the sdk config's value. otherwise keep the `truthy/falsey` value */
     if (!reqOptionsCopy.hasOwnProperty('monitorMicVolume')) {
-      reqOptionsCopy.monitorMicVolume = this.sdk._config.media.monitorMicVolume;
+      reqOptionsCopy.monitorMicVolume = this.sdk._config.defaults.monitorMicVolume;
     }
 
     /* utility to get current logging options (to ensure devices & permissions are current) */

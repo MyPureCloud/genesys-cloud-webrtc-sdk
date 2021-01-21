@@ -96,17 +96,15 @@ immediately accept pending sessions for outbound calls. If two such applications
 are running simultaneously, there will be a race condition for which instance
 actually connects the call audio.
 
-- When a client sends a POST to conversations/calls (from her desired client)
-for a conversation to the Public API, asynchronously, she will receive a pending
+- When a client sends a POST to conversations/calls (from its desired client)
+for a conversation to the Public API, asynchronously, it will receive a pending
 session event from the SDK and a response from the public API with the `conversationId`
 for the conversation. If only handling outbound calls placed by your client, these
 can be correlated by conversationId together, and should not be expected to
 arrive in a guaranteed order.
 
 - If you wish to control the MediaStream settings (i.e., input device) you can
-provide it as an option to `acceptSession` or as a default in the sdk's constructor. Note that to call `acceptSession` on outbound
-calls, you'll have to disable `autoAnswerOutboundCalls` and answer them yourself
-when the event is triggered.
+provide it as an option to `acceptSession` or as a default in the sdk's constructor. 
 
 [APIs]: index.md#api
 [methods]: index.md#methods

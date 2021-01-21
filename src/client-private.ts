@@ -80,7 +80,7 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
   on('rtcSessionError', this.emit.bind(this, 'error'));
   on('cancelIncomingRtcSession', (sessionId: string) => this.emit('cancelPendingSession', sessionId));
-  on('handledIncomingRtcSession', (session: IExtendedMediaSession) => this.emit('handledPendingSession', session));
+  on('handledIncomingRtcSession', (sessionId: string) => this.emit('handledPendingSession', sessionId));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
   // other events

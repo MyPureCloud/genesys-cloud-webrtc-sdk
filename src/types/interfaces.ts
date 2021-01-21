@@ -59,16 +59,19 @@ export interface ISdkConfig {
   wsHost?: string;
 
   /**
-   * Auto connect softphone sessions
-   * Optional: default `true`
+   * Auto connect incoming sessions (ie. session coming
+   *  from `sdk.on('pendingSession', (evt))`
+   * Optional: default `true`. This value will not be checked
+   *  for incoming video sessions. Video sessions will always be
+   *  auto answered.
    *
-   * Note: This is required to be true for guest screen share
+   * Note: This is required to be true for guest screen share.
    */
   autoConnectSessions?: boolean;
 
   /**
    * Disable auto answering softphone calls. By default softphone
-   *  calls will be auth answered unless this is set to `true`
+   *  calls will be auto answered unless this is set to `true`
    *
    * Optional: default `false`
    */
@@ -80,13 +83,17 @@ export interface ISdkConfig {
    * ``` ts
    *  type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
    * ```
-   *
    * Optional: defaults to `'info'`
    */
   logLevel?: LogLevels;
 
   /**
    * Logger to use. Must implement the `ILogger` interface.
+   *
+   * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
+   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`)
+   *  and outputs them in the console.
+   *
    * ``` ts
    * interface ILogger {
    *    log (message: string | Error, details?: any, skipServer?: boolean): void;
@@ -96,10 +103,6 @@ export interface ISdkConfig {
    *    error (message: string | Error, details?: any, skipServer?: boolean): void;
    * }
    * ```
-   *
-   * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
-   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`)
-   *  and outputs them in the console.
    */
   logger?: ILogger;
 
@@ -138,21 +141,7 @@ export interface ISdkConfig {
    */
   allowedSessionTypes?: SessionTypes[];
 
-  /** media related configuration */
-  media?: {
-
-    /**
-     * When `true` all audio tracks created via the SDK
-     *  will have their volumes monitored and emited on
-     *  `sdk.media.on('audioTrackVolume', evt)`.
-     *  See `sdk.media` events for more details.
-     * Optional: defaults to `false`
-     */
-    monitorMicVolume?: boolean;
-    // TODO: should we add a `disableMediaRetry` for hail mary attempts when media fails?
-  };
-
-  /** defaults for various media related functionality */
+  /** defaults for various SDK functionality */
   defaults?: {
 
     /**
@@ -165,17 +154,19 @@ export interface ISdkConfig {
     audioStream?: MediaStream;
 
     /**
-     * HTML Audio Element to attach incoming audio streamsto.
-     *  Default: the sdk will create one and place it
-     *    in the DOM
+     * HTML Audio Element to attach incoming audio streams to.
      *
-     * Optional: no default
+     * Note: default behavior if this is not provided here or at
+     *  `sdk.acceptSession()` is the sdk will create an
+     *  HTMLAudioElement and append it to the DOM
+     *
+     * Optional: no default. (See note about default behavior)
      */
     audioElement?: HTMLAudioElement;
 
     /**
      * HTML Video Element to attach incoming video streams to.
-     *  A video element is required for accepting incoming video
+     *  A video element is _required_ for accepting incoming video
      *  calls. If no video element is passed into `sdk.acceptSession()`,
      *  this default element will be used.
      *
@@ -187,13 +178,23 @@ export interface ISdkConfig {
      * Video resolution to default to when requesting
      *  video media.
      *
-     * Note: if the resolution causes getUserMedia to fail
+     * Note: if the resolution causes `getUserMedia()` to fail
      *  (which can happen sometimes in some browsers), the
      *  SDK will retry _without_ the resolution request.
      *  This means this setting may or may not be used if
      *  depending on the browser.
      *
-     * Optional: no default
+     * Optional: no default.
+     *
+     * ConstrainULong interface:
+     * ``` ts
+     * type ConstrainULong = number | {
+     *  exact?: number;
+     *  ideal?: number;
+     *  max?: number;
+     *  min?: number;
+     * }
+     * ```
      */
     videoResolution?: {
       width: ConstrainULong,
@@ -202,8 +203,8 @@ export interface ISdkConfig {
 
     /**
      * Default video device ID to use when starting camera media.
-     *  - `string` to request media for device
-     *  - `null | falsey` to request media system default device
+     *  - `string` to request media for specified deviceId
+     *  - `null|falsey` to request media system default device
      *
      * Optional: defaults to `null`
      */
@@ -211,8 +212,8 @@ export interface ISdkConfig {
 
     /**
      * Default audio device ID to use when starting microphone media.
-     *  - `string` to request media for device
-     *  - `null | falsey` to request media system default device
+     *  - `string` to request media for specified deviceId
+     *  - `null|falsey` to request media system default device
      *
      * Optional: defaults to `null`
      */
@@ -221,7 +222,7 @@ export interface ISdkConfig {
     /**
      * Default output device ID to use when starting camera media.
      *  - `string` ID for output media device to use
-     *  - `null | falsey` to request media system default device
+     *  - `null|falsey` to request media system default device
      *
      * Note: Not all browsers support output devices. System default
      *  for output devices is always an empty string (ex: `''`)
@@ -229,6 +230,15 @@ export interface ISdkConfig {
      * Optional: defaults to `null`
      */
     outputDeviceId?: string | null;
+
+    /**
+     * When `true` all audio tracks created via the SDK
+     *  will have their volumes monitored and emited on
+     *  `sdk.media.on('audioTrackVolume', evt)`.
+     *  See `sdk.media` events for more details.
+     * Optional: defaults to `false`
+     */
+    monitorMicVolume?: boolean;
   };
 }
 
@@ -295,33 +305,63 @@ export interface IMediaRequestOptions {
   monitorMicVolume?: boolean;
 }
 
-export interface IOutgoingMediaDeviceIds {
-  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
-  videoDeviceId?: string | boolean | null;
-  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
-  audioDeviceId?: string | boolean | null;
-}
-
 export interface IMediaDeviceIds {
-  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
+  /** `string` for video deviceId to use, `true` for sdk default camera, or `null` for system default */
   videoDeviceId?: string | null;
-  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
+  /** `string` for microphone deviceId to use, `true` for sdk default microphone, or `null` for system default */
   audioDeviceId?: string | null;
   /** `deviceId` for audio output, `true` for sdk default output, or `null` for system default */
   outputDeviceId?: string | null;
 }
 
-export interface IUpdateOutgoingMedia {
+export interface IOutgoingMediaDeviceIds {
+  /**
+   * Request outgoing video
+   * - `string` for a specified deviceId,
+   * - `true` for sdk default deviceId,
+   * - `null` for system default device,
+   * - `false|undefined` to not request video.
+   */
+  videoDeviceId?: string | boolean | null;
+  /**
+   * Request outgoing audio
+   * - `string` for a specified deviceId,
+   * - `true` for sdk default deviceId,
+   * - `null` for system default device,
+   * - `false|undefined` to not request audio.
+   */
+  audioDeviceId?: string | boolean | null;
+}
+
+export interface IUpdateOutgoingMedia extends IOutgoingMediaDeviceIds {
   /** session id (this _OR_ `session` is required) */
   sessionId?: string;
   /** session (this _OR_ `sessionId` is required) */
   session?: IExtendedMediaSession;
-  /* stream with desired media */
+  /** stream with desired media */
   stream?: MediaStream;
-  /** `string` for video camera, `true` for sdk default camera, or `null` for system default */
-  videoDeviceId?: string | boolean | null;
-  /** `string` for microphone, `true` for sdk default microphone, or `null` for system default */
-  audioDeviceId?: string | boolean | null;
+}
+
+export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
+  /** id of the session to accept */
+  sessionId: string;
+
+  /**
+   * media stream to use on the session. if this is
+   *  provided, no media will be requested.
+   */
+  mediaStream?: MediaStream;
+
+  /** audio element to attach incoming audio to. default is sdk `defaults.audioElement` */
+  audioElement?: HTMLAudioElement;
+
+  /** video element to attach incoming video to. default is sdk `defaults.videoElement` */
+  videoElement?: HTMLVideoElement;
+}
+
+export interface IEndSessionRequest {
+  sessionId?: string;
+  conversationId?: string;
 }
 
 /**
@@ -336,10 +376,54 @@ export interface IPersonDetails {
 }
 
 export interface ILogger {
+  /**
+   * Log a message to the location specified by the logger.
+   *  The logger can decide if it wishes to implement `details`
+   *  or `skipServer`.
+   * @param message message or error to log
+   * @param details any additional details to log
+   * @param skipServer should log skip server
+   */
   log (message: string | Error, details?: any, skipServer?: boolean): void;
+
+  /**
+   * Log a message to the location specified by the logger.
+   *  The logger can decide if it wishes to implement `details`
+   *  or `skipServer`.
+   * @param message message or error to log
+   * @param details any additional details to log
+   * @param skipServer should log skip server
+   */
   debug (message: string | Error, details?: any, skipServer?: boolean): void;
+
+  /**
+   * Log a message to the location specified by the logger.
+   *  The logger can decide if it wishes to implement `details`
+   *  or `skipServer`.
+   * @param message message or error to log
+   * @param details any additional details to log
+   * @param skipServer should log skip server
+   */
   info (message: string | Error, details?: any, skipServer?: boolean): void;
+
+  /**
+   * Log a message to the location specified by the logger.
+   *  The logger can decide if it wishes to implement `details`
+   *  or `skipServer`.
+   * @param message message or error to log
+   * @param details any additional details to log
+   * @param skipServer should log skip server
+   */
   warn (message: string | Error, details?: any, skipServer?: boolean): void;
+
+  /**
+   * Log a message to the location specified by the logger.
+   *  The logger can decide if it wishes to implement `details`
+   *  or `skipServer`.
+   * @param message message or error to log
+   * @param details any additional details to log
+   * @param skipServer should log skip server
+   */
   error (message: string | Error, details?: any, skipServer?: boolean): void;
 }
 
@@ -368,18 +452,6 @@ export interface ISessionInfo {
   fromUserId?: string;
 }
 
-export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
-  id: string;
-  mediaStream?: MediaStream;
-  audioElement?: HTMLAudioElement;
-  videoElement?: HTMLVideoElement;
-}
-
-export interface IEndSessionRequest {
-  id?: string;
-  conversationId?: string;
-}
-
 export interface ISessionAndConversationIds {
   sessionId?: string;
   conversationId?: string;
@@ -401,7 +473,7 @@ export interface IStartVideoSessionParams extends IStartSessionParams {
  */
 export interface ISessionMuteRequest {
   /** session id */
-  id: string;
+  sessionId: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
@@ -500,7 +572,7 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
-  handledPendingSession: IExtendedMediaSession;
+  handledPendingSession: (sessionId: string) => void;
   cancelPendingSession: (sessionId: string) => void;
 }
 

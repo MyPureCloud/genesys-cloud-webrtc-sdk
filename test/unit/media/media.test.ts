@@ -1425,12 +1425,12 @@ describe('SdkMedia', () => {
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), undefined, undefined);
 
       /* monitorMicVolume should be sdk default */
-      sdk._config.media.monitorMicVolume = true;
+      sdk._config.defaults.monitorMicVolume = true;
       await startSingleMediaFn('audio', requestOptions);
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), true, undefined);
 
       /* monitorMicVolume should override the sdk default with the passed in value */
-      sdk._config.media.monitorMicVolume = true;
+      sdk._config.defaults.monitorMicVolume = true;
       await startSingleMediaFn('audio', { ...requestOptions, monitorMicVolume: false });
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), false, undefined);
     });

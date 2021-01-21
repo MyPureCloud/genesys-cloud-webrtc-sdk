@@ -75,10 +75,10 @@ export class SessionManager {
     delete this.pendingSessions[sessionId];
   }
 
-  getSession (params: { id?: string, conversationId?: string }): IExtendedMediaSession {
+  getSession (params: { sessionId?: string, conversationId?: string }): IExtendedMediaSession {
     let session: IExtendedMediaSession;
-    if (params.id) {
-      session = this.jingle.sessions[params.id] as IExtendedMediaSession;
+    if (params.sessionId) {
+      session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
     } else {
       session = (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
     }
@@ -136,7 +136,7 @@ export class SessionManager {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
-    const session = options.session || this.getSession({ id: options.sessionId });
+    const session = options.session || this.getSession({ sessionId: options.sessionId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
     return handler.updateOutgoingMedia(session, options);
@@ -252,17 +252,17 @@ export class SessionManager {
   }
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
-    if (!params || !params.id) {
+    if (!params || !params.sessionId) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
     }
 
-    const session = this.getSession({ id: params.id });
+    const session = this.getSession({ sessionId: params.sessionId });
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }
 
   async endSession (params: IEndSessionRequest) {
-    if (!params.id && !params.conversationId) {
+    if (!params.sessionId && !params.conversationId) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
     }
 
@@ -273,14 +273,14 @@ export class SessionManager {
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ id: params.id });
+    const session = this.getSession({ sessionId: params.sessionId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setVideoMute(session, params);
   }
 
   async setAudioMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ id: params.id });
+    const session = this.getSession({ sessionId: params.sessionId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setAudioMute(session, params);
@@ -348,7 +348,7 @@ export class SessionManager {
     /* update the sessions */
     for (const [sessionId, mediaToUpdate] of updates) {
       const opts: IUpdateOutgoingMedia = { sessionId };
-      const jingleSession = this.getSession({ id: sessionId });
+      const jingleSession = this.getSession({ sessionId: sessionId });
       const handler = this.getSessionHandler({ jingleSession });
 
       /* if our video needs to be updated */
@@ -360,7 +360,7 @@ export class SessionManager {
           this.log('warn', 'no available video devices to switch to. setting video to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'video' });
           promises.push(
-            handler.setVideoMute(jingleSession, { mute: true, id: jingleSession.id })
+            handler.setVideoMute(jingleSession, { mute: true, sessionId: jingleSession.id })
           );
         }
       }
@@ -373,7 +373,7 @@ export class SessionManager {
           this.log('warn', 'no available audio devices to switch to. setting audio to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'audio' });
           promises.push(
-            handler.setAudioMute(jingleSession, { mute: true, id: jingleSession.id })
+            handler.setAudioMute(jingleSession, { mute: true, sessionId: jingleSession.id })
           );
 
           const senders = handler.getSendersByTrackType(jingleSession, 'audio')
