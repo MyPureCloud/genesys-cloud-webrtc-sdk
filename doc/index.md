@@ -1,14 +1,13 @@
 # Genesys Cloud WebRTC SDK Documentation
 
-
 ## WebRTC SDK Index
 * [Feature Index](#feature-index) (for more in-depth documetation about specific WebRTC features)
 * [GenesysCloudWebrtcSdk](#genesyscloudwebrtcsdk)
-  * [example usage](#example-usage)
-  * [constructor](#constructor)
-  * [properties](#properties)
-  * [methods](#methods)
-  * [events](#events)
+  * [Example usage](#example-usage)
+  * [Constructor](#constructor)
+  * [Properties](#properties)
+  * [Methods](#methods)
+  * [Events](#events)
 * [GenesysCloudMediaSession]
   * [Session level events](#session-level-events)
 * [SdkError Class]
@@ -19,7 +18,6 @@
 - [WebRTC Screen Share]
 - [WebRTC Video Conferencing]
 - [WebRTC Media] (media, devices, and permissions support)
-- [Type Definitions]
 
 ### App Authorization
 
@@ -30,6 +28,8 @@ To use the SDK with OAuth scopes, you will need the following scopes enabled:
  - notifications
 
 These can be set in Genesys Cloud > Admin > Integrations > OAuth > Scope.  Note that the scope options are not available when the "Grant Type" option is set to "Client Credentials"
+
+--------
 
 ## GenesysCloudWebrtcSdk
 
@@ -70,6 +70,8 @@ You can also access the latest version (or a specific version) via the CDN. Exam
   const sdk = new window.GenesysCloudWebrtcSdk(...); // same usage as above
 </script>
 ```
+
+--------
 
 ### `constructor`
 ``` ts
@@ -162,16 +164,16 @@ type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
 Logger to use. Must implement the `ILogger` interface (see [WebRTC properties](#properties) for `ILogger` definition).
 
 Defaults to [GenesysCloudClientLogger]
-which sends logs to sumo (unless `optOutOfTelemetry` is `true`)
+which sends logs to the server (unless `optOutOfTelemetry` is `true`)
 and outputs them in the console.   
 
 #### `optOutOfTelemetry`
 `optOutOfTelemetry?: boolean;`
 Optional: default `false`.
 
-Opt out of sending logs to sumo. Logs are only sent to sumo
+Opt out of sending logs to the server. Logs are only sent to the server
 if the default [GenesysCloudClientLogger] is used. The default logger will
-send logs to sumo unless this option is `true`
+send logs to the server unless this option is `true`
    
 #### `allowedSessionTypes`
 `allowedSessionTypes?: SessionTypes[];` Optional: defaults to all session types.
@@ -302,12 +304,14 @@ When `true` all audio tracks created via the SDK
  `sdk.media.on('audioTrackVolume', evt)`.
  See `sdk.media` events for more details.
 
+--------
+
 ### Properties
 
-#### VERSION
+#### `VERSION`
 Readonly `string` of the SDK version in use. 
 
-#### logger
+#### `logger`
 Logger used by the SDK. It will implement the `ILogger` interface. See [constructor](#constructor) for details on how to set the SDK logger and log level. 
 
 ``` ts 
@@ -333,8 +337,11 @@ interface ILogger {
 }
 ```
 
-#### media
+
+#### `media`
 SDK Media helper instance. See [WebRTC Media] for API and usage. 
+
+--------
 
 ### Methods
 
@@ -612,12 +619,8 @@ Params:
       default is sdk `defaults.audioElement`
   * `videoElement?: HTMLAudioElement` Optional: video element to attach incoming video to
       default is sdk `defaults.videoElement`. (only used for video sessions)
-  * `videoDeviceId?: string | boolean | null;` Optional: `string` for a specified deviceId,
-    `true` for sdk default deviceId, `null` for system default device, and `false|undefined`
-    to not request video.
-  * `audioDeviceId?: string | boolean | null;` Optional: `string` for a specified deviceId,
-    `true` for sdk default deviceId, `null` for system default device, and `false|undefined`
-    to not request audio.
+  * `videoDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
+  * `audioDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
 
 
 Returns: a promise that fullfils once the session reject goes out
@@ -686,6 +689,8 @@ Params:
 Returns: a promise that fullfils once all the cleanup
  tasks have completed
 
+--------
+
 ### Events
 The WebRTC SDK extends the browser version of `EventEmitter`. 
 Reference the NodeJS documentation for more information. The basic interface that is
@@ -711,7 +716,7 @@ interface EventEmitter {
 }
 ```
 
-The SDK does leverage [strict-event-emitter-types](https://www.npmjs.com/package/strict-event-emitter-types) to define available events and their emitted values.
+The SDK leverages [strict-event-emitter-types](https://www.npmjs.com/package/strict-event-emitter-types) to strongly type available events and their emitted values.
 
 #### `pendingSession`
 Emitted when a call session is being initiated for an outbound or inbound call
@@ -890,6 +895,7 @@ Value of event:
 * `message: string` - the log message
 * `details?: any` - details about the log message
 
+--------
 
 ## GenesysCloudMediaSession
 
@@ -929,9 +935,6 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
   get state(): string;
   get connectionState(): string;
 
-  accept(): Promise<void>;
-  end(reason?: JingleReasonCondition | JingleReason, silent?: boolean): void;
-
   /**
    * video session related props/functions 
    * Note: these are not guaranteed to exist on all sessions. 
@@ -951,7 +954,10 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
 
 Session level events are events emitted from the `session` objects themselves,
 not the SDK instance library. These can be used if you want lower level access
-and control.
+and control. 
+
+Sessions implement the same `EventEmitter` interface and strict-typings that the base WebRTC SDK does. 
+See [SDK Events](#events) for the full list of inherited functions.
 
 #### `sessionState`
 Emitted when the state of the session changes. 
@@ -1094,6 +1100,7 @@ Value of event:
 There are session events that are specific for video sessions. 
 See [WebRTC Video Conferencing] for more info. 
 
+--------
 
 ## SdkError Class
 This is an Error wrapper class to give a little more detail regarding errors
@@ -1135,6 +1142,8 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [WebRTC Screen Share]: screenshare.md
 [WebRTC Video Conferencing]: video.md
 [WebRTC Media]: media.md
+
+[ISdkMediaDeviceIds]: media.md#isdkmediadeviceids
 
 [GenesysCloudMediaSession]: #genesyscloudmediasession
 [SdkError Class]: #sdkerror-class

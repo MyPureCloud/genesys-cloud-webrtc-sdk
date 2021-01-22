@@ -6,7 +6,7 @@ window.crypto = {
 };
 
 import { GenesysCloudWebrtcSdk } from '../../src/client';
-import { IExtendedMediaSession, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds, ISdkConfig, SdkMediaState } from '../../src/types/interfaces';
+import { IExtendedMediaSession, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds, ISdkConfig, ISdkMediaState } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
@@ -452,7 +452,7 @@ describe('Client', () => {
       const deviceId = 'device-id';
       await sdk.initialize();
 
-      jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: true } as any as SdkMediaState);
+      jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: true } as any as ISdkMediaState);
       jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions').mockResolvedValue(undefined);
 
       await sdk.updateOutputDevice(deviceId);
@@ -466,7 +466,7 @@ describe('Client', () => {
       const sessions = [new MockSession()];
       await sdk.initialize();
 
-      jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: false } as any as SdkMediaState);
+      jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: false } as any as ISdkMediaState);
       jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
       jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions');
 

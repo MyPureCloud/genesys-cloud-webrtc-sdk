@@ -6,7 +6,7 @@ import { getRandomIntInclusive, MockAudioContext, MockSession, MockStream, MockT
 import { SdkErrorTypes } from '../../../src/types/enums';
 import { SdkError } from '../../../src/utils';
 import { IMediaRequestOptions } from '../../../src/types/interfaces';
-import { SdkMediaState } from '../../../src';
+import { ISdkMediaState } from '../../../src';
 
 declare var window: {
   navigator: {
@@ -814,7 +814,7 @@ describe('SdkMedia', () => {
   describe('setPermissions()', () => {
     it('should call through to set and emit state', () => {
       const setStateAndEmitSpy = jest.spyOn(sdkMedia, 'setStateAndEmit' as any);
-      const newPermissions: Partial<SdkMediaState> = { hasCameraPermissions: true };
+      const newPermissions: Partial<ISdkMediaState> = { hasCameraPermissions: true };
 
       sdkMedia['setPermissions'](newPermissions);
 

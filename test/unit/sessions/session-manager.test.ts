@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia, IExtendedMediaSession, SdkMediaState } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -575,7 +575,7 @@ describe('validateOutgoingMediaTracks()', () => {
   let sessions: IExtendedMediaSession[];
   let mockSessionHandler: BaseSessionHandler;
   let testDevices: MediaDeviceInfo[];
-  let mediaState: SdkMediaState;
+  let mediaState: ISdkMediaState;
   let mockGetAllSessions: jest.SpyInstance<IExtendedMediaSession[]>;
   let mockGetSession: jest.SpyInstance<IExtendedMediaSession>;
   let mockGetSessionHandler: jest.SpyInstance<BaseSessionHandler>;

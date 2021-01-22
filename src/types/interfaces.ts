@@ -91,7 +91,7 @@ export interface ISdkConfig {
    * Logger to use. Must implement the `ILogger` interface.
    *
    * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
-   *  which sends logs to sumo (unless `optOutOfTelemetry` is `true`)
+   *  which sends logs to the server (unless `optOutOfTelemetry` is `true`)
    *  and outputs them in the console.
    *
    * ``` ts
@@ -107,9 +107,9 @@ export interface ISdkConfig {
   logger?: ILogger;
 
   /**
-   * Opt out of sending logs to sumo. Logs are only sent to sumo
+   * Opt out of sending logs to the server. Logs are only sent to the server
    *  if a custom logger is _not_ provided. The default logger will
-   *  send logs to sumo unless this option is `true`
+   *  send logs to the server unless this option is `true`
    *
    * Optional: default `false`
    */
@@ -247,39 +247,10 @@ export interface ISdkConfig {
  * defaultAudioStream is the outgoing mediaStream for softphone calls. If not provided, one will be created during `acceptSession`. the sdk will not clean up provided streams
  */
 
+/**
+ * Interface for defining the SDK's contract for requesting media.
+ */
 export interface IMediaRequestOptions {
-  /**
-   * Desired video constraint
-   * - `string` to request media from device
-   * - `true` to request media from sdk default device
-   * - `null` to request media from system default device
-   * - `false` | `undefined` to not request/update this type of media
-   */
-  video?: boolean | string | null;
-
-  /**
-   * Video resolution to request from getUserMedia.
-   *
-   * Default is SDK configured resolution. `false` will
-   *  explicitly not use the sdk default
-   */
-  videoResolution?: {
-    width: ConstrainULong,
-    height: ConstrainULong
-  } | false;
-
-  /**
-   * Video frame rate to request from getUserMedia. It
-   *  will use the browser `ideal` property for video
-   *  constraints. Example, if is set `videoFrameRate: 45`
-   *  then the translated constraint to `getUserMedia` will
-   *  be `video: { frameRate: { ideal: 45 } }`
-   *
-   * Defaults to 30. `false` will explicitly not any
-   *  frameRate
-   */
-  videoFrameRate?: ConstrainDouble | false;
-
   /**
    * Desired audio constraint
    * - `string` to request media from device
@@ -287,36 +258,78 @@ export interface IMediaRequestOptions {
    * - `null` to request media from system default device
    * - `false` | `undefined` to not request/update this type of media
    */
-  audio?: boolean | string | null;
+  audio?: string | boolean | null;
 
   /**
-   * This is just to be able to associate logs to a specific session.
-   *  This is primarily for internal use and not generally needed.
+   * Desired video constraint
+   * - `string` to request media from device
+   * - `true` to request media from sdk default device
+   * - `null` to request media from system default device
+   * - `false` | `undefined` to not request/update this type of media
    */
-  session?: IExtendedMediaSession;
+  video?: string | boolean | null;
 
   /**
-   * Emit volume change events for audio tracks. This
-   *  will override the SDK default configuration
-   *  of `monitorMicVolume`.
+   * Video resolution to request from getUserMedia.
+   *
+   * Default is SDK configured resolution. `false` will
+   *  not any resolution including the sdk default
+   */
+  videoResolution?: {
+    width: ConstrainULong,
+    height: ConstrainULong
+  } | false;
+
+  /**
+   * Video frame rate to request from getUserMedia. Example, if is set
+   *  `videoFrameRate: { ideal: 45 }`then the translated
+   *  constraint to `getUserMedia` will be
+   *  `video: { frameRate: { ideal: 45 } }`
+   *
+   * Defaults to 30. `false` will explicitly not any
+   *  frameRate
+   */
+  videoFrameRate?: ConstrainDouble | false;
+
+  /**
+   * Flag to emit volume change events for audio tracks. If
+   *  this is a `boolean` value, it will override the
+   *  SDK default configuration of `monitorMicVolume`.
+   *
+   * If it is not a `boolean` (ie. left `undefined`) then
+   *  the SDK default will be used
    *
    * Default is SDK config's `monitorMicVolume` value
    */
   monitorMicVolume?: boolean;
+
+  /**
+   * Session to associate logs to. It will also tie `audioTrackVolume`
+   *  events to a sessionId if requesting audio
+   *  with `monitorMicVolume = true`
+   */
+  session?: IExtendedMediaSession;
 }
 
+/**
+ * Interface for defining the default devices to use when constructing
+ *  an SDK instance.
+ */
 export interface IMediaDeviceIds {
-  /** `string` for video deviceId to use, `true` for sdk default camera, or `null` for system default */
+  /** `string` for video deviceId to use, `falsy` for system default */
   videoDeviceId?: string | null;
-  /** `string` for microphone deviceId to use, `true` for sdk default microphone, or `null` for system default */
+  /** `string` for microphone deviceId to use, `falsy` for system default */
   audioDeviceId?: string | null;
-  /** `deviceId` for audio output, `true` for sdk default output, or `null` for system default */
+  /** `deviceId` for audio output, `falsy` for system default */
   outputDeviceId?: string | null;
 }
 
-export interface IOutgoingMediaDeviceIds {
+/**
+ * Interface for defining the SDK's contract for how to request media with specific deviceIds.
+ */
+export interface ISdkMediaDeviceIds {
   /**
-   * Request outgoing video
+   * Request video media in the following manner
    * - `string` for a specified deviceId,
    * - `true` for sdk default deviceId,
    * - `null` for system default device,
@@ -324,7 +337,7 @@ export interface IOutgoingMediaDeviceIds {
    */
   videoDeviceId?: string | boolean | null;
   /**
-   * Request outgoing audio
+   * Request audio media in the following manner
    * - `string` for a specified deviceId,
    * - `true` for sdk default deviceId,
    * - `null` for system default device,
@@ -333,7 +346,7 @@ export interface IOutgoingMediaDeviceIds {
   audioDeviceId?: string | boolean | null;
 }
 
-export interface IUpdateOutgoingMedia extends IOutgoingMediaDeviceIds {
+export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
   /** session id (this _OR_ `session` is required) */
   sessionId?: string;
   /** session (this _OR_ `sessionId` is required) */
@@ -342,7 +355,7 @@ export interface IUpdateOutgoingMedia extends IOutgoingMediaDeviceIds {
   stream?: MediaStream;
 }
 
-export interface IAcceptSessionRequest extends IOutgoingMediaDeviceIds {
+export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   /** id of the session to accept */
   sessionId: string;
 
@@ -457,7 +470,7 @@ export interface ISessionAndConversationIds {
   conversationId?: string;
 }
 
-export interface IStartSessionParams extends IOutgoingMediaDeviceIds {
+export interface IStartSessionParams extends ISdkMediaDeviceIds {
   sessionType: SessionTypes;
 }
 
@@ -582,13 +595,23 @@ export interface SdkEvents {
 export interface SdkMediaEvents {
   /**
    * Event emitted for microphone volume changes. Event includes the
-   *  media stream, media track, volume average, if the mic is muted,
+   *  media track, volume average, if the mic is muted,
    *  and the sessionId (if available).
    *
    * The sessionId will only be available if the media was created
-   *  with a sessionId passed in.
+   *  with a `session` or `sessionId` passed into with the
+   *  media request options (See `interface IMediaRequestOptions`).
+   *
+   * This will emit every `100ms` with the average volume during that
+   *  time range.
+   *
+   * This event can be used to determine if a microphone is not picking
+   *  up audio. Reasons for this can be the microphone is on "hardware mute"
+   *  or the OS does not have microphone permissions for the given browser
+   *  being used. Both of these reasons cannot be detected on the media track
+   *  and can only be "guessed" based on no audio being picked up from the mic.
    */
-  audioTrackVolume: (details: { track: MediaStreamTrack, volume: number, sessionId: string, muted: boolean }) => void;
+  audioTrackVolume: (details: { track: MediaStreamTrack, volume: number, muted: boolean, sessionId?: string }) => void;
 
   /**
    * Event emitted whenever the media state changes.
@@ -604,13 +627,23 @@ export interface SdkMediaEvents {
   state: SdkMediaStateWithType;
 
   /**
-   * Event when devices change.
+   * Event when devices change. Devices are considered to
+   *  change when:
+   * 1. The devices are enumerated for the first time
+   * 2. The devices are enumerated with `labels` (this
+   *    can happen if enumerating devices after gaining
+   *    media permissions)
+   * 3. `sdk.media.enumerateDevices(true)` is called
+   *    (which will always emit the devices again)
+   * 4. The broswer fires the `devicechange` event
+   *    (which will trigger the sdk to enumerate devices)
    *
    * Note: this will only fire when devices change.
    *  For example: if `sdk.media.enumerateDevices()` is
    *  called multiple times, `sdk.media.on('devices', evt)
    *  will only fire once _unless_ the devices are different
-   *  on subsequent enumerations. This ensures `enumerateDevices()`
+   *  on subsequent enumerations _or_ `true` is passed in
+   *  (to force emittion). This ensures `enumerateDevices()`
    *  can be called many times without the event emitting
    *  with duplicate data.
    *
@@ -618,20 +651,37 @@ export interface SdkMediaEvents {
   devices: SdkMediaStateWithType;
 
   /**
-   * Event when media permissions change
+   * Event when media permissions change. Values
+   *  that trigger this event are any of the following
+   *  in the ISdkMediaState:
+   * ``` ts
+   *  hasMicPermissions: boolean;
+   *  hasCameraPermissions: boolean;
+   *  micPermissionsRequested: boolean;
+   *  cameraPermissionsRequested: boolean;
+   * ```
+   *
+   * For example, when calling through to
+   *  `sdk.media.requestMediaPermissions('audio')`, this
+   *  event will emit two times:
+   * 1. for `micPermissionsRequested` changing to `true`
+   *  (which happens right before requesting `getUserMedia()`)
+   *  event will emit two times:
+   * 2. for `hasMicPermissions` changing to `true` or `false`
+   *  depending on the outcome of the `getUserMedia()` request
    */
   permissions: SdkMediaStateWithType;
 }
 
-export type SdkMediaEventTypes = keyof SdkMediaEvents;
+export type SdkMediaEventTypes = keyof Omit<SdkMediaEvents, 'audioTrackVolume'>;
 
-export type SdkMediaStateWithType = SdkMediaState & {
+export type SdkMediaStateWithType = ISdkMediaState & {
   eventType: SdkMediaEventTypes;
 };
 
 export type MicVolumeEvent = Parameters<SdkMediaEvents['audioTrackVolume']>[0];
 
-export type SdkMediaState = {
+export interface ISdkMediaState {
   /** list of all available devices */
   devices: MediaDeviceInfo[];
   /**
@@ -649,9 +699,9 @@ export type SdkMediaState = {
   outputDevices: MediaDeviceInfo[];
   /** whether the browser supports output devices */
   hasOutputDeviceSupport: boolean;
-  /** does at least one video device exist */
-  hasMic: boolean;
   /** does at least one audio device exist */
+  hasMic: boolean;
+  /** does at least one video device exist */
   hasCamera: boolean;
   /** does the sdk have browser permissions for audio/microphone */
   hasMicPermissions: boolean;
@@ -661,4 +711,4 @@ export type SdkMediaState = {
   micPermissionsRequested: boolean;
   /** if permissions have been requested by the sdk */
   cameraPermissionsRequested: boolean;
-};
+}
