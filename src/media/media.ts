@@ -60,7 +60,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  be called early after constructing the SDK and _before_ calling
    *  `sdk.media.startMedia()` to ensure permissions are granted.
    *
-   * This function will call through to `startMedia` to get a media stream
+   * This function will call through to `startMedia` to get a `MediaStream`
    *  for the desired media permissions. That is the only surefire way to
    *  gain permissions across all browsers & platforms.
    *
@@ -72,7 +72,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *
    * An error will be thrown if permissions are not granted by either the browser
    *  or the OS (specifically for macOS). With the one exception of the microphone
-   *  permission on the OS level. If the microphone permission has not be granted on
+   *  permission on the OS level. If the microphone permission has not been granted on
    *  the OS level, macOS will still allow the browser to attain an audio track for
    *  the microphone. However, the track will act as if it is in a "hardware mute"
    *  state. There is no API available for the browser to know the microphone is
@@ -81,7 +81,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  `sdk.media.on('audioTrackVolume', evt)` and add logic to respond to no volume
    *  coming through the microhpone.
    *
-   * If `preserveMedia` is `true`, the media stream attained through the
+   * If `preserveMedia` is `true`, the `MediaStream` attained through the
    *  `startMedia()` will be returned to the caller. If not, the media will
    *  be destroyed and `undefined` returned.
    *
@@ -196,9 +196,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  devices, a new event will _NOT_ emit. To force an emit pass in `true`.
    *
    * It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video')`
-   *  be called at least once to ensure devices are loaded correctly _after_
-   *  permissions are granted. `requestMediaPermissions()` will call
-   *  `enumerateDevices()` before and after requesting permissions.
+   *  be called at least once to ensure permissions are granted before loading devices.
+   *  See `requestMediaPermissions()` for more details.
    *
    * Note: if media permissions have not been granted by the browser,
    *  enumerated devices will not return the full list of devices
@@ -274,11 +273,11 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  media permissions must be requested one at a time). If `audio` fails, it will
    *  not attempt to gain permissions for `video` – the error will stop execution.
    *
-   * @param mediaReqOptions request video and/or audio with default device or deviceId.
+   * @param mediaReqOptions request video and/or audio with a default device or deviceId.
    *  Defaults to `{video: true, audio: true}`
    * @param retryOnFailure whether the sdk should retry on an error
    *
-   * @returns a promise containing a MediaStream with the requested media
+   * @returns a promise containing a `MediaStream` with the requested media
    */
   async startMedia (mediaReqOptions: IMediaRequestOptions = { video: true, audio: true }, retryOnFailure: boolean = true): Promise<MediaStream> {
     /* `getStandardConstraints` will set media type to `truthy` if `null` was passed in */
@@ -364,9 +363,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Creates a media stream from the screen (this will prompt for user screen selection)
+   * Creates a `MediaStream` from the screen (this will prompt for user screen selection)
    *
-   * @returns a promise containing a MediaStream with the requested screen media
+   * @returns a promise containing a `MediaStream` with the requested screen media
    */
   async startDisplayMedia (): Promise<MediaStream> {
     const constraints = this.getScreenShareConstraints();
@@ -525,7 +524,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * Look through the cached devices and match based on
    *  the passed in track's `kind` and `label`.
    *
-   * @param track media stream track with the label to search for
+   * @param track `MediaStreamTrack` with the label to search for
    * @returns the found device or `undefined` if the
    *  device could not be found.
    */

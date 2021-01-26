@@ -72,12 +72,15 @@ async function run () {
   /* this is a mock session object. the real session would be attained through  the `sdk.on('sessionStarted', evt)` listener */
   const sessionToAccept = { id: 'some-hash-id', ...restOfSessionObject };
 
-  /* you can even accept a pending session with media or a deviceId */
+  /* you can even accept a pending session with media you already have */
   sdk.acceptSession({
     sessionId: sessionToAccept.id,
-    // you can pass in media you already have
     mediaStream: audioStream
-    // OR just pass in a deviceId and the sdk will spin up media for it
+  });
+
+  /* OR you can even accept a pending session with a deviceId and the sdk will create the media */
+  sdk.acceptSession({
+    sessionId: sessionToAccept.id,
     audioDeviceId: micId,
   });
 }
@@ -96,7 +99,7 @@ Function to gain permissions for a given media type. This function should
  be called early after constructing the SDK and _before_ calling
  `sdk.media.startMedia()` to ensure permissions are granted.
 
-This function will call through to `startMedia` to get a media stream
+This function will call through to `startMedia` to get a `MediaStream`
  for the desired media permissions. That is the only surefire way to
  gain permissions across all browsers & platforms.
 
@@ -108,7 +111,7 @@ The media state will be updated with permissions and an event emitted
 
 An error will be thrown if permissions are not granted by either the browser
  or the OS (specifically for macOS). With the one exception of the microphone
- permission on the OS level. If the microphone permission has not be granted on
+ permission on the OS level. If the microphone permission has not been granted on
  the OS level, macOS will still allow the browser to attain an audio track for
  the microphone. However, the track will act as if it is in a "hardware mute"
  state. There is no API available for the browser to know the microphone is
@@ -117,7 +120,7 @@ An error will be thrown if permissions are not granted by either the browser
  `sdk.media.on('audioTrackVolume', evt)` and add logic to respond to no volume
  coming through the microhpone.
 
-If `preserveMedia` is `true`, the media stream attained through the
+If `preserveMedia` is `true`, the `MediaStream` attained through the
  `startMedia()` will be returned to the caller. If not, the media will
  be destroyed and `undefined` returned.
 
@@ -179,9 +182,8 @@ If the devices returned from the browser are the same as the cached
   devices, a new event will _NOT_ emit. To force an emit pass in `true`.
 
 It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video')`
-  be called at least once to ensure devices are loaded correctly _after_
-  permissions are granted. `requestMediaPermissions()` will call
-  `enumerateDevices()` before and after requesting permissions.
+  be called at least once to ensure permissions are granted before loading devices. 
+  See [requestMediaPermissions()](#requestmediapermissions) for more details.
 
 > Note: if media permissions have not been granted by the browser,
   enumerated devices will not return the full list of devices
@@ -249,14 +251,14 @@ startMedia(mediaReqOptions?: IMediaRequestOptions, retryOnFailure?: boolean): Pr
 
 Params:
 * `mediaReqOptions?: IMediaRequestOptions` – Optional: defaults to `{ video: true, audio: true }` –
-  request video and/or audio with default device or deviceId. See [IMediaRequestOptions] for more details.
+  request video and/or audio with a default device or deviceId. See [IMediaRequestOptions] for more details.
 * `retryOnFailure?: boolean` – Optional: default `true` – whether the sdk should retry on an error
 
-Returns: a promise containing a MediaStream with the requested media
+Returns: a promise containing a `MediaStream` with the requested media
 
 
 #### `startDisplayMedia()`
-Creates a media stream from the screen (this will prompt for user screen selection).
+Creates a `MediaStream` from the screen (this will prompt for user screen selection).
 
 > Note: see [Screen Share in Firefox] for specific screen share permission information
 
@@ -267,7 +269,7 @@ startDisplayMedia(): Promise<MediaStream>;
 
 Params: none
 
-Returns: a promise containing a MediaStream with the requested screen media
+Returns: a promise containing a `MediaStream` with the requested screen media
 
 
 #### `getValidDeviceId()`
@@ -383,7 +385,7 @@ findCachedDeviceByTrackLabel(track?: MediaStreamTrack): MediaDeviceInfo | undefi
 ```
 
 Params: 
-* `track?: MediaStreamTrack` – Optional: media stream track with the label to search for.
+* `track?: MediaStreamTrack` – Optional: `MediaStreamTrack` with the label to search for.
 
 Returns: the found device or `undefined` if the
 device could not be found.
@@ -398,7 +400,7 @@ findCachedOutputDeviceById(id?: string): MediaDeviceInfo | undefined;
 ```
 
 Params:
-* `id?: string` –Optional: output deviceId
+* `id?: string` – Optional: output deviceId
 
 Returns: the found device or `undefined` if the device could not be found.
 
@@ -592,7 +594,7 @@ interface ISdkMediaState {
 }
 ```
 * `devices: MediaDeviceInfo[]` – a list of all current devices
-* `oldDevices: MediaDeviceInfo[]` – a list of all devices from the last emittion. This will only
+* `oldDevices: MediaDeviceInfo[]` – a list of all devices from the last emission. This will only
    differ from `devices` if `devices` changed. Otherwise, these devices will match `devices`. 
    This is useful for diffing which devices changed.
 * `audioDevices: MediaDeviceInfo[]` – a list of all current audio (microphone) devices
@@ -644,7 +646,7 @@ interface IMediaRequestOptions {
     }
     ```
 * `videoFrameRate?: ConstrainDouble | false` – Optional: default value is `{ ideal: 30 }` – 
-  Video frame rate to request from getUserMedia. `false` will explicitly not any frameRate.
+  Video frame rate to request from getUserMedia. `false` will explicitly not use any frameRate.
   * Example, if is set `videoFrameRate: { ideal: 45 }` then the translated constraint to   
    `getUserMedia` will be `video: { frameRate: { ideal: 45 } }`
 * `monitorMicVolume?: boolean` – Optional: default is SDK configured default – Flag to emit volume 
@@ -666,7 +668,7 @@ interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
 * See [ISdkMediaDeviceIds] for deviceId options
 * `sessionId?: string` – Optional: session id to update media for (this _OR_ `session` is required)
 * `session?: IExtendedMediaSession` – Optional: session to update media for (this _OR_ `sessionId` is required)
-* `stream?: MediaStream` – Optional: media stream to update the session with
+* `stream?: MediaStream` – Optional: `MediaStream` to update the session with
 
 #### ISdkMediaDeviceIds
 Interface for defining the SDK's contract for how to request media with specific deviceIds.
@@ -701,21 +703,21 @@ media in the browser:
 On macOS, the user has to grant the browser permission to use certain media. These options can
 be found at **System Preferences > Security & Privacy > Privacy**. Here are the following permissions
 and their corresponding responses:
-* Camera
+* **Camera**
   * If not granted, the browser will throw an error when attempting to request video media
-* Microphone
+* **Microphone**
   * If not granted, the browser _will still return_ an audio media track that looks normal and 
     not throw an error. However, there will be _no actual audio_ 
     being picked up by the microphone. It will act as if in a **hardware mute** state. See
     [Microphone OS Permissions and Hardware Mute] for more information.
-* Screen Recording (which is needed for screen sharing)
+* **Screen Recording** (which is the permission needed for sharing a screen)
   * If not granted, the browser will still prompt the use for a scren selection. However, the 
     user will only be able to share the browser-in-use window _or_ any desktop screen 
     _with only the background present_ (ie. they will not see any other applications). 
 
 
 ### Microphone OS Permissions and Hardware Mute
-There is way for the browser to know if a microphone is in a **hardware mute** state. 
+There is no way for the browser to know if a microphone is in a **hardware mute** state. 
 When a microphone is in a hardware mute state, the audio media track will still appear
 to be normal (meaning `track.enabled === true` & `track.muted === false`). However, 
 there will be _no actual audio_ being picked up by the microphone. 

@@ -137,19 +137,23 @@ Organization ID (aka the GUID). Required for unauthenticated users (aka guest).
 `wsHost?: string;` Optional: defaults to `wss://streaming.${config.environment}`
 WebSocket Host.
 
-
 #### `autoConnectSessions`
 `autoConnectSessions?: boolean;` Optional: default `true`
 
-Auto connect incoming sessions (ie. session coming from `sdk.on('pendingSession', (evt))`). 
-This value will not be checked for incoming video sessions. 
-Video sessions will always be auto answered. 
+Auto connect incoming softphone sessions (ie. sessions 
+coming from `sdk.on('sessionStarted', (evt))`. If set 
+to `false`, the session will need to be manually accepted
+using `sdk.acceptSession({ sessionId })`.
+
 > Note: This is required to be true for guest screen share
      
 #### `disableAutoAnswer`
 `disableAutoAnswer?: boolean;` Optional: default `false`
 
-Disable auto answering softphone calls. By default softphone calls will be auto answered unless this is set to `true`. 
+Disable auto answering softphone calls. By default softphone calls will 
+respect the `autoAnswer` flag passed in on the `pendingSession` session object. 
+`autoAnswer` is always `true` for outbound calls and can also be set 
+in the user's  phone settings.
      
 #### `logLevel`
 `logLevel?: LogLevels;` Optional: defaults to `'info'`. 
@@ -193,7 +197,7 @@ enum SessionTypes {
 import { SessionTypes } from 'genesys-cloud-webrtc-sdk';
 
 const sdk = new GenesysCloudWebrtcSdk({
-  allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
+  allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.softphone],
   // other config options
 });
 ```      
@@ -349,7 +353,7 @@ SDK Media helper instance. See [WebRTC Media] for API and usage.
 
 Setup the SDK for use and authenticate the user
    - agents must have an accessToken passed into the constructor options
-   - guest's need a securityCode (or the data received from an already redeemed securityCode).
+   - guests need a securityCode (or the data received from an already redeemed securityCode).
       If the customerData is not passed in this will redeem the code for the data, 
       else it will use the data passed in.
 
@@ -379,20 +383,26 @@ Returns: a Promise that is fulled one the web socket is connected
 
 
 #### `startScreenShare()`
-Start a screen share. Currently, guest is the only supported screen share.
- `initialize()` must be called first.
+Start a screen share. Start a screen share. Currently, screen share is only supported 
+for guest users. 
+
+`initialize()` must be called first.
 
 Declaration: 
 ``` ts
 startScreenShare(): Promise<MediaStream>;
 ```
 
-Returns: `MediaStream` promise of the selected screen stream
+Returns: `MediaStream` promise for the selected screen stream
 
 
 #### `startVideoConference()`
-  Start a video conference. Not supported for guests.
-   `initialize()` must be called first.
+Start a video conference. Not supported for guests. Conferences can 
+only be joined by authenticated users from the same organization. 
+If `inviteeJid` is provided, the specified user will receive a propose/pending session 
+they can accept and join the conference.
+
+`initialize()` must be called first.
 
 Declaration:
 ``` ts
@@ -409,9 +419,10 @@ Params:
 Returns: a promise with an object with the newly created `conversationId`
 
 #### `updateOutputDevice()`
-Update the output device
-  - This will log a warning and do nothing if the broswer
-      that does not support output devices
+Update the output device for all incoming audio
+  - This will log a warning and not attempt to update
+    the output device if the a broswer
+    does not support output devices
   - This will attempt to update all active sessions
   - This does _not_ update the sdk `defaultOutputDeviceId`
 
@@ -507,11 +518,11 @@ Mutes/Unmutes video/camera for a session and updates the conversation accordingl
 Will fail if the session is not found.
 Incoming video is unaffected.
 
- When muting, the camera track is destoryed. When unmuting, the camera media
+ When muting, the camera track is destroyed. When unmuting, the camera media
   must be requested again. 
 
 > NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
- attempt to use the sdk `defaultVideoDeviceId` as the camera device
+ attempt to use the sdk `defaults.videoDeviceId` as the camera device
 
 Declaration: 
 ``` ts
@@ -527,7 +538,7 @@ Params:
         unmuteDeviceId?: string | boolean | null;
     }
     ```
-  * `sessionId: string` Required: session id to perform the action for
+  * `sessionId: string` Required: session id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
   * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting, 
     `true` for sdk default, `null` for system default, 
@@ -542,7 +553,7 @@ Will fail if the session is not found.
 Incoming audio is unaffected.
 
 > NOTE: if no `unmuteDeviceId` is provided when unmuting _AND_ there is no active
- audio stream, it will unmute and attempt to use the sdk `defaultAudioDeviceId`
+ audio stream, it will unmute and attempt to use the sdk `defaults.audioDeviceId`
  at the device
 
 Declaration: 
@@ -552,7 +563,7 @@ setAudioMute(muteOptions: ISessionMuteRequest): Promise<void>;
 
 Params: 
 * `muteOptions: ISessionMuteRequest` Required: 
-  * `sessionId: string` Required: session id to perform the action for
+  * `sessionId: string` Required: session id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
   * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting, 
     `true` for sdk default, `null` for system default, 
@@ -600,7 +611,7 @@ Declaration:
 acceptSession(acceptOptions: IAcceptSessionRequest): Promise<void>;
 ```
 Params: 
-* `acceptOptions: IAcceptSessionRequest` Required: options to accept the session with
+* `acceptOptions: IAcceptSessionRequest` Required: options with which to accept the session
   * Basic interface:
     ``` ts
     interface IAcceptSessionRequest {
@@ -623,13 +634,10 @@ Params:
   * `audioDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
 
 
-Returns: a promise that fullfils once the session reject goes out
+Returns: a promise that fullfils once the session accept goes out
 
 #### `endSession()`
 End an active session based on the session ID _or_ conversation ID (one is required)
-     * @param 
-     * @returns 
-     */
     
 Declaration: 
 ``` ts
@@ -719,27 +727,9 @@ interface EventEmitter {
 The SDK leverages [strict-event-emitter-types](https://www.npmjs.com/package/strict-event-emitter-types) to strongly type available events and their emitted values.
 
 #### `pendingSession`
-Emitted when a call session is being initiated for an outbound or inbound call
-
-Declaration:
-``` ts
-sdk.on('pendingSession', (pendingSession: IPendingSession) => { });
-```
-Value of event: 
-``` ts
-interface IPendingSession {
-  id: string;
-  autoAnswer: boolean;
-  address: string;
-  conversationId: string;
-  sessionType: SessionTypes;
-  originalRoomJid: string;
-  fromUserId?: string;
-}
-```
-
-#### `pendingSession`
-Emitted when a call session is being initiated for an outbound or inbound call
+Emitted when a call session is being initiated for an outbound or inbound call. 
+`pendingSession` is emitted for all softphone sessions and inbound 1-to-1 video 
+sessions. 
 
 Declaration:
 ``` ts
@@ -1027,7 +1017,10 @@ Value of event:
 
 
 #### `stats`
-Emit stats for the underlying RTCPeerConnection.
+Emit stats for the underlying RTCPeerConnection. 
+
+See [webrtc-stats-gatherer] for more details and typings
+  on stats collected. 
 
 Declaration:
 ``` ts
@@ -1137,6 +1130,7 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html
 
 [GenesysCloudClientLogger]: https://github.com/purecloudlabs/genesys-cloud-client-logger
+[webrtc-stats-gatherer]: https://github.com/MyPureCloud/webrtc-stats-gatherer
 
 [WebRTC SoftPhone]: softphone.md
 [WebRTC Screen Share]: screenshare.md

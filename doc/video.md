@@ -1,9 +1,7 @@
 # Genesys Cloud WebRTC SDK Video Conferencing
 
 This SDK supports creating or joining video conferences. Much of the initialization and call controls
-are done using the public API, but are abstracted being api's in this sdk. There is currently no such
-thing as an alerting or incoming video call. All video sessions are treated as a conference to which
-a user must join manually.
+are done using the public API, but are abstracted being api's in this sdk.
 
 > *Note: video conferencing does not support guest users.*
 
@@ -46,7 +44,8 @@ and functions that are relevant to video conferences.
 These are `session` level events and are in addition to the already documented [session level events].
 
 #### `participantsUpdate`
-This event will happen whenever a conversation update event is received.
+This event will happen whenever a participant changes on the conversation.
+
 The most common cases are, but not limited to:
   - Participants joining or leaving the conference
   - Participants muting or unmuting video or audio
@@ -78,7 +77,6 @@ Value of event:
 #### `activeVideoParticipantsUpdate`
 
 This event will happen when the server switches who is visible on the screen. 
-This will likely happen every time someone new speaks.
 
 > *Note: this user may not be providing video or that video could be muted. It is up to the
 > implementing party to show something else such as an avatar or profile picture in such instances.*
@@ -103,6 +101,9 @@ Value of event:
 #### `speakersUpdate`
 
 This event tells who is making noise in the conference.
+
+> Caveat: currently, we can only emit on this event when the on-screen user changes, 
+this will often appear to be out of sync. This will be fixed in the future.
 
 Declaration:
 ``` ts
@@ -145,7 +146,7 @@ Returns: a promise that completes after the screen share started.
 
 #### `stopScreenShare()`
 Ends the active outgoing screen share. If video media was on before the screen share 
-started, the media we be reaquired and added to the session. 
+started, the media we be required and added to the session. 
 
 If there was no active screen share for this session, an error is logged 
 and returns (no error is thrown). 

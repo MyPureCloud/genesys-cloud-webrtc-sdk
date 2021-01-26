@@ -158,14 +158,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   /**
    * Setup the SDK for use and authenticate the user
    *  - agents must have an accessToken passed into the constructor options
-   *  - guest's need a securityCode (or the data received from an
+   *  - guests need a securityCode (or the data received from an
    *    already redeemed securityCode). If the customerData is not passed in
    *    this will redeem the code for the data, else it will use the data
    *    passed in.
    *
    * @param opts optional initialize options
    *
-   * @returns a promise that is fulled one the web socket is connected
+   * @returns a promise that is fulled once the web socket is connected
    *  and other necessary async tasks are complete.
    */
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
@@ -231,7 +231,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Start a screen share. Currently, guest is the only supported screen share.
+   * Start a screen share. Currently, screen share is only supported
+   *  for guest users.
+   *
    *  `initialize()` must be called first.
    *
    * @returns MediaStream promise of the selected screen stream
@@ -246,7 +248,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   /**
    * Start a video conference. Not supported for guests.
+   *  Conferences can only be joined by authenticated users
+   *  from the same organization. If `inviteeJid` is provided,
+   *  the specified user will receive a propose/pending session
+   *  they can accept and join the conference.
+   *
    *  `initialize()` must be called first.
+   *
+   *
    * @param roomJid jid of the conference to join. Can be made up if
    *  starting a new conference but must adhere to the format:
    *  <lowercase string>@conference.<lowercase string>
@@ -263,11 +272,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Update the output device
+   * Update the output device for all incoming audio
    *
    *  NOTES:
-   *    - This will log a warning and do nothing the a broswer
-   *        that does not support output devices
+   *    - This will log a warning and not attempt to update
+   *        the output device if the a broswer
+   *        does not support output devices
    *    - This will attempt to update all active sessions
    *    - This does _not_ update the sdk `defaultOutputDeviceId`
    * @param deviceId `deviceId` for audio output, `true` for sdk default output, or `null` for system default
@@ -384,7 +394,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Will fail if the session is not found.
    * Incoming video is unaffected.
    *
-   * When muting, the camera track is destoryed. When unmuting, the camera media
+   * When muting, the camera track is destroyed. When unmuting, the camera media
    *  must be requested again.
    *
    * NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
@@ -434,8 +444,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   /**
    * Accept a pending session based on the passed in ID.
    *
-   * @param acceptOptions options to accept the session with
-   * @returns a promise that fullfils once the session reject goes out
+   * @param acceptOptions options with which to accept the session
+   * @returns a promise that fullfils once the session accept goes out
    */
   async acceptSession (acceptOptions: IAcceptSessionRequest): Promise<void> {
     await this.sessionManager.acceptSession(acceptOptions);

@@ -59,19 +59,20 @@ export interface ISdkConfig {
   wsHost?: string;
 
   /**
-   * Auto connect incoming sessions (ie. session coming
-   *  from `sdk.on('pendingSession', (evt))`
-   * Optional: default `true`. This value will not be checked
-   *  for incoming video sessions. Video sessions will always be
-   *  auto answered.
+   * Auto connect incoming softphone sessions (ie. sessions
+   *  coming from `sdk.on('sessionStarted', (evt))`. If set
+   *  to `false`, the session will need to be manually accepted
+   *  using `sdk.acceptSession({ sessionId })`.
    *
-   * Note: This is required to be true for guest screen share.
+   * Optional: default `true`.
    */
   autoConnectSessions?: boolean;
 
   /**
-   * Disable auto answering softphone calls. By default softphone
-   *  calls will be auto answered unless this is set to `true`
+   * Disable auto answering softphone calls. By default softphone calls will
+   *  respect the `autoAnswer` flag passed in on the `pendingSession` session object.
+   *  `autoAnswer` is always `true` for outbound calls and can also be set
+   *  in the user's  phone settings.
    *
    * Optional: default `false`
    */
@@ -286,7 +287,7 @@ export interface IMediaRequestOptions {
    *  constraint to `getUserMedia` will be
    *  `video: { frameRate: { ideal: 45 } }`
    *
-   * Defaults to 30. `false` will explicitly not any
+   * Defaults to 30. `false` will explicitly not use any
    *  frameRate
    */
   videoFrameRate?: ConstrainDouble | false;
@@ -643,7 +644,7 @@ export interface SdkMediaEvents {
    *  called multiple times, `sdk.media.on('devices', evt)
    *  will only fire once _unless_ the devices are different
    *  on subsequent enumerations _or_ `true` is passed in
-   *  (to force emittion). This ensures `enumerateDevices()`
+   *  (to force emission). This ensures `enumerateDevices()`
    *  can be called many times without the event emitting
    *  with duplicate data.
    *
