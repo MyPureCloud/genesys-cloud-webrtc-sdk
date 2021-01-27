@@ -130,7 +130,7 @@ export interface ISdkConfig {
    *
    * example:
    * ``` ts
-   * import { SessionTypes } from 'genesys-cloud-webrtc-sdk/dist/src/types/enums';
+   * import { SessionTypes } from 'genesys-cloud-webrtc-sdk';
    *
    * new GenesysCloudWebrtcSdk({
    *    allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],

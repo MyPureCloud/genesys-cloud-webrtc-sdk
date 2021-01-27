@@ -5,7 +5,7 @@ import { SessionManager } from '../../src/sessions/session-manager';
 import { SdkError } from '../../src/utils';
 import { MockTrack, MockStream, MockSession, random } from '../test-utils';
 import { SdkMedia } from '../../src/media/media';
-import { ISdkMediaState, IUpdateOutgoingMedia, IExtendedMediaSession, IMediaDeviceIds } from '../../dist/src/types/interfaces';
+import { ISdkMediaState, IUpdateOutgoingMedia, IExtendedMediaSession, IMediaDeviceIds } from '../../src/types/interfaces';
 
 jest.mock('genesys-cloud-streaming-client');
 jest.mock('../../src/sessions/session-manager');
