@@ -280,7 +280,7 @@ type ConstrainULong = number | {
 
 Default video device ID to use when starting camera media.
  - `string` to request media for specified deviceId
- - `null|falsey` to request media system default device
+ - `null|falsy` to request media system default device
 
 
 #### `defaults.audioDeviceId`
@@ -288,14 +288,14 @@ Default video device ID to use when starting camera media.
 
 Default audio device ID to use when starting microphone media.
  - `string` to request media for specified deviceId
- - `null|falsey` to request media system default device
+ - `null|falsy` to request media system default device
 
 #### `defaults.outputDeviceId`
 `outputDeviceId?: string | null;` Optional: defaults to `null`
 
 Default output device ID to use when starting camera media.
  - `string` ID for output media device to use
- - `null|falsey` to request media system default device
+ - `null|falsy` to request media system default device
 > Not all browsers support output devices. For supported browsers, system default
  for output devices is always an empty string (ex: `''`)
 

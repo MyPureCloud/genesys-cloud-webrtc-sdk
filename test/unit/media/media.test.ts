@@ -609,7 +609,7 @@ describe('SdkMedia', () => {
       expect(sdkMedia.getValidDeviceId('audioinput', true)).toBe(undefined);
     });
 
-    it('should return `undefined` if `falsey` was passed in', () => {
+    it('should return `undefined` if `falsy` was passed in', () => {
       expect(sdkMedia.getValidDeviceId('audioinput', false)).toBe(undefined);
       expect(sdkMedia.getValidDeviceId('audioinput', undefined)).toBe(undefined);
       expect(sdkMedia.getValidDeviceId('audioinput', null)).toBe(undefined);

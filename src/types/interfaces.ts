@@ -205,7 +205,7 @@ export interface ISdkConfig {
     /**
      * Default video device ID to use when starting camera media.
      *  - `string` to request media for specified deviceId
-     *  - `null|falsey` to request media system default device
+     *  - `null|falsy` to request media system default device
      *
      * Optional: defaults to `null`
      */
@@ -214,7 +214,7 @@ export interface ISdkConfig {
     /**
      * Default audio device ID to use when starting microphone media.
      *  - `string` to request media for specified deviceId
-     *  - `null|falsey` to request media system default device
+     *  - `null|falsy` to request media system default device
      *
      * Optional: defaults to `null`
      */
@@ -223,7 +223,7 @@ export interface ISdkConfig {
     /**
      * Default output device ID to use when starting camera media.
      *  - `string` ID for output media device to use
-     *  - `null|falsey` to request media system default device
+     *  - `null|falsy` to request media system default device
      *
      * Note: Not all browsers support output devices. System default
      *  for output devices is always an empty string (ex: `''`)
