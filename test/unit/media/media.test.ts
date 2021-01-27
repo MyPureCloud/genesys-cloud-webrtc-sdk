@@ -6,7 +6,7 @@ import { getRandomIntInclusive, MockAudioContext, MockSession, MockStream, MockT
 import { SdkErrorTypes } from '../../../src/types/enums';
 import { SdkError } from '../../../src/utils';
 import { IMediaRequestOptions } from '../../../src/types/interfaces';
-import { SdkMediaState } from '../../../src';
+import { ISdkMediaState } from '../../../src';
 
 declare var window: {
   navigator: {
@@ -390,19 +390,17 @@ describe('SdkMedia', () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: true, cameraPermissionsRequested: true });
       const requestOptions: IMediaRequestOptions = { /* no constraints */ };
-      const sdkError = new SdkError(
-        SdkErrorTypes.invalid_options,
-        'WebrtcSdk.media.startMedia must be called with at least one of audio or video request parameters',
-        requestOptions
-      );
+      const error = new TypeError("Failed to execute 'getUserMedia' on 'MediaDevices': At least one of audio and video must be requested");
 
+      /* setup our mocks */
+      startSingleMediaSpy.mockRejectedValue(error);
 
       try {
         await sdkMedia.startMedia(requestOptions);
         fail('should have thrown');
       } catch (e) {
-        expect(startSingleMediaSpy).not.toHaveBeenCalled();
-        expect(e).toEqual(sdkError);
+        expect(startSingleMediaSpy).toHaveBeenCalledWith('none', {}, false);
+        expect(e).toBe(error);
       }
     });
   });
@@ -611,7 +609,7 @@ describe('SdkMedia', () => {
       expect(sdkMedia.getValidDeviceId('audioinput', true)).toBe(undefined);
     });
 
-    it('should return `undefined` if `falsey` was passed in', () => {
+    it('should return `undefined` if `falsy` was passed in', () => {
       expect(sdkMedia.getValidDeviceId('audioinput', false)).toBe(undefined);
       expect(sdkMedia.getValidDeviceId('audioinput', undefined)).toBe(undefined);
       expect(sdkMedia.getValidDeviceId('audioinput', null)).toBe(undefined);
@@ -775,18 +773,8 @@ describe('SdkMedia', () => {
       sdkMedia.destroy();
 
       expect(sdkMedia.removeAllListeners).toHaveBeenCalled();
-      expect(navigatorMediaDevicesMock.removeEventListener)
-        .toHaveBeenCalledWith('devicechange', undefined);
+      expect(navigatorMediaDevicesMock.removeEventListener).toHaveBeenCalledWith('devicechange', expect.any(Function));
       expect(mockTrack.stop).toHaveBeenCalled();
-    });
-
-    it('should remove `devicechange` listener if it exists', () => {
-      sdkMedia['funcRefForDeviceListner'] = (() => { /* mock out a bound function */ }).bind(this);
-
-      sdkMedia.destroy();
-
-      expect(navigatorMediaDevicesMock.removeEventListener)
-        .toHaveBeenCalledWith('devicechange', sdkMedia['funcRefForDeviceListner']);
     });
   });
 
@@ -798,8 +786,7 @@ describe('SdkMedia', () => {
       sdkMedia['initialize']();
 
       expect(enumerateDevicesSpy).toHaveBeenCalled();
-      expect(navigatorMediaDevicesMock.addEventListener)
-        .toHaveBeenCalledWith('devicechange', sdkMedia['funcRefForDeviceListner']);
+      expect(navigatorMediaDevicesMock.addEventListener).toHaveBeenCalledWith('devicechange', expect.any(Function));
     });
   });
 
@@ -827,7 +814,7 @@ describe('SdkMedia', () => {
   describe('setPermissions()', () => {
     it('should call through to set and emit state', () => {
       const setStateAndEmitSpy = jest.spyOn(sdkMedia, 'setStateAndEmit' as any);
-      const newPermissions: Partial<SdkMediaState> = { hasCameraPermissions: true };
+      const newPermissions: Partial<ISdkMediaState> = { hasCameraPermissions: true };
 
       sdkMedia['setPermissions'](newPermissions);
 
@@ -1371,6 +1358,18 @@ describe('SdkMedia', () => {
         .mockResolvedValue(new MockStream() as any as MediaStream);
     });
 
+    it('should throw an error from gUM is "none" was passed in as the media type', async () => {
+      const error = createError('TypeError', "Failed to execute 'getUserMedia' on 'MediaDevices': At least one of audio and video must be requested");
+      getUserMediaSpy.mockRejectedValue(error);
+
+      try {
+        await startSingleMediaFn('none', { audio: true, video: true }, false);
+        fail('should have thrown');
+      } catch (e) {
+        expect(e).toBe(error);
+      }
+    });
+
     it('should track media stream returned and log appropriate messages', async () => {
       const mockStream = new MockStream({ audio: true });
       const requestOptions: IMediaRequestOptions = { audio: true, monitorMicVolume: false, session: { id: 'sessId', conversationId: 'convoId' } as any };
@@ -1426,12 +1425,12 @@ describe('SdkMedia', () => {
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), undefined, undefined);
 
       /* monitorMicVolume should be sdk default */
-      sdk._config.media.monitorMicVolume = true;
+      sdk._config.defaults.monitorMicVolume = true;
       await startSingleMediaFn('audio', requestOptions);
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), true, undefined);
 
       /* monitorMicVolume should override the sdk default with the passed in value */
-      sdk._config.media.monitorMicVolume = true;
+      sdk._config.defaults.monitorMicVolume = true;
       await startSingleMediaFn('audio', { ...requestOptions, monitorMicVolume: false });
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), false, undefined);
     });

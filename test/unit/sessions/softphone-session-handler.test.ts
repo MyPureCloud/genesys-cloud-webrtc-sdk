@@ -142,7 +142,7 @@ describe('acceptSesion', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      id: session.sid,
+      sessionId: session.sid,
       audioElement: element as any,
       mediaStream: mockOutgoingStream as any
     };
@@ -176,7 +176,7 @@ describe('acceptSesion', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      id: session.sid
+      sessionId: session.sid
     };
     const ids: ISessionAndConversationIds = {
       sessionId: session.id,
@@ -205,7 +205,7 @@ describe('acceptSesion', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      id: session.sid
+      sessionId: session.sid
     };
     const ids: ISessionAndConversationIds = {
       sessionId: session.id,
@@ -229,7 +229,7 @@ describe('acceptSesion', () => {
     const session: any = new MockSession();
 
     const params: IAcceptSessionRequest = {
-      id: session.sid,
+      sessionId: session.sid,
       audioElement: element as any,
       mediaStream: new MockStream() as any
     };
@@ -401,7 +401,7 @@ describe('setAudioMute', () => {
 
     const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
 
-    await handler.setAudioMute(session, { id: session.id, mute: true });
+    await handler.setAudioMute(session, { sessionId: session.id, mute: true });
 
     expect(patchConversation.isDone).toBeTruthy();
   });
@@ -416,6 +416,6 @@ describe('setAudioMute', () => {
 
     mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
 
-    await expect(handler.setAudioMute(session, { id: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
+    await expect(handler.setAudioMute(session, { sessionId: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
   });
 });

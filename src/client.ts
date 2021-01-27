@@ -69,9 +69,10 @@ function validateOptions (options: ISdkConfig): string | null {
  * SDK to interact with GenesysCloud WebRTC functionality
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
-  logger: ILogger;
-
   readonly VERSION = '[AIV]{version}[/AIV]';
+  logger: ILogger;
+  sessionManager: SessionManager;
+  media: SdkMedia;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -82,8 +83,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _hasConnected: boolean;
   _refreshIceServersInterval: NodeJS.Timeout;
   _config: ISdkConfig;
-  sessionManager: SessionManager;
-  media: SdkMedia;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -106,7 +105,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     }
 
     /* grab copies or valid objects */
-    const mediaOptions = options.media || {};
     const defaultsOptions = options.defaults || {};
 
     this._config = {
@@ -119,18 +117,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
         allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
 
-        /* media related config */
-        media: {
-          ...mediaOptions,
-          monitorMicVolume: !!mediaOptions.monitorMicVolume // default to false
-        },
-
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
           videoDeviceId: defaultsOptions.videoDeviceId || null,
           audioDeviceId: defaultsOptions.audioDeviceId || null,
-          outputDeviceId: defaultsOptions.outputDeviceId || null
+          outputDeviceId: defaultsOptions.outputDeviceId || null,
+          monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
         }
       }
     };
@@ -165,8 +158,15 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   /**
    * Setup the SDK for use and authenticate the user
    *  - agents must have an accessToken passed into the constructor options
-   *  - guest's need a securityCode
+   *  - guests need a securityCode (or the data received from an
+   *    already redeemed securityCode). If the customerData is not passed in
+   *    this will redeem the code for the data, else it will use the data
+   *    passed in.
+   *
    * @param opts optional initialize options
+   *
+   * @returns a promise that is fulled once the web socket is connected
+   *  and other necessary async tasks are complete.
    */
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
     let httpRequests: Promise<any>[] = [];
@@ -231,10 +231,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Start a screen share. Currently, guest is the only supported screen share.
+   * Start a screen share. Currently, screen share is only supported
+   *  for guest users.
+   *
    *  `initialize()` must be called first.
+   *
+   * @returns MediaStream promise of the selected screen stream
    */
-  async startScreenShare (): Promise<{ conversationId: string }> {
+  async startScreenShare (): Promise<MediaStream> {
     if (this.isGuest) {
       return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
     } else {
@@ -244,9 +248,20 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   /**
    * Start a video conference. Not supported for guests.
+   *  Conferences can only be joined by authenticated users
+   *  from the same organization. If `inviteeJid` is provided,
+   *  the specified user will receive a propose/pending session
+   *  they can accept and join the conference.
+   *
    *  `initialize()` must be called first.
-   * @param roomJid jid of the conference to join. Can be made up if starting a new conference but must adhere to the format: <lowercase string>@conference.<lowercase string>
+   *
+   *
+   * @param roomJid jid of the conference to join. Can be made up if
+   *  starting a new conference but must adhere to the format:
+   *  <lowercase string>@conference.<lowercase string>
    * @param inviteeJid jid of a user to invite to this conference.
+   *
+   * @returns a promise with an object with the newly created `conversationId`
    */
   async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
     if (!this.isGuest) {
@@ -257,29 +272,46 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Update the output device
+   * Update the output device for all incoming audio
    *
    *  NOTES:
+   *    - This will log a warning and not attempt to update
+   *        the output device if the a broswer
+   *        does not support output devices
    *    - This will attempt to update all active sessions
    *    - This does _not_ update the sdk `defaultOutputDeviceId`
    * @param deviceId `deviceId` for audio output, `true` for sdk default output, or `null` for system default
+   * @returns a promise that fullfils once the output deviceId has been updated
    */
   updateOutputDevice (deviceId: string | true | null): Promise<void> {
+    if (!this.media.getState().hasOutputDeviceSupport) {
+      const sessions = this.sessionManager.getAllActiveSessions()
+        .map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
+
+      this.logger.warn('cannot update output deviceId in unsupported browser', sessions);
+      return;
+    }
     return this.sessionManager.updateOutputDeviceForAllSessions(deviceId);
   }
 
   /**
-   * Update outgoing media for a session
+   * Update outgoing media for a specified session
    *  - `sessionId` _or_ `session` is required to find the session to update
    *  - `stream`: if a stream is passed in, the session media will be
    *    updated to use the media on the stream. This supercedes deviceId(s)
+   *    passed in.
    *  - `videoDeviceId` & `audioDeviceId` (superceded by `stream`)
-   *    - `undefined`: the sdk will not touch the `video|audio` media
+   *    - `undefined|false`: the sdk will not touch the `video|audio` media
    *    - `null`: the sdk will update the `video|audio` media to system default
    *    - `string`: the sdk will attempt to update the `video|audio` media
    *        to the passed in deviceId
    *
+   * Note: this does not update the SDK default device(s)
+   *
    * @param updateOptions device(s) to update
+   *
+   * @returns a promise that fullfils once the outgoing
+   *  media devices have been updated
    */
   updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void> {
     if (!updateOptions ||
@@ -292,19 +324,21 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   /**
    * Update the default device(s) for the sdk.
    *  Pass in the following:
-   *  - `string`: sdk will update to the deviceId
-   *  - `null`: sdk will update to system default device (`outputDeviceId` cannot be `null`)
+   *  - `string`: sdk will update that default to the deviceId
+   *  - `null`: sdk will update to system default device
    *  - `undefined`: sdk will not update that media deviceId
    *
    * If `updateActiveSessions` is `true`, any active sessions will
-   *  have their media devices updated.
-   * Else, only the sdk defaults will be updated and active sessions
-   *  will not be touched.
+   *  have their outgoing media devices updated and/or the output
+   *  deviceId updated.
    *
-   * NOTE: `outputDeviceId` _must_ be a `string` or `undefined` -
-   *  system default is not supported for output devices
+   * Else, only the sdk defaults will be updated and active sessions'
+   * media devices will not be touched.
    *
    * @param options default device(s) to update
+   *
+   * @returns a promise that fullfils once the default
+   *  device values have been updated
    */
   async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
     const updateVideo = options.videoDeviceId !== undefined;
@@ -360,8 +394,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Will fail if the session is not found.
    * Incoming video is unaffected.
    *
+   * When muting, the camera track is destroyed. When unmuting, the camera media
+   *  must be requested again.
+   *
    * NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
-   *  attempt to use the sdk `defaultVideoDeviceId` as the device
+   *  attempt to use the sdk `defaultVideoDeviceId` as the camera device
+   *
+   * @returns a promise that fullfils once the mute request has completed
    */
   async setVideoMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setVideoMute(muteOptions);
@@ -375,6 +414,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * NOTE: if no `unmuteDeviceId` is provided when unmuting _AND_ there is no active
    *  audio stream, it will unmute and attempt to use the sdk `defaultAudioDeviceId`
    *  at the device
+   *
+   * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setAudioMute(muteOptions);
@@ -382,34 +423,46 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   /**
    * Accept a pending session based on the passed in ID.
-   * @param opts object with mediaStream and/or audioElement to attach to session
+   *
+   * @param sessionId id of the pending session to accept
+   * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (sessionId: string): Promise<void> {
     await this.sessionManager.proceedWithSession(sessionId);
   }
 
+  /**
+   * Reject a pending session based on the passed in ID.
+   *
+   * @param sessionId id of the pending session to reject
+   * @returns a promise that fullfils once the session reject goes out
+   */
   async rejectPendingSession (sessionId: string): Promise<void> {
     await this.sessionManager.rejectPendingSession(sessionId);
   }
 
   /**
    * Accept a pending session based on the passed in ID.
-   * @param opts object with mediaStream and/or audioElement to attach to session
+   *
+   * @param acceptOptions options with which to accept the session
+   * @returns a promise that fullfils once the session accept goes out
    */
-  async acceptSession (opts: IAcceptSessionRequest): Promise<void> {
-    await this.sessionManager.acceptSession(opts);
+  async acceptSession (acceptOptions: IAcceptSessionRequest): Promise<void> {
+    await this.sessionManager.acceptSession(acceptOptions);
   }
 
   /**
    * End an active session based on the session ID _or_ conversation ID (one is required)
    * @param opts object with session ID _or_ conversation ID
+   * @returns a promise that fullfils once the session has ended
    */
-  async endSession (opts: IEndSessionRequest): Promise<void> {
-    return this.sessionManager.endSession(opts);
+  async endSession (endOptions: IEndSessionRequest): Promise<void> {
+    return this.sessionManager.endSession(endOptions);
   }
 
   /**
    * Disconnect the streaming connection
+   * @returns a promise that fullfils once the web socket has disconnected
    */
   disconnect (): Promise<any> {
     return this._streamingConnection.disconnect();
@@ -417,6 +470,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   /**
    * Reconnect the streaming connection
+   * @returns a promise that fullfils once the web socket has reconnected
    */
   reconnect (): Promise<any> {
     return this._streamingConnection.reconnect();
@@ -427,9 +481,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  streaming-client, removes all event listeners,
    *  and cleans up media.
    *
-   * WARNING: calling this effectively renders this SDK
+   * WARNING: calling this effectively renders the SDK
    *  instance useless. A new instance will need to be
    *  created after this is called.
+   *
+   * @returns a promise that fullfils once all the cleanup
+   *  tasks have completed
    */
   async destroy (): Promise<any> {
     const activeSessions = this.sessionManager.getAllJingleSessions();

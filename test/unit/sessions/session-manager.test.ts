@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia, IExtendedMediaSession, SdkMediaState } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -130,8 +130,8 @@ describe('getSession', () => {
   });
 
   it('should get session by sessionId', () => {
-    expect(sessionManager.getSession({ id: session1.id })).toBe(session1);
-    expect(sessionManager.getSession({ id: session2.id })).toBe(session2);
+    expect(sessionManager.getSession({ sessionId: session1.id })).toBe(session1);
+    expect(sessionManager.getSession({ sessionId: session2.id })).toBe(session2);
   });
 
   it('should get session by conversationId', () => {
@@ -140,7 +140,7 @@ describe('getSession', () => {
   });
 
   it('should throw is no session is found', () => {
-    expect(() => sessionManager.getSession({ id: 'fakeId' })).toThrowError(/Unable to find session/);
+    expect(() => sessionManager.getSession({ sessionId: 'fakeId' })).toThrowError(/Unable to find session/);
   });
 });
 
@@ -391,7 +391,7 @@ describe('acceptSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.acceptSession({ id: 'asdf' });
+    await sessionManager.acceptSession({ sessionId: 'asdf' });
 
     expect(mockHandler.acceptSession).toHaveBeenCalled();
   });
@@ -412,7 +412,7 @@ describe('endSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.endSession({ id: '123' });
+    await sessionManager.endSession({ sessionId: '123' });
 
     expect(mockHandler.endSession).toHaveBeenCalled();
   });
@@ -431,7 +431,7 @@ describe('setVideoMute', () => {
     const fakeSession = {} as any;
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
 
-    const params = { id: '1', mute: true };
+    const params = { sessionId: '1', mute: true };
     await sessionManager.setVideoMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
@@ -447,7 +447,7 @@ describe('setAudioMute', () => {
     const fakeSession = {} as any;
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
 
-    const params = { id: '1', mute: true };
+    const params = { sessionId: '1', mute: true };
     await sessionManager.setAudioMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
@@ -494,7 +494,7 @@ describe('updateOutgoingMedia()', () => {
 
     await sessionManager.updateOutgoingMedia(options);
 
-    expect(getSessionSpy).toHaveBeenCalledWith({ id: 'abc123' });
+    expect(getSessionSpy).toHaveBeenCalledWith({ sessionId: 'abc123' });
     expect(getSessionHandlerSpy).toHaveBeenCalledWith({ jingleSession: session });
     expect(mockSessionHandler.updateOutgoingMedia).toHaveBeenCalledWith(session, options);
   });
@@ -575,7 +575,7 @@ describe('validateOutgoingMediaTracks()', () => {
   let sessions: IExtendedMediaSession[];
   let mockSessionHandler: BaseSessionHandler;
   let testDevices: MediaDeviceInfo[];
-  let mediaState: SdkMediaState;
+  let mediaState: ISdkMediaState;
   let mockGetAllSessions: jest.SpyInstance<IExtendedMediaSession[]>;
   let mockGetSession: jest.SpyInstance<IExtendedMediaSession>;
   let mockGetSessionHandler: jest.SpyInstance<BaseSessionHandler>;
@@ -608,7 +608,7 @@ describe('validateOutgoingMediaTracks()', () => {
     setMediaStateDevices(testDevices);
     mediaState = mockSdk.media.getState();
 
-    mockGetSession = jest.spyOn(sessionManager, 'getSession').mockImplementation(({ id }) => sessions.find(s => s.id === id));
+    mockGetSession = jest.spyOn(sessionManager, 'getSession').mockImplementation(({ sessionId: id }) => sessions.find(s => s.id === id));
     mockGetSessionHandler = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
   });
 
@@ -741,8 +741,8 @@ describe('validateOutgoingMediaTracks()', () => {
     /* mutes the session and does not update media (since there is none to update to) */
     expect(mockSessionHandler.getSendersByTrackType).toBeCalled();
     expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
-    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
-    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
+    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, sessionId: session.id });
+    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, sessionId: session.id });
 
     /* should also remove audio tracks because setAudioMute does not remove them (setVideoMute does) */
     const expectedSender = session.pc.getSenders().find(s => s.track === mockAudioTrack as any);

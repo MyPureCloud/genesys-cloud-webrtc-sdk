@@ -281,7 +281,7 @@ export default abstract class BaseSessionHandler {
 
       /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
       if (track.kind === 'audio' && session.audioMuted) {
-        await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
+        await this.sdk.setAudioMute({ sessionId: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
       }
     });
 

@@ -1,4 +1,4 @@
-# WebRTC Softphone SDK
+# Genesys Cloud WebRTC SDK Softphone
 
 This SDK supports receiving inbound and outbound WebRTC Softphone audio
 sessions. The API is used in conjunction with the public API for call controls.
@@ -75,7 +75,7 @@ Alice                     Push Notifications    WebRTC SDK
 After creating an instance of the SDK, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `pendingSession` is an example
 of an SDK event. You can answer and control sessions via the SDK methods documented
-below. Most call control actions, however, should be done via the GenesysCloud Public
+in [GenesysCloudWebrtcSdk] documentation. Most call control actions, however, should be done via the GenesysCloud Public
 API (or the Public API javascript SDK).
 
 Once the client has a session, it can add event handlers for lower level control
@@ -96,19 +96,18 @@ immediately accept pending sessions for outbound calls. If two such applications
 are running simultaneously, there will be a race condition for which instance
 actually connects the call audio.
 
-- When a client sends a POST to conversations/calls (from her desired client)
-for a conversation to the Public API, asynchronously, she will receive a pending
+- When a client sends a POST to conversations/calls (from its desired client)
+for a conversation to the Public API, asynchronously, it will receive a pending
 session event from the SDK and a response from the public API with the `conversationId`
 for the conversation. If only handling outbound calls placed by your client, these
 can be correlated by conversationId together, and should not be expected to
 arrive in a guaranteed order.
 
 - If you wish to control the MediaStream settings (i.e., input device) you can
-provide it as an option to `acceptSession` or as a default in the sdk's constructor. Note that to call `acceptSession` on outbound
-calls, you'll have to disable `autoAnswerOutboundCalls` and answer them yourself
-when the event is triggered.
+provide it as an option to `acceptSession` or as a default in the sdk's constructor. 
 
-[APIs]: index.md#api
+[GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
+[APIs]: index.md#genesyscloudwebrtcsdk
 [methods]: index.md#methods
 [events]: index.md#events
 [all session events are detailed here]: index.md#session-level-events.

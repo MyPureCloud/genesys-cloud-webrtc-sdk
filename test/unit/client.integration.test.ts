@@ -6,7 +6,7 @@ window.crypto = {
 };
 
 import { GenesysCloudWebrtcSdk } from '../../src/client';
-import { IExtendedMediaSession, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds, ISdkConfig } from '../../src/types/interfaces';
+import { IExtendedMediaSession, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds, ISdkConfig, ISdkMediaState } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
@@ -408,7 +408,7 @@ describe('Client', () => {
 
       jest.spyOn(sdk.sessionManager, 'acceptSession').mockImplementation(() => Promise.resolve());
 
-      const params = { id: '5512551' };
+      const params = { sessionId: '5512551' };
       await sdk.acceptSession(params);
       expect(sdk.sessionManager.acceptSession).toBeCalledWith(params);
 
@@ -423,7 +423,7 @@ describe('Client', () => {
 
       jest.spyOn(sdk.sessionManager, 'setAudioMute').mockImplementation(() => Promise.resolve());
 
-      const params = { id: '5512551', mute: true };
+      const params = { sessionId: '5512551', mute: true };
       await sdk.setAudioMute(params);
       expect(sdk.sessionManager.setAudioMute).toBeCalledWith(params);
 
@@ -438,7 +438,7 @@ describe('Client', () => {
 
       jest.spyOn(sdk.sessionManager, 'setVideoMute').mockImplementation(() => Promise.resolve());
 
-      const params = { id: '5512551', mute: true };
+      const params = { sessionId: '5512551', mute: true };
       await sdk.setVideoMute(params);
       expect(sdk.sessionManager.setVideoMute).toBeCalledWith(params);
 
@@ -452,10 +452,30 @@ describe('Client', () => {
       const deviceId = 'device-id';
       await sdk.initialize();
 
+      jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: true } as any as ISdkMediaState);
       jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions').mockResolvedValue(undefined);
 
       await sdk.updateOutputDevice(deviceId);
       expect(sdk.sessionManager.updateOutputDeviceForAllSessions).toBeCalledWith(deviceId);
+
+      await disconnectSdk(sdk);
+    });
+
+    it('should not call through to the sessionManager if not in a supported browser', async () => {
+      const { sdk } = mockApis();
+      const sessions = [new MockSession()];
+      await sdk.initialize();
+
+      jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: false } as any as ISdkMediaState);
+      jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+      jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions');
+
+      await sdk.updateOutputDevice('some device id');
+      expect(sdk.sessionManager.updateOutputDeviceForAllSessions).not.toBeCalled();
+      expect(sdk.logger.warn).toHaveBeenCalledWith(
+        'cannot update output deviceId in unsupported browser',
+        sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
+      );
 
       await disconnectSdk(sdk);
     });
@@ -643,7 +663,7 @@ describe('Client', () => {
 
       jest.spyOn(sdk.sessionManager, 'endSession').mockResolvedValue();
       const sessionId = random();
-      const params = { id: sessionId };
+      const params = { sessionId: sessionId };
       await sdk.endSession(params);
       expect(sdk.sessionManager.endSession).toBeCalledWith(params);
 

@@ -47,8 +47,7 @@ export class SimpleMockSdk extends EventEmitter {
     logLevel: 'debug',
     wsHost: 'wshost',
     allowedSessionTypes: Object.values(SessionTypes),
-    defaults: {},
-    media: {}
+    defaults: {}
   };
   _personDetails = {
     id: 'USER_GUID'
@@ -195,7 +194,7 @@ class MockStream {
     } else if (withMediaOrConstraints) {
       if (withMediaOrConstraints.video) this._tracks.push(new MockTrack('video'));
       if (withMediaOrConstraints.audio) this._tracks.push(new MockTrack('audio'));
-    } /* else `falsey`, don't add any tracks */
+    } /* else `falsy`, don't add any tracks */
   }
   id = random();
   _tracks: MockTrack[] = [];

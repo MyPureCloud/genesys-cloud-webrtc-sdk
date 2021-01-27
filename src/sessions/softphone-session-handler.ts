@@ -25,7 +25,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
     if (this.sdk._config.autoConnectSessions) {
-      return this.acceptSession(session, { id: session.id });
+      return this.acceptSession(session, { sessionId: session.id });
     }
   }
 
@@ -33,6 +33,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     let stream = params.mediaStream || this.sdk._config.defaults.audioStream;
     if (!stream) {
       this.log('debug', 'No mediaStream provided, starting media', { conversationId: session.conversationId });
+      // TODO: this doesn't handle `null` (system defaults)
       stream = await this.sdk.media.startMedia({ audio: params.audioDeviceId || true, session });
       this.log('debug', 'Media started', { conversationId: session.conversationId });
     }

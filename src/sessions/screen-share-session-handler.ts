@@ -95,7 +95,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', sessionInfo);
 
       await this.addMediaToSession(session, stream);
-      await this.acceptSession(session, { id: session.id });
+      await this.acceptSession(session, { sessionId: session.id });
     } catch (err) {
       await super.endSession(session);
 

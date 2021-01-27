@@ -30,7 +30,7 @@ function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
   options.environment = environmentData.uri;
   options.logLevel = 'info';
 
-  options.media = { monitorMicVolume: true };
+  options.defaults = { monitorMicVolume: true };
 
   const SDK = GenesysCloudWebrtcSdk || getSdk();
   webrtcSdk = new SDK(options);

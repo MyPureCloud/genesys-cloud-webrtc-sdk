@@ -268,7 +268,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return super.handleSessionInit(session);
   }
 
-  // doc: acceptSession requires a video and audio element either provided or default
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
@@ -284,6 +283,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     let stream = params.mediaStream;
     if (!stream) {
       const { hasCamera, hasMic } = this.sdk.media.getState();
+      // TODO: this doesn't handle `null` (system defaults)
       const mediaParams: IMediaRequestOptions = {
         audio: params.audioDeviceId || true,
         video: params.videoDeviceId || true,
@@ -544,7 +544,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
 
       if (!session.videoMuted) {
-        await this.setVideoMute(session, { id: session.id, mute: true }, true);
+        await this.setVideoMute(session, { sessionId: session.id, mute: true }, true);
       }
 
       stream.getTracks().forEach((track: MediaStreamTrack) => {
@@ -576,7 +576,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (session._resurrectVideoOnScreenShareEnd) {
       this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id });
-      await this.setVideoMute(session, { id: session.id, mute: false }, true);
+      await this.setVideoMute(session, { sessionId: session.id, mute: false }, true);
     } else {
       await sender.replaceTrack(null);
     }

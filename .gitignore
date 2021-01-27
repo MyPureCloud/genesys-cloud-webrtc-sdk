@@ -4,6 +4,7 @@
 .npmrc
 
 dist
+docs
 test/test-pages/sdk-sample.js
 test/test-pages/**/common/
 test/test-pages/*/sdk-sample.js*
