@@ -87,7 +87,7 @@ export default abstract class BaseSessionHandler {
 
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
     this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id });
-    session._outboundStream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    this.endTracks(session._outboundStream);
     session._screenShareStream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     this.sdk.emit('sessionEnded', session, reason);
   }
@@ -292,7 +292,7 @@ export default abstract class BaseSessionHandler {
       const hasSender = session.pc.getSenders().find((sender) => sender.track && sender.track.id === track.id);
 
       if (!hasSender) {
-        track.stop();
+        this.endTracks(track);
         session._outboundStream.removeTrack(track);
       }
     });
@@ -384,5 +384,21 @@ export default abstract class BaseSessionHandler {
     return session.pc.getSenders().filter(sender => {
       return sender.track && sender.track.kind === kind;
     });
+  }
+
+  endTracks (streamOrTrack?: MediaStream | MediaStreamTrack): void {
+    if (!streamOrTrack) return;
+
+    let tracks = (streamOrTrack instanceof MediaStream) ? streamOrTrack.getTracks() : [streamOrTrack];
+
+    /* if we have live default audio, we don't want to end it */
+    const defaultAudio = (this.sdk._config.defaults.audioStream?.getAudioTracks() || [])
+      .filter(t => t && t.readyState === 'live');
+
+    if (defaultAudio.length) {
+      tracks = tracks.filter(track => !defaultAudio.find(audioTrack => audioTrack.id === track.id));
+    }
+
+    tracks.forEach(t => t.stop());
   }
 }

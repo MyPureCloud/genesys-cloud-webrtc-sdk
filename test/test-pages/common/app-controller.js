@@ -132,7 +132,7 @@ function toggleDisplayNone (elementId) {
   }
 }
 
-function initialize (environmentData, conversationsApi, noAuth) {
+function initialize (environmentData, conversationsApi, noAuth, withDefaultAudio) {
   setAppControlVisiblity(false);
   setInitTextVisibility(true);
 
@@ -140,7 +140,7 @@ function initialize (environmentData, conversationsApi, noAuth) {
     initControls();
   }
 
-  sdkHandler.initWebrtcSDK(environmentData, conversationsApi, noAuth)
+  sdkHandler.initWebrtcSDK(environmentData, conversationsApi, noAuth, withDefaultAudio)
     .then(() => {
       if (!noAuth) {
         setAppControlVisiblity(true);

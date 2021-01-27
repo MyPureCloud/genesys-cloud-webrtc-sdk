@@ -53,10 +53,6 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     }
   }
 
-  endTracks (mediaStream?: MediaStream): void {
-    mediaStream?.getTracks().forEach(t => t.stop());
-  }
-
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     try {
       await super.handleSessionInit(session);

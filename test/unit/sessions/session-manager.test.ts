@@ -468,6 +468,19 @@ describe('getAllActiveSessions()', () => {
   });
 });
 
+describe('getAllJingleSessions()', () => {
+  it('should return all active sessions as an array', () => {
+    const sessionsObject = {
+      'session-1': { id: 'session-1', state: 'active' },
+      'session-2': { id: 'session-2', state: 'active' }
+    };
+    const expectedArray = [sessionsObject['session-1'], sessionsObject['session-2']];
+
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject } as any;
+    expect(sessionManager.getAllJingleSessions()).toEqual(expectedArray);
+  });
+});
+
 describe('updateOutgoingMedia()', () => {
   it('should call the handler to updateOutgoingMedia with the passed in session', async () => {
     const session = {} as any;

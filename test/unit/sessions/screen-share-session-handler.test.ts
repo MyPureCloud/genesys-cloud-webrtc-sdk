@@ -13,6 +13,8 @@ let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 
 beforeEach(() => {
+  Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true });
+
   jest.clearAllMocks();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
@@ -200,23 +202,6 @@ describe('onTrackEnd', () => {
 
     await handler.onTrackEnd(mockSession);
     expect(handler.endSession).toHaveBeenCalled();
-  });
-});
-
-describe('endTracks', () => {
-  it('should do nothing and not error if no stream was passed in', () => {
-    handler.endTracks();
-    expect('It did not thrown an error').toBeTruthy();
-  });
-
-  it('should end all tracks on a given stream', () => {
-    const track = new MockTrack('video');
-    const stream = new MockStream();
-    stream.addTrack(track);
-
-    handler.endTracks(stream as any);
-
-    expect(track.stop).toHaveBeenCalled();
   });
 });
 

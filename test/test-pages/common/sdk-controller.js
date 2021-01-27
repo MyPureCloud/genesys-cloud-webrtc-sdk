@@ -9,7 +9,7 @@ let currentSessionId;
 let webrtcSdk;
 let conversationsApi;
 
-function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
+async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDefaultAudio) {
   let options = {};
   let initOptions = null;
   conversationsApi = _conversationsApi;
@@ -31,6 +31,15 @@ function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
   options.logLevel = 'info';
 
   options.defaults = { monitorMicVolume: true };
+
+  if (withDefaultAudio) {
+    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    options.defaults.audioStream = audioStream;
+    window._defaultAudioStream = audioStream;
+
+    const audioLabel = audioStream.getAudioTracks()[0].label;
+    utils.writeToLog(`Using default audioStream with device: ${audioLabel}`);
+  }
 
   const SDK = GenesysCloudWebrtcSdk || getSdk();
   webrtcSdk = new SDK(options);
@@ -161,7 +170,7 @@ async function endSession () {
   }
 
   try {
-    await webrtcSdk.endSession({ id: currentSessionId });
+    await webrtcSdk.endSession({ sessionId: currentSessionId });
 
     const controls = document.getElementById('video-actions');
     controls.classList.add('hidden');
@@ -289,7 +298,7 @@ async function sessionStarted (session) {
         utils.writeToLog(JSON.stringify({ eventName, details: e }, null, 2));
       });
     });
-    webrtcSdk.acceptSession({ id: session.id, audioElement, videoElement, mediaStream });
+    webrtcSdk.acceptSession({ sessionId: session.id, audioElement, videoElement, mediaStream });
   }
 }
 
@@ -456,11 +465,11 @@ async function startVideoConference ({ noAudio, noVideo, mediaStream, useConstra
 }
 
 function setVideoMute (mute) {
-  webrtcSdk.setVideoMute({ id: currentSessionId, mute });
+  webrtcSdk.setVideoMute({ sessionId: currentSessionId, mute });
 }
 
 function setAudioMute (mute) {
-  webrtcSdk.setAudioMute({ id: currentSessionId, mute });
+  webrtcSdk.setAudioMute({ sessionId: currentSessionId, mute });
 }
 
 function startScreenShare () {

@@ -18,6 +18,8 @@ let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 
 beforeEach(() => {
+  Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true });
+
   jest.clearAllMocks();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
@@ -607,5 +609,48 @@ describe('addReplaceTrackToSession', () => {
     await handler.addReplaceTrackToSession(session as any, track as any);
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+});
+
+describe('endTracks', () => {
+  it('should do nothing and not error if no stream was passed in', () => {
+    handler.endTracks(null);
+    expect('It did not thrown an error').toBeTruthy();
+  });
+
+  it('should end all tracks on a given stream', () => {
+    const track = new MockTrack('video');
+    const stream = new MockStream();
+    stream.addTrack(track);
+
+    handler.endTracks(stream as any);
+
+    expect(track.stop).toHaveBeenCalled();
+  });
+
+  it('should not end audio track if it is the sdk default audioStream track in a `live` state', () => {
+    const track = new MockTrack('audio');
+    const stream = new MockStream([track]);
+    track.readyState = 'live';
+
+    mockSdk._config.defaults.audioStream = stream as any as MediaStream;
+
+
+    handler.endTracks(track as any as MediaStreamTrack);
+
+    expect(track.stop).not.toHaveBeenCalled();
+  });
+
+  it('should end audio track if it is the sdk default audioStream track but not in a `live` state', () => {
+    const track = new MockTrack('audio');
+    const stream = new MockStream([track]);
+    track.readyState = 'ended';
+
+    mockSdk._config.defaults.audioStream = stream as any as MediaStream;
+
+
+    handler.endTracks(track as any as MediaStreamTrack);
+
+    expect(track.stop).toHaveBeenCalled();
   });
 });

@@ -1,9 +1,11 @@
-import { SimpleMockSdk, MOCK_CUSTOMER_DATA } from '../test-utils';
+import nock = require('nock');
+
+import { SimpleMockSdk } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
 import { SdkErrorTypes } from '../../src/types/enums';
 import { SdkError } from '../../src/utils';
-import nock = require('nock');
+import { MOCK_CUSTOMER_DATA } from '../mock-apis';
 
 let sdk: GenesysCloudWebrtcSdk;
 const baseUriWithoutVersion = 'https://api.mypurecloud.com/api';

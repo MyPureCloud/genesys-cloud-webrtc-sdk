@@ -20,7 +20,7 @@ import {
   setupStreamingClient,
   proxyStreamingClientEvents
 } from './client-private';
-import { requestApi, createAndEmitSdkError, SdkError } from './utils';
+import { requestApi, createAndEmitSdkError } from './utils';
 import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
@@ -101,7 +101,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     const errorMsg = validateOptions(options);
     if (errorMsg) {
-      throw new SdkError(SdkErrorTypes.invalid_options, errorMsg);
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, errorMsg, options);
     }
 
     /* grab copies or valid objects */
@@ -129,10 +129,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     };
 
     this._orgDetails = { id: options.organizationId };
+    this._config.logger = this.logger;
 
     setupLogging.call(this, options.logger);
+    this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
-    this._config.logger = this.logger;
     this.media = new SdkMedia(this);
 
     // Telemetry for specific events
@@ -254,7 +255,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  they can accept and join the conference.
    *
    *  `initialize()` must be called first.
-   *
    *
    * @param roomJid jid of the conference to join. Can be made up if
    *  starting a new conference but must adhere to the format:
@@ -525,6 +525,38 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       this.logger.warn(errorMessage, err);
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
     }
+  }
+
+  /**
+   * Monitor the config.defaults.audioStream audio tracks
+   *  to listen for when they end. Once they end, remove the stream
+   *  from the defaults config.
+   *
+   * Does nothing if no stream was passed in.
+   *
+   * @param stream default audio stream
+   */
+  private trackDefaultAudioStream (stream?: MediaStream): void {
+    if (!stream) return;
+
+    stream.getAudioTracks().forEach(track => {
+      const stopTrack = track.stop.bind(track);
+
+      const remove = () => {
+        this._config.defaults.audioStream = null;
+      };
+
+      track.stop = () => {
+        this.logger.warn('stopping defaults.audioStream track from track.stop(). removing from sdk.defauls', track);
+        remove();
+        stopTrack();
+      };
+
+      track.addEventListener('ended', _evt => {
+        this.logger.warn('stopping defaults.audioStream track from track.onended. removing from sdk.defauls', track);
+        remove();
+      });
+    });
   }
 
   private isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {

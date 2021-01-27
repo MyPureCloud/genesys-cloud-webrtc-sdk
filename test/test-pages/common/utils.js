@@ -10,6 +10,7 @@ function writeToLog (output, elId = 'log-data') {
     const currentValue = el.value;
     el.value = stampedOutput + currentValue;
   }
+  console.log('[demo-sdk-app]', output);
 }
 
 function getAccessToken () {
