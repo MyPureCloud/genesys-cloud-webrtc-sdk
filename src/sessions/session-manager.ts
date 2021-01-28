@@ -253,7 +253,7 @@ export class SessionManager {
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
     if (!params || !params.sessionId) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A sessionId is required for acceptSession');
     }
 
     const session = this.getSession({ sessionId: params.sessionId });

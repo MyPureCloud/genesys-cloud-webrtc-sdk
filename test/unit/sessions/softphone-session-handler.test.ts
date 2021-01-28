@@ -5,14 +5,16 @@ import {
   MockSession,
   createPendingSession,
   MockStream,
-  random,
+  random
+} from '../../test-utils';
+import {
   getMockConversation,
+  createNock,
+  mockGetConversationApi,
   PARTICIPANT_ID,
   USER_ID,
-  mockGetConversationApi,
-  mockPatchConversationApi,
-  createNock
-} from '../../test-utils';
+  mockPatchConversationApi
+} from '../../mock-apis';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';

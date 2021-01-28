@@ -90,9 +90,7 @@ export const checkAllTracksHaveEnded = function (stream: MediaStream): boolean {
  * @param track media track to add
  */
 export const createNewStreamWithTrack = function (track: MediaStreamTrack): MediaStream {
-  const newStream = new MediaStream();
-  newStream.addTrack(track);
-  return newStream;
+  return new MediaStream([track]);
 };
 
 export type LogDevicesAction =

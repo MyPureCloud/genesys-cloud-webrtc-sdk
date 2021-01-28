@@ -130,7 +130,7 @@ export interface ISdkConfig {
    *
    * example:
    * ``` ts
-   * import { SessionTypes } from 'genesys-cloud-webrtc-sdk/dist/src/types/enums';
+   * import { SessionTypes } from 'genesys-cloud-webrtc-sdk';
    *
    * new GenesysCloudWebrtcSdk({
    *    allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
@@ -149,6 +149,11 @@ export interface ISdkConfig {
      * A default audio stream to accept softphone sessions with
      *  if no audio stream was used when accepting the session
      *  (ie: `sdk.acceptSession({ id: 'session-id', mediaStream })`)
+     *
+     * Warning: Firefox does not allow multiple microphone media tracks.
+     *  using a default could cause the SDK to be unable to request any
+     *  other audio device besides the active microphone - which would be the
+     *  audio track on this default stream.
      *
      * Optional: no default
      */

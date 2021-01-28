@@ -25,11 +25,9 @@ afterAll(() => {
 describe('createNewStreamWithTrack()', () => {
   it('should create a new stream and add the track to it', () => {
     const track = {} as any;
-    (window as any).MediaStream = function () { };
-    MediaStream.prototype.addTrack = jest.fn();
-    const spy = jest.spyOn(MediaStream.prototype, 'addTrack').mockImplementation();
-    const stream = mediaUtils.createNewStreamWithTrack(track);
-    expect(spy).toHaveBeenCalledWith(track);
+    (window as any).MediaStream = jest.fn();
+    mediaUtils.createNewStreamWithTrack(track);
+    expect(window.MediaStream).toHaveBeenCalledWith([track]);
   });
 });
 

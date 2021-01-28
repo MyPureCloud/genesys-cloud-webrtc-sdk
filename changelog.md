@@ -12,7 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * permissions and device management housed in `sdk.media`
 
 ### Changed
-* Migrating docs to use typescript definitions
+* Updated documentation.
+
+### Fixed
+* [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session. 
+  Has Firefox limitations. See documentation. 
 
 ### Breaking Change
 * Updated configuration options for constructing an SDK instance (see [docs](doc/index.md) for new config)

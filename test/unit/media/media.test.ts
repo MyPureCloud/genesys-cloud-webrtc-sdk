@@ -1755,9 +1755,7 @@ describe('SdkMedia', () => {
       expect(allMediaTracksCreatedMap.has(mockTrack.id)).toBe(true);
 
       /* stop the track */
-      mockTrack._listeners
-        .filter(l => l.event === 'ended')
-        .forEach(l => l.callback());
+      mockTrack._mockTrackEnded();
 
       expect(clearAudioInputMonitorSpy).toHaveBeenCalled();
       expect(allMediaTracksCreatedMap.has(mockTrack.id)).toBe(false);
