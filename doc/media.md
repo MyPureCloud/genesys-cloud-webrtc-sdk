@@ -295,6 +295,23 @@ Params:
 Returns: a `string` if a valid deviceId was found, or `undefined` if
 no device could be found.
 
+#### `getValidSdkMediaRequestDeviceId()`
+Helper function to quickly get a valid SDK media request param. This is
+ mostly an internally used function to ensure a valid SDK media request
+ param was used to accept a session. See [ISdkMediaDeviceIds] 
+ for more details on requesting media from the SDK.
+
+Example: `string | true | null` are valid and be returned as is.
+ `undefined | false` will return `true` (which will use SDK default deviceId)
+
+``` ts
+getValidSdkMediaRequestDeviceId(deviceId?: string | boolean | null): string | null | true;
+```
+
+Params: 
+* `deviceId?: string | boolean | null` – media request param to validate
+
+Returns: a valid requestable SDK media value `string|null|true`
 
 #### `getState()`
 Get a copy of the current media state

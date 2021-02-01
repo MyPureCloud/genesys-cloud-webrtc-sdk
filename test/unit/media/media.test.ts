@@ -651,6 +651,19 @@ describe('SdkMedia', () => {
     });
   });
 
+  describe('getValidSdkMediaRequestDeviceId()', () => {
+    it('should return `true` if `undefined|false` are passed in', () => {
+      expect(sdk.media.getValidSdkMediaRequestDeviceId(undefined)).toBe(true);
+      expect(sdk.media.getValidSdkMediaRequestDeviceId(false)).toBe(true);
+    });
+
+    it('should return the passed in value if `string|true|null` are passed in', () => {
+      expect(sdk.media.getValidSdkMediaRequestDeviceId('deviceId-mock')).toBe('deviceId-mock');
+      expect(sdk.media.getValidSdkMediaRequestDeviceId(true)).toBe(true);
+      expect(sdk.media.getValidSdkMediaRequestDeviceId(null)).toBe(null);
+    });
+  });
+
   describe('getDevices()', () => {
     it('should return the list of devices', () => {
       sdkMedia['setDevices'](mockedDevices);

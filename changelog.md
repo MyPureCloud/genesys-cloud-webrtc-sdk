@@ -1,8 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
-
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...HEAD)
 
 # [v6.0.0]()
 
@@ -17,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session. 
   Has Firefox limitations. See documentation. 
+* [PCM-1512](https://inindca.atlassian.net/browse/PCM-1512) – fixed softphone and video `acceptSession` to respect media options of `null`
+  as being `system default` requests. 
 
 ### Breaking Change
 * Updated configuration options for constructing an SDK instance (see [docs](doc/index.md) for new config)
@@ -37,12 +40,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`. 
   Event already emitted the `sessionId`. This fixes the typing. 
 
+# [v5.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.3...v5.0.4)
+### Fixed
+* [PCM-1501](https://inindca.atlassian.net/browse/PCM-1501) fix streaming client unsubscribe; fixes a bug where rejoining a video in ff fails.
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.1...HEAD)
+# [v5.0.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.2...v5.0.3)
+### Fixed
+* [PCM-1498](https://inindca.atlassian.net/browse/PCM-1498) bump streaming-client to fix ice transport policy issue
+
+# [v5.0.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.1...v5.0.2)
+### Fixed
+* [PCM-1474](https://inindca.atlassian.net/browse/PCM-1474) bump streaming-client
 
 # [v5.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.0...v5.0.1)
 ### Fixed
-* [PCM-1471] clean up screenShareStream if session ends while sharing screen
+* [PCM-1471](https://inindca.atlassian.net/browse/PCM-1471) clean up screenShareStream if session ends while sharing screen
 
 # [v5.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v4.1.2...v5.0.0)
 ### Breaking Changes
