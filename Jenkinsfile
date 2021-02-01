@@ -1,4 +1,5 @@
-@Library('pipeline-library@webapp-pipelines') _
+// this will need to be pipeline-library@master when the pr merges
+@Library('pipeline-library') _
 
 webappPipeline {
     slaveLabel = 'dev_v2'
@@ -20,6 +21,12 @@ webappPipeline {
             npm i && npm test && npm run build
             npm run build:sample
         ''')
+    }
+
+    snykConfig = {
+        return [
+            organization: 'genesys-client-media-webrtc',
+        ]
     }
 
     cmConfig = {

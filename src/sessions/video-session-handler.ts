@@ -283,10 +283,9 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     let stream = params.mediaStream;
     if (!stream) {
       const { hasCamera, hasMic } = this.sdk.media.getState();
-      // TODO: this doesn't handle `null` (system defaults)
       const mediaParams: IMediaRequestOptions = {
-        audio: params.audioDeviceId || true,
-        video: params.videoDeviceId || true,
+        audio: this.sdk.media.getValidSdkMediaRequestDeviceId(params.audioDeviceId),
+        video: this.sdk.media.getValidSdkMediaRequestDeviceId(params.videoDeviceId),
         session
       };
 

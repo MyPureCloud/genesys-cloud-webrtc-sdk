@@ -137,9 +137,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       : 'hasCameraPermissions';
 
     /* make sure the options are valid */
-    if (optionsCopy[mediaType] === undefined || optionsCopy[mediaType] === false) {
-      optionsCopy[mediaType] = true;
-    }
+    optionsCopy[mediaType] = this.getValidSdkMediaRequestDeviceId(optionsCopy[mediaType]);
     optionsCopy[oppositeMediaType] = false;
 
     /* delete the session off this before logging */
@@ -462,6 +460,26 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     }
 
     return foundDevice ? foundDevice.deviceId : undefined;
+  }
+
+  /**
+   * Helper function to quickly get a valid SDK media request param. This is
+   *  mostly an internally used function to ensure a valid SDK media request
+   *  param was used to accept a session. See `interface ISdkMediaDeviceIds`
+   *  for requesting media from the SDK.
+   *
+   * Example: `string | true | null` are valid and be returned as is.
+   *  `undefined | false` will return `true` (which will use SDK default deviceId)
+   *
+   * @param deviceId media request param to validate
+   * @returns a valid requestable SDK media value `string|null|true`
+   */
+  getValidSdkMediaRequestDeviceId (deviceId?: string | boolean | null): string | null | true {
+    if (deviceId === undefined || deviceId === false) {
+      return true;
+    }
+
+    return deviceId;
   }
 
   /**
