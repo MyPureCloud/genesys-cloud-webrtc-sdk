@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added `sdk.media` class to handle and emit media related tasks. See [media documentation](doc/media.md) for more details
   * `sdk.media.on(...)` event emitter.
   * permissions and device management housed in `sdk.media`
-* [PCM-1510] Be able to specify jidResource for clients (streaming client)
+* [PCM-1510](https://inindca.atlassian.net/browse/PCM-1510) Be able to specify jidResource for clients (streaming client)
 
 ### Changed
 * Updated documentation.
