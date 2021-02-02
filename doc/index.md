@@ -35,7 +35,7 @@ These can be set in Genesys Cloud > Admin > Integrations > OAuth > Scope.  Note 
 
 ### Example Usage
 
-This is a very basic usage of the WebRTC SDK. Be sure to read through the documentation for more advanced usage. 
+This is a very basic usage of the WebRTC SDK. Be sure to read through the documentation for more advanced usage.
 
 For an authenticated user, a valid **accessToken** is required on construction. The following example is for an authenticated user (for an unauthenticated user example, see [WebRTC Screen Share]).
 
@@ -78,13 +78,14 @@ You can also access the latest version (or a specific version) via the CDN. Exam
 constructor(config: ISdkConfig);
 ```
 The `ISdkConfig`'s interface definition:
-``` ts 
+``` ts
 interface ISdkConfig {
     environment?: string;
     accessToken?: string;
     organizationId?: string;
     wsHost?: string;
     autoConnectSessions?: boolean;
+    jidResource?: string;
     disableAutoAnswer?: boolean;
     logLevel?: LogLevels;
     logger?: ILogger;
@@ -130,7 +131,7 @@ Available Options:
 Access token received from authentication. Required for authenticated users (aka agents).
 
 #### `organizationId`
-`organizationId?: string;` 
+`organizationId?: string;`
 Organization ID (aka the GUID). Required for unauthenticated users (aka guest).
 
 #### `wsHost`
@@ -140,36 +141,46 @@ WebSocket Host.
 #### `autoConnectSessions`
 `autoConnectSessions?: boolean;` Optional: default `true`
 
-Auto connect incoming softphone sessions (ie. sessions 
-coming from `sdk.on('sessionStarted', (evt))`. If set 
+Auto connect incoming softphone sessions (ie. sessions
+coming from `sdk.on('sessionStarted', (evt))`. If set
 to `false`, the session will need to be manually accepted
 using `sdk.acceptSession({ sessionId })`.
 
 > Note: This is required to be true for guest screen share
-     
+
+#### `jidResource`
+`jidResource?: string;` Optional: default `undefined`
+
+Specify the resource portion of the streaming-client jid. This is likely
+only useful for internal purposes. This resource jid should be *somewhat*
+unique. Example: setting the jidResource to
+`mediahelper_1d43c477-ab34-456b-91f5-c6a993c29f25` would result in full jid
+that looks like `<user_bare_jid>/mediahelper_1d43c477-ab34-456b-91f5-c6a993c29f25`.
+The purpose of this property is simply a way to identify certain types of clients.
+
 #### `disableAutoAnswer`
 `disableAutoAnswer?: boolean;` Optional: default `false`
 
-Disable auto answering softphone calls. By default softphone calls will 
-respect the `autoAnswer` flag passed in on the `pendingSession` session object. 
-`autoAnswer` is always `true` for outbound calls and can also be set 
+Disable auto answering softphone calls. By default softphone calls will
+respect the `autoAnswer` flag passed in on the `pendingSession` session object.
+`autoAnswer` is always `true` for outbound calls and can also be set
 in the user's  phone settings.
-     
+
 #### `logLevel`
-`logLevel?: LogLevels;` Optional: defaults to `'info'`. 
+`logLevel?: LogLevels;` Optional: defaults to `'info'`.
 
 Desired log level. Available options:
 ``` ts
 type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
 ```
-   
+
 #### `logger`
-`logger?: ILogger;` 
+`logger?: ILogger;`
 Logger to use. Must implement the `ILogger` interface (see [WebRTC properties](#properties) for `ILogger` definition).
 
 Defaults to [GenesysCloudClientLogger]
 which sends logs to the server (unless `optOutOfTelemetry` is `true`)
-and outputs them in the console.   
+and outputs them in the console.
 
 #### `optOutOfTelemetry`
 `optOutOfTelemetry?: boolean;`
@@ -178,7 +189,7 @@ Optional: default `false`.
 Opt out of sending logs to the server. Logs are only sent to the server
 if the default [GenesysCloudClientLogger] is used. The default logger will
 send logs to the server unless this option is `true`
-   
+
 #### `allowedSessionTypes`
 `allowedSessionTypes?: SessionTypes[];` Optional: defaults to all session types.
 
@@ -200,10 +211,10 @@ const sdk = new GenesysCloudWebrtcSdk({
   allowedSessionTypes: [SessionTypes.collaborateVideo, SessionTypes.softphone],
   // other config options
 });
-```      
+```
 
 #### `defaults`
-Optional. Defaults for various SDK functionality. See individual options for defaults and usage. 
+Optional. Defaults for various SDK functionality. See individual options for defaults and usage.
 
 ``` ts
 defaults?: {
@@ -219,7 +230,7 @@ defaults?: {
     outputDeviceId?: string | null;
     monitorMicVolume?: boolean;
   };
-``` 
+```
 
 #### `defaults.audioStream`
 `audioStream?: MediaStream;` Optional: no default.
@@ -228,20 +239,20 @@ A default audio stream to accept softphone sessions with
   if no audio stream was used when accepting the session
   (ie: `sdk.acceptSession({ id: 'session-id', mediaStream })`)
 
-> Warning: Firefox does not allow multiple microphone media tracks. 
-using a default could cause the SDK to be unable to request any 
-other audio device besides the active microphone – which would be the 
-audio track on this default stream. 
-          
+> Warning: Firefox does not allow multiple microphone media tracks.
+using a default could cause the SDK to be unable to request any
+other audio device besides the active microphone – which would be the
+audio track on this default stream.
+
 #### `defaults.audioElement`
 `audioElement?: HTMLAudioElement;` Optional: no default. (See note about default behavior)
 
 HTML Audio Element to attach incoming audio streams to.
 
-> Default behavior if this is not provided here or at 
- `sdk.acceptSession()` is the sdk will create an 
+> Default behavior if this is not provided here or at
+ `sdk.acceptSession()` is the sdk will create an
  HTMLAudioElement and append it to the DOM
-          
+
 
 #### `defaults.videoElement`
 `videoElement?: HTMLVideoElement;` Optional: no default
@@ -318,18 +329,18 @@ When `true` all audio tracks created via the SDK
 ### Properties
 
 #### `VERSION`
-Readonly `string` of the SDK version in use. 
+Readonly `string` of the SDK version in use.
 
 #### `logger`
-Logger used by the SDK. It will implement the `ILogger` interface. See [constructor](#constructor) for details on how to set the SDK logger and log level. 
+Logger used by the SDK. It will implement the `ILogger` interface. See [constructor](#constructor) for details on how to set the SDK logger and log level.
 
-``` ts 
+``` ts
 interface ILogger {
   /**
    * Log a message to the location specified by the logger.
    *  The logger can decide if it wishes to implement `details`
    *  or `skipServer`.
-   * 
+   *
    * @param message message or error to log
    * @param details any additional details to log
    * @param skipServer should log skip server
@@ -348,7 +359,7 @@ interface ILogger {
 
 
 #### `media`
-SDK Media helper instance. See [WebRTC Media] for API and usage. 
+SDK Media helper instance. See [WebRTC Media] for API and usage.
 
 --------
 
@@ -359,19 +370,19 @@ SDK Media helper instance. See [WebRTC Media] for API and usage.
 Setup the SDK for use and authenticate the user
    - agents must have an accessToken passed into the constructor options
    - guests need a securityCode (or the data received from an already redeemed securityCode).
-      If the customerData is not passed in this will redeem the code for the data, 
+      If the customerData is not passed in this will redeem the code for the data,
       else it will use the data passed in.
 
-Declaration: 
+Declaration:
 ``` ts
 initialize(opts?: {
     securityCode: string;
 } | ICustomerData): Promise<void>;
 ```
-Params: 
+Params:
 
 * opts = `{ securityCode: 'shortCode received from agent to share screen' }`
-*  _or_ if the customer data has already been redeemed using 
+*  _or_ if the customer data has already been redeemed using
     the securityCode (this is an advanced usage)
     ``` ts
     interface ICustomerData {
@@ -383,17 +394,17 @@ Params:
     }
     ```
 
-Returns: a Promise that is fulled one the web socket is connected 
+Returns: a Promise that is fulled one the web socket is connected
   and other necessary async tasks are complete.
 
 
 #### `startScreenShare()`
-Start a screen share. Start a screen share. Currently, screen share is only supported 
-for guest users. 
+Start a screen share. Start a screen share. Currently, screen share is only supported
+for guest users.
 
 `initialize()` must be called first.
 
-Declaration: 
+Declaration:
 ``` ts
 startScreenShare(): Promise<MediaStream>;
 ```
@@ -402,9 +413,9 @@ Returns: `MediaStream` promise for the selected screen stream
 
 
 #### `startVideoConference()`
-Start a video conference. Not supported for guests. Conferences can 
-only be joined by authenticated users from the same organization. 
-If `inviteeJid` is provided, the specified user will receive a propose/pending session 
+Start a video conference. Not supported for guests. Conferences can
+only be joined by authenticated users from the same organization.
+If `inviteeJid` is provided, the specified user will receive a propose/pending session
 they can accept and join the conference.
 
 `initialize()` must be called first.
@@ -416,8 +427,8 @@ startVideoConference(roomJid: string, inviteeJid?: string): Promise<{
 }>;
 ```
 Params:
-* `roomJid: string` Required: jid of the conference to join. Can be made up if 
-  starting a new conference but must adhere to the format: 
+* `roomJid: string` Required: jid of the conference to join. Can be made up if
+  starting a new conference but must adhere to the format:
   `<lowercase string>@conference.<lowercase string>`
 * `inviteeJid?: string` Optional: jid of a user to invite to this conference.
 
@@ -431,12 +442,12 @@ Update the output device for all incoming audio
   - This will attempt to update all active sessions
   - This does _not_ update the sdk `defaultOutputDeviceId`
 
-Declaration: 
+Declaration:
 ``` ts
 updateOutputDevice(deviceId: string | true | null): Promise<void>;
 ```
-Params: 
-  * `deviceId: stirng | true | null` Required: `string` deviceId for audio output device, 
+Params:
+  * `deviceId: stirng | true | null` Required: `string` deviceId for audio output device,
     `true` for sdk default output, or `null` for system default
 
 Returns: a promise that fullfils once the output deviceId has been updated
@@ -445,7 +456,7 @@ Returns: a promise that fullfils once the output deviceId has been updated
 Update outgoing media for a specified session
  - `sessionId` _or_ `session` is required to find the session to update
  - `stream`: if a stream is passed in, the session media will be
-   updated to use the media on the stream. This supercedes deviceId(s) 
+   updated to use the media on the stream. This supercedes deviceId(s)
     passed in
  - `videoDeviceId` & `audioDeviceId` (superceded by `stream`)
    - `undefined|false`: the sdk will not touch the `video|audio` media
@@ -454,15 +465,15 @@ Update outgoing media for a specified session
        to the passed in deviceId
 
 > Note: this does not update the SDK default device(s)
-  
-Declaration: 
+
+Declaration:
 ``` ts
 updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void>;
 ```
-Params: 
+Params:
   * `updateOptions: IUpdateOutgoingMedia` Required: device(s) to update
-  * Basic interface: 
-    ``` ts 
+  * Basic interface:
+    ``` ts
     interface IUpdateOutgoingMedia {
       session?: IExtendedMediaSession;
       sessionId?: string;
@@ -485,18 +496,18 @@ Update the default device(s) for the sdk.
 
 If `updateActiveSessions` is `true`, any active sessions will
 have their outgoing media devices updated and/or the output
-deviceId updated. 
+deviceId updated.
 
-If `updateActiveSessions` is `false`, only the sdk defaults will be updated and 
+If `updateActiveSessions` is `false`, only the sdk defaults will be updated and
 active sessions' media devices will not be touched.
 
-Declaration: 
+Declaration:
 ``` ts
 updateDefaultDevices(options?: IMediaDeviceIds & {
     updateActiveSessions?: boolean;
 }): Promise<any>;
 ```
-Params: 
+Params:
 * `options?: IMediaDeviceIds & {updateActiveSessions?: boolean;}` Optional: defaults to `{}`
   * Basic interface:
     ``` ts
@@ -507,15 +518,15 @@ Params:
       updateActiveSessions?: boolean;
     }
     ```
-  * `videoDeviceId?: string | null` Optional: `string` for a desired deviceId. 
+  * `videoDeviceId?: string | null` Optional: `string` for a desired deviceId.
     `null|falsy` for system default device.
-  * `audioDeviceId?: string | null` Optional: `string` for a desired deviceId. 
+  * `audioDeviceId?: string | null` Optional: `string` for a desired deviceId.
     `null|falsy` for system default device.
-  * `outputDeviceId?: string | null` Optional: `string` for a desired deviceId. 
+  * `outputDeviceId?: string | null` Optional: `string` for a desired deviceId.
     `null|falsy` for system default device.
   * `updateActiveSessions?: boolean` flag to update active sessions' devices
 
-Returns: a promise that fullfils once the default 
+Returns: a promise that fullfils once the default
 device values have been updated
 
 #### `setVideoMute()`
@@ -524,17 +535,17 @@ Will fail if the session is not found.
 Incoming video is unaffected.
 
  When muting, the camera track is destroyed. When unmuting, the camera media
-  must be requested again. 
+  must be requested again.
 
 > NOTE: if no `unmuteDeviceId` is provided when unmuting, it will unmute and
  attempt to use the sdk `defaults.videoDeviceId` as the camera device
 
-Declaration: 
+Declaration:
 ``` ts
 setVideoMute(muteOptions: ISessionMuteRequest): Promise<void>;
 ```
-Params: 
-* `muteOptions: ISessionMuteRequest` Required: 
+Params:
+* `muteOptions: ISessionMuteRequest` Required:
   * Basic interface
     ``` ts
     interface ISessionMuteRequest {
@@ -545,8 +556,8 @@ Params:
     ```
   * `sessionId: string` Required: session id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
-  * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting, 
-    `true` for sdk default, `null` for system default, 
+  * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting,
+    `true` for sdk default, `null` for system default,
     `undefined` will attempt to use the sdk default device
 
 Returns: a promise that fullfils once the mute request has completed
@@ -561,17 +572,17 @@ Incoming audio is unaffected.
  audio stream, it will unmute and attempt to use the sdk `defaults.audioDeviceId`
  at the device
 
-Declaration: 
+Declaration:
 ``` ts
 setAudioMute(muteOptions: ISessionMuteRequest): Promise<void>;
 ```
 
-Params: 
-* `muteOptions: ISessionMuteRequest` Required: 
+Params:
+* `muteOptions: ISessionMuteRequest` Required:
   * `sessionId: string` Required: session id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
-  * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting, 
-    `true` for sdk default, `null` for system default, 
+  * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting,
+    `true` for sdk default, `null` for system default,
     `undefined` will attempt to use the sdk default device
   * Basic interface:
     ``` ts
@@ -582,16 +593,16 @@ Params:
       }
     ```
 
-Returns: a promise that fullfils once the mute request has completed 
+Returns: a promise that fullfils once the mute request has completed
 
 #### `acceptPendingSession()`
 Accept a pending session based on the passed in ID.
 
-Declaration: 
+Declaration:
 ``` ts
 acceptPendingSession(sessionId: string): Promise<void>;
 ```
-Params: 
+Params:
 * `sessionId: string` Required: id of the pending session to accept
 
 Returns: a promise that fullfils once the session accept goes out
@@ -599,11 +610,11 @@ Returns: a promise that fullfils once the session accept goes out
 #### `rejectPendingSession()`
 Reject a pending session based on the passed in ID.
 
-Declaration: 
+Declaration:
 ``` ts
 rejectPendingSession(sessionId: string): Promise<void>;
 ```
-Params: 
+Params:
 * `sessionId: string` Required: id of the session to reject
 
 Returns: a promise that fullfils once the session reject goes out
@@ -611,11 +622,11 @@ Returns: a promise that fullfils once the session reject goes out
 #### `acceptSession()`
 Accept a pending session based on the passed in ID.
 
-Declaration: 
+Declaration:
 ``` ts
 acceptSession(acceptOptions: IAcceptSessionRequest): Promise<void>;
 ```
-Params: 
+Params:
 * `acceptOptions: IAcceptSessionRequest` Required: options with which to accept the session
   * Basic interface:
     ``` ts
@@ -643,14 +654,14 @@ Returns: a promise that fullfils once the session accept goes out
 
 #### `endSession()`
 End an active session based on the session ID _or_ conversation ID (one is required)
-    
-Declaration: 
+
+Declaration:
 ``` ts
 endSession(endOptions: IEndSessionRequest): Promise<void>;
 ```
-Params: 
+Params:
 * `endOptions: IEndSessionRequest` object with session ID _or_ conversation ID
-  * Basic interface: 
+  * Basic interface:
     ``` ts
     interface IEndSessionRequest {
       sessionId?: string;
@@ -664,8 +675,8 @@ Returns: a promise that fullfils once the session has ended
 
 #### `disconnect()`
 Disconnect the streaming connection
-    
-Declaration: 
+
+Declaration:
 ``` ts
 disconnect(): Promise<any>;
 ```
@@ -676,7 +687,7 @@ Returns: a promise that fullfils once the web socket has disconnected
 #### `reconnect()`
 Reconnect the streaming connection
 
-Declaration: 
+Declaration:
 ``` ts
 reconnect(): Promise<any>;
 ```
@@ -692,12 +703,12 @@ Ends all active sessions, disconnects the
 > WARNING: calling this effectively renders the SDK
  instance useless. A new instance will need to be
  created after this is called.
-    
-Declaration: 
+
+Declaration:
 ``` ts
 destroy(): Promise<any>;
 ```
-Params: 
+Params:
 
 Returns: a promise that fullfils once all the cleanup
  tasks have completed
@@ -705,9 +716,9 @@ Returns: a promise that fullfils once all the cleanup
 --------
 
 ### Events
-The WebRTC SDK extends the browser version of `EventEmitter`. 
+The WebRTC SDK extends the browser version of `EventEmitter`.
 Reference the NodeJS documentation for more information. The basic interface that is
-inherited by the SDK is: 
+inherited by the SDK is:
 
 ``` ts
 interface EventEmitter {
@@ -732,15 +743,15 @@ interface EventEmitter {
 The SDK leverages [strict-event-emitter-types](https://www.npmjs.com/package/strict-event-emitter-types) to strongly type available events and their emitted values.
 
 #### `pendingSession`
-Emitted when a call session is being initiated for an outbound or inbound call. 
-`pendingSession` is emitted for all softphone sessions and inbound 1-to-1 video 
-sessions. 
+Emitted when a call session is being initiated for an outbound or inbound call.
+`pendingSession` is emitted for all softphone sessions and inbound 1-to-1 video
+sessions.
 
 Declaration:
 ``` ts
 sdk.on('pendingSession', (pendingSession: IPendingSession) => { });
 ```
-Value of event: 
+Value of event:
 ``` ts
 interface IPendingSession {
   id: string;
@@ -761,7 +772,7 @@ interface IPendingSession {
   * `true` for all outbound calls
   * `false` for inbound calls, unless Auto Answer is configured for the user by an admin
      public api request and/or push notifications
-* `sessionType: SessionTypes` – type of pending session. See [AllowedSessionTypes](#allowedsessiontypes) for a list of available values. 
+* `sessionType: SessionTypes` – type of pending session. See [AllowedSessionTypes](#allowedsessiontypes) for a list of available values.
 * `originalRoomJid: string` – video specific alternate roomJid (for 1-to-1 video calls)
 * `fromUserId?: string` – Optional: the userId the call is coming from (for 1-to-1 video calls)
 
@@ -774,7 +785,7 @@ Declaration:
 ``` ts
 sdk.on('cancelPendingSession', (sessionId: string) => { });
 ```
-Value of event: 
+Value of event:
 * `sessionId: string` – the id of the session proposed and canceled
 
 
@@ -786,7 +797,7 @@ Declaration:
 ``` ts
 sdk.on('handledPendingSession', (sessionId: string) => { });
 ```
-Value of event: 
+Value of event:
 * `sessionId: string` – the id of the session proposed and handled
 
 #### `sessionStarted`
@@ -797,7 +808,7 @@ Declaration:
 ``` ts
 sdk.on('sessionStarted', (session: IExtendedMediaSession) => { });
 ```
-Value of event: 
+Value of event:
 * `session: IExtendedMediaSession` – the session that has started. See [GenesysCloudMediaSession] for details on the session object.
 
 #### `sessionEnded`
@@ -807,12 +818,12 @@ Declaration:
 ``` ts
 sdk.on('sessionEnded', (session: IExtendedMediaSession, reason: JingleReason) => { });
 ```
-Value of event: 
+Value of event:
 * `session: IExtendedMediaSession` – the session that ended. See [GenesysCloudMediaSession] for details on the session object.
-* `reason: JingleReason` – the reason code for why the session ended. Available reasons: 
+* `reason: JingleReason` – the reason code for why the session ended. Available reasons:
     ``` ts
-    reason: { 
-      condition: 
+    reason: {
+      condition:
         "alternative-session" |
         "busy" |
         "cancel" |
@@ -829,7 +840,7 @@ Value of event:
         "success" |
         "timeout" |
         "unsupported-applications" |
-        "unsupported-transports" 
+        "unsupported-transports"
     }
     ```
 
@@ -841,7 +852,7 @@ Declaration:
 ``` ts
 sdk.on('sdkError', (sdkError: SdkError) => { });
 ```
-Value of event: 
+Value of event:
 * `sdkError: SdkError` – error emitted by the sdk. See [SdkError Class] for more details.
 
 #### `ready`
@@ -861,21 +872,21 @@ Declaration:
 ``` ts
 sdk.on('connected', (info: { reconnect: boolean }) => { });
 ```
-Value of event: 
+Value of event:
 * `info: { reconnect: boolean }` – indicator if it is a reconnect event
 
 #### `disconnected`
 Emitted when the underlying websocket connection has
-  disconnected and is no longer attempting to reconnect automatically. 
-  Should usually be followed by `sdk.reconnect()` or reloading the application, 
+  disconnected and is no longer attempting to reconnect automatically.
+  Should usually be followed by `sdk.reconnect()` or reloading the application,
   as this indicates a critical error
 
 Declaration:
 ``` ts
 sdk.on('disconnected', (info?: any) => { });
 ```
-Value of event: 
-* `info?: any` – usually a string of `'Streaming API connection disconnected'`. This value should not be relied upon for anything other than logging. 
+Value of event:
+* `info?: any` – usually a string of `'Streaming API connection disconnected'`. This value should not be relied upon for anything other than logging.
 
 #### `trace`
 Emitted for trace, debug, log, warn, and error
@@ -885,7 +896,7 @@ Declaration:
 ``` ts
 sdk.on('trace', (level: string, message: string, details?: any) => { });
 ```
-Value of event: 
+Value of event:
 * `level: string` - the log level of the message `trace|debug|log|warn|error`
 * `message: string` - the log message
 * `details?: any` - details about the log message
@@ -894,14 +905,14 @@ Value of event:
 
 ## GenesysCloudMediaSession
 
-This is the session object that manages WebRTC connections. 
-The actual interface has been extended and should be imported like this 
-(if using typescript): 
+This is the session object that manages WebRTC connections.
+The actual interface has been extended and should be imported like this
+(if using typescript):
 
 ``` ts
-import { 
-  IExtendedMediaSession, 
-  GenesysCloudWebrtcSdk 
+import {
+  IExtendedMediaSession,
+  GenesysCloudWebrtcSdk
 } from 'genesys-cloud-webrtc-sdk';
 
 const sdk = new GenesysCloudWebrtcSdk({/* your config options */});
@@ -912,10 +923,10 @@ sdk.on('sessionStarted', (session) => {
 });
 ```
 
-There are many properties, methods, and accessors on the `IExtendedMediaSession`. 
+There are many properties, methods, and accessors on the `IExtendedMediaSession`.
 Since most of these are extended from 3rd party libraries, we will not go into
 detail on each or list all of them. Instead, here is a brief list of the useful
-properties and methods on the `IExtendedMediaSession` session object: 
+properties and methods on the `IExtendedMediaSession` session object:
 
 ``` ts
 interface IExtendedMediaSession extends GenesysCloudMediaSession {
@@ -931,8 +942,8 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
   get connectionState(): string;
 
   /**
-   * video session related props/functions 
-   * Note: these are not guaranteed to exist on all sessions. 
+   * video session related props/functions
+   * Note: these are not guaranteed to exist on all sessions.
    * See `WebRTC Video Conferencing` for more details
    */
   originalRoomJid: string;
@@ -949,13 +960,13 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
 
 Session level events are events emitted from the `session` objects themselves,
 not the SDK instance library. These can be used if you want lower level access
-and control. 
+and control.
 
-Sessions implement the same `EventEmitter` interface and strict-typings that the base WebRTC SDK does. 
+Sessions implement the same `EventEmitter` interface and strict-typings that the base WebRTC SDK does.
 See [SDK Events](#events) for the full list of inherited functions.
 
 #### `sessionState`
-Emitted when the state of the session changes. 
+Emitted when the state of the session changes.
 
 Declaration:
 ``` ts
@@ -967,11 +978,11 @@ Value of event:
 
 
 #### `connectionState`
-Emitted when the state of the underlying RTCPeerConnection state changes. 
+Emitted when the state of the underlying RTCPeerConnection state changes.
 
 Declaration:
 ``` ts
-session.on('connectionState', 
+session.on('connectionState',
   (connectionState: 'starting' | 'connecting' | 'connected' | 'interrupted' | 'disconnected' | 'failed') => { });
 ```
 
@@ -986,8 +997,8 @@ Emits the ICE connection type
 Declaration:
 ``` ts
 session.on('iceConnectionType', (iceConnectionType: {
-    localCandidateType: string, 
-    relayed: boolean, 
+    localCandidateType: string,
+    relayed: boolean,
     remoteCandidateType: string
   })) => { });
 ```
@@ -1022,10 +1033,10 @@ Value of event:
 
 
 #### `stats`
-Emit stats for the underlying RTCPeerConnection. 
+Emit stats for the underlying RTCPeerConnection.
 
 See [webrtc-stats-gatherer] for more details and typings
-  on stats collected. 
+  on stats collected.
 
 Declaration:
 ``` ts
@@ -1056,8 +1067,8 @@ Declaration:
 session.on('terminated', (reason: JingleReason) => { });
 ```
 
-Value of event: 
-* `reason: JingleReason` – reason for session ending. See the SDK 
+Value of event:
+* `reason: JingleReason` – reason for session ending. See the SDK
 [sessionEnded](#sessionended) event for details on `JingleReason`
 
 
@@ -1070,9 +1081,9 @@ Declaration:
 session.on('mute', (info: JingleInfo) => { });
 ```
 
-Value of event: 
+Value of event:
 * `reason: JingleInfo` – info regarding the mute
-* Basic interface: 
+* Basic interface:
   ``` ts
   interface JingleInfo {
     infoType: string;
@@ -1089,14 +1100,14 @@ Declaration:
 session.on('unmute', (info: JingleInfo) => { });
 ```
 
-Value of event: 
+Value of event:
 * `reason: JingleInfo` – info regarding the mute
 * Basic interface: See [mute](#mute)
 
 
 #### Video session level events
-There are session events that are specific for video sessions. 
-See [WebRTC Video Conferencing] for more info. 
+There are session events that are specific for video sessions.
+See [WebRTC Video Conferencing] for more info.
 
 --------
 
@@ -1105,7 +1116,7 @@ This is an Error wrapper class to give a little more detail regarding errors
 thrown. The errors usually thrown by the SDK. However, there are a few instances
 where the browser throws an error and the SDK will emit the "wrapped" error to
 `sdk.on('sdkError', (err) => { });`. If it wraps an existing error, it will keep
-the `error.name` and `error.message` to avoid masking the original problem. 
+the `error.name` and `error.message` to avoid masking the original problem.
 
 ``` ts
 class SdkError extends Error {
@@ -1129,7 +1140,7 @@ enum SdkErrorTypes {
 }
 ```
 
-The SDK will add the `type` to give more clarity as to why the error was thrown. 
+The SDK will add the `type` to give more clarity as to why the error was thrown.
 
 
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html

@@ -69,6 +69,12 @@ export interface ISdkConfig {
   autoConnectSessions?: boolean;
 
   /**
+   * The identifier that will go into the full jid. The jid will be constructed as {usersBareJid}/{jidResource}
+   * This is helpful for identifying specific clients and considered advanced usage.
+   */
+  jidResource?: string;
+
+  /**
    * Disable auto answering softphone calls. By default softphone calls will
    *  respect the `autoAnswer` flag passed in on the `pendingSession` session object.
    *  `autoAnswer` is always `true` for outbound calls and can also be set
