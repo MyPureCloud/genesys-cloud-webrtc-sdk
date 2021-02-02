@@ -9,23 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Added `sdk.media` class to handle and emit media related tasks. See [media documentation](doc/media.md) for more details
-  * `sdk.media.on(...)` event emitter. 
+  * `sdk.media.on(...)` event emitter.
   * permissions and device management housed in `sdk.media`
+* [PCM-1510] Be able to specify jidResource for clients (streaming client)
 
 ### Changed
 * Updated documentation.
 
 ### Fixed
-* [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session. 
-  Has Firefox limitations. See documentation. 
+* [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session.
+  Has Firefox limitations. See documentation.
 * [PCM-1512](https://inindca.atlassian.net/browse/PCM-1512) – fixed softphone and video `acceptSession` to respect media options of `null`
-  as being `system default` requests. 
+  as being `system default` requests.
 
 ### Breaking Change
 * Updated configuration options for constructing an SDK instance (see [docs](doc/index.md) for new config)
   * Removed configuration option `iceServers: IceServerConfiguration[]` and `iceTransportPolicy`
   * Moved defaults into a nested `config.default = {}` object
-* Changed `IAcceptSessionRequest`, `IEndSessionRequest`, and `ISessionMuteRequest` interfaces to require a `sessionId` 
+* Changed `IAcceptSessionRequest`, `IEndSessionRequest`, and `ISessionMuteRequest` interfaces to require a `sessionId`
   in place of the non-descriptive `id` field. This contract change will impact calls to:
     * `sdk.acceptSession({sessionId: string;})`
     * `sdk.endSession({sessionId: string;})`
@@ -37,8 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Moved `sdk.getDisplayMedia(opts)` to `sdk.media.startDisplayMedia(opts)`
 * `sdk.updateOutputDevice()` will now log a warning and do nothing if called in an unsupported browser.
   Old behavior was to throw an error.
-* Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`. 
-  Event already emitted the `sessionId`. This fixes the typing. 
+* Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`.
+  Event already emitted the `sessionId`. This fixes the typing.
 
 # [v5.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.3...v5.0.4)
 ### Fixed

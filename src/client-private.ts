@@ -27,6 +27,8 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     connectionOptions.jid = this._personDetails.chat.jabberId;
   }
 
+  connectionOptions.jidResource = this._config.jidResource;
+
   if (this._config.accessToken) {
     connectionOptions.authToken = this._config.accessToken;
   }
