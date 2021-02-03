@@ -43,8 +43,6 @@ let navigatorMediaDevicesMock: {
   removeEventListener: jest.SpyInstance;
 };
 
-
-
 describe('SdkMedia', () => {
 
   beforeEach(() => {
@@ -1075,7 +1073,7 @@ describe('SdkMedia', () => {
       getStandardConstraintsFn = sdkMedia['getStandardConstraints'].bind(sdkMedia);
     });
 
-    it('should return audio/video constraints for chrome/chromium', () => {
+    it('should return audio/video constraints', () => {
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
       const options: IMediaRequestOptions = { audio: true, video: true };
 
@@ -1092,18 +1090,6 @@ describe('SdkMedia', () => {
           googDucking: false,
           googHighpassFilter: true
         }
-      });
-    });
-
-    it('should return audio constraints for non chrome/chromium', () => {
-      Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
-      const options: IMediaRequestOptions = { audio: true, video: true };
-
-      expect(getStandardConstraintsFn(options)).toEqual({
-        video: {
-          frameRate: { ideal: 30 }
-        },
-        audio: {}
       });
     });
 
@@ -1178,9 +1164,9 @@ describe('SdkMedia', () => {
           deviceId: { exact: options.video },
           frameRate: { ideal: 30 }
         },
-        audio: {
+        audio: expect.objectContaining({
           deviceId: { exact: options.audio }
-        }
+        })
       });
     });
 
@@ -1199,9 +1185,9 @@ describe('SdkMedia', () => {
           deviceId: { exact: 'video-device-id' },
           frameRate: { ideal: 30 }
         },
-        audio: {
+        audio: expect.objectContaining({
           deviceId: { exact: 'audio-device-id' }
-        }
+        })
       });
     });
 
@@ -1219,7 +1205,7 @@ describe('SdkMedia', () => {
         video: {
           frameRate: { ideal: 30 }
         },
-        audio: {}
+        audio: expect.not.objectContaining({ deviceId: expect.anything() })
       });
     });
   });
@@ -1392,7 +1378,7 @@ describe('SdkMedia', () => {
         mediaRequestOptions: { ...requestOptions, session: undefined },
         retryOnFailure: true,
         mediaType: 'audio',
-        constraints: { video: false, audio: {} },
+        constraints: { video: false, audio: expect.not.objectContaining({ deviceId: expect.anything() }) },
         sessionId: requestOptions.session.id,
         conversationId: requestOptions.session.conversationId,
         sdkDefaultDeviceId: undefined,
@@ -1420,7 +1406,7 @@ describe('SdkMedia', () => {
     it('should request `audio` and set `video` to false', async () => {
       await startSingleMediaFn('audio', { audio: true, video: true });
 
-      expect(getUserMediaSpy).toHaveBeenCalledWith({ video: false, audio: {} });
+      expect(getUserMediaSpy).toHaveBeenCalledWith({ video: false, audio: expect.not.objectContaining({ deviceId: expect.anything() }) });
     });
 
     it('should request `video` and set `audio` to false', async () => {
@@ -1581,7 +1567,7 @@ describe('SdkMedia', () => {
       const error = createError('NotFoundError', 'Device not found');
       getUserMediaSpy
         .mockRejectedValueOnce(error) // deviceId
-        .mockRejectedValueOnce(error) // sdk default deviceId 
+        .mockRejectedValueOnce(error) // sdk default deviceId
         .mockResolvedValue(new MockStream()); // sys default
 
       const requestOptions: IMediaRequestOptions = { audio: 'this-device-id-does-not-exist' };
@@ -1591,17 +1577,17 @@ describe('SdkMedia', () => {
       expect(getUserMediaSpy).toHaveBeenCalledTimes(3);
       /* 1st with requested device */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(1, {
-        audio: { deviceId: { exact: requestOptions.audio } },
+        audio: expect.objectContaining({ deviceId: { exact: requestOptions.audio } }),
         video: false
       });
       /* 2nd with sdk default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(2, {
-        audio: { deviceId: { exact: sdk._config.defaults.audioDeviceId } },
+        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults.audioDeviceId } }),
         video: false
       });
       /* 3rd with system default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(3, {
-        audio: {},
+        audio: expect.not.objectContaining({ deviceId: expect.anything() }),
         video: false
       });
     });
@@ -1619,12 +1605,12 @@ describe('SdkMedia', () => {
       expect(getUserMediaSpy).toHaveBeenCalledTimes(2);
       /* 1st with requested device */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(1, {
-        audio: { deviceId: { exact: sdk._config.defaults.audioDeviceId } },
+        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults.audioDeviceId } }),
         video: false
       });
       /* 2nd with system default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(2, {
-        audio: {},
+        audio: expect.not.objectContaining({ deviceId: expect.anything() }),
         video: false
       });
     });
@@ -1666,17 +1652,17 @@ describe('SdkMedia', () => {
       expect(getUserMediaSpy).toHaveBeenCalledTimes(3);
       /* 1st with requested device */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(1, {
-        audio: { deviceId: { exact: requestOptions.audio } },
+        audio: expect.objectContaining({ deviceId: { exact: requestOptions.audio } }),
         video: false
       });
       /* 2nd with sdk default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(2, {
-        audio: { deviceId: { exact: sdk._config.defaults.audioDeviceId } },
+        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults.audioDeviceId } }),
         video: false
       });
       /* 3rd with system default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(3, {
-        audio: {},
+        audio: expect.not.objectContaining({ deviceId: expect.anything() }),
         video: false
       });
     });
@@ -1697,7 +1683,7 @@ describe('SdkMedia', () => {
       expect(getUserMediaSpy).toHaveBeenCalledTimes(1);
       /* 1st with requested device */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(1, {
-        audio: { deviceId: { exact: requestOptions.audio } },
+        audio: expect.objectContaining({ deviceId: { exact: requestOptions.audio } }),
         video: false
       });
       /* specific log message */

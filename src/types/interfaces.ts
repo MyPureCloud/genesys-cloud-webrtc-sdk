@@ -214,6 +214,57 @@ export interface ISdkConfig {
     };
 
     /**
+     * Automatic gain control is a feature in which a sound
+     * source automatically manages changes in the volume
+     * of its source media to maintain a steady overall volume level.
+     *
+     * Optional: defaluts to `true`.
+     *
+     * ConstrainBoolean interface:
+     * ``` ts
+     * type ConstrainULong = boolean | {
+     *  exact?: boolean;
+     *  ideal?: boolean;
+     * }
+     */
+    micAutoGainControl?: ConstrainBoolean;
+
+    /**
+     * Echo cancellation is a feature which attempts to prevent echo
+     * effects on a two-way audio connection by attempting to reduce
+     * or eliminate crosstalk between the user's output device and
+     * their input device. For example, it might apply a filter that
+     * negates the sound being produced on the speakers from being included
+     * in the input track generated from the microphone.
+     *
+     * Optional: defaluts to `true`.
+     *
+     * ConstrainBoolean interface:
+     * ``` ts
+     * type ConstrainULong = boolean | {
+     *  exact?: boolean;
+     *  ideal?: boolean;
+     * }
+     */
+    micEchoCancellation?: ConstrainBoolean;
+
+    /**
+     * Noise suppression automatically filters the audio to remove or
+     * at least reduce background noise, hum caused by equipment, and
+     * the like from the sound before delivering it to your code.
+     *
+     * Optional: defaluts to `true`.
+     *
+     * ConstrainBoolean interface:
+     * ``` ts
+     * type ConstrainULong = boolean | {
+     *  exact?: boolean;
+     *  ideal?: boolean;
+     * }
+     */
+    micNoiseSuppression?: ConstrainBoolean;
+
+    /**
      * Default video device ID to use when starting camera media.
      *  - `string` to request media for specified deviceId
      *  - `null|falsy` to request media system default device
@@ -334,6 +385,64 @@ export interface IMediaDeviceIds {
   audioDeviceId?: string | null;
   /** `deviceId` for audio output, `falsy` for system default */
   outputDeviceId?: string | null;
+}
+
+/**
+ * Interface for updating the default media settings an SDK instance.
+ */
+export interface IMediaSettings {
+  /**
+   * Automatic gain control is a feature in which a sound
+   * source automatically manages changes in the volume
+   * of its source media to maintain a steady overall volume level.
+   *
+   * ConstrainBoolean interface:
+   * ``` ts
+   * type ConstrainULong = boolean | {
+   *  exact?: boolean;
+   *  ideal?: boolean;
+   * }
+   */
+  micAutoGainControl?: ConstrainBoolean;
+
+  /**
+   * Echo cancellation is a feature which attempts to prevent echo
+   * effects on a two-way audio connection by attempting to reduce
+   * or eliminate crosstalk between the user's output device and
+   * their input device. For example, it might apply a filter that
+   * negates the sound being produced on the speakers from being included
+   * in the input track generated from the microphone.
+   *
+   * ConstrainBoolean interface:
+   * ``` ts
+   * type ConstrainULong = boolean | {
+   *  exact?: boolean;
+   *  ideal?: boolean;
+   * }
+   */
+  micEchoCancellation?: ConstrainBoolean;
+
+  /**
+   * Noise suppression automatically filters the audio to remove or
+   * at least reduce background noise, hum caused by equipment, and
+   * the like from the sound before delivering it to your code.
+   *
+   * ConstrainBoolean interface:
+   * ``` ts
+   * type ConstrainULong = boolean | {
+   *  exact?: boolean;
+   *  ideal?: boolean;
+   * }
+   */
+  micNoiseSuppression?: ConstrainBoolean;
+
+  /**
+   * When `true` all audio tracks created via the SDK
+   *  will have their volumes monitored and emited on
+   *  `sdk.media.on('audioTrackVolume', evt)`.
+   *  See `sdk.media` events for more details.
+   */
+  monitorMicVolume?: boolean;
 }
 
 /**
