@@ -27,7 +27,11 @@ export class SimpleMockSdk extends EventEmitter {
     logLevel: 'debug',
     wsHost: 'wshost',
     allowedSessionTypes: Object.values(SessionTypes),
-    defaults: {}
+    defaults: {
+      micAutoGainControl: true,
+      micEchoCancellation: true,
+      micNoiseSuppression: true
+    }
   };
   _personDetails = {
     id: 'USER_GUID'

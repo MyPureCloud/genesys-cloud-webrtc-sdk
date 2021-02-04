@@ -514,6 +514,29 @@ describe('updateOutgoingMedia()', () => {
 });
 
 describe('updateOutgoingMediaForAllSessions()', () => {
+  it('should use sdk default devices if no opts are provided', async () => {
+    const sessions = [{ id: '1' }, { id: '2' }, { id: '3' }];
+    const videoDeviceId = 'video-device';
+    const audioDeviceId = 'audio-device';
+
+    mockSdk._config.defaults.audioDeviceId = audioDeviceId;
+    mockSdk._config.defaults.videoDeviceId = videoDeviceId;
+
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+    jest.spyOn(sessionManager, 'updateOutgoingMedia').mockResolvedValue(undefined);
+
+    await sessionManager.updateOutgoingMediaForAllSessions();
+
+    expect(sessionManager.getAllActiveSessions).toHaveBeenCalled();
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Updating outgoing deviceId(s) for all active sessions'),
+      expect.any(Object));
+
+    sessions.forEach(session => {
+      expect(sessionManager.updateOutgoingMedia).toHaveBeenCalledWith({ session, videoDeviceId, audioDeviceId });
+    });
+  });
+
   it('should call the handler to updateOutgoingMedia for all sessions', async () => {
     const sessions = [{ id: '1' }, { id: '2' }, { id: '3' }];
     const videoDeviceId = 'video-device';

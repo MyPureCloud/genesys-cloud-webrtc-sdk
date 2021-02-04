@@ -14,17 +14,19 @@ import {
   IPersonDetails,
   IMediaDeviceIds,
   IUpdateOutgoingMedia,
-  SdkEvents
+  SdkEvents,
+  IMediaSettings
 } from './types/interfaces';
 import {
   setupStreamingClient,
   proxyStreamingClientEvents
 } from './client-private';
-import { requestApi, createAndEmitSdkError } from './utils';
+import { requestApi, createAndEmitSdkError, defaultConfigOption } from './utils';
 import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
+import { type } from 'os';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -120,6 +122,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
+          micAutoGainControl: defaultConfigOption(defaultsOptions.micAutoGainControl, true),
+          micEchoCancellation: defaultConfigOption(defaultsOptions.micEchoCancellation, true),
+          micNoiseSuppression: defaultConfigOption(defaultsOptions.micNoiseSuppression, true),
           videoDeviceId: defaultsOptions.videoDeviceId || null,
           audioDeviceId: defaultsOptions.audioDeviceId || null,
           outputDeviceId: defaultsOptions.outputDeviceId || null,
@@ -369,13 +374,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       });
 
       if (updateVideo || updateAudio) {
-        const opts = {
-          videoDeviceId: updateVideo ? this._config.defaults.videoDeviceId : undefined,
-          audioDeviceId: updateAudio ? this._config.defaults.audioDeviceId : undefined
-        };
-
         promises.push(
-          this.sessionManager.updateOutgoingMediaForAllSessions(opts)
+          this.sessionManager.updateOutgoingMediaForAllSessions()
         );
       }
 
@@ -386,6 +386,40 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       }
 
       return Promise.all(promises);
+    }
+  }
+
+  /**
+   * Update the default media settings from the config.
+   *
+   * If `updateActiveSessions` is `true`, any active sessions will
+   *  have their outgoing media devices updated.
+   *
+   * Else, only the defaults will be updated and active sessions'
+   * media devices will not be touched.
+   *
+   * @returns a promise that fullfils once the default
+   *  settings and sessions are updated (if specified)
+   */
+  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<any> {
+    const allowedSettings: Array<keyof IMediaSettings> = [
+      'micAutoGainControl',
+      'micEchoCancellation',
+      'micNoiseSuppression',
+      'monitorMicVolume'
+    ];
+
+    const entries = (Object.entries(settings) as Array<[keyof IMediaSettings, any]>)
+      .filter(([setting]) => allowedSettings.includes(setting));
+
+    this.logger.info('updating media settings', entries);
+
+    entries.forEach(([key, value]) => {
+      this._config.defaults[key] = value;
+    });
+
+    if (settings.updateActiveSessions) {
+      return this.sessionManager.updateOutgoingMediaForAllSessions();
     }
   }
 

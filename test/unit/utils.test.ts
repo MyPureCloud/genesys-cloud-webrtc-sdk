@@ -49,6 +49,56 @@ describe('createAndEmitSdkError', () => {
   });
 });
 
+describe('defaultConfigOption', () => {
+  describe('undefined condition', () => {
+    it('should return default', () => {
+      const provided = undefined;
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { undefined: true })).toBe(defaultVal);
+    });
+
+    it('should return provided', () => {
+      const provided = 'provided';
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { undefined: true })).toBe(provided);
+    });
+  });
+
+  describe('null condition', () => {
+    it('should return default', () => {
+      const provided = null;
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { null: true })).toBe(defaultVal);
+    });
+
+    it('should return provided', () => {
+      const provided = 'provided';
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { null: true })).toBe(provided);
+    });
+  });
+
+  describe('falsy condition', () => {
+    it('should return default', () => {
+      const provided = false;
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { falsy: true })).toBe(defaultVal);
+    });
+
+    it('should return provided', () => {
+      const provided = 'provided';
+      const defaultVal = false;
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { falsy: true })).toBe(provided);
+    });
+  });
+});
+
 describe('buildUri', () => {
   it('should trim leading and trailing slashes', () => {
     expect(utils.buildUri.call(sdk, 'test')).toEqual(`${baseUri}/test`);

@@ -701,19 +701,18 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private getStandardConstraints (options: IMediaRequestOptions): MediaStreamConstraints {
     const constraints: any = {
       video: {},
-      audio: {}
+      audio: {
+        googAudioMirroring: false,
+        autoGainControl: this.sdk._config.defaults.micAutoGainControl,
+        echoCancellation: this.sdk._config.defaults.micEchoCancellation,
+        noiseSuppression: this.sdk._config.defaults.micNoiseSuppression,
+        googDucking: false,
+        googHighpassFilter: true
+      }
     };
 
     if (browserama.isChromeOrChromium) {
       constraints.video.googNoiseReduction = true;
-      constraints.audio = {
-        googAudioMirroring: false,
-        autoGainControl: true,
-        echoCancellation: true,
-        noiseSuppression: true,
-        googDucking: false,
-        googHighpassFilter: true
-      };
     }
 
     /* `false|undefined` means don't request */

@@ -45,6 +45,22 @@ export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, erro
   return error;
 };
 
+export const defaultConfigOption = function (
+  providedOption: any,
+  defaultValue: any,
+  defaultConditions: { undefined?: boolean, null?: boolean, falsy?: boolean } = { undefined: true, null: true, falsy: false }
+): any {
+  const undefCondition = typeof providedOption === 'undefined' && defaultConditions.undefined;
+  const nullCondition = providedOption === null && defaultConditions.null;
+  const falsyCondition = !providedOption && defaultConditions.falsy;
+
+  if (undefCondition || nullCondition || falsyCondition) {
+    return defaultValue;
+  }
+
+  return providedOption;
+};
+
 export const buildUri = function (this: GenesysCloudWebrtcSdk, path: string, version: string = 'v2'): string {
   path = path.replace(/^\/+|\/+$/g, ''); // trim leading/trailing /
   return `https://api.${this._config.environment}/api/${version}/${path}`;

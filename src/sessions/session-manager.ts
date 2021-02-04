@@ -142,18 +142,26 @@ export class SessionManager {
     return handler.updateOutgoingMedia(session, options);
   }
 
-  async updateOutgoingMediaForAllSessions (options: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
-    const { videoDeviceId, audioDeviceId } = options;
+  async updateOutgoingMediaForAllSessions (options?: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
+    const opts = options || {
+      videoDeviceId: this.sdk._config.defaults.videoDeviceId,
+      audioDeviceId: this.sdk._config.defaults.audioDeviceId
+    };
+
     const sessions = this.getAllActiveSessions();
 
     this.log('info', 'Updating outgoing deviceId(s) for all active sessions', {
       sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId })),
-      videoDeviceId,
-      audioDeviceId
+      videoDeviceId: opts.videoDeviceId,
+      audioDeviceId: opts.audioDeviceId
     });
 
     const promises = sessions.map(session => {
-      return this.updateOutgoingMedia({ session, videoDeviceId, audioDeviceId });
+      return this.updateOutgoingMedia({
+        session,
+        videoDeviceId: opts.videoDeviceId,
+        audioDeviceId: opts.audioDeviceId
+      });
     });
     return Promise.all(promises);
   }

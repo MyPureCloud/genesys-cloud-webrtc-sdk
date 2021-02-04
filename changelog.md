@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Updated documentation.
+* extra audio constraints which were google only, now apply to all browsers
+* A few audio constraints are configurable as sdk defaults
 
 ### Fixed
 * [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session.

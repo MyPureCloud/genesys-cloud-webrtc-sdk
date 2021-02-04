@@ -232,7 +232,7 @@ describe('Client', () => {
 
       await sdk.updateOutputDevice(deviceId);
 
-      expect(sdk.sessionManager.updateOutputDeviceForAllSessions).toBeCalledWith(deviceId);
+      expect(sdk.sessionManager.updateOutputDeviceForAllSessions).toBeCalled();
     });
 
     it('should not call through to the sessionManager if not in a supported browser', async () => {
@@ -241,7 +241,6 @@ describe('Client', () => {
 
       mediaMock.getState.mockReturnValue({ hasOutputDeviceSupport: false } as any as ISdkMediaState);
       sessionManagerMock.getAllActiveSessions.mockReturnValue(sessions as any);
-      sessionManagerMock.updateOutputDeviceForAllSessions;
 
       await sdk.updateOutputDevice('some device id');
 
@@ -326,10 +325,7 @@ describe('Client', () => {
 
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith({
-        videoDeviceId: options.videoDeviceId,
-        audioDeviceId: options.audioDeviceId
-      });
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalled();
       expect(sdk.sessionManager.updateOutputDeviceForAllSessions).toHaveBeenCalledWith(options.outputDeviceId);
     });
 
@@ -342,17 +338,13 @@ describe('Client', () => {
         updateActiveSessions: true
       };
 
-
       sessionManagerMock.updateOutgoingMediaForAllSessions.mockResolvedValue(undefined);
       sessionManagerMock.updateOutputDeviceForAllSessions.mockResolvedValue(undefined);
 
       /* video and output device */
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith({
-        videoDeviceId: options.videoDeviceId,
-        audioDeviceId: options.audioDeviceId
-      });
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalled();
       expect(sdk.sessionManager.updateOutputDeviceForAllSessions).toHaveBeenCalledWith(options.outputDeviceId);
 
       sessionManagerMock.updateOutgoingMediaForAllSessions.mockReset();
@@ -365,10 +357,7 @@ describe('Client', () => {
 
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith({
-        videoDeviceId: options.videoDeviceId,
-        audioDeviceId: options.audioDeviceId
-      });
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith();
       expect(sessionManagerMock.updateOutputDeviceForAllSessions).not.toHaveBeenCalled();
 
       sessionManagerMock.updateOutgoingMediaForAllSessions.mockReset();
@@ -579,6 +568,50 @@ describe('Client', () => {
 
     it('should return false if nothing is passed in', () => {
       expect(isSecurityCode(undefined as any)).toBe(false);
+    });
+  });
+
+  describe('updateDefaultMediaSettings()', () => {
+    beforeEach(() => {
+      sdk = constructSdk({
+        accessToken: 'access-granted',
+        environment: 'mypurecloud.com',
+        defaults: {
+          micAutoGainControl: true,
+          micEchoCancellation: false
+        }
+      });
+
+      sdk.sessionManager.updateOutgoingMediaForAllSessions = jest.fn().mockResolvedValue(null);
+    });
+
+    it('should only update specified defaults', async () => {
+      await sdk.updateDefaultMediaSettings({
+        micAutoGainControl: false
+      });
+
+      expect(sdk._config.defaults).toMatchObject({
+        micAutoGainControl: false,
+        micEchoCancellation: false,
+        micNoiseSuppression: true
+      });
+
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).not.toHaveBeenCalled();
+    });
+
+    it('should update outgoing media', async () => {
+      await sdk.updateDefaultMediaSettings({
+        micAutoGainControl: false,
+        updateActiveSessions: true
+      });
+
+      expect(sdk._config.defaults).toMatchObject({
+        micAutoGainControl: false,
+        micEchoCancellation: false,
+        micNoiseSuppression: true
+      });
+
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalled();
     });
   });
 });
