@@ -402,13 +402,20 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  settings and sessions are updated (if specified)
    */
   async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<any> {
-    this.logger.info('updating media settings', settings);
+    const allowedSettings: Array<keyof IMediaSettings> = [
+      'micAutoGainControl',
+      'micEchoCancellation',
+      'micNoiseSuppression',
+      'monitorMicVolume'
+    ];
 
-    // we are just assuming they know what they are doing here
-    Object.entries(settings).forEach((entry: any) => {
-      if (entry[0] !== 'updateActiveSessions') {
-        this._config.defaults[entry[0]] = entry[1];
-      }
+    const entries = (Object.entries(settings) as Array<[keyof IMediaSettings, any]>)
+      .filter(([setting]) => allowedSettings.includes(setting));
+
+    this.logger.info('updating media settings', entries);
+
+    entries.forEach(([key, value]) => {
+      this._config.defaults[key] = value;
     });
 
     if (settings.updateActiveSessions) {

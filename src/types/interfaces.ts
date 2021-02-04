@@ -398,10 +398,11 @@ export interface IMediaSettings {
    *
    * ConstrainBoolean interface:
    * ``` ts
-   * type ConstrainULong = boolean | {
+   * type ConstrainBoolean = boolean | {
    *  exact?: boolean;
    *  ideal?: boolean;
    * }
+   * ```
    */
   micAutoGainControl?: ConstrainBoolean;
 
@@ -415,10 +416,11 @@ export interface IMediaSettings {
    *
    * ConstrainBoolean interface:
    * ``` ts
-   * type ConstrainULong = boolean | {
+   * type ConstrainBoolean = boolean | {
    *  exact?: boolean;
    *  ideal?: boolean;
    * }
+   * ```
    */
   micEchoCancellation?: ConstrainBoolean;
 
@@ -429,10 +431,11 @@ export interface IMediaSettings {
    *
    * ConstrainBoolean interface:
    * ``` ts
-   * type ConstrainULong = boolean | {
+   * type ConstrainBoolean = boolean | {
    *  exact?: boolean;
    *  ideal?: boolean;
    * }
+   * ```
    */
   micNoiseSuppression?: ConstrainBoolean;
 

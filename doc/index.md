@@ -104,6 +104,9 @@ interface ISdkConfig {
         };
         videoDeviceId?: string | null;
         audioDeviceId?: string | null;
+        micAutoGainControl?: ConstrainBoolean | boolean;
+        micEchoCancellation?: ConstrainBoolean | boolean;
+        micNoiseSuppression?: ConstrainBoolean | boolean;
         outputDeviceId?: string | null;
     };
 }
@@ -227,6 +230,9 @@ defaults?: {
     };
     videoDeviceId?: string | null;
     audioDeviceId?: string | null;
+    micAutoGainControl?: ConstrainBoolean | boolean;
+    micEchoCancellation?: ConstrainBoolean | boolean;
+    micNoiseSuppression?: ConstrainBoolean | boolean;
     outputDeviceId?: string | null;
     monitorMicVolume?: boolean;
   };
@@ -528,6 +534,50 @@ Params:
 
 Returns: a promise that fullfils once the default
 device values have been updated
+
+#### `updateMediaSettingDefaults()`
+Update the default media settings that exist in the sdk config.
+
+If `updateActiveSessions` is `true`, any active sessions will
+have their outgoing media devices updated and/or the output
+deviceId updated.
+
+If `updateActiveSessions` is `false`, only the sdk defaults will be updated and
+active sessions' media devices will not be touched.
+
+Declaration:
+``` ts
+updateMediaSettingDefaults(options?: IMediaSettings & {
+    updateActiveSessions?: boolean;
+}): Promise<any>;
+```
+Params:
+* `options?: IMediaDeviceIds & {updateActiveSessions?: boolean;}` Optional: defaults to `{}`
+  * Basic interface:
+    ``` ts
+    interface IMediaSettings {
+      micAutoGainControl?: ConstrainBoolean | boolean;
+      micEchoCancellation?: ConstrainBoolean | boolean;
+      micNoiseSuppression?: ConstrainBoolean | boolean;
+      monitorMicVolume?: boolean;
+      updateActiveSessions?: boolean;
+    }
+    ```
+  * `micAutoGainControl?: ConstrainBoolean | boolean` Optional. This will indicate the default audio constraint
+    for `autoGainControl` for future media.
+    See https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/autoGainControl
+  * `micEchoCancellation?: ConstrainBoolean | boolean` Optional. This will indicate the default audio constraint
+    for `echoCancellation` for future media.
+    https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation
+  * `micNoiseSuppression?: ConstrainBoolean | boolean` Optional. This will indicate the default audio constraint
+    for `noiseSuppression` for future media.
+    See https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/noiseSuppression
+  * `monitorMicVolume?: boolean` Optional. Default setting for emitting `audioTrackVolume` events for future
+    media.
+  * `updateActiveSessions?: boolean` Optional. Flag to update active sessions' media.
+
+Returns: a promise that fullfils once the default
+settings and active sessions have been updated (if specified)
 
 #### `setVideoMute()`
 Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
