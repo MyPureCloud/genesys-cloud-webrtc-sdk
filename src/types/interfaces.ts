@@ -222,10 +222,11 @@ export interface ISdkConfig {
      *
      * ConstrainBoolean interface:
      * ``` ts
-     * type ConstrainULong = boolean | {
+     * type ConstrainBoolean = boolean | {
      *  exact?: boolean;
      *  ideal?: boolean;
      * }
+     * ```
      */
     micAutoGainControl?: ConstrainBoolean;
 
@@ -241,10 +242,11 @@ export interface ISdkConfig {
      *
      * ConstrainBoolean interface:
      * ``` ts
-     * type ConstrainULong = boolean | {
+     * type ConstrainBoolean = boolean | {
      *  exact?: boolean;
      *  ideal?: boolean;
      * }
+     * ```
      */
     micEchoCancellation?: ConstrainBoolean;
 
@@ -257,10 +259,11 @@ export interface ISdkConfig {
      *
      * ConstrainBoolean interface:
      * ``` ts
-     * type ConstrainULong = boolean | {
+     * type ConstrainBoolean = boolean | {
      *  exact?: boolean;
      *  ideal?: boolean;
      * }
+     * ```
      */
     micNoiseSuppression?: ConstrainBoolean;
 

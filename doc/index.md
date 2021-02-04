@@ -91,23 +91,21 @@ interface ISdkConfig {
     logger?: ILogger;
     optOutOfTelemetry?: boolean;
     allowedSessionTypes?: SessionTypes[];
-    media?: {
-        monitorMicVolume?: boolean;
-    };
     defaults?: {
-        audioStream?: MediaStream;
-        audioElement?: HTMLAudioElement;
-        videoElement?: HTMLVideoElement;
-        videoResolution?: {
-            width: ConstrainULong;
-            height: ConstrainULong;
-        };
-        videoDeviceId?: string | null;
-        audioDeviceId?: string | null;
-        micAutoGainControl?: ConstrainBoolean | boolean;
-        micEchoCancellation?: ConstrainBoolean | boolean;
-        micNoiseSuppression?: ConstrainBoolean | boolean;
-        outputDeviceId?: string | null;
+      audioStream?: MediaStream;
+      audioElement?: HTMLAudioElement;
+      videoElement?: HTMLVideoElement;
+      videoResolution?: {
+        width: ConstrainULong;
+        height: ConstrainULong;
+      };
+      videoDeviceId?: string | null;
+      audioDeviceId?: string | null;
+      outputDeviceId?: string | null;
+      micAutoGainControl?: ConstrainBoolean;
+      micEchoCancellation?: ConstrainBoolean;
+      micNoiseSuppression?: ConstrainBoolean;
+      monitorMicVolume?: boolean;
     };
 }
 ```
@@ -230,9 +228,9 @@ defaults?: {
     };
     videoDeviceId?: string | null;
     audioDeviceId?: string | null;
-    micAutoGainControl?: ConstrainBoolean | boolean;
-    micEchoCancellation?: ConstrainBoolean | boolean;
-    micNoiseSuppression?: ConstrainBoolean | boolean;
+    micAutoGainControl?: ConstrainBoolean;
+    micEchoCancellation?: ConstrainBoolean;
+    micNoiseSuppression?: ConstrainBoolean;
     outputDeviceId?: string | null;
     monitorMicVolume?: boolean;
   };
@@ -290,10 +288,10 @@ ConstrainULong type definition:
 
 ``` ts
 type ConstrainULong = number | {
- exact?: number;
- ideal?: number;
- max?: number;
- min?: number;
+  exact?: number;
+  ideal?: number;
+  max?: number;
+  min?: number;
 }
 ```
 
@@ -321,6 +319,53 @@ Default output device ID to use when starting camera media.
 > Not all browsers support output devices. For supported browsers, system default
  for output devices is always an empty string (ex: `''`)
 
+#### `defaults.micAutoGainControl`
+`micAutoGainControl?: ConstrainBoolean;` Optional: defaults to `true`
+
+Automatic gain control is a feature in which a sound
+source automatically manages changes in the volume
+of its source media to maintain a steady overall volume level.
+
+``` ts
+// ConstrainBoolean type
+type ConstrainBoolean = boolean | {
+  exact?: boolean;
+  ideal?: boolean;
+}
+```
+
+#### `defaults.micEchoCancellation`
+`micEchoCancellation?: ConstrainBoolean;` Optional: defaults to `true`
+
+Echo cancellation is a feature which attempts to prevent echo
+effects on a two-way audio connection by attempting to reduce
+or eliminate crosstalk between the user's output device and
+their input device. For example, it might apply a filter that
+negates the sound being produced on the speakers from being included
+in the input track generated from the microphone.
+
+``` ts
+// ConstrainBoolean type
+type ConstrainBoolean = boolean | {
+  exact?: boolean;
+  ideal?: boolean;
+}
+```
+
+#### `defaults.micNoiseSuppression`
+`micNoiseSuppression?: ConstrainBoolean;` Optional: defaults to `true`
+
+Noise suppression automatically filters the audio to remove or
+at least reduce background noise, hum caused by equipment, and
+the like from the sound before delivering it to your code.
+
+``` ts
+// ConstrainBoolean type
+type ConstrainBoolean = boolean | {
+  exact?: boolean;
+  ideal?: boolean;
+}
+```
 
 #### `defaults.monitorMicVolume`
 `monitorMicVolume?: boolean;` Optional: defaults to `false`
@@ -328,7 +373,7 @@ Default output device ID to use when starting camera media.
 When `true` all audio tracks created via the SDK
  will have their volumes monitored and emited on
  `sdk.media.on('audioTrackVolume', evt)`.
- See `sdk.media` events for more details.
+ See the [SDK Media audioTrackVolume event] events for more details.
 
 --------
 
@@ -556,20 +601,25 @@ Params:
   * Basic interface:
     ``` ts
     interface IMediaSettings {
-      micAutoGainControl?: ConstrainBoolean | boolean;
-      micEchoCancellation?: ConstrainBoolean | boolean;
-      micNoiseSuppression?: ConstrainBoolean | boolean;
+      micAutoGainControl?: ConstrainBoolean;
+      micEchoCancellation?: ConstrainBoolean;
+      micNoiseSuppression?: ConstrainBoolean;
       monitorMicVolume?: boolean;
       updateActiveSessions?: boolean;
     }
+
+    type ConstrainBoolean = boolean | {
+      exact?: boolean;
+      ideal?: boolean;
+    }
     ```
-  * `micAutoGainControl?: ConstrainBoolean | boolean` Optional. This will indicate the default audio constraint
+  * `micAutoGainControl?: ConstrainBoolean` Optional. This will indicate the default audio constraint
     for `autoGainControl` for future media.
     See https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/autoGainControl
-  * `micEchoCancellation?: ConstrainBoolean | boolean` Optional. This will indicate the default audio constraint
+  * `micEchoCancellation?: ConstrainBoolean` Optional. This will indicate the default audio constraint
     for `echoCancellation` for future media.
     https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation
-  * `micNoiseSuppression?: ConstrainBoolean | boolean` Optional. This will indicate the default audio constraint
+  * `micNoiseSuppression?: ConstrainBoolean` Optional. This will indicate the default audio constraint
     for `noiseSuppression` for future media.
     See https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/noiseSuppression
   * `monitorMicVolume?: boolean` Optional. Default setting for emitting `audioTrackVolume` events for future
@@ -1204,6 +1254,7 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [WebRTC Media]: media.md
 
 [ISdkMediaDeviceIds]: media.md#isdkmediadeviceids
+[SDK Media audioTrackVolume event]: media.md#audiotrackvolume
 
 [GenesysCloudMediaSession]: #genesyscloudmediasession
 [SdkError Class]: #sdkerror-class
