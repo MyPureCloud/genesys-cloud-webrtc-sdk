@@ -6,7 +6,7 @@ This SDK supports guests/unauthenticated users the ability to share their screen
 
 ## Session Flow
 
-WebRTC Screen Share sessions should be automatically accepted by the consuming guest application. A valid `organizationId`, 
+WebRTC Screen Share sessions should be automatically accepted by the consuming guest application. A valid `organizationId`,
 `conversationId`, and `securityCode` are required to start a screen share session.
 
 ## API
@@ -15,19 +15,15 @@ WebRTC Screen Share sessions should be automatically accepted by the consuming g
 * See the full list of the [APIs], [methods], and [events].
 
 ## Example Usage
-An instance of the SDK must be created with an `organizationId` passed in as an option. 
-Once a `securityCode` is received (required for guest users), the SDK can be initialized.
-
-If the user cancels/denies the screen share, the error will need to be handled by the consuming appication. 
-`autoConnectSessions` must be set to `true` (which is default) in order to automatically connect the guest session.
+An instance of the SDK must be created with an `organizationId` passed in as an option.
+Once a `securityCode` is received via a public API request (required for guest users), the SDK can be initialized.
 
 ``` ts
 import { GenesysCloudWebrtcSdk } from 'genesys-cloud-webrtc-sdk';
 
 const sdk = new GenesysCloudWebrtcSdk({
   organizationId: 'your-org-guid', // required for guests
-  environment: 'mypurecloud.com',
-  autoConnectSessions: true // default is true
+  environment: 'mypurecloud.com'
 });
 
 // this will authenticate using the securityCode
@@ -46,7 +42,7 @@ sdk.initialize({ securityCode: 'one-time-security-code' })
 ```
 
 Note about the `securityCode`s – they can only be used one time. If `sdk.startScreenShare()` throws
-an error for any reason, a new security code will need to be requested. 
+an error for any reason, a new security code will need to be requested.
 
 [APIs]: index.md#genesyscloudwebrtcsdk
 [sdk.startScreenShare()]: index.md#startscreenshare
