@@ -67,13 +67,8 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       if (!this.sdk.isGuest) {
         throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
       }
+
       const sessionInfo = { sessionId: session.id, conversationId: session.conversationId };
-      if (!this.sdk._config.autoConnectSessions) {
-        // if autoConnectSessions is 'false' and we have a guest, throw an error
-        //  guests should auto accept screen share session
-        const errMsg = '`autoConnectSession` must be set to "true" for guests';
-        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, errMsg, sessionInfo);
-      }
 
       if (!this._screenStreamPromise) {
         const errMsg = 'No pending or active screen share media promise';

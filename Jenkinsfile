@@ -42,8 +42,13 @@ webappPipeline {
     postReleaseStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
             sh("""
+                # tag the version
                 git tag v${version}
                 git push origin --tags
+                # patch to prep for the next version
+                npm version patch --no-git-tag-version
+                git commit -am "Prep next version"
+                git push origin HEAD:master --tags
             """)
         }
     }

@@ -167,16 +167,6 @@ describe('handleSessionInit', () => {
     expect((stream as any)._tracks[0].stop).toHaveBeenCalled();
   });
 
-  it('should blow up if !autoConnectSessions', async () => {
-    mockSdk._config.autoConnectSessions = false;
-    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-
-    jest.spyOn(mockSdk.logger, 'warn');
-    const session: any = new MockSession();
-
-    await expect(handler.handleSessionInit(session)).rejects.toThrow();
-  });
-
   it('should blow up if not isGuest', async () => {
     (mockSdk as any).isGuest = false;
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();

@@ -147,8 +147,6 @@ coming from `sdk.on('sessionStarted', (evt))`. If set
 to `false`, the session will need to be manually accepted
 using `sdk.acceptSession({ sessionId })`.
 
-> Note: This is required to be true for guest screen share
-
 #### `jidResource`
 `jidResource?: string;` Optional: default `undefined`
 
