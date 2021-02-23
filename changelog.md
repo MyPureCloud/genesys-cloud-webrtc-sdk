@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Has Firefox limitations. See documentation.
 * [PCM-1512](https://inindca.atlassian.net/browse/PCM-1512) – fixed softphone and video `acceptSession` to respect media options of `null`
   as being `system default` requests.
+* [PCM-1522](https://inindca.atlassian.net/browse/PCM-1522) – fixed `sdk.updateOutgoingMedia()` to respect media options of `null`
 
 ### Breaking Change
 * Updated configuration options for constructing an SDK instance (see [docs](doc/index.md) for new config)
