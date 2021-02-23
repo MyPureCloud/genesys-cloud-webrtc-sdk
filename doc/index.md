@@ -693,6 +693,20 @@ Params:
 
 Returns: a promise that fullfils once the mute request has completed
 
+#### `setAccessToken()`
+
+Set the accessToken the sdk uses to authenticate to the API.
+
+Declaration:
+``` ts
+setAccessToken(token: string): void;
+```
+
+Params:
+* `token: string` Required: new access token
+
+Returns: void
+
 #### `acceptPendingSession()`
 Accept a pending session based on the passed in ID.
 
