@@ -23,7 +23,6 @@ describe('Client', () => {
   let streamingClientMock: jest.Mocked<StreamingClient>;
   let mediaMock: jest.Mocked<SdkMedia>;
 
-
   beforeEach(() => {
     constructSdk = (config) => {
       /* if we have no config, then use some defaults */
@@ -412,6 +411,19 @@ describe('Client', () => {
 
       await sdk.setVideoMute(params);
       expect(sdk.sessionManager.setVideoMute).toBeCalledWith(params);
+    });
+  });
+
+  describe('setAccessToken()', () => {
+    it('should set _config.accessToken', () => {
+      sdk = constructSdk();
+
+      expect(sdk._config.accessToken).toBe('secure');
+
+      const newToken = 'hi-auth-token';
+      sdk.setAccessToken(newToken);
+
+      expect(sdk._config.accessToken).toBe(newToken);
     });
   });
 

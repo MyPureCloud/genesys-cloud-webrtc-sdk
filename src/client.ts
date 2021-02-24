@@ -26,7 +26,6 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
-import { type } from 'os';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -453,6 +452,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
     await this.sessionManager.setAudioMute(muteOptions);
+  }
+
+  /**
+   * Set the accessToken the sdk uses to authenticate
+   *  to the API.
+   * @param token new access token
+   *
+   * @returns void
+   */
+  setAccessToken (token: string): void {
+    this._config.accessToken = token;
   }
 
   /**
