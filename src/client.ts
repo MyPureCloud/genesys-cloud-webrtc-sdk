@@ -318,10 +318,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  media devices have been updated
    */
   updateOutgoingMedia (updateOptions: IUpdateOutgoingMedia): Promise<void> {
-    if (!updateOptions ||
-      (!updateOptions.stream && !updateOptions.videoDeviceId && !updateOptions.audioDeviceId)) {
+    const updatingVideo = updateOptions.videoDeviceId || updateOptions.videoDeviceId === null;
+    const updatingAudio = updateOptions.audioDeviceId || updateOptions.audioDeviceId === null;
+
+    if (!updateOptions || (!updateOptions.stream && !updatingVideo && !updatingAudio)) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, 'updateOutgoingMedia must be called with a MediaStream, a videoDeviceId, or an audioDeviceId');
     }
+
     return this.sessionManager.updateOutgoingMedia(updateOptions);
   }
 

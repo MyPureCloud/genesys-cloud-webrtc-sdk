@@ -256,28 +256,88 @@ describe('Client', () => {
       sdk = constructSdk();
       const options: IUpdateOutgoingMedia = {};
 
-      try {
-        await sdk.updateOutgoingMedia(options);
-        fail('it should have failed');
-      } catch (e) {
-        expect(e.type).toBe(SdkErrorTypes.invalid_options);
-      }
+      const runTestWithOptions = async (options: IUpdateOutgoingMedia) => {
+        try {
+          await sdk.updateOutgoingMedia(options);
+          fail('it should have failed');
+        } catch (e) {
+          expect(e.type).toBe(SdkErrorTypes.invalid_options);
+        }
+      };
+
+      /* with undefined `stream`, `audioDeviceId`, or `videoDeviceId` */
+      await runTestWithOptions(options);
+
+      /* with `false` video */
+      options.videoDeviceId = false;
+      await runTestWithOptions(options);
+
+      /* with `false` audio */
+      options.audioDeviceId = false;
+      await runTestWithOptions(options);
     });
 
-    it('should call through to sessionManager', async () => {
+    it('should call through to sessionManager if called with media stream', async () => {
       sdk = constructSdk();
       const options: IUpdateOutgoingMedia = {
         sessionId: 'session-id',
         session: {} as IExtendedMediaSession,
-        stream: {} as MediaStream,
-        videoDeviceId: 'video-id',
-        audioDeviceId: 'audio-id'
+        stream: {} as MediaStream
       };
 
       sessionManagerMock.updateOutgoingMedia.mockResolvedValue(undefined);
 
       await sdk.updateOutgoingMedia(options);
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+    });
 
+    it('should call through to sessionManager if called with a valid audio device id', async () => {
+      sdk = constructSdk();
+      const options: IUpdateOutgoingMedia = {
+        sessionId: 'session-id',
+        session: {} as IExtendedMediaSession,
+        audioDeviceId: true
+      };
+
+      sessionManagerMock.updateOutgoingMedia.mockResolvedValue(undefined);
+
+      /* with `true` */
+      await sdk.updateOutgoingMedia(options);
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+
+      /* with `null` (sys default) */
+      options.audioDeviceId = null;
+      await sdk.updateOutgoingMedia(options);
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+
+      /* with `string` deviceId */
+      options.audioDeviceId = 'some-device-id';
+      await sdk.updateOutgoingMedia(options);
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+    });
+
+    it('should call through to sessionManager if called with a valid video device id', async () => {
+      sdk = constructSdk();
+      const options: IUpdateOutgoingMedia = {
+        sessionId: 'session-id',
+        session: {} as IExtendedMediaSession,
+        videoDeviceId: true
+      };
+
+      sessionManagerMock.updateOutgoingMedia.mockResolvedValue(undefined);
+
+      /* with `true` */
+      await sdk.updateOutgoingMedia(options);
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+
+      /* with `null` (sys default) */
+      options.videoDeviceId = null;
+      await sdk.updateOutgoingMedia(options);
+      expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
+
+      /* with `string` deviceId */
+      options.videoDeviceId = 'some-device-id';
+      await sdk.updateOutgoingMedia(options);
       expect(sdk.sessionManager.updateOutgoingMedia).toBeCalledWith(options);
     });
   });
