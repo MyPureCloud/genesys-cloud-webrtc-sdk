@@ -213,7 +213,8 @@ export default abstract class BaseSessionHandler {
       session
     };
 
-    if (!stream && (newStartMediaContraints.audio || newStartMediaContraints.video)) {
+    /* Allow null because it is the system default. If false or undefined, do not request media. */
+    if (!stream && (newStartMediaContraints.audio || newStartMediaContraints.video) || (newStartMediaContraints.audio === null || newStartMediaContraints.video === null)) {
       try {
         stream = await startMedia(this.sdk, newStartMediaContraints);
       } catch (e) {
