@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.5...HEAD)
+* [PCM-1505](https://inindca.atlassian.net/browse/PCM-1505) fix changing camera while muted breaks device selector.
 # [v5.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.4...v5.0.5)
 ### Fixed
 * [PCM-1525](https://inindca.atlassian.net/browse/PCM-1525) bump streaming client version to fix acd screen share attr.

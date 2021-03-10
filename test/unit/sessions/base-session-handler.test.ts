@@ -154,7 +154,7 @@ describe('updateOutgoingMedia()', () => {
     /* video and audio with IDs */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId, audioDeviceId });
     expect(session.getTracks()).toEqual(stream.getTracks());
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: videoDeviceId, audio: audioDeviceId, session });
+    expect(startMediaSpy).toBeCalled();
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
@@ -165,15 +165,27 @@ describe('updateOutgoingMedia()', () => {
     startMediaSpy.mockResolvedValue(stream as any);
 
     /* video only */
-    await handler.updateOutgoingMedia(session as any, { videoDeviceId: null, audioDeviceId: undefined });
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: null, audio: undefined, session });
+    await handler.updateOutgoingMedia(session as any, { videoDeviceId: videoDeviceId, audioDeviceId: undefined });
+    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: videoDeviceId, audio: undefined, session });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
-    /* audio only */
-    await handler.updateOutgoingMedia(session as any, { videoDeviceId: undefined, audioDeviceId: null });
-    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: null, session });
+    // /* audio only */
+    await handler.updateOutgoingMedia(session as any, { videoDeviceId: undefined, audioDeviceId: audioDeviceId });
+    expect(startMediaSpy).toBeCalledWith(mockSdk, { video: undefined, audio: audioDeviceId, session });
 
+  });
+
+  it ('should not call startMedia if both video and audio device ids are undefined or false', async () => {
+    const session = new MockSession();
+    session._outboundStream = new MockStream();
+    const stream = new MockStream({ video: true, audio: true });
+
+    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(stream as any);
+
+    /* video and audio with no IDs */
+    await handler.updateOutgoingMedia(session as any, { videoDeviceId: false, audioDeviceId: undefined });
+    expect(startMediaSpy).not.toBeCalled();
   });
 
   it('should skip any screenshare tracks on the session', async () => {

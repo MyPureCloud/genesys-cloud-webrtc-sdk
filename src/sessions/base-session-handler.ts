@@ -206,14 +206,17 @@ export default abstract class BaseSessionHandler {
 
     await Promise.all(destroyMediaPromises);
 
-    if (!stream) {
+    const newStartMediaContraints = {
+      audio: options.audioDeviceId,
+      /* if video is muted, we don't want to request it */
+      video: !session.videoMuted && options.videoDeviceId,
+      session
+    };
+
+    /* Allow null because it is the system default. If false or undefined, do not request media. */
+    if (!stream && (newStartMediaContraints.audio || newStartMediaContraints.video) || (newStartMediaContraints.audio === null || newStartMediaContraints.video === null)) {
       try {
-        stream = await startMedia(this.sdk, {
-          audio: options.audioDeviceId,
-          /* if video is muted, we don't want to request it */
-          video: !session.videoMuted && options.videoDeviceId,
-          session
-        });
+        stream = await startMedia(this.sdk, newStartMediaContraints);
       } catch (e) {
         /*
           In FF, if the user does not grant us permissions for the new media,
@@ -243,40 +246,42 @@ export default abstract class BaseSessionHandler {
         throw e;
       }
     }
+    /* If new media is not started, stream is undefined and there are no tracks. */
+    if (stream) {
+      /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
+      stream.getTracks().forEach(track => {
+        if (session.videoMuted && track.kind === 'video') {
+          this.log('warn', 'Not using video track from stream because the session has video on mute', {
+            trackId: track.id,
+            sessionId: session.id,
+            conversationId: session.conversationId
+          });
+          track.stop();
+          stream.removeTrack(track);
+        }
+      });
 
-    /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
-    stream.getTracks().forEach(track => {
-      if (session.videoMuted && track.kind === 'video') {
-        this.log('warn', 'Not using video track from stream because the session has video on mute', {
-          trackId: track.id,
-          sessionId: session.id,
-          conversationId: session.conversationId
-        });
-        track.stop();
-        stream.removeTrack(track);
-      }
-    });
+      /* just in case the system default is changing, we need to tell this log function what was the
+        previous device being used (since it won't show up in the enumerated device list anymore) */
+      logDeviceChange(this.sdk, session, 'changingDevices', {
+        fromVideoTrack: fromVideoTrack,
+        fromAudioTrack: fromAudioTrack,
+        toVideoTrack: stream.getVideoTracks()[0],
+        toAudioTrack: stream.getAudioTracks()[0]
+      });
 
-    /* just in case the system default is changing, we need to tell this log function what was the
-      previous device being used (since it won't show up in the enumerated device list anymore) */
-    logDeviceChange(this.sdk, session, 'changingDevices', {
-      fromVideoTrack: fromVideoTrack,
-      fromAudioTrack: fromAudioTrack,
-      toVideoTrack: stream.getVideoTracks()[0],
-      toAudioTrack: stream.getAudioTracks()[0]
-    });
+      const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
+        await this.addReplaceTrackToSession(session, track);
+        outboundStream.addTrack(track);
 
-    const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
-      await this.addReplaceTrackToSession(session, track);
-      outboundStream.addTrack(track);
+        /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
+        if (track.kind === 'audio' && session.audioMuted) {
+          await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
+        }
+      });
 
-      /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
-      if (track.kind === 'audio' && session.audioMuted) {
-        await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
-      }
-    });
-
-    await Promise.all(newMediaPromises);
+      await Promise.all(newMediaPromises);
+    }
 
     /* prune tracks not being sent */
     session._outboundStream.getTracks().forEach((track) => {
