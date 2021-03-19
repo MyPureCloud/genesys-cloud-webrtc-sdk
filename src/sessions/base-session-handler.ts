@@ -1,11 +1,12 @@
+import { JingleReason } from 'stanza/protocol';
+
 import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IExtendedMediaSession, IUpdateOutgoingMedia, IJingleReason } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { checkHasTransceiverFunctionality, hasOutputDeviceSupport, logDeviceChange, startMedia } from '../media-utils';
-import { throwSdkError } from '../utils';
+import { logPendingSession, throwSdkError } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
-import { JingleReason } from 'stanza/protocol';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -34,7 +35,7 @@ export default abstract class BaseSessionHandler {
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
     pendingSession.sessionType = this.sessionType;
-    this.log('info', 'handling propose', { pendingSession });
+    logPendingSession(this.sdk.logger, 'handling propose', pendingSession);
     this.sdk.emit('pendingSession', pendingSession);
   }
 

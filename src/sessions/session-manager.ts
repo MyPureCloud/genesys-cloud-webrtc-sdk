@@ -3,7 +3,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import { throwSdkError } from '../utils';
+import { logPendingSession, throwSdkError } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
 import { getValidDeviceId, getEnumeratedDevices, hasOutputDeviceSupport } from '../media-utils';
@@ -189,12 +189,12 @@ export class SessionManager {
       return;
     }
 
-    this.log('info', 'onPendingSession', sessionInfo);
+    logPendingSession(this.sdk.logger, 'onPendingSession', sessionInfo);
 
     const existingSession = this.getPendingSession(sessionInfo.sessionId);
 
     if (existingSession) {
-      this.log('info', 'duplicate session invitation, ignoring', sessionInfo);
+      logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
       return;
     }
 

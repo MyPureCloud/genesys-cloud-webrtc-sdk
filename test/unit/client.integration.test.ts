@@ -6,7 +6,7 @@ window.crypto = {
 };
 
 import { GenesysCloudWebrtcSdk } from '../../src/client';
-import { IExtendedMediaSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds } from '../../src/types/interfaces';
+import { IExtendedMediaSession, ISdkConstructOptions, ICustomerData, IUpdateOutgoingMedia, IMediaDeviceIds, isSecurityCode, isCustomerData } from '../../src/types/interfaces';
 import {
   MockStream,
   mockApis,
@@ -21,7 +21,7 @@ import {
   wait
 } from '../test-utils';
 import { SdkError } from '../../src/utils';
-import { SdkErrorTypes, LogLevels, SessionTypes } from '../../src/types/enums';
+import { SdkErrorTypes, SessionTypes } from '../../src/types/enums';
 import * as mediaUtils from '../../src/media-utils';
 
 let { ws } = require('../test-utils');
@@ -31,7 +31,7 @@ function getMockLogger () {
 }
 
 function disconnectSdk (sdk: GenesysCloudWebrtcSdk): Promise<any> {
-  return new Promise(async res => {
+  return new Promise<void>(async res => {
     // wait and then call disconnect
     await wait(50);
     await sdk.disconnect();
@@ -161,7 +161,7 @@ describe('Client', () => {
       mockGetUserApi({ nockScope: getUser });
       mockGetChannelApi({ nockScope: getChannel });
       mockNotificationSubscription({ nockScope: notificationSubscription });
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         sdk.once('disconnected', async () => {
           setupWss();
           expect(disconnectSpy).toHaveBeenCalled();
@@ -285,7 +285,7 @@ describe('Client', () => {
         if (!transformedArgs) {
           transformedArgs = args;
         }
-        const promise = new Promise(resolve => {
+        const promise = new Promise<void>(resolve => {
           const handler = (...eventArgs) => {
             expect(transformedArgs).toEqual(eventArgs);
             sdk.off(eventName, handler);
@@ -789,42 +789,6 @@ describe('Client', () => {
       await disconnectSdk(sdk);
     });
 
-    it('should set icePolicy to relay if only relay candidates are returned', async () => {
-      const { sdk } = mockApis({ withIceRefresh: true });
-      await sdk.initialize();
-
-      sdk._streamingConnection.connected = true;
-      expect(sdk.connected).toBe(true);
-      expect(sdk._streamingConnection._webrtcSessions.config.iceTransportPolicy).toEqual('all');
-
-      jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.resolve(
-        [
-          {
-            'host': 'turn.use1.dev-pure.cloud',
-            'password': 'pw',
-            'port': '3478',
-            'transport': 'udp',
-            'type': 'relay',
-            'username': 'user'
-          },
-          {
-            'host': 'turn.use1.dev-pure.cloud',
-            'password': 'pass',
-            'port': '3478',
-            'transport': 'udp',
-            'type': 'relay',
-            'username': 'u2'
-          }
-        ]
-      ));
-      await sdk._refreshIceServers();
-      expect(sdk._streamingConnection.webrtcSessions.refreshIceServers).toHaveBeenCalledTimes(1);
-      expect(sdk._refreshIceServersInterval).toBeTruthy();
-      expect(sdk._streamingConnection._webrtcSessions.config.iceTransportPolicy).toEqual('relay');
-
-      await disconnectSdk(sdk);
-    });
-
     it('emits an error if there is an error refreshing turn servers', async () => {
       const { sdk } = mockApis({ withIceRefresh: true });
       await sdk.initialize();
@@ -833,7 +797,7 @@ describe('Client', () => {
       expect(sdk.connected).toBe(true);
 
       const promise = new Promise(resolve => sdk.on('sdkError', resolve));
-      jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockReturnValue(Promise.reject(new Error('fail')));
+      jest.spyOn(sdk._streamingConnection.webrtcSessions, 'refreshIceServers').mockRejectedValue(new Error('fail'));
       try {
         await sdk._refreshIceServers();
         fail('should have thrown');
@@ -848,14 +812,6 @@ describe('Client', () => {
   });
 
   describe('isCustomerData()', () => {
-    let sdk: GenesysCloudWebrtcSdk;
-    let isCustomerData: GenesysCloudWebrtcSdk['isCustomerData'];
-
-    beforeEach(() => {
-      sdk = mockApis().sdk;
-      isCustomerData = sdk['isCustomerData'];
-    });
-
     it('should return true if valid customerData is present', () => {
       const customerData = {
         jwt: 'JWT',
@@ -905,14 +861,6 @@ describe('Client', () => {
   });
 
   describe('isSecurityCode()', () => {
-    let sdk: GenesysCloudWebrtcSdk;
-    let isSecurityCode: GenesysCloudWebrtcSdk['isSecurityCode'];
-
-    beforeEach(() => {
-      sdk = mockApis().sdk;
-      isSecurityCode = sdk['isSecurityCode'];
-    });
-
     it('should return true if object has securityKey', () => {
       expect(isSecurityCode({ securityCode: '123456' })).toBe(true);
     });

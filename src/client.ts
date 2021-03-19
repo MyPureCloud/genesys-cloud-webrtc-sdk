@@ -1,5 +1,9 @@
 /// <reference path="types/libs.ts" />
 
+import { EventEmitter } from 'events';
+import StrictEventEmitter from 'strict-event-emitter-types';
+import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
+
 import {
   ISdkConstructOptions,
   ILogger,
@@ -12,21 +16,17 @@ import {
   IMediaRequestOptions,
   IMediaDeviceIds,
   IUpdateOutgoingMedia,
-  SdkEvents
+  SdkEvents,
+  isSecurityCode,
+  isCustomerData,
+  IExtendedMediaSession
 } from './types/interfaces';
-import StreamingClient from 'genesys-cloud-streaming-client';
-
-import {
-  setupStreamingClient,
-  proxyStreamingClientEvents
-} from './client-private';
-import { requestApi, throwSdkError, SdkError } from './utils';
+import { setupStreamingClient, proxyStreamingClientEvents } from './client-private';
+import { throwSdkError, SdkError, requestApi, requestApiWithRetry } from './utils';
 import { setupLogging } from './logging';
-import { SdkErrorTypes, LogLevels, SessionTypes } from './types/enums';
+import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { startMedia, startDisplayMedia } from './media-utils';
-import { EventEmitter } from 'events';
-import StrictEventEmitter from 'strict-event-emitter-types';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -77,6 +77,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
+  _http: HttpClient;
   _orgDetails: any;
   _personDetails: IPersonDetails;
   _clientId: string;
@@ -137,12 +138,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
     this.on('sdkError', this.logger.error.bind(this.logger));
     this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
-    this.on('cancelPendingSession', this.logger.info.bind(this.logger, 'cancelPendingSession'));
-    this.on('handledPendingSession', this.logger.info.bind(this.logger, 'handledPendingSession'));
     this.on('trace', this.logger.info.bind(this.logger));
+    this.on('cancelPendingSession', (sessionId: string) => this.logger.info('cancelPendingSession', { sessionId }));
+    this.on('handledPendingSession', (pendingSession: IExtendedMediaSession) => this.logger.info('handledPendingSession', {
+      sessionId: pendingSession.sid,
+      conversationId: pendingSession.conversationId,
+      sessionType: pendingSession.sessionType
+    }));
 
     this._connected = false;
     this._streamingConnection = null;
+    this._http = new HttpClient();
   }
 
   /**
@@ -157,7 +163,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       let guestPromise: Promise<void>;
 
       /* if there is a securityCode, fetch conversation details */
-      if (this.isSecurityCode(opts)) {
+      if (isSecurityCode(opts)) {
         this.logger.debug('Fetching conversation details via secuirty code', opts.securityCode);
         guestPromise = requestApi.call(this, '/conversations/codes', {
           method: 'post',
@@ -165,13 +171,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             organizationId: this._orgDetails.id,
             addCommunicationCode: opts.securityCode
           },
-          auth: false
+          noAuthHeader: true
         }).then(({ body }) => {
           this._customerData = body;
         });
 
         /* if no securityCode, check for valid customerData */
-      } else if (this.isCustomerData(opts)) {
+      } else if (isCustomerData(opts)) {
         this.logger.debug('Using customerData passed into the initialize', opts);
         guestPromise = Promise.resolve().then(() => {
           this._customerData = opts;
@@ -182,16 +188,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       httpRequests.push(guestPromise);
     } else {
-      const getOrg = requestApi.call(this, '/organizations/me')
+      const getOrg = requestApiWithRetry.call(this, '/organizations/me')
         .then(({ body }) => {
           this._orgDetails = body;
-          this.logger.debug('debug', 'Organization details', body);
+          this.logger.debug('Fetched organization details', body, true); // don't log PII
         });
 
-      const getPerson = requestApi.call(this, '/users/me')
+      const getPerson = requestApiWithRetry.call(this, '/users/me')
         .then(({ body }) => {
           this._personDetails = body;
-          this.logger.debug('debug', 'Person details', body);
+          this.logger.debug('Fetched person details', body, true); // don't log PII
         });
 
       httpRequests.push(getOrg);
@@ -420,6 +426,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Disconnect the streaming connection
    */
   public disconnect (): Promise<any> {
+    this._http.stopAllRetries();
     return this._streamingConnection.disconnect();
   }
 
@@ -427,6 +434,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Reconnect the streaming connection
    */
   public reconnect (): Promise<any> {
+    this._http.stopAllRetries();
     return this._streamingConnection.reconnect();
   }
 
@@ -443,33 +451,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         this.logger.error(new Error('refreshIceServers yielded no results'));
         return;
       }
-
-      const stunServers = services.filter((service) => service.type === 'stun');
-      if (!stunServers.length) {
-        this.logger.info('No stun servers received, setting iceTransportPolicy to "relay"');
-        this._streamingConnection._webrtcSessions.config.iceTransportPolicy = 'relay';
-      }
     } catch (err) {
       const errorMessage = 'GenesysCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
       this.logger.warn(errorMessage, err);
       throwSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
     }
   }
-
-  private isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {
-    data = data as { securityCode: string };
-    return !!(data && data.securityCode);
-  }
-
-  private isCustomerData (data: { securityCode: string } | ICustomerData): data is ICustomerData {
-    data = data as ICustomerData;
-    return !!(data
-      && data.conversation
-      && data.conversation.id
-      && data.sourceCommunicationId
-      && data.jwt);
-  }
-
 }
 
 export default GenesysCloudWebrtcSdk;

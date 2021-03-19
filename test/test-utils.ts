@@ -3,11 +3,12 @@ import nock from 'nock';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { HttpClient } from 'genesys-cloud-streaming-client';
+import { EventEmitter } from 'events';
 
 import { ISdkConstructOptions, ICustomerData, IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfaces';
-import { SessionTypes, LogLevels } from '../src/types/enums';
+import { SessionTypes } from '../src/types/enums';
 import { GenesysCloudWebrtcSdk } from '../src/index';
-import { EventEmitter } from 'events';
 
 declare var global: {
   window: any,
@@ -32,7 +33,7 @@ export class SimpleMockSdk extends EventEmitter {
     super();
     this.on(EventEmitter.errorMonitor, () => null);
   }
-
+  _http = new HttpClient();
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
     logLevel: 'debug',

@@ -12,3 +12,10 @@ document.getElementById('clear-log').addEventListener('click', controller.clearL
 
 // Pre-populate outbound call input with something to test
 document.getElementById('outbound-phone-number').value = '*86';
+
+// pre-populate orgId if found in local storage
+const _orgId = localStorage.getItem('sdk_org_id');
+if (_orgId) {
+  document.getElementById('org-id').value = _orgId;
+}
+
