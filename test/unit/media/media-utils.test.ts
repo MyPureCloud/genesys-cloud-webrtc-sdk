@@ -82,7 +82,7 @@ describe('attachAudioMedia()', () => {
 
     const stream: any = {};
 
-    mediaUtils.attachAudioMedia(mockSdk, stream, element);
+    mediaUtils.attachAudioMedia(mockSdk, stream, 100, element);
 
     expect(element.srcObject).toBe(stream);
     expect(mediaUtils.getOrCreateAudioMediaElement).not.toHaveBeenCalled();
@@ -95,11 +95,22 @@ describe('attachAudioMedia()', () => {
     element.srcObject = stream;
     jest.spyOn(mediaUtils, 'getOrCreateAudioMediaElement');
 
-    mediaUtils.attachAudioMedia(mockSdk, stream, element);
+    mediaUtils.attachAudioMedia(mockSdk, stream, 100, element);
 
     expect(element.srcObject).toBe(stream);
     expect(mediaUtils.getOrCreateAudioMediaElement).not.toHaveBeenCalled();
     expect(mockSdk.logger.warn).toHaveBeenCalled();
+  });
+
+  it('should set the specified volume on the element', () => {
+    const element = document.createElement('audio');
+    jest.spyOn(mediaUtils, 'getOrCreateAudioMediaElement').mockReturnValue(element);
+
+    const stream: any = {};
+
+    mediaUtils.attachAudioMedia(mockSdk, stream, 25);
+
+    expect(element.volume).toEqual(.25);
   });
 });
 

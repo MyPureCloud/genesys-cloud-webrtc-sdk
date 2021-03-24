@@ -686,4 +686,38 @@ describe('Client', () => {
       expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalled();
     });
   });
+
+  describe('updateAudioVolume()', () => {
+    beforeEach(() => {
+      sdk = constructSdk({
+        accessToken: 'access-granted',
+        environment: 'mypurecloud.com',
+        defaults: {
+          micAutoGainControl: true,
+          micEchoCancellation: false
+        }
+      });
+
+      sdk.sessionManager.updateOutgoingMediaForAllSessions = jest.fn().mockResolvedValue(null);
+    });
+
+    it('should validate allowed volume levels', async () => {
+      expect(() => sdk.updateAudioVolume(-1)).toThrowError('Invalid volume level');
+      expect(() => sdk.updateAudioVolume(101)).toThrowError('Invalid volume level');
+      const spy = sdk.sessionManager.updateAudioVolume = jest.fn();
+
+      expect(spy).not.toHaveBeenCalled();
+
+      sdk.updateAudioVolume(0);
+      expect(spy).toHaveBeenCalled();
+      spy.mockReset();
+
+      sdk.updateAudioVolume(100);
+      expect(spy).toHaveBeenCalled();
+      spy.mockReset();
+
+      sdk.updateAudioVolume(50);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
 });

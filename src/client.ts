@@ -126,6 +126,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           micNoiseSuppression: defaultConfigOption(defaultsOptions.micNoiseSuppression, true),
           videoDeviceId: defaultsOptions.videoDeviceId || null,
           audioDeviceId: defaultsOptions.audioDeviceId || null,
+          audioVolume: defaultConfigOption(defaultsOptions.audioVolume, 100),
           outputDeviceId: defaultsOptions.outputDeviceId || null,
           monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
         }
@@ -423,6 +424,22 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     if (settings.updateActiveSessions) {
       return this.sessionManager.updateOutgoingMediaForAllSessions();
     }
+  }
+
+  /**
+   * Updates the audio volume for all active applicable sessions
+   * as well as the default volume for future sessions
+   *
+   * @param volume desired volume between 0 and 100
+   *
+   * @returns void
+   */
+  updateAudioVolume (volume: number): void {
+    if (volume < 0 || volume > 100) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Invalid volume level. Must be between 0 and 100 inclusive.', { providedVolume: volume });
+    }
+    this._config.defaults.audioVolume = volume;
+    this.sessionManager.updateAudioVolume(volume);
   }
 
   /**

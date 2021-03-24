@@ -101,6 +101,7 @@ interface ISdkConfig {
       };
       videoDeviceId?: string | null;
       audioDeviceId?: string | null;
+      audioVolume?: number;
       outputDeviceId?: string | null;
       micAutoGainControl?: ConstrainBoolean;
       micEchoCancellation?: ConstrainBoolean;
@@ -226,6 +227,7 @@ defaults?: {
     };
     videoDeviceId?: string | null;
     audioDeviceId?: string | null;
+    audioVolume?: number;
     micAutoGainControl?: ConstrainBoolean;
     micEchoCancellation?: ConstrainBoolean;
     micNoiseSuppression?: ConstrainBoolean;
@@ -307,6 +309,13 @@ Default video device ID to use when starting camera media.
 Default audio device ID to use when starting microphone media.
  - `string` to request media for specified deviceId
  - `null|falsy` to request media system default device
+
+
+#### `defaults.audioVolume`
+`audioVolume?: number;` Optional: defaults to `100`
+
+Volume level to set on the audio/video elements when attaching media.
+This value must be between `0-100` inclusive.
 
 #### `defaults.outputDeviceId`
 `outputDeviceId?: string | null;` Optional: defaults to `null`
@@ -578,7 +587,7 @@ Params:
 Returns: a promise that fullfils once the default
 device values have been updated
 
-#### `updateMediaSettingDefaults()`
+#### `updateDefaultMediaSettings()`
 Update the default media settings that exist in the sdk config.
 
 If `updateActiveSessions` is `true`, any active sessions will
@@ -590,7 +599,7 @@ active sessions' media devices will not be touched.
 
 Declaration:
 ``` ts
-updateMediaSettingDefaults(options?: IMediaSettings & {
+updateDefaultMediaSettings(options?: IMediaSettings & {
     updateActiveSessions?: boolean;
 }): Promise<any>;
 ```
@@ -626,6 +635,19 @@ Params:
 
 Returns: a promise that fullfils once the default
 settings and active sessions have been updated (if specified)
+
+#### `updateAudioVolume()`
+Updates the audio volume for all active applicable sessions as well as the default volume for future sessions
+
+Declaration:
+``` ts
+updateAudioVolume (volume: number) {
+```
+Params:
+* `volume: number` Required: Value must be between 0 and 100 inclusive
+
+Returns: void
+
 
 #### `setVideoMute()`
 Mutes/Unmutes video/camera for a session and updates the conversation accordingly.

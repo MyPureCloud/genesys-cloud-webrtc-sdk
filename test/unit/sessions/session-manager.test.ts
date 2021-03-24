@@ -819,3 +819,24 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(sessionManager.updateOutputDeviceForAllSessions).toHaveBeenCalled();
   });
 });
+
+describe('updateAudioVolume', () => {
+  it('should call the handler to update all sessions, non-screenshare sessions', async () => {
+    const sessions = [
+      new MockSession(SessionTypes.collaborateVideo),
+      new MockSession(SessionTypes.softphone)
+    ];
+    const mockSessionHandler = { updateAudioVolume: jest.fn() };
+
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+
+    sessionManager.updateAudioVolume(63);
+
+    sessions
+      .forEach(session => {
+        expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ jingleSession: session });
+        expect(mockSessionHandler.updateAudioVolume).toHaveBeenCalledWith(session, 63);
+      });
+  });
+});

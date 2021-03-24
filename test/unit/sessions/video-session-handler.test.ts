@@ -1235,7 +1235,7 @@ describe('attachIncomingTrackToElement', () => {
     const fakeStream = {};
     jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockReturnValue(fakeStream as any);
 
-    handler.attachIncomingTrackToElement(track as any, { audioElement: audio, videoElement: video });
+    handler.attachIncomingTrackToElement(track as any, { audioElement: audio, volume: 45, videoElement: video });
 
     expect(audio.srcObject).toBe(fakeStream);
     expect(video.srcObject).toBeUndefined();
@@ -1252,7 +1252,7 @@ describe('attachIncomingTrackToElement', () => {
     const fakeStream = {};
     jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockReturnValue(fakeStream as any);
 
-    handler.attachIncomingTrackToElement(track as any, { audioElement: audio, videoElement: video });
+    handler.attachIncomingTrackToElement(track as any, { audioElement: audio, volume: 44, videoElement: video });
 
     expect(video.srcObject).toBe(fakeStream);
     expect(audio.srcObject).toBeUndefined();

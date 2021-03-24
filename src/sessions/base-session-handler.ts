@@ -299,6 +299,16 @@ export default abstract class BaseSessionHandler {
     logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
   }
 
+  updateAudioVolume (session: IExtendedMediaSession, volume: number) {
+    const element = session._outputAudioElement;
+    if (!element) {
+      return;
+    }
+
+    // DOMElement volume should be between 0 and 1
+    element.volume = (volume / 100);
+  }
+
   async updateOutputDevice (session: IExtendedMediaSession, deviceId: string): Promise<void> {
     logDeviceChange(this.sdk, session, 'calledToChangeDevices', { requestedOutputDeviceId: deviceId });
     const el: ExtendedHTMLAudioElement = session._outputAudioElement as ExtendedHTMLAudioElement;
