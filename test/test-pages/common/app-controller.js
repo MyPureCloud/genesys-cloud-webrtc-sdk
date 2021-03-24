@@ -8,6 +8,8 @@ function initControls () {
   document.getElementById('answer-inbound-call').addEventListener('click', sdkHandler.answerCall);
   document.getElementById('inbound-call-end').addEventListener('click', sdkHandler.endSession);
 
+  document.getElementById('volume-input').addEventListener('blur', sdkHandler.changeVolume);
+
   /* video controls */
   document.getElementById('video-start').addEventListener('click', () => sdkHandler.startVideoConference());
   document.getElementById('video-start-constraints').addEventListener('click', () => sdkHandler.startVideoConference({ useConstraints: true }));

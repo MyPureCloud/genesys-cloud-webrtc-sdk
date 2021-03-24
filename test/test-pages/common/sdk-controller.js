@@ -163,6 +163,12 @@ function makeOutboundCall () {
     .catch(err => console.log(err));
 }
 
+function changeVolume () {
+  const volume = parseInt(getInputValue('volume-input'), 10);
+
+  webrtcSdk.updateAudioVolume(volume);
+}
+
 async function endSession () {
   if (!currentSessionId) {
     utils.writeToLog('No active session');
@@ -490,6 +496,7 @@ export default {
   requestCameraPermissions,
   enumerateDevices,
   makeOutboundCall,
+  changeVolume,
   startVideoConference,
   setVideoMute,
   setAudioMute,

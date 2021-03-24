@@ -166,6 +166,19 @@ export class SessionManager {
     return Promise.all(promises);
   }
 
+  updateAudioVolume (volume: number): void {
+    const sessions = this.getAllActiveSessions();
+    this.log('info', 'Updating volume for all active sessions', {
+      sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId })),
+      volume
+    });
+
+    sessions.forEach((session) => {
+      const handler = this.getSessionHandler({ jingleSession: session });
+      handler.updateAudioVolume(session, volume);
+    });
+  }
+
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
     const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
     const _outputDeviceId = this.sdk.media.getValidDeviceId('audiooutput', outputDeviceId, ...sessions) || '';

@@ -44,11 +44,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     const element = params.audioElement || this.sdk._config.defaults.audioElement;
     const ids = { conversationId: session.conversationId, sessionId: session.id };
+    const volume = this.sdk._config.defaults.audioVolume;
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, ids);
+      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], volume, element, ids);
     } else {
       session.on('peerTrackAdded', (track: MediaStreamTrack, stream: MediaStream) => {
-        session._outputAudioElement = attachAudioMedia(this.sdk, stream, element, ids);
+        session._outputAudioElement = attachAudioMedia(this.sdk, stream, volume, element, ids);
       });
     }
 

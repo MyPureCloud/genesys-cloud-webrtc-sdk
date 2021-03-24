@@ -64,15 +64,21 @@ const persitentName = 'sdk_test';
       return;
     }
 
-    window.location.hash = `#access_token=${token}`;
+    const env = document.getElementById('environment').value;
+    window.location.hash = `#access_token=${token}&env=${env}`;
     window.location.reload(true);
   }
-  const form = this.document.getElementById('manual-form');
-  const manualAuthInput = this.document.getElementById('manual-auth');
+  const form = document.getElementById('manual-form');
+  const manualAuthInput = document.getElementById('manual-auth');
+
+  const urlParams = window.getCurrentUrlParams();
+
+  if (urlParams && urlParams.env) {
+    document.getElementById('environment').value = urlParams.env;
+  }
 
   // Check if there is auth info on the URL from a redirect
-  const url = window.location.href;
-  if (url.indexOf('access_token') > -1) {
+  if (urlParams && urlParams.access_token) {
     authenticateFromUrlToken();
   }
 
@@ -81,5 +87,5 @@ const persitentName = 'sdk_test';
   } else {
     form.addEventListener('submit', addTokenToUrl);
   }
-  this.document.getElementById('auth-button').addEventListener('click', authenticate);
+  document.getElementById('auth-button').addEventListener('click', authenticate);
 })();

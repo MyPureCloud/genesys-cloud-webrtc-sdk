@@ -5,6 +5,7 @@ import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/e
 import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
+import { IExtendedMediaSession } from '../../../src';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
@@ -652,5 +653,19 @@ describe('endTracks', () => {
     handler.endTracks(track as any as MediaStreamTrack);
 
     expect(track.stop).toHaveBeenCalled();
+  });
+});
+
+describe('updateAudioVolume', () => {
+  it('should do nothing if there\'s no element', () => {
+    const session: Pick<IExtendedMediaSession, '_outputAudioElement'> = { _outputAudioElement: null };
+    expect(() => handler.updateAudioVolume(session as any, 75)).not.toThrow();
+  });
+
+  it('should set the volume on the element', () => {
+    const session: Pick<IExtendedMediaSession, '_outputAudioElement'> = { _outputAudioElement: document.createElement('audio') };
+    handler.updateAudioVolume(session as any, 75);
+
+    expect(session._outputAudioElement.volume).toEqual(.75);
   });
 });

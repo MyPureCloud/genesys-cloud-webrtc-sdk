@@ -309,7 +309,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     // make sure we have an audio and video sender so we don't have to renego later
     this.setupTransceivers(session);
 
-    const attachParams = { audioElement, videoElement };
+    const attachParams = { audioElement, videoElement, volume: this.sdk._config.defaults.audioVolume };
 
     const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
       if (!Array.isArray(tracks)) tracks = [tracks];
@@ -634,7 +634,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   attachIncomingTrackToElement (
     track: MediaStreamTrack,
-    { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }
+    { audioElement, videoElement, volume }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement, volume: number }
   ): HTMLAudioElement | HTMLVideoElement {
     let element = audioElement;
 
@@ -644,6 +644,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
 
     element.autoplay = true;
+    element.volume = volume / 100;
     element.srcObject = createNewStreamWithTrack(track);
     return element;
   }

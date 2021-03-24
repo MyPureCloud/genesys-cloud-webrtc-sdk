@@ -34,6 +34,7 @@ export const getOrCreateAudioMediaElement = function (): HTMLAudioElement {
 export const attachAudioMedia = function (
   sdk: GenesysCloudWebrtcSdk,
   stream: MediaStream,
+  volume = 100,
   audioElement?: HTMLAudioElement,
   ids?: ISessionAndConversationIds
 ): HTMLAudioElement {
@@ -45,6 +46,8 @@ export const attachAudioMedia = function (
     sdk.logger.warn('Attaching media to an audio element that already has a srcObject. This can result is audio issues.', ids);
   }
 
+  // Volume must be between 0 and 1 for html elements
+  audioElement.volume = volume / 100;
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
   return audioElement;

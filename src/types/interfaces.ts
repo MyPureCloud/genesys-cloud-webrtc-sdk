@@ -177,6 +177,13 @@ export interface ISdkConfig {
     audioElement?: HTMLAudioElement;
 
     /**
+     * Volume for session that use audio
+     *
+     * Optional: defaults to 100
+     */
+    audioVolume?: number;
+
+    /**
      * HTML Video Element to attach incoming video streams to.
      *  A video element is _required_ for accepting incoming video
      *  calls. If no video element is passed into `sdk.acceptSession()`,
