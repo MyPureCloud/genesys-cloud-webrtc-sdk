@@ -636,8 +636,8 @@ Params:
 Returns: a promise that fullfils once the default
 settings and active sessions have been updated (if specified)
 
-#### `updateDefaultMediaSettings()`
-Update the default audio volume as well as the audio volume on all active applicable sessions.
+#### `updateAudioVolume()`
+Updates the audio volume for all active applicable sessions as well as the default volume for future sessions
 
 Declaration:
 ``` ts
