@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v5.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.5...v5.0.6)
 ### Fixed
+* [PCM-1572](https://inindca.atlassian.net/browse/PCM-1572) – bump streaming-client to v13.2.3 not retry subscription requests
 * [PCM-1505](https://inindca.atlassian.net/browse/PCM-1505) – fix changing camera while muted breaks device selector.
 * [PCM-1552](https://inindca.atlassian.net/browse/PCM-1552) – bump streaming-client to v13.2.2 to fix timer throttling in chrome v88
 * [PCM-1559](https://inindca.atlassian.net/browse/PCM-1559) – remove PII from logging (streaming-client v13.2.2 bump removes PII from its logs too)
