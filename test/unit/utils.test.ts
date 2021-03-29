@@ -1,5 +1,6 @@
 import nock = require('nock');
 import { parseJwt } from 'genesys-cloud-streaming-client';
+import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
 
 import { SimpleMockSdk, MOCK_CUSTOMER_DATA } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
@@ -25,7 +26,7 @@ describe('throwSdkError', () => {
 
 describe('requestApiWithRetry', () => {
   it('should make request with retry enabled', async () => {
-    const httpSpy = jest.spyOn(sdk._http, 'requestApiWithRetry').mockResolvedValue({});
+    const httpSpy = jest.spyOn(sdk._http, 'requestApiWithRetry').mockReturnValue({ promise: Promise.resolve() } as any);
 
     await utils.requestApiWithRetry.call(sdk, '/path');
 
@@ -88,10 +89,71 @@ describe('requestApi', () => {
   });
 
   it('should make request without auth', async () => {
-    const token = 'abrakadabra';
-    sdk._config.accessToken = token;
+    sdk._config.accessToken = 'abrakadabra';
+
+    const httpSpy = jest.spyOn(sdk._http, 'requestApi').mockResolvedValue({});
+
     await utils.requestApi.call(sdk, '/', { noAuthHeader: true });
-    expect(intercept.req._headers['authorization']).toBeUndefined();
+
+    expect(httpSpy).toHaveBeenCalledWith('/', {
+      method: 'get',
+      host: 'mypurecloud.com',
+      noAuthHeader: true
+    });
+  });
+});
+
+describe('buildRequestApiOptions', () => {
+  it('should return with defaults', () => {
+    const authToken = 'secret';
+    const host = 'inindca.com';
+
+    sdk._config.accessToken = authToken;
+    sdk._config.environment = host;
+
+    const expected: Partial<RequestApiOptions> = {
+      authToken,
+      host,
+      method: 'get'
+    };
+
+    expect(utils.buildRequestApiOptions(sdk)).toEqual(expected);
+  });
+
+  it('should use passed in params', () => {
+    const authToken = 'secret';
+    const host = 'inindca.com';
+    const method = 'post';
+
+    const expected: Partial<RequestApiOptions> = {
+      authToken,
+      host,
+      method
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {
+      host,
+      authToken,
+      method
+    })).toEqual(expected);
+  });
+
+  it('should use the correct auth token', () => {
+    const noAuthHeader = true;
+    const host = 'inindca.com';
+    const method = 'get';
+
+    const expected: Partial<RequestApiOptions> = {
+      noAuthHeader,
+      host,
+      method
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {
+      host,
+      noAuthHeader,
+      method
+    })).toEqual(expected);
   });
 });
 

@@ -136,9 +136,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
-    this.on('sdkError', this.logger.error.bind(this.logger));
+    this.on('sdkError', (error: SdkError) => {
+      /* logging errors is dangerous because they could contain PII */
+      this.logger.error(error, null, true);
+    });
     this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
-    this.on('trace', this.logger.info.bind(this.logger));
     this.on('cancelPendingSession', (sessionId: string) => this.logger.info('cancelPendingSession', { sessionId }));
     this.on('handledPendingSession', (pendingSession: IExtendedMediaSession) => this.logger.info('handledPendingSession', {
       sessionId: pendingSession.sid,
@@ -188,13 +190,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       httpRequests.push(guestPromise);
     } else {
-      const getOrg = requestApiWithRetry.call(this, '/organizations/me')
+      const getOrg = requestApiWithRetry.call(this, '/organizations/me').promise
         .then(({ body }) => {
           this._orgDetails = body;
           this.logger.debug('Fetched organization details', body, true); // don't log PII
         });
 
-      const getPerson = requestApiWithRetry.call(this, '/users/me')
+      const getPerson = requestApiWithRetry.call(this, '/users/me').promise
         .then(({ body }) => {
           this._personDetails = body;
           this.logger.debug('Fetched person details', body, true); // don't log PII
@@ -207,6 +209,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     try {
       await Promise.all(httpRequests);
     } catch (err) {
+      // This error is sanitized in streaming-client and safe for logging
       throwSdkError.call(this, SdkErrorTypes.http, err.message, err);
     }
 

@@ -1,4 +1,5 @@
 import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
+import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SdkErrorTypes, LogLevels } from './types/enums';
@@ -23,30 +24,31 @@ export const throwSdkError = function (this: GenesysCloudWebrtcSdk, errorType: S
   throw error;
 };
 
-export const requestApiWithRetry = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): Promise<any> {
-  return requestApi.call(this, path, opts, true);
+export const requestApiWithRetry = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): RetryPromise<any> {
+  opts = buildRequestApiOptions(this, opts);
+  return this._http.requestApiWithRetry(path, opts as RequestApiOptions);
 };
 
-export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}, withRetry: boolean = false): Promise<any> {
-  /* set defaults */
+export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): Promise<any> {
+  opts = buildRequestApiOptions(this, opts);
+  return this._http.requestApi(path, opts as RequestApiOptions);
+};
+
+export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partial<RequestApiOptions> = {}): Partial<RequestApiOptions> {
   if (!opts.noAuthHeader) {
-    opts.authToken = opts.authToken || this._config.accessToken;
+    opts.authToken = opts.authToken || sdk._config.accessToken;
   }
 
   if (!opts.host) {
-    opts.host = this._config.environment;
+    opts.host = sdk._config.environment;
   }
 
   if (!opts.method) {
     opts.method = 'get';
   }
 
-  if (withRetry) {
-    return this._http.requestApiWithRetry(path, opts as RequestApiOptions);
-  }
-
-  return this._http.requestApi(path, opts as RequestApiOptions);
-};
+  return opts;
+}
 
 export const isAcdJid = function (jid: string): boolean {
   return jid.startsWith('acd-');
@@ -81,7 +83,6 @@ export const logPendingSession = function (
     sessionId: (pendingSession as IPendingSession).id || (pendingSession as ISessionInfo).sessionId,
     autoAnswer: pendingSession.autoAnswer,
     conversationId: pendingSession.conversationId,
-    originalRoomJid: pendingSession.originalRoomJid,
     fromUserId: pendingSession.fromUserId
   };
 

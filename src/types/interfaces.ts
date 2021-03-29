@@ -172,17 +172,6 @@ export interface IPendingSession {
   fromUserId?: string;
 }
 
-export function isPendingSession (data: any): data is IPendingSession {
-  data = data as IPendingSession;
-  return !!(
-    data &&
-    (data as IPendingSession).id &&
-    (data as IPendingSession).conversationId &&
-    (data as IPendingSession).address &&
-    typeof (data as IPendingSession) === 'boolean'
-  );
-}
-
 export interface ISessionInfo {
   sessionId: string;
   autoAnswer: boolean;

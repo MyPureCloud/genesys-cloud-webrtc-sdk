@@ -371,7 +371,7 @@ export function mockGetConversationApi (params: MockSingleApiOptions): nock.Scop
   const intercept = params.nockScope.get(`/api/v2/conversations/calls/${params.conversationId}`);
 
   if (params.shouldFail) {
-    return intercept.reply(500, params.response);
+    return intercept.reply(400, params.response);
   }
 
   return intercept.reply(200, params.response || getMockConversation());
