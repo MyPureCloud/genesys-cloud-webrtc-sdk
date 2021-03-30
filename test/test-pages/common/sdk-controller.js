@@ -19,6 +19,7 @@ function initWebrtcSDK (environmentData, _conversationsApi, noAuth) {
     initOptions = { securityCode: document.getElementById('security-key').value };
     options.organizationId = document.getElementById('org-id').value;
     options.autoConnectSessions = true;
+    localStorage.setItem('sdk_org_id', options.organizationId);
   } else {
     const accessToken = utils.getAccessToken();
     if (!accessToken) {

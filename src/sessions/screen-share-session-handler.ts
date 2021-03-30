@@ -1,8 +1,10 @@
+import { parseJwt } from 'genesys-cloud-streaming-client';
+
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
-import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
+import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { startDisplayMedia, checkAllTracksHaveEnded } from '../media-utils';
-import { throwSdkError, parseJwt, isAcdJid } from '../utils';
+import { throwSdkError, isAcdJid } from '../utils';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;

@@ -1,10 +1,11 @@
-import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession } from '../types/interfaces';
-import { SessionTypes, LogLevels, SdkErrorTypes } from '../types/enums';
-import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
-import { requestApi, throwSdkError, isSoftphoneJid } from '../utils';
 import { pick } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
+
+import BaseSessionHandler from './base-session-handler';
+import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession } from '../types/interfaces';
+import { SessionTypes, SdkErrorTypes } from '../types/enums';
+import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
+import { throwSdkError, isSoftphoneJid, requestApi } from '../utils';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;

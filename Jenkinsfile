@@ -1,5 +1,5 @@
 // this will need to be pipeline-library@master when the pr merges
-@Library('pipeline-library') _
+@Library('pipeline-library@post-release-step-creds-for-github') _
 
 webappPipeline {
     slaveLabel = 'dev_v2'
@@ -18,7 +18,7 @@ webappPipeline {
         sh('''
             export CDN_URL="$(npx cdn --ecosystem pc --name $APP_NAME --build $BUILD_ID --version $VERSION)"
             echo "CDN_URL $CDN_URL"
-            npm i && npm test && npm run build
+            npm ci && npm test && npm run build
             npm run build-sample
         ''')
     }
@@ -37,14 +37,14 @@ webappPipeline {
         ]
     }
 
-    shouldTagOnRelease = { false }
+    shouldTagOnRelease = { true }
 
-    postReleaseStep = {
-        sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
-            sh("""
-                git tag v${version}
-                git push origin --tags
-            """)
-        }
-    }
+    // postReleaseStep = {
+    //     sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
+    //         sh("""
+    //             git tag v${version}
+    //             git push origin --tags
+    //         """)
+    //     }
+    // }
 }
