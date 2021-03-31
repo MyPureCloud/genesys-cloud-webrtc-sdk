@@ -17,8 +17,13 @@ document.getElementById('outbound-phone-number').value = '*86';
 
 /* populate any existing jid */
 const oldRoomJid = localStorage.getItem('sdk_room_jid');
-
 if (oldRoomJid) {
   document.getElementById('video-jid').value = oldRoomJid;
+}
+
+// pre-populate orgId if found in local storage
+const _orgId = localStorage.getItem('sdk_org_id');
+if (_orgId) {
+  document.getElementById('org-id').value = _orgId;
 }
 

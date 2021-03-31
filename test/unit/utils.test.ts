@@ -1,4 +1,6 @@
 import nock = require('nock');
+import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
+import { parseJwt } from 'genesys-cloud-streaming-client';
 
 import { SimpleMockSdk } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
@@ -99,12 +101,13 @@ describe('defaultConfigOption', () => {
   });
 });
 
-describe('buildUri', () => {
-  it('should trim leading and trailing slashes', () => {
-    expect(utils.buildUri.call(sdk, 'test')).toEqual(`${baseUri}/test`);
-    expect(utils.buildUri.call(sdk, '/test')).toEqual(`${baseUri}/test`);
-    expect(utils.buildUri.call(sdk, '/test/')).toEqual(`${baseUri}/test`);
-    expect(utils.buildUri.call(sdk, '/test/', 'v4')).toEqual(`${baseUriWithoutVersion}/v4/test`);
+describe('requestApiWithRetry', () => {
+  it('should make request with retry enabled', async () => {
+    const httpSpy = jest.spyOn(sdk._http, 'requestApiWithRetry').mockReturnValue({ promise: Promise.resolve() } as any);
+
+    await utils.requestApiWithRetry.call(sdk, '/path');
+
+    expect(httpSpy).toHaveBeenCalled();
   });
 });
 
@@ -124,6 +127,37 @@ describe('requestApi', () => {
     nock.cleanAll();
   });
 
+  it('should set defaults', async () => {
+    sdk._config.accessToken = 'abrakadabra';
+    sdk._config.environment = 'inindca.notreally';
+
+    const httpSpy = jest.spyOn(sdk._http, 'requestApi').mockResolvedValue({});
+
+    await utils.requestApi.call(sdk, '/path');
+
+    expect(httpSpy).toHaveBeenCalledWith('/path', {
+      authToken: sdk._config.accessToken,
+      host: sdk._config.environment,
+      method: 'get'
+    });
+  });
+
+  it('should use passed in params', async () => {
+    const authToken = 'abrakadabra';
+    const host = 'notreally.dca';
+    const method = 'put';
+
+    const httpSpy = jest.spyOn(sdk._http, 'requestApi').mockResolvedValue({});
+
+    await utils.requestApi.call(sdk, '/path', { authToken, method, host });
+
+    expect(httpSpy).toHaveBeenCalledWith('/path', {
+      authToken,
+      method,
+      host
+    });
+  });
+
   it('should make request with auth', async () => {
     const token = 'abrakadabra';
     sdk._config.accessToken = token;
@@ -132,16 +166,77 @@ describe('requestApi', () => {
   });
 
   it('should make request without auth', async () => {
-    const token = 'abrakadabra';
-    sdk._config.accessToken = token;
-    await utils.requestApi.call(sdk, '/', { auth: false });
-    expect(intercept.req._headers['authorization']).toBeUndefined();
+    sdk._config.accessToken = 'abrakadabra';
+
+    const httpSpy = jest.spyOn(sdk._http, 'requestApi').mockResolvedValue({});
+
+    await utils.requestApi.call(sdk, '/', { noAuthHeader: true });
+
+    expect(httpSpy).toHaveBeenCalledWith('/', {
+      method: 'get',
+      host: 'mypurecloud.com',
+      noAuthHeader: true
+    });
+  });
+});
+
+describe('buildRequestApiOptions', () => {
+  it('should return with defaults', () => {
+    const authToken = 'secret';
+    const host = 'inindca.com';
+
+    sdk._config.accessToken = authToken;
+    sdk._config.environment = host;
+
+    const expected: Partial<RequestApiOptions> = {
+      authToken,
+      host,
+      method: 'get'
+    };
+
+    expect(utils.buildRequestApiOptions(sdk)).toEqual(expected);
+  });
+
+  it('should use passed in params', () => {
+    const authToken = 'secret';
+    const host = 'inindca.com';
+    const method = 'post';
+
+    const expected: Partial<RequestApiOptions> = {
+      authToken,
+      host,
+      method
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {
+      host,
+      authToken,
+      method
+    })).toEqual(expected);
+  });
+
+  it('should use the correct auth token', () => {
+    const noAuthHeader = true;
+    const host = 'inindca.com';
+    const method = 'get';
+
+    const expected: Partial<RequestApiOptions> = {
+      noAuthHeader,
+      host,
+      method
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {
+      host,
+      noAuthHeader,
+      method
+    })).toEqual(expected);
   });
 });
 
 describe('parseJwt', () => {
   it('should parse correctly', () => {
-    const data = utils.parseJwt(MOCK_CUSTOMER_DATA.jwt);
+    const data = parseJwt(MOCK_CUSTOMER_DATA.jwt);
     expect(data).toEqual({
       data: {
         jid: 'acd-c20165d5-a47f-4397-b9f3-7237d29abfe0-543172@conference.TEST-valve-1ym37mj1kao.orgspan.com'

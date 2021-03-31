@@ -18,7 +18,7 @@ webappPipeline {
         sh('''
             export CDN_URL="$(npx cdn --ecosystem pc --name $APP_NAME --build $BUILD_ID --version $VERSION)"
             echo "CDN_URL $CDN_URL"
-            npm i && npm test && npm run build
+            npm ci && npm test && npm run build
             npm run build:sample
         ''')
     }
@@ -37,14 +37,11 @@ webappPipeline {
         ]
     }
 
-    shouldTagOnRelease = { false }
+    shouldTagOnRelease = { true }
 
     postReleaseStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
             sh("""
-                # tag the version
-                git tag v${version}
-                git push origin --tags
                 # patch to prep for the next version
                 npm version patch --no-git-tag-version
                 git commit -am "Prep next version"

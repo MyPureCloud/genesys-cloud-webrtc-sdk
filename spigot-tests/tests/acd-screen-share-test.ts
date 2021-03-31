@@ -88,7 +88,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     logger.info('starting screenshare');
     await sdk.startScreenShare();
     sdk._streamingConnection.webrtcSessions.on('*', logger.log.bind(logger, 'sdk:webrtcSessions:event'));
-    logger.log('sdk._streamingConnection', sdk._streamingConnection);
+    // logger.debug('sdk._streamingConnection', sdk._streamingConnection);
     const jwt = testUtils.parseJwt(sdk._customerData.jwt);
     const jid = jwt.data.jid;
 

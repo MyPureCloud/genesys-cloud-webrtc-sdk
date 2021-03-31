@@ -1,3 +1,5 @@
+import * as streamingClientUtils from 'genesys-cloud-streaming-client';
+
 import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack } from '../../test-utils';
 import ScreenShareSessionHandler from '../../../src/sessions/screen-share-session-handler';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
@@ -49,7 +51,7 @@ describe('startSession', () => {
 
     /* spy on utility functions */
     jest.spyOn(mockSdk.media, 'startDisplayMedia').mockResolvedValue(stream as any);
-    jest.spyOn(utils, 'parseJwt').mockReturnValue({ data: { jid } });
+    jest.spyOn(streamingClientUtils, 'parseJwt').mockReturnValue({ data: { jid } });
   });
 
   it('should initiate session', async () => {

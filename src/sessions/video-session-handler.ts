@@ -16,7 +16,7 @@ import {
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid } from '../utils';
+import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
 /**
@@ -240,7 +240,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     // if we requested the session dont emit a pending session
     if (this.requestedSessions[pendingSession.originalRoomJid]) {
-      this.log('debug', 'Propose received for requested video session, accepting automatically', pendingSession);
+      logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
       delete this.requestedSessions[pendingSession.originalRoomJid];
       await this.proceedWithSession(pendingSession);
       return;
@@ -248,13 +248,16 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (isPeerVideoJid(pendingSession.address)) {
       if (pendingSession.fromUserId === this.sdk._personDetails.id) {
-        this.log('info', 'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
+        logPendingSession(this.sdk.logger,
+          'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
         return;
       }
 
-      this.log('info', 'Propose received for incoming peer video', pendingSession);
+      logPendingSession(this.sdk.logger, 'Propose received for incoming peer video', pendingSession);
     } else {
-      this.log('debug', 'Propose received for a video session that is not a peer session and wasn\'t started by this client, ignoring.', pendingSession);
+      logPendingSession(this.sdk.logger,
+        'Propose received for a video session that is not a peer session and wasn\'t started by this client, ignoring.',
+        pendingSession, 'debug');
       return;
     }
     await super.handlePropose(pendingSession);
@@ -597,7 +600,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const uri = `/conversations/videos/${session.conversationId}/participants/${session.pcParticipant.id}/pin`;
 
     // default to unpin
-    let method = 'delete';
+    let method: 'delete' | 'post' = 'delete';
     let data: string;
 
     if (participantId) {

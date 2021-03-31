@@ -580,6 +580,22 @@ export interface ICustomerData {
   jwt: string;
 }
 
+export function isCustomerData (data: { securityCode: string } | ICustomerData): data is ICustomerData {
+  data = data as ICustomerData;
+  return !!(data
+    && data.conversation
+    && data.conversation.id
+    && data.sourceCommunicationId
+    && data.jwt);
+}
+
+export function isSecurityCode (data: { securityCode: string } | ICustomerData): data is { securityCode: string } {
+  return !!(
+    data &&
+    (data as { securityCode: string }).securityCode
+  );
+}
+
 export interface IPendingSession {
   id: string;
   autoAnswer: boolean;

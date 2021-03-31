@@ -56,7 +56,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     });
 
     connection.on('disconnected', async () => {
-      this.logger.info('info', 'GenesysCloud streaming client disconnected');
+      this.logger.info('GenesysCloud streaming client disconnected');
       clearInterval(this._refreshIceServersInterval);
     });
   });
