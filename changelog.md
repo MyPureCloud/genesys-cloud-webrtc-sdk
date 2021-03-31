@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * `sdk.setVideoMute({sessionId: string;})`
     * `sdk.setAudioMute({sessionId: string;})`
     * See [docs](doc/index.md) for method parameters
+* Removed `sdk._refreshIceServers()` function which was not an advertised function. Refreshing ice servers is now handled in streaming-client directly
 
 * Moved & renamed `sdk.createMedia(opts)` to `sdk.media.startMedia(opts)`
 * Moved `sdk.getDisplayMedia(opts)` to `sdk.media.startDisplayMedia(opts)`

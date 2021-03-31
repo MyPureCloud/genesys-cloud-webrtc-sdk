@@ -85,7 +85,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
-  _refreshIceServersInterval: NodeJS.Timeout;
   _config: ISdkConfig;
 
   get isInitialized (): boolean {
@@ -569,26 +568,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this.removeAllListeners();
     this.media.destroy();
     await this.disconnect();
-  }
-
-  async _refreshIceServers () {
-    if (!this._streamingConnection.connected) {
-      this.logger.warn('Tried to refreshIceServers but streamingConnection is not connected');
-      return;
-    }
-
-    try {
-      const services = (await this._streamingConnection.webrtcSessions.refreshIceServers()) || [];
-
-      if (!services.length) {
-        this.logger.error(new Error('refreshIceServers yielded no results'));
-        return;
-      }
-    } catch (err) {
-      const errorMessage = 'GenesysCloud SDK failed to update TURN credentials. The application should be restarted to ensure connectivity is maintained.';
-      this.logger.warn(errorMessage, err);
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, errorMessage, err);
-    }
   }
 
   /**
