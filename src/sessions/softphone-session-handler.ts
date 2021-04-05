@@ -2,7 +2,7 @@ import { pick } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession } from '../types/interfaces';
+import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
 import { throwSdkError, isSoftphoneJid, requestApi } from '../utils';
@@ -117,5 +117,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     } catch (err) {
       throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId: session.conversationId, params, err });
     }
+  }
+
+  // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera
+  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<any> {
+    const newOptions: IUpdateOutgoingMedia = { ...options, videoDeviceId: undefined };
+    return super.updateOutgoingMedia(session, newOptions);
   }
 }
