@@ -22,7 +22,7 @@ import { SessionTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
-import { IAcceptSessionRequest, ISessionAndConversationIds } from '../../../src/types/interfaces';
+import { IAcceptSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -423,5 +423,19 @@ describe('setAudioMute', () => {
     mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
 
     await expect(handler.setAudioMute(session, { sessionId: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
+  });
+});
+
+describe('updateOutgoingMedia', () => {
+  it('should call supers updateOutgoingMedia with undefined videoDeviceId', async () => {
+    const superSpyUpdateOutgoingMedia = jest.spyOn(BaseSessionHandler.prototype, 'updateOutgoingMedia').mockResolvedValue(null);
+    const session = new MockSession();
+    const opts: IUpdateOutgoingMedia = {
+      audioDeviceId: 'audioDevice',
+      videoDeviceId: 'videoDevice'
+    };
+
+    await handler.updateOutgoingMedia(session as any, opts);
+    expect(superSpyUpdateOutgoingMedia).toHaveBeenCalledWith(session, { audioDeviceId: 'audioDevice', videoDeviceId: undefined });
   });
 });

@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...HEAD)
 
-# [v6.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.6...v6.0.0)
+# [v6.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.7...v6.0.0)
 ### Added
 * Added `sdk.media` class to handle and emit media related tasks. See [media documentation](doc/media.md) for more details
   * `sdk.media.on(...)` event emitter.
@@ -48,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Old behavior was to throw an error.
 * Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`.
   Event already emitted the `sessionId`. This fixes the typing.
+
+# [v5.0.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.6...v5.0.7)
+### Fixed
+* [PCM-1584](https://inindca.atlassian.net/browse/PCM-1584) - dont spin up a camera stream when updating outgoing media for softphone even if videoDeviceId is provided
 
 # [v5.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.5...v5.0.6)
 ### Fixed
