@@ -1,5 +1,5 @@
 // this will need to be pipeline-library@master when the pr merges
-@Library('pipeline-library@post-release-step-creds-for-github') _
+@Library('pipeline-library') _
 
 webappPipeline {
     slaveLabel = 'dev_v2'
