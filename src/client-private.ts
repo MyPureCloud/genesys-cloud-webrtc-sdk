@@ -49,15 +49,12 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
       this.logger.info('GenesysCloud streaming client connected', { reconnect: this._hasConnected });
       this._hasConnected = true;
       // refresh turn servers every 6 hours
-      this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
-      await this._refreshIceServers();
       this.logger.info('GenesysCloud streaming client ready for use');
       resolve();
     });
 
     connection.on('disconnected', async () => {
-      this.logger.info('info', 'GenesysCloud streaming client disconnected');
-      clearInterval(this._refreshIceServersInterval);
+      this.logger.info('GenesysCloud streaming client disconnected');
     });
   });
 

@@ -5,6 +5,7 @@ import { IPendingSession, ISdkConfig, ISessionInfo } from '../src/types/interfac
 import { SessionTypes } from '../src/types/enums';
 import { GenesysCloudWebrtcSdk } from '../src/index';
 import { SdkMedia } from '../src/media/media';
+import { HttpClient } from 'genesys-cloud-streaming-client';
 
 
 
@@ -19,9 +20,11 @@ export class SimpleMockSdk extends EventEmitter {
     /* have to spy here to avoid issues with tests that restore mocks before initializing a SimplemockSdk */
     jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
     this.media = new SdkMedia(this as any as GenesysCloudWebrtcSdk);
+    this._http = new HttpClient();
   }
 
   media: SdkMedia;
+  _http: HttpClient;
   _config: ISdkConfig = {
     environment: 'mypurecloud.com',
     logLevel: 'debug',

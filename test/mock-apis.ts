@@ -40,7 +40,6 @@ interface MockApiOptions {
   guestSdk?: boolean;
   withCustomerData?: boolean;
   conversation?: MockConversation;
-  withIceRefresh?: boolean;
 }
 
 interface MockSingleApiOptions {
@@ -206,8 +205,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     withLogs,
     guestSdk,
     withCustomerData,
-    conversation,
-    withIceRefresh
+    conversation
   } = options;
   nock.cleanAll();
   const api = nock('https://api.mypurecloud.com');
@@ -274,11 +272,6 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   } as ISdkConfig;
 
   const sdk = new GenesysCloudWebrtcSdk(sdkOpts);
-
-  /* if we don't need to test refreshing the ice servers, then mock it */
-  if (!withIceRefresh) {
-    sdk._refreshIceServers = jest.fn().mockResolvedValue([]);
-  }
 
   let sendLogs: nock.Scope;
   if (withLogs) {

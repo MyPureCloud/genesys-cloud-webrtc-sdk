@@ -39,7 +39,10 @@ pipeline {
                         source ./npm-utils/scripts/jenkins-pre-build.sh 12.16.1 &> jenkins-pre.log
                         rm -rf xunit-to-tcdb
                         git clone git@bitbucket.org:inindca/xunit-to-tcdb.git
+
+                        cp .npmrc xunit-to-tcdb/
                         cd xunit-to-tcdb
+
                         npm install --silent
                         npm start -- -f ../spigot-tests/reports/xunit.xml -a ${ENVIRONMENT} -s
                     """

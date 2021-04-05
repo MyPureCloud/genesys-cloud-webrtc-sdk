@@ -5,8 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...HEAD)
 
-# [v6.0.0]()
-
+# [v6.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.6...v6.0.0)
 ### Added
 * Added `sdk.media` class to handle and emit media related tasks. See [media documentation](doc/media.md) for more details
   * `sdk.media.on(...)` event emitter.
@@ -41,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * `sdk.setVideoMute({sessionId: string;})`
     * `sdk.setAudioMute({sessionId: string;})`
     * See [docs](doc/index.md) for method parameters
+* Removed `sdk._refreshIceServers()` function which was not an advertised function. Refreshing ice servers is now handled in streaming-client directly
 
 * Moved & renamed `sdk.createMedia(opts)` to `sdk.media.startMedia(opts)`
 * Moved `sdk.getDisplayMedia(opts)` to `sdk.media.startDisplayMedia(opts)`
@@ -48,6 +48,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Old behavior was to throw an error.
 * Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`.
   Event already emitted the `sessionId`. This fixes the typing.
+
+# [v5.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.5...v5.0.6)
+### Fixed
+* [PCM-1572](https://inindca.atlassian.net/browse/PCM-1572) – bump streaming-client to v13.2.3 not retry subscription requests
+* [PCM-1505](https://inindca.atlassian.net/browse/PCM-1505) – fix changing camera while muted breaks device selector.
+* [PCM-1552](https://inindca.atlassian.net/browse/PCM-1552) – bump streaming-client to v13.2.2 to fix timer throttling in chrome v88
+* [PCM-1559](https://inindca.atlassian.net/browse/PCM-1559) – remove PII from logging (streaming-client v13.2.2 bump removes PII from its logs too)
+
+### Added
+* [PCM-1540](https://inindca.atlassian.net/browse/PCM-1540) – bump streaming-client (v13.2.1) and use its http-client to make http requests. This adds better error logging and retry logic
+
+# [v5.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.4...v5.0.5)
+### Fixed
+* [PCM-1525](https://inindca.atlassian.net/browse/PCM-1525) bump streaming client version to fix acd screen share attr.
 
 # [v5.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.3...v5.0.4)
 ### Fixed

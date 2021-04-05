@@ -1,14 +1,9 @@
-import fetch from 'superagent';
-import { GenesysCloudWebrtcSdk } from './client';
-import { SdkErrorTypes } from './types/enums';
+import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
+import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
-interface RequestApiOptions {
-  method?: string;
-  data?: any;
-  version?: string;
-  contentType?: string;
-  auth?: string | boolean;
-}
+import { GenesysCloudWebrtcSdk } from './client';
+import { SdkErrorTypes, LogLevels } from './types/enums';
+import { IPendingSession, ISessionInfo, ILogger } from './types/interfaces';
 
 export class SdkError extends Error {
   type: SdkErrorTypes;
@@ -61,31 +56,31 @@ export const defaultConfigOption = function (
   return providedOption;
 };
 
-export const buildUri = function (this: GenesysCloudWebrtcSdk, path: string, version: string = 'v2'): string {
-  path = path.replace(/^\/+|\/+$/g, ''); // trim leading/trailing /
-  return `https://api.${this._config.environment}/api/${version}/${path}`;
+export const requestApiWithRetry = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): RetryPromise<any> {
+  opts = buildRequestApiOptions(this, opts);
+  return this._http.requestApiWithRetry(path, opts as RequestApiOptions);
 };
 
-export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, { method, data, version, contentType, auth }: RequestApiOptions = {}): Promise<any> {
-  let request = fetch[method || 'get'](buildUri.call(this, path, version));
-  if (auth !== false) {
-    request.set('Authorization', `Bearer ${auth || this._config.accessToken}`);
+export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): Promise<any> {
+  opts = buildRequestApiOptions(this, opts);
+  return this._http.requestApi(path, opts as RequestApiOptions);
+};
+
+export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partial<RequestApiOptions> = {}): Partial<RequestApiOptions> {
+  if (!opts.noAuthHeader) {
+    opts.authToken = opts.authToken || sdk._config.accessToken;
   }
-  request.type(contentType || 'json');
 
-  return request.send(data); // trigger request
-};
+  if (!opts.host) {
+    opts.host = sdk._config.environment;
+  }
 
-// this is duplicated in streaming-client and valve. It may need to be its own package.
-export const parseJwt = function (token: string): any {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
+  if (!opts.method) {
+    opts.method = 'get';
+  }
 
-  return JSON.parse(jsonPayload);
-};
+  return opts;
+}
 
 export const isAcdJid = function (jid: string): boolean {
   return jid.startsWith('acd-');
@@ -108,4 +103,25 @@ export const isPeerVideoJid = function (jid: string) {
 
 export const isVideoJid = function (jid: string): boolean {
   return jid && !!jid.match(/@conference/) && !isAcdJid(jid);
+};
+
+export const logPendingSession = function (
+  logger: ILogger,
+  message: string,
+  pendingSession: IPendingSession | ISessionInfo,
+  level: LogLevels = 'info'
+): void {
+  const data: any = {
+    sessionId: (pendingSession as IPendingSession).id || (pendingSession as ISessionInfo).sessionId,
+    autoAnswer: pendingSession.autoAnswer,
+    conversationId: pendingSession.conversationId,
+    fromUserId: pendingSession.fromUserId
+  };
+
+  /* for pending sessions */
+  if ((pendingSession as IPendingSession).sessionType) {
+    data.sessionType = (pendingSession as IPendingSession).sessionType;
+  }
+
+  logger[level](message, data);
 };

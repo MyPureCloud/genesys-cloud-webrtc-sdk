@@ -5,7 +5,7 @@ import { SessionManager } from '../../src/sessions/session-manager';
 import { SdkError } from '../../src/utils';
 import { MockTrack, MockStream, MockSession, random } from '../test-utils';
 import { SdkMedia } from '../../src/media/media';
-import { ISdkMediaState, IUpdateOutgoingMedia, IExtendedMediaSession, IMediaDeviceIds } from '../../src/types/interfaces';
+import { ISdkMediaState, IUpdateOutgoingMedia, IExtendedMediaSession, IMediaDeviceIds, isSecurityCode, isCustomerData } from '../../src/types/interfaces';
 
 jest.mock('genesys-cloud-streaming-client');
 jest.mock('../../src/sessions/session-manager');
@@ -567,11 +567,8 @@ describe('Client', () => {
   });
 
   describe('isCustomerData()', () => {
-    let isCustomerDataFn: typeof GenesysCloudWebrtcSdk.prototype['isCustomerData'];
-
     beforeEach(() => {
       sdk = constructSdk({ accessToken: 'secure' });
-      isCustomerDataFn = sdk['isCustomerData'].bind(sdk);
     });
 
     it('should return true if valid customerData is present', () => {
@@ -580,12 +577,12 @@ describe('Client', () => {
         sourceCommunicationId: 'source-123',
         conversation: { id: 'convo-123' }
       };
-      expect(isCustomerDataFn(customerData)).toBe(true);
+      expect(isCustomerData(customerData)).toBe(true);
     });
 
     it('should return false if no customerData is present', () => {
       let customerData: ICustomerData;
-      expect(isCustomerDataFn(customerData)).toBe(false);
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
     it('should return false if conversation is missing from customerData', () => {
@@ -593,7 +590,7 @@ describe('Client', () => {
         jwt: 'string',
         sourceCommunicationId: 'commId'
       } as ICustomerData;
-      expect(isCustomerDataFn(customerData)).toBe(false);
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
     it('should return false if conversation.id is missing from customerData', () => {
@@ -602,7 +599,7 @@ describe('Client', () => {
         jwt: 'string',
         sourceCommunicationId: 'commId'
       } as ICustomerData;
-      expect(isCustomerDataFn(customerData)).toBe(false);
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
     it('should return false if jwt is missing from customerData', () => {
@@ -610,7 +607,7 @@ describe('Client', () => {
         conversation: { id: 'convoId' },
         sourceCommunicationId: 'commId'
       } as ICustomerData;
-      expect(isCustomerDataFn(customerData)).toBe(false);
+      expect(isCustomerData(customerData)).toBe(false);
     });
 
     it('should return false if sourceCommunicationId is missing from customerData', () => {
@@ -618,16 +615,13 @@ describe('Client', () => {
         conversation: { id: 'convoId' },
         jwt: 'string'
       } as ICustomerData;
-      expect(isCustomerDataFn(customerData)).toBe(false);
+      expect(isCustomerData(customerData)).toBe(false);
     });
   });
 
   describe('isSecurityCode()', () => {
-    let isSecurityCode: typeof GenesysCloudWebrtcSdk.prototype['isSecurityCode'];
-
     beforeEach(() => {
       sdk = constructSdk({ accessToken: 'securely' });
-      isSecurityCode = sdk['isSecurityCode'].bind(sdk);
     });
 
     it('should return true if object has securityKey', () => {
