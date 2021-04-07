@@ -564,6 +564,14 @@ describe('endSession', () => {
     await promise;
     expect(session.end).toHaveBeenCalled();
   });
+
+  it('should call session.end with provided reason', async () => {
+    const session: any = new MockSession();
+    const promise = handler.endSession(session, 'alternative-session');
+    session.emit('terminated');
+    await promise;
+    expect(session.end).toHaveBeenCalledWith('alternative-session');
+  });
 });
 
 describe('addMediatoSession', () => {

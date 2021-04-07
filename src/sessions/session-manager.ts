@@ -289,7 +289,7 @@ export class SessionManager {
     const session = this.getSession(params);
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
-    return sessionHandler.endSession(session);
+    return sessionHandler.endSession(session, params.reason);
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {

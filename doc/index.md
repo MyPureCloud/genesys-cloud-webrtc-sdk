@@ -800,10 +800,12 @@ Params:
     interface IEndSessionRequest {
       sessionId?: string;
       conversationId?: string;
+      reason?: JingleReason;
     }
     ```
   * `sessionId?: string` Optional: id of the session to end. At least `sessionId` _or_ `conversationId` must be provided.
   * `conversation?: string` Optional: conversation id of the session to end. At least `sessionId` _or_ `conversationId` must be provided.
+  * `reason?: JingleReason` Optional: defaults to `success`. This is for internal usage and should not be provided in custom applications.
 
 Returns: a promise that fullfils once the session has ended
 

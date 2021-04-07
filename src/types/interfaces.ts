@@ -2,6 +2,7 @@ import { LogLevels, SessionTypes, JingleReasons } from './enums';
 import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
 import { SdkError } from '../utils';
 import { JingleReason } from 'stanza/protocol';
+import { Constants } from 'stanza';
 
 // extend the emittable events
 declare module 'genesys-cloud-streaming-client' {
@@ -509,6 +510,7 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 export interface IEndSessionRequest {
   sessionId?: string;
   conversationId?: string;
+  reason?: Constants.JingleReasonCondition;
 }
 
 /**

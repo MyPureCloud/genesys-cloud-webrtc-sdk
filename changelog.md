@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v6.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.7...v6.0.0)
 ### Added
+* Added internal option `reason` to the `IEndSessionRequest` interface
 * Added `sdk.media` class to handle and emit media related tasks. See [media documentation](doc/media.md) for more details
   * `sdk.media.on(...)` event emitter.
   * permissions and device management housed in `sdk.media`
