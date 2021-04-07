@@ -1,7 +1,7 @@
 import { JingleReason } from 'stanza/protocol';
-
+import { Constants } from 'stanza';
 import { GenesysCloudWebrtcSdk } from '../client';
-import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
+import { LogLevels, SessionTypes, SdkErrorTypes, JingleReasons } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
 import { createAndEmitSdkError, logPendingSession } from '../utils';
@@ -114,14 +114,14 @@ export default abstract class BaseSessionHandler {
     return session.accept();
   }
 
-  async endSession (session: IExtendedMediaSession): Promise<void> {
+  async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     this.log('info', 'ending session', { conversationId: session.conversationId });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
         resolve();
       });
-      session.end();
+      session.end(reason);
     });
   }
 
