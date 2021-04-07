@@ -7,5 +7,8 @@ export * from './types/conversation-update';
 import * as utils from './utils';
 import * as mediaUtils from './media/media-utils';
 import { JingleReason, JingleInfo } from 'stanza/protocol';
+import { Constants } from 'stanza';
 
-export { utils, mediaUtils, JingleReason, JingleInfo };
+const JingleReasonCondition = Constants.JingleReasonCondition;
+
+export { utils, mediaUtils, JingleReason, JingleReasonCondition, JingleInfo };
