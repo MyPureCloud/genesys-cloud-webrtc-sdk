@@ -287,6 +287,63 @@ describe('endSession', () => {
     expect(superSpy).not.toHaveBeenCalled();
   });
 
+  it('should fetch conversation and patch the connected participant in the case of multiple participants with the same userId', async () => {
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
+
+    mockSdk._personDetails = {
+      id: USER_ID
+    } as any;
+
+    const scope = createNock();
+
+    const conversation = getMockConversation();
+    const extraParticipant = { ...conversation.participants[0] };
+    extraParticipant.id = 'expected';
+    conversation.participants[0].state = 'terminated';
+    conversation.participants.push(extraParticipant);
+
+    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, response: conversation });
+    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId: 'expected' });
+
+    const promise = handler.endSession(session);
+    // need to wait for requests to "process" before triggering session terminate
+    await new Promise(resolve => setTimeout(resolve, 50));
+    session.emit('terminated');
+    await promise;
+
+    expect(getConversation.isDone()).toBeTruthy();
+    expect(patchConversation.isDone()).toBeTruthy();
+    expect(session.end).not.toHaveBeenCalled();
+    expect(superSpy).not.toHaveBeenCalled();
+  });
+
+  it('should fetch conversation and throw if multiple participants with the same userId are connected', async () => {
+    const session: any = new MockSession();
+    const conversationId = session.conversationId = random();
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
+
+    mockSdk._personDetails = {
+      id: USER_ID
+    } as any;
+
+    const scope = createNock();
+
+    const conversation = getMockConversation();
+    const extraParticipant = { ...conversation.participants[0] };
+    extraParticipant.id = 'expected';
+    conversation.participants.push(extraParticipant);
+
+    mockGetConversationApi({ nockScope: scope, conversationId, response: conversation });
+    mockPatchConversationApi({ nockScope: scope, conversationId, participantId: 'expected' });
+
+    handler.endSessionFallback = jest.fn().mockResolvedValue(null);
+
+    await handler.endSession(session);
+    expect(handler.endSessionFallback).toHaveBeenCalled();
+  });
+
   it('should manually end the session if fetch conversation fails', async () => {
     const session: any = new MockSession();
     const conversationId = session.conversationId = random();
