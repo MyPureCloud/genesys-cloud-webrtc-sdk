@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Old behavior was to throw an error.
 * Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`.
   Event already emitted the `sessionId`. This fixes the typing.
+# [v5.0.8](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.7...v5.0.8)
+### Fixed
+* [PCM-1588](https://inindca.atlassian.net/browse/PCM-1588) - fix locating the participant on softphone calls with multiple participants for the same user
 
 # [v5.0.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.6...v5.0.7)
 ### Fixed
