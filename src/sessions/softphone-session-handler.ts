@@ -97,7 +97,31 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         return participant;
       });
 
-      const participant = participants.find((p) => p.userId === this.sdk._personDetails.id);
+      // it's possible for a userId to be associated with multiple participants
+      let participantsForUser = participants.filter((p) => p.userId === this.sdk._personDetails.id);
+      let participant: IConversationParticipant;
+
+      if (participantsForUser.length === 1) {
+        participant = participantsForUser[0];
+      } else if (participantsForUser.length > 1) {
+        participantsForUser = participantsForUser.filter(p => p.state === 'connected');
+
+        // this shouldn't ever happen, but just in case
+        if (participantsForUser.length !== 1) {
+          throw createAndEmitSdkError.call(
+            this.sdk,
+            SdkErrorTypes.generic,
+            'Failed to find a connected participant for user on conversation',
+            {
+              conversationId: session.conversationId,
+              sessionId: session.id,
+              sessionType: this.sessionType,
+              userId: this.sdk._personDetails.id
+            });
+        }
+
+        participant = participantsForUser[0];
+      }
 
       if (!participant) {
         throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
