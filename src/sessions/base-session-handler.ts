@@ -358,13 +358,19 @@ export default abstract class BaseSessionHandler {
    * Will try and replace a track of the same kind if possible, otherwise it will add the track
    */
   async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
-    // find a sender with the same kind of track
-    let sender = session.pc.getSenders().find(sender => sender.track && sender.track.kind === track.kind);
+    // find a transceiver with the same kind of track
+    let transceiver = session.pc.getTransceivers().find(t => {
+      return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
+    });
 
-    if (sender) {
-      await sender.replaceTrack(track);
+    let sender: RTCRtpSender;
+
+    if (transceiver) {
+      await transceiver.sender.replaceTrack(track);
+      sender = transceiver.sender;
     } else {
-      await session.addTrack(track);
+      // the stream parameter is documented as *optional* but it is not so we will just provide a fake one
+      await session.addTrack(track, new MediaStream());
       sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
     }
 

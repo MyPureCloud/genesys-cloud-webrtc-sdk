@@ -640,6 +640,45 @@ describe('addReplaceTrackToSession', () => {
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
   });
+
+  it('should find sender by the receiver track', async () => {
+    const session = new MockSession();
+    const transceiver = session.pc._addTransceiver(new MockTrack('audio'), null);
+
+    const spy = jest.spyOn(transceiver.sender, 'replaceTrack');
+    const track = new MockTrack('audio');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+    expect(spy).toHaveBeenCalled();
+
+    expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('should find sender by the sender track', async () => {
+    const session = new MockSession();
+    const transceiver = session.pc._addTransceiver(null, new MockTrack('audio'));
+
+    const spy = jest.spyOn(transceiver.sender, 'replaceTrack');
+    const track = new MockTrack('audio');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+    expect(spy).toHaveBeenCalled();
+
+    expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('should addTrack if no transceiver found', async () => {
+    (window as any).MediaStream = jest.fn();
+    const session = new MockSession();
+    session.pc._addTransceiver(null, null);
+    const spy = session.addTrack = jest.fn().mockImplementation((track) => {
+      session.pc._addSender(track);
+    });
+
+    const track = new MockTrack('audio');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+    expect(spy).toHaveBeenCalled();
+
+    expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
 });
 
 describe('endTracks', () => {

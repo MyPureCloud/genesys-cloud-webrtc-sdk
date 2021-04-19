@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already auto accepted. That check was only throwing an error if `autoConnectSessions` was `false`.
 
 ### Fixed
+* [PCM-1602](https://inindca.atlassian.net/browse/PCM-1602) – fix errors when changing devices and there's no track on the sender
 * [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session.
   Has Firefox limitations. See documentation.
 * [PCM-1512](https://inindca.atlassian.net/browse/PCM-1512) – fixed softphone and video `acceptSession` to respect media options of `null`

@@ -860,6 +860,7 @@ describe('setVideoMute', () => {
 
   beforeEach(() => {
     jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue(null);
+    (window as any).MediaStream = jest.fn();
     session = new MockSession() as any;
   });
 
