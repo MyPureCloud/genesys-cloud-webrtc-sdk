@@ -88,20 +88,44 @@ class MockReceiver {
   }
 }
 
+class MockTransceiver {
+  sender: MockSender;
+  receiver: MockReceiver;
+
+  constructor (receiverTrack: MockTrack, senderTrack: MockTrack) {
+    this.sender = new MockSender(senderTrack);
+    this.receiver = new MockSender(receiverTrack);
+  }
+}
+
 class MockPC extends EventTarget {
   _mockSession: MockSession;
+  _transceivers: MockTransceiver[] = [];
   _senders: MockSender[] = [];
   _receivers: MockReceiver[] = [];
   constructor (session: MockSession) {
     super();
     // this._mockSession = session;
   }
+
+  getTransceivers (): MockTransceiver[] {
+    return this._transceivers;
+  }
+
   getSenders (): MockSender[] {
     return this._senders;
   }
 
   getReceivers (): MockReceiver[] {
     return this._receivers;
+  }
+
+  _addTransceiver (receiverTrack: MockTrack, senderTrack: MockTrack): MockTransceiver {
+    const transceiver = new MockTransceiver(receiverTrack, senderTrack);
+    this._transceivers.push(transceiver);
+    this._senders.push(transceiver.sender);
+    this._receivers.push(transceiver.receiver);
+    return transceiver;
   }
 
   _addSender (track: MockTrack) {
