@@ -65,6 +65,18 @@ export const checkHasTransceiverFunctionality = function (): boolean {
   try {
     /* make sure we are capable to use tracks */
     const dummyRtcPeerConnection = new RTCPeerConnection();
+
+    /**
+     * HACK: FF will always throw a `DOMException: RTCPeerConnection is gone (did you enter Offline mode?)`
+     *  after we close the PC. The issue's root cause lies within a polyfill. The easiest (hackiest) solution
+     *  is to just swallow the error thrown from this particular PC (since we don't really care about errors here).
+     */
+    const origGetStats = dummyRtcPeerConnection.getStats.bind(dummyRtcPeerConnection);
+    /* istanbul ignore next */
+    (dummyRtcPeerConnection as any).getStats = (selector?: MediaStreamTrack | null): Promise<RTCStatsReport | any> => {
+      return origGetStats(selector).catch(_e => ({}));
+    };
+
     /* if this function exists we should be good */
     _hasTransceiverFunctionality = !!dummyRtcPeerConnection.getTransceivers;
     dummyRtcPeerConnection.close();

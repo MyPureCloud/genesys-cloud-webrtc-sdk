@@ -145,14 +145,14 @@ describe('checkHasTransceiverFunctionality()', () => {
     };
     Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', def);
 
-    expect(mediaUtils.checkHasTransceiverFunctionality()).toBeTruthy();
+    expect(mediaUtils.checkHasTransceiverFunctionality()).toBe(true);
   });
 
   it('should actually do the check', () => {
     let val: boolean = null;
     const def = {
       get: () => val,
-      set: (newVal) => val = newVal
+      set: (newVal: boolean) => val = newVal
     };
 
     class Fake {
@@ -161,23 +161,50 @@ describe('checkHasTransceiverFunctionality()', () => {
       }
       getTransceivers () { }
       close () { }
+      getStats () { return Promise.resolve(); }
     }
 
     window.RTCPeerConnection = Fake as any;
 
     Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', def);
-    expect(mediaUtils.checkHasTransceiverFunctionality()).toBeTruthy();
-    expect(val).toBeTruthy();
+    expect(mediaUtils.checkHasTransceiverFunctionality()).toBe(true);
+    expect(val).toBe(true);
+  });
+
+  it('should catch errors from getStats after the PC has closed (only in FF, am I right)', async () => {
+    let val: boolean = null;
+    const def = {
+      get: () => val,
+      set: (newVal: boolean) => val = newVal
+    };
+
+    class Fake {
+      constructor () {
+        this.getTransceivers = jest.fn();
+      }
+      getTransceivers () { }
+      close () { }
+      getStats () {
+        return Promise.reject().catch((e) => {
+          expect('it caught').toBeTruthy();
+          throw e;
+        })
+      }
+    }
+
+    window.RTCPeerConnection = Fake as any;
+
+    Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', def);
+    expect(mediaUtils.checkHasTransceiverFunctionality()).toBe(true);
+    expect(val).toBe(true);
   });
 
   it('should gracefully handle the case where getTransceivers doesnt exist', () => {
     let val = null;
     Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', { get: () => val, set: (v) => val = v });
 
-    class Fake { }
-
     window.RTCPeerConnection = null;
-    expect(mediaUtils.checkHasTransceiverFunctionality()).toBeFalsy();
+    expect(mediaUtils.checkHasTransceiverFunctionality()).toBe(false);
   });
 });
 
