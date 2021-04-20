@@ -1,7 +1,7 @@
-import { GenesysCloudWebrtcSdk } from './client';
+import Logger from 'genesys-cloud-client-logger';
 
+import { GenesysCloudWebrtcSdk } from './client';
 import { ILogger } from './types/interfaces';
-import { createLogger } from 'genesys-cloud-client-logger';
 
 let APP_VERSION = '[AIV]{version}[/AIV]'; // injected by webpack auto-inject-version
 
@@ -22,7 +22,15 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     return;
   }
 
-  const cloudLogger = this.logger = createLogger();
+  this.logger = new Logger({
+    accessToken: this._config.accessToken,
+    url: `https://api.${this._config.environment}/api/v2/diagnostics/trace`,
+    appVersion: APP_VERSION,
+    logTopic: 'genesys-cloud-webrtc-sdk',
+    logLevel: this._config.logLevel,
+    uploadDebounceTime: 1000,
+    initializeServerLogging: !this.isGuest
+  });
 
   if (this.isGuest) {
     this.logger.debug('Guest user. Not logging to server', null, true);
@@ -30,13 +38,4 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
   }
 
   this.logger.debug('Authenticated user. Initializing server logging', null, true);
-
-  cloudLogger.initializeServerLogging({
-    accessToken: this._config.accessToken,
-    environment: this._config.environment,
-    appVersion: APP_VERSION,
-    logTopic: 'genesys-cloud-webrtc-sdk',
-    logLevel: this._config.logLevel,
-    uploadDebounceTime: 1000
-  });
 }

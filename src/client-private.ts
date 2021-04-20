@@ -2,7 +2,7 @@ import StreamingClient from 'genesys-cloud-streaming-client';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
-import { IExtendedMediaSession, SubscriptionEvent } from './types/interfaces';
+import { SubscriptionEvent } from './types/interfaces';
 import { ConversationUpdate } from './types/conversation-update';
 
 /**
