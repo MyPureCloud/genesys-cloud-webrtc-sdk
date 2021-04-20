@@ -74,7 +74,12 @@ export const checkHasTransceiverFunctionality = function (): boolean {
     const origGetStats = dummyRtcPeerConnection.getStats.bind(dummyRtcPeerConnection);
     /* istanbul ignore next */
     (dummyRtcPeerConnection as any).getStats = (selector?: MediaStreamTrack | null): Promise<RTCStatsReport | any> => {
-      return origGetStats(selector).catch(_e => ({}));
+      return origGetStats(selector).catch(e => {
+        if (e.name === 'InvalidStateError' && e.message === 'RTCPeerConnection is gone (did you enter Offline mode?)') {
+          return {};
+        }
+        throw e;
+      });
     };
 
     /* if this function exists we should be good */
