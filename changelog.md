@@ -3,7 +3,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.8...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.9...HEAD)
+
+# [v5.0.9](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.8...v5.0.9)
+### Fixed
+* [PCM-1547](https://inindca.atlassian.net/browse/PCM-1547) - bump streaming client to fix jingle retract and jingle reject message handling
 
 # [v5.0.8](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.7...v5.0.8)
 ### Fixed
