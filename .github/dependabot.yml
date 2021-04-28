@@ -1,0 +1,121 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: uuid
+    versions:
+    - "^3.3.2"
+  - dependency-name: "@types/node"
+    versions:
+    - 14.14.22
+    - 14.14.23
+    - 14.14.24
+    - 14.14.25
+    - 14.14.26
+    - 14.14.27
+    - 14.14.28
+    - 14.14.29
+    - 14.14.30
+    - 14.14.31
+    - 14.14.32
+    - 14.14.33
+    - 14.14.34
+    - 14.14.35
+    - 14.14.36
+    - 14.14.37
+    - 14.14.39
+    - 14.14.41
+    - 15.0.0
+  - dependency-name: core-js
+    versions:
+    - 3.10.0
+    - 3.10.1
+    - 3.10.2
+    - 3.11.0
+    - 3.8.3
+    - 3.9.0
+    - 3.9.1
+  - dependency-name: purecloud-platform-client-v2
+    versions:
+    - 103.0.1
+    - 104.0.0
+    - 105.0.0
+    - 105.0.1
+    - 106.0.0
+    - 107.0.0
+    - 108.0.2
+    - 109.0.0
+    - 110.0.0
+    - 112.0.0
+  - dependency-name: "@babel/core"
+    versions:
+    - 7.12.10
+    - 7.12.13
+    - 7.12.16
+    - 7.12.17
+    - 7.13.0
+    - 7.13.1
+    - 7.13.10
+    - 7.13.13
+    - 7.13.14
+    - 7.13.15
+    - 7.13.8
+  - dependency-name: typescript
+    versions:
+    - 4.1.3
+    - 4.1.4
+    - 4.1.5
+    - 4.2.2
+    - 4.2.3
+  - dependency-name: y18n
+    versions:
+    - 3.2.2
+  - dependency-name: uglify-js
+    versions:
+    - 3.12.5
+    - 3.12.6
+    - 3.12.7
+    - 3.12.8
+    - 3.13.0
+    - 3.13.1
+    - 3.13.2
+    - 3.13.3
+  - dependency-name: "@babel/preset-env"
+    versions:
+    - 7.12.11
+    - 7.12.13
+    - 7.12.16
+    - 7.12.17
+    - 7.13.0
+    - 7.13.10
+    - 7.13.12
+    - 7.13.5
+    - 7.13.8
+    - 7.13.9
+  - dependency-name: yargs-parser
+    versions:
+    - 5.0.1
+  - dependency-name: elliptic
+    versions:
+    - 6.5.4
+  - dependency-name: "@babel/preset-typescript"
+    versions:
+    - 7.12.13
+    - 7.12.16
+    - 7.12.17
+    - 7.12.7
+  - dependency-name: ini
+    versions:
+    - 1.3.8
+  - dependency-name: webpack-cli
+    versions:
+    - 4.4.0
+    - 4.5.0
+  - dependency-name: node-notifier
+    versions:
+    - 8.0.1
