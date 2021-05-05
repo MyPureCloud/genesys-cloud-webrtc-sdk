@@ -15,8 +15,8 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
-import { createNewStreamWithTrack, startMedia, startDisplayMedia, getEnumeratedDevices, logDeviceChange } from '../media-utils';
-import { throwSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
+import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
+import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
 
 /**
@@ -271,36 +271,36 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return super.handleSessionInit(session);
   }
 
-  // doc: acceptSession requires a video and audio element either provided or default
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    const audioElement = params.audioElement || this.sdk._config.defaultAudioElement;
+    const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
+    const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', { conversationId: session.conversationId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', sessionInfo);
     }
 
-    const videoElement = params.videoElement || this.sdk._config.defaultVideoElement;
+    const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
     if (!videoElement) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', { conversationId: session.conversationId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', sessionInfo);
     }
 
     let stream = params.mediaStream;
     if (!stream) {
-      const devices = await getEnumeratedDevices(this.sdk);
+      const { hasCamera, hasMic } = this.sdk.media.getState();
       const mediaParams: IMediaRequestOptions = {
-        audio: params.audioDeviceId || true,
-        video: params.videoDeviceId || true,
+        audio: this.sdk.media.getValidSdkMediaRequestDeviceId(params.audioDeviceId),
+        video: this.sdk.media.getValidSdkMediaRequestDeviceId(params.videoDeviceId),
         session
       };
 
-      if (!devices.videoDevices.length) {
+      if (!hasCamera) {
         mediaParams.video = false;
       }
 
-      if (!devices.audioDevices.length) {
+      if (!hasMic) {
         mediaParams.audio = false;
       }
 
-      stream = await startMedia(this.sdk, mediaParams);
+      stream = await this.sdk.media.startMedia(mediaParams);
     }
 
     session._outboundStream = stream;
@@ -312,7 +312,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     // make sure we have an audio and video sender so we don't have to renego later
     this.setupTransceivers(session);
 
-    const attachParams = { audioElement, videoElement };
+    const attachParams = { audioElement, videoElement, volume: this.sdk._config.defaults.audioVolume };
 
     const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
       if (!Array.isArray(tracks)) tracks = [tracks];
@@ -404,12 +404,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   async endSession (session: IExtendedMediaSession) {
     await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
     await super.endSession(session);
-    session.pc.getSenders().map((sender) => {
-      if (sender.track) {
-
-        sender.track.stop();
-      }
-    });
+    session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean) {
@@ -459,7 +454,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       });
 
       const track = (
-        await startMedia(this.sdk, { video: videoDeviceConstraint, session })
+        await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
       ).getVideoTracks()[0];
 
       logDeviceChange(this.sdk, session, 'changingDevices', {
@@ -517,7 +512,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
         // if params.unmuteDeviceId is `undefined`, use sdk defaults
         const track = (
-          await startMedia(this.sdk, { audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session })
+          await this.sdk.media.startMedia({ audio: params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId, session })
         ).getAudioTracks()[0];
         await this.addReplaceTrackToSession(session, track);
       }
@@ -545,13 +540,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     try {
       this.log('info', 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId });
 
-      const stream = await startDisplayMedia();
+      const stream = await this.sdk.media.startDisplayMedia();
       session._screenShareStream = stream;
 
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
 
       if (!session.videoMuted) {
-        await this.setVideoMute(session, { id: session.id, mute: true }, true);
+        await this.setVideoMute(session, { sessionId: session.id, mute: true }, true);
       }
 
       stream.getTracks().forEach((track: MediaStreamTrack) => {
@@ -564,7 +559,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         return this.log('info', 'screen selection cancelled', { conversationId: session.conversationId, sessionId: session.id });
       }
 
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
         conversationId: session.conversationId,
         sessionId: session.id,
         error: err
@@ -583,7 +578,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (session._resurrectVideoOnScreenShareEnd) {
       this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id });
-      await this.setVideoMute(session, { id: session.id, mute: false }, true);
+      await this.setVideoMute(session, { sessionId: session.id, mute: false }, true);
     } else {
       await sender.replaceTrack(null);
     }
@@ -595,7 +590,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   async pinParticipantVideo (session: IExtendedMediaSession, participantId?: string) {
     if (!session.pcParticipant) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
         conversation: session.conversationId,
         sessionId: session.id,
         participantId
@@ -632,7 +627,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await requestApi.call(this.sdk, uri, { method, data });
       session.emit('pinnedParticipant', { participantId: participantId || null });
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', {
         conversationId: session.conversationId,
         sessionId: session.id,
         error: err
@@ -642,7 +637,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
   attachIncomingTrackToElement (
     track: MediaStreamTrack,
-    { audioElement, videoElement }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement }
+    { audioElement, videoElement, volume }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement, volume: number }
   ): HTMLAudioElement | HTMLVideoElement {
     let element = audioElement;
 
@@ -652,6 +647,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
 
     element.autoplay = true;
+    element.volume = volume / 100;
     element.srcObject = createNewStreamWithTrack(track);
     return element;
   }

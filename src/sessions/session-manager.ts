@@ -1,12 +1,10 @@
-
 import { GenesysCloudWebrtcSdk } from '../client';
 import BaseSessionHandler from './base-session-handler';
 import SoftphoneSessionHandler from './softphone-session-handler';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
-import { logPendingSession, throwSdkError } from '../utils';
+import { createAndEmitSdkError, logPendingSession } from '../utils';
 import ScreenShareSessionHandler from './screen-share-session-handler';
 import VideoSessionHandler from './video-session-handler';
-import { getValidDeviceId, getEnumeratedDevices, hasOutputDeviceSupport } from '../media-utils';
 import {
   IPendingSession,
   ISessionInfo,
@@ -76,16 +74,16 @@ export class SessionManager {
     delete this.pendingSessions[sessionId];
   }
 
-  getSession (params: { id?: string, conversationId?: string }): IExtendedMediaSession {
+  getSession (params: { sessionId?: string, conversationId?: string }): IExtendedMediaSession {
     let session: IExtendedMediaSession;
-    if (params.id) {
-      session = this.jingle.sessions[params.id] as IExtendedMediaSession;
+    if (params.sessionId) {
+      session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
     } else {
       session = (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
     }
 
     if (!session) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
     }
 
     return session;
@@ -96,6 +94,10 @@ export class SessionManager {
       .filter((session: IExtendedMediaSession) => session.state === 'active');
   }
 
+  getAllJingleSessions (): IExtendedMediaSession[] {
+    return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession });
+  }
+
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
@@ -104,14 +106,14 @@ export class SessionManager {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
 
       if (!fromJid) {
-        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'getSessionHandler was called without any identifying information', params);
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'getSessionHandler was called without any identifying information', params);
       }
 
       handler = this.sessionHandlers.find((handler) => handler.shouldHandleSessionByJid(fromJid));
     }
 
     if (!handler) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to find session handler for session', params);
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to find session handler for session', params);
     }
 
     return handler;
@@ -121,7 +123,7 @@ export class SessionManager {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     if (handler.disabled) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
     }
 
     return handler.startSession(startSessionParams);
@@ -133,31 +135,52 @@ export class SessionManager {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
-    const session = options.session || this.getSession({ id: options.sessionId });
+    const session = options.session || this.getSession({ sessionId: options.sessionId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
     return handler.updateOutgoingMedia(session, options);
   }
 
-  async updateOutgoingMediaForAllSessions (options: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
-    const { videoDeviceId, audioDeviceId } = options;
+  async updateOutgoingMediaForAllSessions (options?: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
+    const opts = options || {
+      videoDeviceId: this.sdk._config.defaults.videoDeviceId,
+      audioDeviceId: this.sdk._config.defaults.audioDeviceId
+    };
+
     const sessions = this.getAllActiveSessions();
 
     this.log('info', 'Updating outgoing deviceId(s) for all active sessions', {
       sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId })),
-      videoDeviceId,
-      audioDeviceId
+      videoDeviceId: opts.videoDeviceId,
+      audioDeviceId: opts.audioDeviceId
     });
 
     const promises = sessions.map(session => {
-      return this.updateOutgoingMedia({ session, videoDeviceId, audioDeviceId });
+      return this.updateOutgoingMedia({
+        session,
+        videoDeviceId: opts.videoDeviceId,
+        audioDeviceId: opts.audioDeviceId
+      });
     });
     return Promise.all(promises);
   }
 
+  updateAudioVolume (volume: number): void {
+    const sessions = this.getAllActiveSessions();
+    this.log('info', 'Updating volume for all active sessions', {
+      sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId })),
+      volume
+    });
+
+    sessions.forEach((session) => {
+      const handler = this.getSessionHandler({ jingleSession: session });
+      handler.updateAudioVolume(session, volume);
+    });
+  }
+
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
     const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
-    const _outputDeviceId = await getValidDeviceId(this.sdk, 'audiooutput', outputDeviceId, ...sessions) || '';
+    const _outputDeviceId = this.sdk.media.getValidDeviceId('audiooutput', outputDeviceId, ...sessions) || '';
     const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
 
     if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
@@ -217,7 +240,7 @@ export class SessionManager {
     const pendingSession = this.getPendingSession(sessionId);
 
     if (!pendingSession) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -229,7 +252,7 @@ export class SessionManager {
     const pendingSession = this.getPendingSession(sessionId);
 
     if (!pendingSession) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -249,42 +272,42 @@ export class SessionManager {
   }
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
-    if (!params || !params.id) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'An id representing the sessionId is required for acceptSession');
+    if (!params || !params.sessionId) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A sessionId is required for acceptSession');
     }
 
-    const session = this.getSession({ id: params.id });
+    const session = this.getSession({ sessionId: params.sessionId });
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }
 
   async endSession (params: IEndSessionRequest) {
-    if (!params.id && !params.conversationId) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
+    if (!params.sessionId && !params.conversationId) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
     }
 
     const session = this.getSession(params);
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
-    return sessionHandler.endSession(session);
+    return sessionHandler.endSession(session, params.reason);
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ id: params.id });
+    const session = this.getSession({ sessionId: params.sessionId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setVideoMute(session, params);
   }
 
   async setAudioMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ id: params.id });
+    const session = this.getSession({ sessionId: params.sessionId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setAudioMute(session, params);
   }
   async validateOutgoingMediaTracks () {
     const sessions = this.getAllActiveSessions();
-    const { videoDevices, audioDevices, outputDevices } = await getEnumeratedDevices(this.sdk);
+    const { videoDevices, audioDevices, outputDevices, hasOutputDeviceSupport } = this.sdk.media.getState();
     const updates = new Map<string, { video?: boolean, audio?: boolean }>();
     const promises = [];
 
@@ -321,7 +344,7 @@ export class SessionManager {
         });
 
       /* check output device */
-      if (hasOutputDeviceSupport() && session._outputAudioElement) {
+      if (hasOutputDeviceSupport && session._outputAudioElement) {
         const deviceExists = outputDevices.find(
           d => d.deviceId === session._outputAudioElement.sinkId
         );
@@ -345,7 +368,7 @@ export class SessionManager {
     /* update the sessions */
     for (const [sessionId, mediaToUpdate] of updates) {
       const opts: IUpdateOutgoingMedia = { sessionId };
-      const jingleSession = this.getSession({ id: sessionId });
+      const jingleSession = this.getSession({ sessionId: sessionId });
       const handler = this.getSessionHandler({ jingleSession });
 
       /* if our video needs to be updated */
@@ -357,7 +380,7 @@ export class SessionManager {
           this.log('warn', 'no available video devices to switch to. setting video to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'video' });
           promises.push(
-            handler.setVideoMute(jingleSession, { mute: true, id: jingleSession.id })
+            handler.setVideoMute(jingleSession, { mute: true, sessionId: jingleSession.id })
           );
         }
       }
@@ -370,7 +393,7 @@ export class SessionManager {
           this.log('warn', 'no available audio devices to switch to. setting audio to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'audio' });
           promises.push(
-            handler.setAudioMute(jingleSession, { mute: true, id: jingleSession.id })
+            handler.setAudioMute(jingleSession, { mute: true, sessionId: jingleSession.id })
           );
 
           const senders = handler.getSendersByTrackType(jingleSession, 'audio')

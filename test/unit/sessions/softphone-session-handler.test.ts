@@ -1,25 +1,28 @@
+import nock = require('nock');
+
 import {
   SimpleMockSdk,
   MockSession,
   createPendingSession,
   MockStream,
-  random,
+  random
+} from '../../test-utils';
+import {
   getMockConversation,
+  createNock,
+  mockGetConversationApi,
   PARTICIPANT_ID,
   USER_ID,
-  mockGetConversationApi,
-  mockPatchConversationApi,
-  createNock
-} from '../../test-utils';
+  mockPatchConversationApi
+} from '../../mock-apis';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes } from '../../../src/types/enums';
-import * as mediaUtils from '../../../src/media-utils';
+import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
-import { IAcceptSessionRequest, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
-import nock = require('nock');
+import { IAcceptSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -126,14 +129,15 @@ describe('handleSessionInit', () => {
   });
 });
 
-describe('acceptSesion', () => {
+describe('acceptSession', () => {
   it('should add media using provided stream and element then accept session', async () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia');
+    const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia');
 
     const element = {};
+    const volume = mockSdk._config.defaults.audioVolume = 67;
     const mockOutgoingStream = new MockStream({ audio: true });
     const mockIncomingStream = new MockStream({ audio: true });
 
@@ -141,9 +145,13 @@ describe('acceptSesion', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      id: session.sid,
+      sessionId: session.sid,
       audioElement: element as any,
       mediaStream: mockOutgoingStream as any
+    };
+    const ids: ISessionAndConversationIds = {
+      sessionId: session.id,
+      conversationId: session.conversationId
     };
 
     await handler.acceptSession(session, params);
@@ -151,27 +159,32 @@ describe('acceptSesion', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).not.toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, mockOutgoingStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, element, session.conversationId);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, element, ids);
   });
 
   it('should add media using default stream and element then accept session', async () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia');
+    const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia');
 
     const defaultElement = {};
     const defaultStream = new MockStream({ audio: true });
 
-    mockSdk._config.defaultAudioElement = defaultElement as any;
-    mockSdk._config.defaultAudioStream = defaultStream as any;
+    mockSdk._config.defaults.audioElement = defaultElement as any;
+    mockSdk._config.defaults.audioStream = defaultStream as any;
+    const volume = mockSdk._config.defaults.audioVolume = 67;
     const mockIncomingStream = new MockStream({ audio: true });
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      id: session.sid
+      sessionId: session.sid
+    };
+    const ids: ISessionAndConversationIds = {
+      sessionId: session.id,
+      conversationId: session.conversationId
     };
 
     await handler.acceptSession(session, params);
@@ -179,7 +192,7 @@ describe('acceptSesion', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).not.toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, defaultStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, defaultElement, session.conversationId);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, defaultElement, ids);
   });
 
   it('should add media using created stream accept session', async () => {
@@ -188,15 +201,20 @@ describe('acceptSesion', () => {
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     const createdStream = new MockStream({ audio: true });
-    const startMediaSpy = jest.spyOn(mediaUtils, 'startMedia').mockResolvedValue(createdStream as any);
+    const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
 
     const mockIncomingStream = new MockStream({ audio: true });
+    const volume = mockSdk._config.defaults.audioVolume = 67;
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      id: session.sid
+      sessionId: session.sid
+    };
+    const ids: ISessionAndConversationIds = {
+      sessionId: session.id,
+      conversationId: session.conversationId
     };
 
     await handler.acceptSession(session, params);
@@ -204,7 +222,7 @@ describe('acceptSesion', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, createdStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, undefined, session.conversationId);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, undefined, ids);
   });
 
   it('should wait to attachAudioMedia until session has a track', async () => {
@@ -214,11 +232,16 @@ describe('acceptSesion', () => {
     const element = {};
 
     const session: any = new MockSession();
+    const volume = mockSdk._config.defaults.audioVolume = 67;
 
     const params: IAcceptSessionRequest = {
-      id: session.sid,
+      sessionId: session.sid,
       audioElement: element as any,
       mediaStream: new MockStream() as any
+    };
+    const ids: ISessionAndConversationIds = {
+      sessionId: session.id,
+      conversationId: session.conversationId
     };
 
     await handler.acceptSession(session, params);
@@ -229,7 +252,7 @@ describe('acceptSesion', () => {
     const track = mockIncomingStream.getAudioTracks()[0];
     session.emit('peerTrackAdded', track, mockIncomingStream);
 
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, element, session.conversationId);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, element, ids);
   });
 });
 
@@ -441,7 +464,7 @@ describe('setAudioMute', () => {
 
     const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
 
-    await handler.setAudioMute(session, { id: session.id, mute: true });
+    await handler.setAudioMute(session, { sessionId: session.id, mute: true });
 
     expect(patchConversation.isDone).toBeTruthy();
   });
@@ -456,7 +479,35 @@ describe('setAudioMute', () => {
 
     mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
 
-    await expect(handler.setAudioMute(session, { id: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
+    await expect(handler.setAudioMute(session, { sessionId: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
+  });
+});
+
+describe('updateOutgoingMedia', () => {
+  it('should call supers updateOutgoingMedia with undefined videoDeviceId', async () => {
+    const superSpyUpdateOutgoingMedia = jest.spyOn(BaseSessionHandler.prototype, 'updateOutgoingMedia').mockResolvedValue(null);
+    const session = new MockSession();
+    const opts: IUpdateOutgoingMedia = {
+      audioDeviceId: 'audioDevice',
+      videoDeviceId: 'videoDevice'
+    };
+
+    await handler.updateOutgoingMedia(session as any, opts);
+    expect(superSpyUpdateOutgoingMedia).toHaveBeenCalledWith(session, { audioDeviceId: 'audioDevice', videoDeviceId: undefined });
+  });
+});
+
+describe('updateOutgoingMedia', () => {
+  it('should call supers updateOutgoingMedia with undefined videoDeviceId', async () => {
+    const superSpyUpdateOutgoingMedia = jest.spyOn(BaseSessionHandler.prototype, 'updateOutgoingMedia').mockResolvedValue(null);
+    const session = new MockSession();
+    const opts: IUpdateOutgoingMedia = {
+      audioDeviceId: 'audioDevice',
+      videoDeviceId: 'videoDevice'
+    };
+
+    await handler.updateOutgoingMedia(session as any, opts);
+    expect(superSpyUpdateOutgoingMedia).toHaveBeenCalledWith(session, { audioDeviceId: 'audioDevice', videoDeviceId: undefined });
   });
 });
 

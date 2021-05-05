@@ -2,8 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia, IExtendedMediaSession, IEnumeratedDevices } from '../../../src/types/interfaces';
-import * as mediaUtils from '../../../src/media-utils';
+import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -131,8 +130,8 @@ describe('getSession', () => {
   });
 
   it('should get session by sessionId', () => {
-    expect(sessionManager.getSession({ id: session1.id })).toBe(session1);
-    expect(sessionManager.getSession({ id: session2.id })).toBe(session2);
+    expect(sessionManager.getSession({ sessionId: session1.id })).toBe(session1);
+    expect(sessionManager.getSession({ sessionId: session2.id })).toBe(session2);
   });
 
   it('should get session by conversationId', () => {
@@ -141,7 +140,7 @@ describe('getSession', () => {
   });
 
   it('should throw is no session is found', () => {
-    expect(() => sessionManager.getSession({ id: 'fakeId' })).toThrowError(/Unable to find session/);
+    expect(() => sessionManager.getSession({ sessionId: 'fakeId' })).toThrowError(/Unable to find session/);
   });
 });
 
@@ -392,7 +391,7 @@ describe('acceptSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.acceptSession({ id: 'asdf' });
+    await sessionManager.acceptSession({ sessionId: 'asdf' });
 
     expect(mockHandler.acceptSession).toHaveBeenCalled();
   });
@@ -413,7 +412,7 @@ describe('endSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.endSession({ id: '123' });
+    await sessionManager.endSession({ sessionId: '123' });
 
     expect(mockHandler.endSession).toHaveBeenCalled();
   });
@@ -432,7 +431,7 @@ describe('setVideoMute', () => {
     const fakeSession = {} as any;
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
 
-    const params = { id: '1', mute: true };
+    const params = { sessionId: '1', mute: true };
     await sessionManager.setVideoMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
@@ -448,7 +447,7 @@ describe('setAudioMute', () => {
     const fakeSession = {} as any;
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
 
-    const params = { id: '1', mute: true };
+    const params = { sessionId: '1', mute: true };
     await sessionManager.setAudioMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
@@ -466,6 +465,19 @@ describe('getAllActiveSessions()', () => {
 
     mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject } as any;
     expect(sessionManager.getAllActiveSessions()).toEqual(expectedArray);
+  });
+});
+
+describe('getAllJingleSessions()', () => {
+  it('should return all active sessions as an array', () => {
+    const sessionsObject = {
+      'session-1': { id: 'session-1', state: 'active' },
+      'session-2': { id: 'session-2', state: 'active' }
+    };
+    const expectedArray = [sessionsObject['session-1'], sessionsObject['session-2']];
+
+    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject } as any;
+    expect(sessionManager.getAllJingleSessions()).toEqual(expectedArray);
   });
 });
 
@@ -495,13 +507,36 @@ describe('updateOutgoingMedia()', () => {
 
     await sessionManager.updateOutgoingMedia(options);
 
-    expect(getSessionSpy).toHaveBeenCalledWith({ id: 'abc123' });
+    expect(getSessionSpy).toHaveBeenCalledWith({ sessionId: 'abc123' });
     expect(getSessionHandlerSpy).toHaveBeenCalledWith({ jingleSession: session });
     expect(mockSessionHandler.updateOutgoingMedia).toHaveBeenCalledWith(session, options);
   });
 });
 
 describe('updateOutgoingMediaForAllSessions()', () => {
+  it('should use sdk default devices if no opts are provided', async () => {
+    const sessions = [{ id: '1' }, { id: '2' }, { id: '3' }];
+    const videoDeviceId = 'video-device';
+    const audioDeviceId = 'audio-device';
+
+    mockSdk._config.defaults.audioDeviceId = audioDeviceId;
+    mockSdk._config.defaults.videoDeviceId = videoDeviceId;
+
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+    jest.spyOn(sessionManager, 'updateOutgoingMedia').mockResolvedValue(undefined);
+
+    await sessionManager.updateOutgoingMediaForAllSessions();
+
+    expect(sessionManager.getAllActiveSessions).toHaveBeenCalled();
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Updating outgoing deviceId(s) for all active sessions'),
+      expect.any(Object));
+
+    sessions.forEach(session => {
+      expect(sessionManager.updateOutgoingMedia).toHaveBeenCalledWith({ session, videoDeviceId, audioDeviceId });
+    });
+  });
+
   it('should call the handler to updateOutgoingMedia for all sessions', async () => {
     const sessions = [{ id: '1' }, { id: '2' }, { id: '3' }];
     const videoDeviceId = 'video-device';
@@ -529,13 +564,13 @@ describe('updateOutputDeviceForAllSessions()', () => {
     const screenShareSession = new MockSession(SessionTypes.acdScreenShare);
     const videoSession = new MockSession(SessionTypes.collaborateVideo);
 
-    jest.spyOn(mediaUtils, 'getValidDeviceId').mockResolvedValue(undefined);
+    jest.spyOn(mockSdk.media, 'getValidDeviceId').mockReturnValue(undefined);
     jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue([screenShareSession, videoSession] as any);
     jest.spyOn(sessionManager, 'getSessionHandler');
 
     await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
 
-    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId, videoSession);
+    expect(mockSdk.media.getValidDeviceId).toHaveBeenCalledWith('audiooutput', outputDeviceId, videoSession);
     expect(sessionManager.getSessionHandler).not.toHaveBeenCalled();
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Output deviceId not found. Not updating output media'),
@@ -555,13 +590,13 @@ describe('updateOutputDeviceForAllSessions()', () => {
     ];
     const mockSessionHandler = { updateOutputDevice: jest.fn() };
 
-    jest.spyOn(mediaUtils, 'getValidDeviceId').mockResolvedValue(outputDeviceId);
+    jest.spyOn(mockSdk.media, 'getValidDeviceId').mockReturnValue(outputDeviceId);
     jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
 
     await sessionManager.updateOutputDeviceForAllSessions(outputDeviceId);
 
-    expect(mediaUtils.getValidDeviceId).toHaveBeenCalledWith(mockSdk, 'audiooutput', outputDeviceId, sessions[0], sessions[1]);
+    expect(mockSdk.media.getValidDeviceId).toHaveBeenCalledWith('audiooutput', outputDeviceId, sessions[0], sessions[1]);
 
     sessions
       .filter(session => session.sessionType !== SessionTypes.acdScreenShare)
@@ -574,13 +609,13 @@ describe('updateOutputDeviceForAllSessions()', () => {
 
 describe('validateOutgoingMediaTracks()', () => {
   let sessions: IExtendedMediaSession[];
-  let devices: IEnumeratedDevices;
   let mockSessionHandler: BaseSessionHandler;
-
+  let testDevices: MediaDeviceInfo[];
+  let mediaState: ISdkMediaState;
   let mockGetAllSessions: jest.SpyInstance<IExtendedMediaSession[]>;
-  let mockGetEnumeratedDevices: jest.SpyInstance<Promise<IEnumeratedDevices>>;
   let mockGetSession: jest.SpyInstance<IExtendedMediaSession>;
   let mockGetSessionHandler: jest.SpyInstance<BaseSessionHandler>;
+  let setMediaStateDevices: typeof mockSdk.media['setDevices'];
 
   beforeEach(() => {
     mockSessionHandler = {
@@ -594,28 +629,28 @@ describe('validateOutgoingMediaTracks()', () => {
     sessions = [
       new MockSession() as any
     ];
-    devices = {
-      audioDevices: [
-        { deviceId: 'device#1', groupId: 'group#1', kind: 'audioinput', label: 'Device #1' } as any,
-        { deviceId: 'device#2', groupId: 'group#2', kind: 'audioinput', label: 'Device #2' } as any
-      ],
-      videoDevices: [
-        { deviceId: 'device#3', groupId: 'group#3', kind: 'videoinput', label: 'Device #3' } as any,
-        { deviceId: 'device#4', groupId: 'group#4', kind: 'videoinput', label: 'Device #4' } as any
-      ],
-      outputDevices: []
-    };
+    testDevices = [
+      /* audioDevices */
+      { deviceId: 'device#1', groupId: 'group#1', kind: 'audioinput', label: 'Device #1' } as any,
+      { deviceId: 'device#2', groupId: 'group#2', kind: 'audioinput', label: 'Device #2' } as any,
+      /* videoDevices */
+      { deviceId: 'device#3', groupId: 'group#3', kind: 'videoinput', label: 'Device #3' } as any,
+      { deviceId: 'device#4', groupId: 'group#4', kind: 'videoinput', label: 'Device #4' } as any
+    ];
+
+    setMediaStateDevices = mockSdk.media['setDevices'].bind(mockSdk.media);
 
     mockGetAllSessions = jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions);
-    mockGetEnumeratedDevices = jest.spyOn(mediaUtils, 'getEnumeratedDevices').mockResolvedValue(devices);
+    setMediaStateDevices(testDevices);
+    mediaState = mockSdk.media.getState();
 
-    mockGetSession = jest.spyOn(sessionManager, 'getSession').mockImplementation(({ id }) => sessions.find(s => s.id === id));
+    mockGetSession = jest.spyOn(sessionManager, 'getSession').mockImplementation(({ sessionId: id }) => sessions.find(s => s.id === id));
     mockGetSessionHandler = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
   });
 
   it('should ignore the screen share stream on the session', async () => {
     const screenShareStream = new MockStream({ video: true });
-    const mockTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const mockTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const session = sessions[0];
 
     session._screenShareStream = screenShareStream as any;
@@ -630,11 +665,10 @@ describe('validateOutgoingMediaTracks()', () => {
 
     /* other generic mocks called */
     expect(mockGetAllSessions).toBeCalled();
-    expect(mockGetEnumeratedDevices).toBeCalled();
   });
 
   it('should not update the session if the media did not get lost', async () => {
-    const mockTrack = new MockTrack('video', devices.videoDevices[0].label);
+    const mockTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const session = sessions[0];
     session.pc['_addSender'](mockTrack); /* this is a mock PC */
 
@@ -647,15 +681,16 @@ describe('validateOutgoingMediaTracks()', () => {
   });
 
   it('should update video media on all sessions if the device was lost', async () => {
-    const mockVideoTrack = new MockTrack('video', devices.videoDevices[0].label);
-    const mockAudioTrack = new MockTrack('audio', devices.audioDevices[0].label);
+    const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    const mockAudioTrack = new MockTrack('audio', mediaState.audioDevices[0].label);
 
     const session = sessions[0];
     session.pc['_addSender'](mockVideoTrack); /* this is a mock PC */
     session.pc['_addSender'](mockAudioTrack);
 
-    /* device is removed */
-    devices.videoDevices = devices.videoDevices.slice(1);
+    /* video device is lost */
+    const newDevices = testDevices.filter(d => d.label !== mediaState.videoDevices[0].label);
+    setMediaStateDevices(newDevices);
 
     mockSdk.logger.warn['mockReset']();
     await sessionManager.validateOutgoingMediaTracks();
@@ -679,15 +714,16 @@ describe('validateOutgoingMediaTracks()', () => {
   });
 
   it('should update audio media on all sessions if the device was lost', async () => {
-    const mockVideoTrack = new MockTrack('video', devices.videoDevices[0].label);
-    const mockAudioTrack = new MockTrack('audio', devices.audioDevices[0].label);
+    const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    const mockAudioTrack = new MockTrack('audio', mediaState.audioDevices[0].label);
 
     const session = sessions[0];
     session.pc['_addSender'](mockVideoTrack); /* this is a mock PC */
     session.pc['_addSender'](mockAudioTrack);
 
-    /* device is removed */
-    devices.audioDevices = devices.audioDevices.slice(1);
+    /* audio device is lost */
+    const newDevices = testDevices.filter(d => d.label !== mediaState.audioDevices[0].label);
+    setMediaStateDevices(newDevices);
 
     mockSdk.logger.warn['mockReset']();
     await sessionManager.validateOutgoingMediaTracks();
@@ -707,8 +743,8 @@ describe('validateOutgoingMediaTracks()', () => {
   });
 
   it('should mute the media type if there is no device to switch to', async () => {
-    const mockVideoTrack = new MockTrack('video', devices.videoDevices[0].label);
-    const mockAudioTrack = new MockTrack('audio', devices.videoDevices[0].label);
+    const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    const mockAudioTrack = new MockTrack('audio', mediaState.videoDevices[0].label);
 
     const session = sessions[0];
     session.pc['_addSender'](mockVideoTrack); /* this is a mock PC */
@@ -716,8 +752,7 @@ describe('validateOutgoingMediaTracks()', () => {
     session._outboundStream = { removeTrack: jest.fn() } as any;
 
     /* all devices are removed (none available to switch to) */
-    devices.videoDevices = [];
-    devices.audioDevices = [];
+    setMediaStateDevices([]);
 
     await sessionManager.validateOutgoingMediaTracks();
 
@@ -742,8 +777,8 @@ describe('validateOutgoingMediaTracks()', () => {
     /* mutes the session and does not update media (since there is none to update to) */
     expect(mockSessionHandler.getSendersByTrackType).toBeCalled();
     expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
-    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
-    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, id: session.id });
+    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, sessionId: session.id });
+    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, sessionId: session.id });
 
     /* should also remove audio tracks because setAudioMute does not remove them (setVideoMute does) */
     const expectedSender = session.pc.getSenders().find(s => s.track === mockAudioTrack as any);
@@ -757,11 +792,11 @@ describe('validateOutgoingMediaTracks()', () => {
     const session = sessions[0];
     session._outputAudioElement = mockOutputElement as any;
 
-    devices.outputDevices = [
-      { deviceId: 'some-device-id' } as MediaDeviceInfo
-    ];
+    setMediaStateDevices([
+      { deviceId: 'some-device-id', kind: 'audiooutput' } as MediaDeviceInfo
+    ]);
 
-    jest.spyOn(mediaUtils, 'hasOutputDeviceSupport').mockReturnValue(true);
+    mockSdk.media['setStateAndEmit']({ hasOutputDeviceSupport: true }, 'state');
     jest.spyOn(sessionManager, 'updateOutputDeviceForAllSessions').mockResolvedValue(null);
 
     await sessionManager.validateOutgoingMediaTracks();
@@ -774,7 +809,7 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(sessionManager.updateOutputDeviceForAllSessions).not.toHaveBeenCalled();
 
     /* device does not exist, attempt to switch */
-    devices.outputDevices = [];
+    setMediaStateDevices([]);
     await sessionManager.validateOutgoingMediaTracks();
 
     expect(mockSdk.logger.info).toHaveBeenCalledWith(
@@ -782,5 +817,26 @@ describe('validateOutgoingMediaTracks()', () => {
       { conversationId: session.conversationId, sessionId: session.id, kind: 'output' }
     );
     expect(sessionManager.updateOutputDeviceForAllSessions).toHaveBeenCalled();
+  });
+});
+
+describe('updateAudioVolume', () => {
+  it('should call the handler to update all sessions, non-screenshare sessions', async () => {
+    const sessions = [
+      new MockSession(SessionTypes.collaborateVideo),
+      new MockSession(SessionTypes.softphone)
+    ];
+    const mockSessionHandler = { updateAudioVolume: jest.fn() };
+
+    jest.spyOn(sessionManager, 'getAllActiveSessions').mockReturnValue(sessions as any);
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+
+    sessionManager.updateAudioVolume(63);
+
+    sessions
+      .forEach(session => {
+        expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ jingleSession: session });
+        expect(mockSessionHandler.updateAudioVolume).toHaveBeenCalledWith(session, 63);
+      });
   });
 });

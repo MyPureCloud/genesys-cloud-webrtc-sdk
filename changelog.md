@@ -3,7 +3,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.9...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...HEAD)
+
+# [v6.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.8...v6.0.0)
+### Added
+* Added internal option `reason` to the `IEndSessionRequest` interface
+* Added `sdk.media` class to handle and emit media related tasks. See [media documentation](doc/media.md) for more details
+  * `sdk.media.on(...)` event emitter.
+  * permissions and device management housed in `sdk.media`
+* [PCM-1510](https://inindca.atlassian.net/browse/PCM-1510) – Be able to specify jidResource for clients (streaming client)
+* [PCM-1538](https://inindca.atlassian.net/browse/PCM-1538) – add `sdk.setAccessToken(token)` function to allow for updating the
+  auth token on an already initialized sdk instance.
+* [PCM-1576](https://inindca.atlassian.net/browse/PCM-1576) - Be able to control audio volume on video and audio elements. see `sdk.updateAudioVolume`.
+
+### Changed
+* Updated documentation.
+* extra audio constraints which were google only, now apply to all browsers
+* A few audio constraints are configurable as sdk defaults
+* [PCM-1514](https://inindca.atlassian.net/browse/PCM-1514) – Guest acd screen share no longer cares about `config.autoConnectSessions`. Sessions were
+  already auto accepted. That check was only throwing an error if `autoConnectSessions` was `false`.
+
+### Fixed
+* [PCM-1602](https://inindca.atlassian.net/browse/PCM-1602) – fix errors when changing devices and there's no track on the sender
+* [PCM-1509](https://inindca.atlassian.net/browse/PCM-1509) – fixed sdk's `defaults.audioStream` to not be destroy when ending a session.
+  Has Firefox limitations. See documentation.
+* [PCM-1512](https://inindca.atlassian.net/browse/PCM-1512) – fixed softphone and video `acceptSession` to respect media options of `null`
+  as being `system default` requests.
+* [PCM-1522](https://inindca.atlassian.net/browse/PCM-1522) – fixed `sdk.updateOutgoingMedia()` to respect media options of `null`
+
+### Breaking Change
+* Updated configuration options for constructing an SDK instance (see [docs](doc/index.md) for new config)
+  * Removed configuration option `iceServers: IceServerConfiguration[]` and `iceTransportPolicy`
+  * Moved defaults into a nested `config.default = {}` object
+* Changed `IAcceptSessionRequest`, `IEndSessionRequest`, and `ISessionMuteRequest` interfaces to require a `sessionId`
+  in place of the non-descriptive `id` field. This contract change will impact calls to:
+    * `sdk.acceptSession({sessionId: string;})`
+    * `sdk.endSession({sessionId: string;})`
+    * `sdk.setVideoMute({sessionId: string;})`
+    * `sdk.setAudioMute({sessionId: string;})`
+    * See [docs](doc/index.md) for method parameters
+* Removed `sdk._refreshIceServers()` function which was not an advertised function. Refreshing ice servers is now handled in streaming-client directly
+
+* Moved & renamed `sdk.createMedia(opts)` to `sdk.media.startMedia(opts)`
+* Moved `sdk.getDisplayMedia(opts)` to `sdk.media.startDisplayMedia(opts)`
+* `sdk.updateOutputDevice()` will now log a warning and do nothing if called in an unsupported browser.
+  Old behavior was to throw an error.
+* Updated `sdk.on('handledIncomingRtcSession', evt => {})` typing to be a `sessionId: string` and not an `IExtendedMediaSession`.
+  Event already emitted the `sessionId`. This fixes the typing.
 
 # [v5.0.9](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.8...v5.0.9)
 ### Fixed

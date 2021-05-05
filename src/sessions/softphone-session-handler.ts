@@ -4,8 +4,8 @@ import { JingleReason } from 'stanza/protocol';
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
-import { attachAudioMedia, startMedia, logDeviceChange } from '../media-utils';
-import { throwSdkError, isSoftphoneJid, requestApi } from '../utils';
+import { attachAudioMedia, logDeviceChange } from '../media/media-utils';
+import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
@@ -25,27 +25,31 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
     if (this.sdk._config.autoConnectSessions) {
-      return this.acceptSession(session, { id: session.id });
+      return this.acceptSession(session, { sessionId: session.id });
     }
   }
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    let stream = params.mediaStream || this.sdk._config.defaultAudioStream;
+    let stream = params.mediaStream || this.sdk._config.defaults.audioStream;
     if (!stream) {
       this.log('debug', 'No mediaStream provided, starting media', { conversationId: session.conversationId });
-      stream = await startMedia(this.sdk, { audio: params.audioDeviceId || true, session });
+      stream = await this.sdk.media.startMedia({
+        audio: this.sdk.media.getValidSdkMediaRequestDeviceId(params.audioDeviceId),
+        session
+      });
       this.log('debug', 'Media started', { conversationId: session.conversationId });
     }
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
 
-    const element = params.audioElement || this.sdk._config.defaultAudioElement;
-
+    const element = params.audioElement || this.sdk._config.defaults.audioElement;
+    const ids = { conversationId: session.conversationId, sessionId: session.id };
+    const volume = this.sdk._config.defaults.audioVolume;
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], element, session.conversationId);
+      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], volume, element, ids);
     } else {
       session.on('peerTrackAdded', (track: MediaStreamTrack, stream: MediaStream) => {
-        session._outputAudioElement = attachAudioMedia(this.sdk, stream, element, session.conversationId);
+        session._outputAudioElement = attachAudioMedia(this.sdk, stream, volume, element, ids);
       });
     }
 
@@ -80,7 +84,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     try {
       await super.endSession(session);
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, error: err });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, error: err });
     }
   }
 
@@ -104,7 +108,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
         // this shouldn't ever happen, but just in case
         if (participantsForUser.length !== 1) {
-          throwSdkError.call(
+          throw createAndEmitSdkError.call(
             this.sdk,
             SdkErrorTypes.generic,
             'Failed to find a connected participant for user on conversation',
@@ -120,7 +124,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       }
 
       if (!participant) {
-        throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
       }
 
       session.pcParticipant = participant;
@@ -139,7 +143,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         data: JSON.stringify({ muted: params.mute })
       });
     } catch (err) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId: session.conversationId, params, err });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId: session.conversationId, params, err });
     }
   }
 

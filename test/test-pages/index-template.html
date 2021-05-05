@@ -79,6 +79,8 @@
       </form>
     </div>
     <button id="start-app-button" type="button" class="btn btn-success">Start App</button>
+    <button id="start-app-button-with-default-audio" type="button" class="btn btn-info">Start App w/ Default
+      Audio</button>
 
     <div class="acd-screen-share">
       <div>
@@ -120,6 +122,11 @@
         <div class="control-section">
           <button type="button" class="btn btn-success" id="answer-inbound-call">Answer</button>
           <button type="button" class="btn btn-danger" id="inbound-call-end">End Call</button>
+        </div>
+
+        <h5>Audio Volume</h5>
+        <div class="control-section">
+          <input id="volume-input" type="text" class="text-input">
         </div>
 
         <!-- video -->
@@ -204,7 +211,21 @@
 
         <!-- devices -->
         <h5 id="media-devices-header" class="clickable">Media Devices <span class="fs-med">(toggle)</span></h5>
-        <div class="control-section d-none" id="media-devices">
+        <div class="control-section" id="media-devices">
+          <h6>Permissions/Devices</h6>
+          <div class="d-flex d-row m-1">
+            <button id="request-mic-permissions" class="mx-2 d-inline btn btn-primary btn-sm">
+              Request Mic Permissions
+            </button>
+            <button id="request-camera-permissions" class="mx-2 d-inline btn btn-primary btn-sm">
+              Request Camera Permissions
+            </button>
+            <button id="enumerate-devices" class="mx-2 d-inline btn btn-info btn-sm">
+              Enumerate Devices
+            </button>
+          </div>
+          <hr>
+
           <!-- audio -->
           <label for="audio-devices" class="d-block">Mic Device</label>
           <select name="audioDevices" id="audio-devices" class="d-inline"></select>
@@ -216,7 +237,7 @@
           <select name="videoDevices" id="video-devices" class="d-inline mb-1"></select>
           <button id="update-video-media" class="d-inline btn btn-info btn-sm">Update Video Device</button>
           <br>
-          <button id="update-outgoing-media" class="d-inline btn btn-primary btn-sm">Update Outgoing Media</button>
+          <button id="update-outgoing-media" class="my-2 d-inline btn btn-primary btn-sm">Update Outgoing Media</button>
           <hr>
 
           <!-- output -->
@@ -226,7 +247,21 @@
           <button id="update-output-media" class="btn btn-primary btn-sm">Update Output Media</button>
           <hr>
 
-          <!-- defaults -->
+          <!-- mic volume -->
+          <h6>Current Mic Volume</h6>
+          <div class="pids-wrapper">
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+            <div class="pid"></div>
+          </div>
+          <hr>
           <h6>Set Default Devices</h6>
 
           <div class="d-flex flex-row m-1">
@@ -258,6 +293,22 @@
           </div>
           <button type="button" class="btn btn-primary btn-sm" id="update-defaults">Set Defaults</button>
 
+        </div>
+        <!-- media state log -->
+        <h5 id="media-state-header" class="clickable">Media State <span class="fs-med">(toggle)</span></h5>
+        <div id="media-state" class="d-none">
+          <div class="d-flex d-row">
+            <button type="button" id="get-current-media-state" class="m-2 d-inline btn btn-info btn-sm">
+              Get Current Media State
+            </button>
+            <button type="button" id="clear-media-state-log" class="m-2 d-inline btn btn-warning btn-sm">
+              Clear Media State Log
+            </button>
+          </div>
+
+          <div class="log-output">
+            <textarea id="media-state-log-data" class="log-data" readonly="true"></textarea>
+          </div>
         </div>
       </div>
 

@@ -11,60 +11,35 @@ services. Supported WebRTC Features:
 
 - WebRTC SoftPhone (Authenticated Business User/Agent Telephony - inbound/outbound, etc)
 - WebRTC Screen Share (Unauthenticated User/Guest)
+- WebRTC Video (Authenticated Business User)
 
 Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ 
 - Demo requires Genesys Cloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
 
 Not yet supported:
 
-- WebRTC Video
+- WebRTC Video (Unauthenticated User/Guest)
 - WebRTC Screen Share (Authenticated Business User/Agent Telephony)
 - WebRTC Screen Recording
 - WebRTC Click-to-Call (Unauthenticated user SoftPhone, Telephony)
 
-### Usage
+### Installation
 
-Module import:
-
-- `npm install --save genesys-cloud-webrtc-sdk`
-
-```js
-/* import */
-import { GenesysCloudWebrtcSdk } from 'genesys-cloud-webrtc-sdk';
-/* or require */
-const { GenesysCloudWebrtcSdk } = require('genesys-cloud-webrtc-sdk');
-
-const sdk = new GenesysCloudWebrtcSdk({
-  accessToken: 'your-access-token'
-});
-sdk.initialize();
+``` sh
+# npm 
+npm install --save genesys-cloud-webrtc-sdk
+# yarn
+yarn genesys-cloud-webrtc-sdk
 ```
 
-Or via global module
-
-> Note: `/latest/` is no longer supported in the cdn url. By default, the latest version will always be used. 
-
-```html
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
-<script>
-  const sdk = new window.GenesysCloudWebrtcSdk({
-    accessToken: 'your access token'
-  });
-  sdk.initialize();
-</script>
-```
-
-You can also use a specific version: 
-
-``` html
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/4.0.1/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
-```
+See [documentation][4] for usage and implementation details.
 
 ### Documentation
 
-Documentation is in doc/documentation.md and available on the Genesys Cloud Developer Center
-at [DeveloperCenter][1] and in the [documentation](/doc/index.md) in this repo.
+Documentation is available in the [documentation][4] of this repository and on the Genesys Cloud Developer Center
+at [DeveloperCenter][1]. 
 
+> Note: due to the constant development on the SDK, it is recommended to always reference the documentation in this repository as that will always be the most up-to-date information regarding the SDK. There can be delays in the updating of documentation on the Developer Center. 
 
 ### Contributing
 
@@ -85,3 +60,4 @@ Run the tests using `npm test` in the command line
 [1]: https://developer.mypurecloud.com/api/webrtcsdk/
 [2]: https://github.com/bukalapak/tslint-config-semistandard
 [3]: https://jestjs.io/en/
+[4]: /doc/index.md

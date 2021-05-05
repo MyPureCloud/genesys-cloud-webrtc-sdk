@@ -6,7 +6,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
-import * as mediaUtils from '../../../src/media-utils';
+import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import { IExtendedMediaSession } from '../../../src/types/interfaces';
 
@@ -15,6 +15,8 @@ let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
 
 beforeEach(() => {
+  Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true });
+
   jest.clearAllMocks();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
@@ -48,7 +50,7 @@ describe('startSession', () => {
     mockSdk._customerData = data;
 
     /* spy on utility functions */
-    jest.spyOn(mediaUtils, 'startDisplayMedia').mockResolvedValue(stream as any);
+    jest.spyOn(mockSdk.media, 'startDisplayMedia').mockResolvedValue(stream as any);
     jest.spyOn(streamingClientUtils, 'parseJwt').mockReturnValue({ data: { jid } });
   });
 
@@ -167,16 +169,6 @@ describe('handleSessionInit', () => {
     expect((stream as any)._tracks[0].stop).toHaveBeenCalled();
   });
 
-  it('should blow up if !autoConnectSessions', async () => {
-    mockSdk._config.autoConnectSessions = false;
-    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
-
-    jest.spyOn(mockSdk.logger, 'warn');
-    const session: any = new MockSession();
-
-    await expect(handler.handleSessionInit(session)).rejects.toThrow();
-  });
-
   it('should blow up if not isGuest', async () => {
     (mockSdk as any).isGuest = false;
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
@@ -202,23 +194,6 @@ describe('onTrackEnd', () => {
 
     await handler.onTrackEnd(mockSession);
     expect(handler.endSession).toHaveBeenCalled();
-  });
-});
-
-describe('endTracks', () => {
-  it('should do nothing and not error if no stream was passed in', () => {
-    handler.endTracks();
-    expect('It did not thrown an error').toBeTruthy();
-  });
-
-  it('should end all tracks on a given stream', () => {
-    const track = new MockTrack('video');
-    const stream = new MockStream();
-    stream.addTrack(track);
-
-    handler.endTracks(stream as any);
-
-    expect(track.stop).toHaveBeenCalled();
   });
 });
 

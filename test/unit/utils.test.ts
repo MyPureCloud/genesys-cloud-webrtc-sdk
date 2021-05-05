@@ -1,11 +1,13 @@
 import nock = require('nock');
-import { parseJwt } from 'genesys-cloud-streaming-client';
 import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
+import { parseJwt } from 'genesys-cloud-streaming-client';
 
-import { SimpleMockSdk, MOCK_CUSTOMER_DATA } from '../test-utils';
+import { SimpleMockSdk } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { SdkError } from '../../src/utils';
+import { MOCK_CUSTOMER_DATA } from '../mock-apis';
 
 let sdk: GenesysCloudWebrtcSdk;
 const baseUriWithoutVersion = 'https://api.mypurecloud.com/api';
@@ -15,12 +17,87 @@ beforeEach(() => {
   sdk = new SimpleMockSdk() as any;
 });
 
-describe('throwSdkError', () => {
-  it('should emit the error', () => {
+describe('SdkError', () => {
+  it('should create with defaults', () => {
+    const sdkError = new SdkError(null, 'erroring');
+    expect(sdkError.name).toBe('Error');
+    expect(sdkError.type).toBe('generic');
+    expect(sdkError.message).toBe('erroring');
+    expect(sdkError.details).toBe(undefined);
+  });
+
+  it('should "extend" any base error passed in', () => {
+    const origError = new TypeError('Cannot use array here');
+    const details = { sessionId: '123' };
+    const sdkError = new SdkError(SdkErrorTypes.invalid_options, origError, details);
+
+    expect(sdkError.name).toBe('TypeError');
+    expect(sdkError.type).toBe('invalid_options');
+    expect(sdkError.message).toBe('Cannot use array here');
+    expect(sdkError.details).toBe(details);
+  });
+});
+
+describe('createAndEmitSdkError', () => {
+  it('should emit and return an SdkError', () => {
     const spy = jest.fn();
+    const origError = new Error('Something broke');
     sdk.on('sdkError', spy);
 
-    expect(() => utils.throwSdkError.call(sdk, SdkErrorTypes.generic, 'fake')).toThrowError(/fake/);
+    expect(
+      utils.createAndEmitSdkError.call(sdk, SdkErrorTypes.generic, origError)
+    ).toEqual(origError);
+    expect(spy).toHaveBeenCalledWith(origError);
+  });
+});
+
+describe('defaultConfigOption', () => {
+  describe('undefined condition', () => {
+    it('should return default', () => {
+      const provided = undefined;
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { undefined: true })).toBe(defaultVal);
+    });
+
+    it('should return provided', () => {
+      const provided = 'provided';
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { undefined: true })).toBe(provided);
+    });
+  });
+
+  describe('null condition', () => {
+    it('should return default', () => {
+      const provided = null;
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { null: true })).toBe(defaultVal);
+    });
+
+    it('should return provided', () => {
+      const provided = 'provided';
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { null: true })).toBe(provided);
+    });
+  });
+
+  describe('falsy condition', () => {
+    it('should return default', () => {
+      const provided = false;
+      const defaultVal = 'default';
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { falsy: true })).toBe(defaultVal);
+    });
+
+    it('should return provided', () => {
+      const provided = 'provided';
+      const defaultVal = false;
+
+      expect(utils.defaultConfigOption(provided, defaultVal, { falsy: true })).toBe(provided);
+    });
   });
 });
 

@@ -19,7 +19,7 @@ webappPipeline {
             export CDN_URL="$(npx cdn --ecosystem pc --name $APP_NAME --build $BUILD_ID --version $VERSION)"
             echo "CDN_URL $CDN_URL"
             npm ci && npm test && npm run build
-            npm run build-sample
+            npm run build:sample
         ''')
     }
 
@@ -39,12 +39,14 @@ webappPipeline {
 
     shouldTagOnRelease = { true }
 
-    // postReleaseStep = {
-    //     sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
-    //         sh("""
-    //             git tag v${version}
-    //             git push origin --tags
-    //         """)
-    //     }
-    // }
+    postReleaseStep = {
+        sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
+            sh("""
+                # patch to prep for the next version
+                npm version patch --no-git-tag-version
+                git commit -am "Prep next version"
+                git push origin HEAD:master --tags
+            """)
+        }
+    }
 }

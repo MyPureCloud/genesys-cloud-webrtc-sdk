@@ -1,12 +1,19 @@
 import { JingleReason } from 'stanza/protocol';
-
+import { Constants } from 'stanza';
 import { GenesysCloudWebrtcSdk } from '../client';
-import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
+import { LogLevels, SessionTypes, SdkErrorTypes, JingleReasons } from '../types/enums';
 import { SessionManager } from './session-manager';
-import { IPendingSession, IStartSessionParams, IAcceptSessionRequest, ISessionMuteRequest, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
-import { checkHasTransceiverFunctionality, hasOutputDeviceSupport, logDeviceChange, startMedia } from '../media-utils';
-import { logPendingSession, throwSdkError } from '../utils';
+import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
+import { createAndEmitSdkError, logPendingSession } from '../utils';
 import { ConversationUpdate } from '../types/conversation-update';
+import {
+  IPendingSession,
+  IStartSessionParams,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IExtendedMediaSession,
+  IUpdateOutgoingMedia
+} from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -30,7 +37,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
@@ -80,7 +87,7 @@ export default abstract class BaseSessionHandler {
 
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
     this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id });
-    session._outboundStream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    this.endTracks(session._outboundStream);
     session._screenShareStream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     this.sdk.emit('sessionEnded', session, reason);
   }
@@ -92,8 +99,8 @@ export default abstract class BaseSessionHandler {
       sessionId: session.id,
       params
     };
-    const outputDeviceId = this.sdk._config.defaultOutputDeviceId || '';
-    const isSupported = hasOutputDeviceSupport();
+    const outputDeviceId = this.sdk._config.defaults.outputDeviceId || '';
+    const isSupported = this.sdk.media.getState().hasOutputDeviceSupport;
 
     /* if we have an audio element _and_ are in a supported browser */
     if (session._outputAudioElement && isSupported) {
@@ -107,19 +114,19 @@ export default abstract class BaseSessionHandler {
     return session.accept();
   }
 
-  async endSession (session: IExtendedMediaSession): Promise<void> {
+  async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     this.log('info', 'ending session', { conversationId: session.conversationId });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
         resolve();
       });
-      session.end();
+      session.end(reason);
     });
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -127,7 +134,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
-    throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -149,7 +156,7 @@ export default abstract class BaseSessionHandler {
 
     if (!options.stream &&
       (typeof options.videoDeviceId === 'undefined' && typeof options.audioDeviceId === 'undefined')) {
-      throwSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Options are not valid to update outgoing media', {
         videoDeviceId: options.videoDeviceId,
         audioDeviceId: options.audioDeviceId,
         conversationId: session.conversationId,
@@ -217,7 +224,7 @@ export default abstract class BaseSessionHandler {
     /* Allow null because it is the system default. If false or undefined, do not request media. */
     if (!stream && (newStartMediaContraints.audio || newStartMediaContraints.video) || (newStartMediaContraints.audio === null || newStartMediaContraints.video === null)) {
       try {
-        stream = await startMedia(this.sdk, newStartMediaContraints);
+        stream = await this.sdk.media.startMedia(newStartMediaContraints);
       } catch (e) {
         /*
           In FF, if the user does not grant us permissions for the new media,
@@ -244,6 +251,7 @@ export default abstract class BaseSessionHandler {
 
           await Promise.all([audioMute, videoMute]);
         }
+        /* don't need to emit this error because `startMedia()` did */
         throw e;
       }
     }
@@ -277,7 +285,7 @@ export default abstract class BaseSessionHandler {
 
         /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
         if (track.kind === 'audio' && session.audioMuted) {
-          await this.sdk.setAudioMute({ id: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
+          await this.sdk.setAudioMute({ sessionId: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
         }
       });
 
@@ -289,11 +297,21 @@ export default abstract class BaseSessionHandler {
       const hasSender = session.pc.getSenders().find((sender) => sender.track && sender.track.id === track.id);
 
       if (!hasSender) {
-        track.stop();
+        this.endTracks(track);
         session._outboundStream.removeTrack(track);
       }
     });
     logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
+  }
+
+  updateAudioVolume (session: IExtendedMediaSession, volume: number) {
+    const element = session._outputAudioElement;
+    if (!element) {
+      return;
+    }
+
+    // DOMElement volume should be between 0 and 1
+    element.volume = (volume / 100);
   }
 
   async updateOutputDevice (session: IExtendedMediaSession, deviceId: string): Promise<void> {
@@ -307,7 +325,7 @@ export default abstract class BaseSessionHandler {
 
     if (typeof el.setSinkId === 'undefined') {
       const err = 'Cannot set sink id in unsupported browser';
-      throwSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, err, { conversationId: session.conversationId, sessionId: session.id });
     }
 
     logDeviceChange(this.sdk, session, 'changingDevices', { requestedOutputDeviceId: deviceId });
@@ -330,7 +348,7 @@ export default abstract class BaseSessionHandler {
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
-      throwSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
     }
 
     await Promise.all(promises);
@@ -340,13 +358,19 @@ export default abstract class BaseSessionHandler {
    * Will try and replace a track of the same kind if possible, otherwise it will add the track
    */
   async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
-    // find a sender with the same kind of track
-    let sender = session.pc.getSenders().find(sender => sender.track && sender.track.kind === track.kind);
+    // find a transceiver with the same kind of track
+    let transceiver = session.pc.getTransceivers().find(t => {
+      return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
+    });
 
-    if (sender) {
-      await sender.replaceTrack(track);
+    let sender: RTCRtpSender;
+
+    if (transceiver) {
+      await transceiver.sender.replaceTrack(track);
+      sender = transceiver.sender;
     } else {
-      await session.addTrack(track);
+      // the stream parameter is documented as *optional* but it is not so we will just provide a fake one
+      await session.addTrack(track, new MediaStream());
       sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
     }
 
@@ -381,5 +405,21 @@ export default abstract class BaseSessionHandler {
     return session.pc.getSenders().filter(sender => {
       return sender.track && sender.track.kind === kind;
     });
+  }
+
+  endTracks (streamOrTrack?: MediaStream | MediaStreamTrack): void {
+    if (!streamOrTrack) return;
+
+    let tracks = (streamOrTrack instanceof MediaStream) ? streamOrTrack.getTracks() : [streamOrTrack];
+
+    /* if we have live default audio, we don't want to end it */
+    const defaultAudio = (this.sdk._config.defaults.audioStream?.getAudioTracks() || [])
+      .filter(t => t && t.readyState === 'live');
+
+    if (defaultAudio.length) {
+      tracks = tracks.filter(track => !defaultAudio.find(audioTrack => audioTrack.id === track.id));
+    }
+
+    tracks.forEach(t => t.stop());
   }
 }

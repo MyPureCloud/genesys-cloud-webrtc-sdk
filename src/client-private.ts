@@ -2,7 +2,7 @@ import StreamingClient from 'genesys-cloud-streaming-client';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
-import { IExtendedMediaSession, SubscriptionEvent } from './types/interfaces';
+import { SubscriptionEvent } from './types/interfaces';
 import { ConversationUpdate } from './types/conversation-update';
 
 /**
@@ -18,7 +18,6 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
 
   const connectionOptions: any = {
     signalIceConnected: true,
-    iceTransportPolicy: this._config.iceTransportPolicy,
     host: this._config.wsHost || `wss://streaming.${this._config.environment}`,
     apiHost: this._config.environment,
     logger: this.logger
@@ -27,6 +26,8 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
   if (this._personDetails) {
     connectionOptions.jid = this._personDetails.chat.jabberId;
   }
+
+  connectionOptions.jidResource = this._config.jidResource;
 
   if (this._config.accessToken) {
     connectionOptions.authToken = this._config.accessToken;
@@ -48,15 +49,12 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
       this.logger.info('GenesysCloud streaming client connected', { reconnect: this._hasConnected });
       this._hasConnected = true;
       // refresh turn servers every 6 hours
-      this._refreshIceServersInterval = setInterval(this._refreshIceServers.bind(this), 6 * 60 * 60 * 1000);
-      await this._refreshIceServers();
       this.logger.info('GenesysCloud streaming client ready for use');
       resolve();
     });
 
     connection.on('disconnected', async () => {
       this.logger.info('GenesysCloud streaming client disconnected');
-      clearInterval(this._refreshIceServersInterval);
     });
   });
 
@@ -81,7 +79,7 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
   on('rtcSessionError', this.emit.bind(this, 'error'));
   on('cancelIncomingRtcSession', (sessionId: string) => this.emit('cancelPendingSession', sessionId));
-  on('handledIncomingRtcSession', (session: IExtendedMediaSession) => this.emit('handledPendingSession', session));
+  on('handledIncomingRtcSession', (sessionId: string) => this.emit('handledPendingSession', sessionId));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
   // other events
