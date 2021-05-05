@@ -3,8 +3,7 @@ import { TestConfig } from '../../types/test-config';
 import { Subject, Observable, throwError } from 'rxjs';
 // import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { v4 as uuid } from 'uuid';
-import { createLogger } from 'genesys-cloud-client-logger';
-import { Logger } from 'genesys-cloud-client-logger/dist/src/logger';
+import Logger from 'genesys-cloud-client-logger';
 import GenesysCloudStreamingClient from 'genesys-cloud-streaming-client';
 import { assert } from 'chai';
 import { filter, first, timeoutWith } from 'rxjs/operators';
@@ -70,7 +69,7 @@ export const fetchJson = async function (url: string, options?: RequestInit) {
   if (!response.ok) {
     const correlationId = response.headers.get('inin-correlation-id');
     const err = `Response code ${response.status} making request to ${url}. inin-correlation-id: ${correlationId}`;
-    logger.error(err, 'For request payload', JSON.stringify(options));
+    logger.error(err, { options });
     throw Error(err);
   }
   return response.json();
@@ -230,19 +229,20 @@ export function getRandomVideoRoomJid (myJid: string) {
 
 // const logger: any = console;
 
-const logger = createLogger();
+let logger: Logger;
 
 function initializeLogging () {
   const { appVersion, appName, envHost } = getConfig();
   const { authToken } = getContext();
 
-  logger.initializeServerLogging({
+  logger = new Logger({
     accessToken: authToken,
-    environment: envHost,
+    url: `https://api.${envHost}/api/v2/diagnostics/trace`,
     appVersion,
     logTopic: `spigot-${appName}`,
     logLevel: 'debug',
-    uploadDebounceTime: 1000
+    uploadDebounceTime: 1000,
+    initializeServerLogging: true
   });
 }
 
@@ -535,7 +535,7 @@ export async function validateAudioStats (session: any) {
         return;
       }
       // can't assert on packetloss because it might not have occurred
-      resolve();
+      resolve(null);
     };
   });
   logger.log('checking stats', { sg: session.statsGatherer, pc: session.pc });
@@ -567,7 +567,7 @@ export async function validateVideoStats (session: any) {
         logger.warn('stats validation failed', { message: e.message, stats });
         return;
       }
-      resolve();
+      resolve(null);
     };
   });
   session.on('stats', handleStats);

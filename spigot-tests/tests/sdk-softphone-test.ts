@@ -60,7 +60,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
         });
 
         if (options.manual) {
-          await sdk.acceptSession({ id: session.id });
+          await sdk.acceptSession({ sessionId: session.id });
         }
 
         resolve(session);
@@ -106,7 +106,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     activeCall = conversationId;
     await peerTrackAdded;
 
-    const autoAttachedMediaEl = await testUtils.pollForTruthy(() => document.querySelector('audio.__pc-webrtc-inbound'));
+    const autoAttachedMediaEl = await testUtils.pollForTruthy(() => document.querySelector('audio.__gc-webrtc-inbound'));
     if (!autoAttachedMediaEl) {
       throw new Error('Failed to find auto attached media');
     }
@@ -118,7 +118,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     if (options.sdkDisconnect) {
       logger.log('disconnecting via the SDK with session', session.id);
       await testUtils.timeout(testUtils.getConfig().callDelay);
-      await sdk.endSession({ id: session.id });
+      await sdk.endSession({ sessionId: session.id });
     }
     if (options.waitForDisconnect) {
       logger.log('Waiting for the session to go disconnected');
