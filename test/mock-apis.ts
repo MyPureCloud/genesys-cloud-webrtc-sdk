@@ -389,11 +389,6 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
         ws.close();
       } else {
         console.warn('Incoming stanza that does not have a test handler to send a response', msg);
-        send(`<?xml version="1.0" encoding="UTF-8"?>
-        <stream:features xmlns:stream="http://etherx.jabber.org/streams">
-           <bind xmlns="urn:ietf:params:xml:ns:xmpp-bind" />
-           <session xmlns="urn:ietf:params:xml:ns:xmpp-session" />
-        </stream:features>`)
       }
     });
   });
