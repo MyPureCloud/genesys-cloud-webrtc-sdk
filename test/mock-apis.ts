@@ -371,6 +371,11 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
         const idRegexp = /id="(.*?)"/;
         const id = idRegexp.exec(msg)[1];
         send(`<iq xmlns="jabber:client" to="${MOCK_USER.chat.jabberId}" type="result" id="${id}"></iq>`);
+      } else if (msg.indexOf('<pubsub') !== -1){
+        const idRegexp = /id="(.*?)"/;
+        const id = idRegexp.exec(msg)[1];
+        send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}" type="result"><pubsub xmlns="http://jabber.org/protocol/pubsub">
+        <subscription node="v2.users.1c280af5-c623-4a5b-bf00-aafa7f6c0a03.conversations" jid="601d95fb6c8be51b97b54089@genesys.orgspan.com/mediahelper_0bd8f077-b2ec-43f5-9764-04f683c78d77" subscription="subscribed" /></pubsub></iq>`);
       } else if (msg.indexOf('extdisco') !== -1) {
         const idRegexp = / id="(.*?)"/;
         const id = idRegexp.exec(msg)[1];
@@ -384,6 +389,11 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
         ws.close();
       } else {
         console.warn('Incoming stanza that does not have a test handler to send a response', msg);
+        send(`<?xml version="1.0" encoding="UTF-8"?>
+        <stream:features xmlns:stream="http://etherx.jabber.org/streams">
+           <bind xmlns="urn:ietf:params:xml:ns:xmpp-bind" />
+           <session xmlns="urn:ietf:params:xml:ns:xmpp-session" />
+        </stream:features>`)
       }
     });
   });

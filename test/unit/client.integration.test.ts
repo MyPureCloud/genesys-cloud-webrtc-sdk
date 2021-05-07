@@ -55,10 +55,6 @@ describe('Client (integration)', () => {
       const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
 
-      getOrg.done();
-      getUser.done();
-      getChannel.done();
-      notificationSubscription.done();
       expect(sdk._streamingConnection).toBeTruthy();
       sdk._config.optOutOfTelemetry = true;
 
