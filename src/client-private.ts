@@ -70,7 +70,7 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   this.sessionManager = new SessionManager(this);
 
   if (this._personDetails) {
-    await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, handleConversationUpdate.bind(this));
+    await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, handleConversationUpdate.bind(this), true);
   }
 
   // webrtc events
