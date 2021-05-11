@@ -4,7 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...HEAD)
+
+# [v6.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...v6.0.1)
+### Fixed
 * [PCM-1628](https://inindca.atlassian.net/browse/PCM-1628) – Fixed issue where debounce time was causing `users.{id}.conversations` subscription to fail.
+
 # [v6.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v5.0.8...v6.0.0)
 ### Added
 * Added internal option `reason` to the `IEndSessionRequest` interface
