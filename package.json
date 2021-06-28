@@ -7,9 +7,11 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
+  "cjs": "dist/cjs/index.js",
+  "module": "dist/es/index.js",
   "main": "dist/genesys-cloud-webrtc-sdk.js",
-  "module": "dist/src/index.js",
-  "typings": "dist/src/index.d.ts",
+  "browser": "dist/genesys-cloud-webrtc-sdk.js",
+  "typings": "dist/es/index.d.ts",
   "files": [
     "dist"
   ],
@@ -18,8 +20,9 @@
   ],
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "npm run build:src && npm run build:cdn && npm run build:module",
+    "build": "npm run build:src && npm run build:es && npm run build:cdn && npm run build:module",
     "build:src": "tsc -p . && node copy-version.js",
+    "build:es": "tsc -p . --outDir ./dist/es --target es2015 --module es2015",
     "build:cdn": "webpack --env.cdn && webpack --env.cdn --env.production",
     "build:module": "webpack && webpack --env.production",
     "build:sample": "./test/test-pages/build.sh",

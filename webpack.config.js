@@ -50,8 +50,8 @@ module.exports = (env) => {
 
     filename += '.bundle';
   } else {
-    /* if we are building for 'module', don't polyfill, transpile, or bundle any dependencies */
-    babelExcludes = [/node_modules/];
+    /* if we are building for 'module', don't polyfill, transpile, or bundle any dependencies – except stanza because it has node deps... */
+    babelExcludes = [/node_modules\/(?!(stanza)).*/];
     externals.push(nodeExternals());
 
     babelOptions = {
