@@ -5,6 +5,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.1...HEAD)
 
+### Deprecated
+* Deprecting `retryOnFailure` function param for `sdk.media.startMedia(options, retryOnFailure)`. Moved to be an
+  option in `IMediaRequestOptions`. See the **Added** section for this release for more info.
+
+### Fixed
+* [PCM-1647](https://inindca.atlassian.net/browse/PCM-1647) – Fixed issue where `requestedMicPermissions` would be
+  `true` before we knew if `hasMicPermissions` was also `true` (same for `camera` permissions). This bug was causing
+  it to be impossible for consumers to know for certain by looking at the `SdkMediaState` as to whether permissions
+  were actually granted (due to the bad timing of setting the state).
+
+### Added
+* Exposed the `sdk.media.isPermissionsError(error)` function for consumers to be able to utilize. See [the docs for isPermissionsError()](doc/media.md#ispermissionserror).
+* Added a `'both'` option to `sdk.media.requestMediaPermissions()`. See [the docs for requestMediaPermissions()](doc/media.md#requestmediapermissions).
+* Added `preserveMediaIfOneTypeFails` & `retryOnFailure` to `IMediaRequestOptions`. See [the docs for IMediaRequestOptions](doc/media.md#imediarequestoptions).
+
 # [v6.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...v6.0.1)
 ### Fixed
 * [PCM-1628](https://inindca.atlassian.net/browse/PCM-1628) – Fixed issue where debounce time was causing `users.{id}.conversations` subscription to fail.

@@ -43,7 +43,7 @@ let navigatorMediaDevicesMock: {
   removeEventListener: jest.SpyInstance;
 };
 
-describe('SdkMedia', () => {
+describe.skip('SdkMedia', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
