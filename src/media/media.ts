@@ -141,13 +141,21 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const requestingVideo = mediaType === 'video';
     const requestingBoth = mediaType === 'both';
 
-    if (typeof optionsCopy !== 'boolean') {
+    if (typeof optionsCopy.retryOnFailure !== 'boolean') {
       optionsCopy.retryOnFailure = true; // default to `true`
     }
 
     /* make sure the options are valid */
-    optionsCopy.audio = (requestingAudio || requestingBoth) && this.getValidSdkMediaRequestDeviceId(optionsCopy.audio);
-    optionsCopy.video = (requestingVideo || requestingBoth) && this.getValidSdkMediaRequestDeviceId(optionsCopy.video);
+    if (requestingBoth) {
+      optionsCopy.audio = this.getValidSdkMediaRequestDeviceId(optionsCopy.audio);
+      optionsCopy.video = this.getValidSdkMediaRequestDeviceId(optionsCopy.video);
+    } else if (requestingAudio) {
+      optionsCopy.audio = this.getValidSdkMediaRequestDeviceId(optionsCopy.audio);
+      optionsCopy.video = false;
+    } else /* if (requestingVideo) */ {
+      optionsCopy.audio = false;
+      optionsCopy.video = this.getValidSdkMediaRequestDeviceId(optionsCopy.video);
+    }
 
     /* delete the session off this before logging */
     const optionsToLog = {
@@ -174,7 +182,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       stream = await this.startMedia(optionsCopy);
     } else {
       /* should never get here, but just in case */
-      throw new Error('Must call `requestMediaPermissions()` with at least one media type');
+      throw new Error('Must call `requestMediaPermissions()` with at least one valid media type: `audio`, `video`, or `both`');
     }
 
     /* enumerate devices again because we may not have had labels the first time */
@@ -372,12 +380,6 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         } else {
           videoStream = await this.startSingleMedia('video', mediaReqOptions);
         }
-
-        if (!audioStream) {
-          audioStream = videoStream;
-        } else {
-          videoStream.getTracks().forEach(t => audioStream.addTrack(t));
-        }
       } catch (error) {
         videoError = error;
       }
@@ -386,7 +388,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     /* if we requested audio and video */
     if (requestingAudio && requestingVideo) {
       /* if one errored, but not the other AND we don't want to throw for just one error */
-      if (((audioError && !videoError) || (!audioError && videoError)) && mediaReqOptions.preserveMediaIfOneTypeFails) {
+      if (
+        ((audioError && !videoError) || (!audioError && videoError)) &&
+        mediaReqOptions.preserveMediaIfOneTypeFails
+      ) {
         const succeededMedia = audioStream || videoStream;
         this.sdk.logger.warn(
           'one type of media failed while one succeeded. not throwing the error for the failed media',
@@ -395,9 +400,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         return succeededMedia;
       } else if (audioError && videoError) {
         throw audioError; // just pick one to throw
+      } else if (audioStream && videoStream) {
+        /* else, both media succeeded so combine them */
+        videoStream.getTracks().forEach(t => audioStream.addTrack(t));
       }
-      /* else, both media succeeded so combine them */
-      videoStream.getTracks().forEach(t => audioStream.addTrack(t));
     }
 
     /* if we have an error here, we need to throw it - `preserveMediaIfOneTypeFails` is handled above */
@@ -407,7 +413,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       throw audioError || videoError;
     }
 
-    return audioStream;
+    /* if both were requested, the tracks are combined into audioStream */
+    return audioStream || videoStream;
   }
 
   /**
@@ -1019,7 +1026,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         mediaTracks: stream.getTracks()
       });
 
-      /* if we haven't requested permissions for this media type yet OR if our permissions are now allowed*/
+      /* if we haven't requested permissions for this media type yet OR if our permissions are now allowed */
       const currState = this.getState();
       if (!currState[requestedPermissionsKey] || !currState[permissionsKey]) {
         this.setPermissions({ [permissionsKey]: true, [requestedPermissionsKey]: true });
