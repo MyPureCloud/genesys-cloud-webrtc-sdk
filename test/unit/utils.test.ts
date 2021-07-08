@@ -178,6 +178,21 @@ describe('requestApi', () => {
       noAuthHeader: true
     });
   });
+
+  it('should format HTTP request errors from streaming-client', async () => {
+    const authToken = 'abrakadabra';
+    const host = 'notreally.dca';
+    const method = 'put';
+
+    const formatSpy = jest.spyOn(sdk._http, 'formatRequestError');
+
+    try {
+      await utils.requestApi.call(sdk, '/somerandompath', { authToken, method, host });
+      fail('Should have thrown error.');
+    } catch (e) {
+      expect(formatSpy).toHaveBeenCalled();
+    }
+  });
 });
 
 describe('buildRequestApiOptions', () => {

@@ -63,7 +63,10 @@ export const requestApiWithRetry = function (this: GenesysCloudWebrtcSdk, path: 
 
 export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): Promise<any> {
   opts = buildRequestApiOptions(this, opts);
-  return this._http.requestApi(path, opts as RequestApiOptions);
+  return this._http.requestApi(path, opts as RequestApiOptions)
+    .catch((error) => {
+      throw this._http.formatRequestError(error);
+    });
 };
 
 export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partial<RequestApiOptions> = {}): Partial<RequestApiOptions> {
