@@ -1,7 +1,7 @@
 {
   "name": "genesys-cloud-webrtc-sdk",
   "version": "6.0.2",
-  "description": "client for the interfacing with Genesys Cloud WebRTC",
+  "description": "client for the interfacing with Genesys Cloud WebRTC Services",
   "repository": "https://github.com/mypurecloud/genesys-cloud-webrtc-sdk",
   "license": "MIT",
   "publishConfig": {
