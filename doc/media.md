@@ -165,11 +165,11 @@ If `preserveMedia` is `true`, the `MediaStream` attained through the
 
 Declaration:
 ``` ts
-requestMediaPermissions(mediaType: 'audio' | 'video', preserveMedia?: boolean, options?: IMediaRequestOptions): Promise<MediaStream | void>;
+requestMediaPermissions(mediaType: 'audio' | 'video' | 'both', preserveMedia?: boolean, options?: IMediaRequestOptions): Promise<MediaStream | void>;
 ```
 
 Params:
-* `mediaType: 'audio' | 'video'` – mediaType media type to request permissions for (`'audio' | 'video'`)
+* `mediaType: 'audio' | 'video' | 'both'` – mediaType media type to request permissions for (`'audio' | 'video' | 'both'`)
 * `preserveMedia?: boolean` – Optional: Defaults to `false` – flag to return media after permissions pass
 * `options?: IMediaRequestOptions` – Optional: Defaults to mediaType `true`. See [IMediaRequestOptions] for additional details.
   See note above explaining mediaType always being requested.
@@ -184,7 +184,7 @@ Call to enumerate available devices. This will update the
 If the devices returned from the browser are the same as the cached
   devices, a new event will _NOT_ emit. To force an emit pass in `true`.
 
-It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video')`
+It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video' | 'both')`
   be called at least once to ensure permissions are granted before loading devices.
   See [requestMediaPermissions()](#requestmediapermissions) for more details.
 
@@ -222,7 +222,7 @@ be called with each desired media type _before_ using `startMedia`. This will en
   function will stop and the error thrown (any successful media will be destroyed).
   This is is line with `getUserMedia`'s current behavior in the browser.
 
- If `mediaReqOptions.retryOnFailure` is `true` (default), the SDK will have the following behavior:
+ If `IMediaRequestOptions.retryOnFailure` is `true` (default), the SDK will have the following behavior:
   1. If the fail was due to a Permissions issue, it will _NOT_ retry
   2. For `video` only: some browsers/hardward configurations throw an error
       for invalid resolution requests. If `video` was requested with a
@@ -238,7 +238,7 @@ be called with each desired media type _before_ using `startMedia`. This will en
 
 > Note: if using `retryOnFailure` it is recommended to check the media returned to ensure you received the desired device.
 
-_If_ `mediaReqOptions.preserveMediaIfOneTypeFails` is `true` (default is `false`),
+_If_ `IMediaRequestOptions.preserveMediaIfOneTypeFails` is `true` (default is `false`),
  _both_ `audio` and `video` media types are requested, _and_ only one type of media fails
  then the media error for the failed media type will be ignored and the successful media will be
  returned. See `IMediaRequestOptions` for more information.
@@ -695,7 +695,7 @@ interface IMediaRequestOptions {
 * `session?: IExtendedMediaSession` – Optional: Session to associate logs to. It will also tie
   `audioTrackVolume` events to a sessionId if requesting audio with `monitorMicVolume = true`
 * `retryOnFailure?: boolean;` – Optional: Flag to retry media (if available) when it fails. Example would
-   be if a specific microphone is requested, but fails. With this falg set, it will try again with the SDK
+   be if a specific microphone is requested, but fails. With this flag set, it will try again with the SDK
    default microphone and/or the system default microphone.
 * `preserveMediaIfOneTypeFails?: boolean;` –  Optional: Flag to ignore media errors for one type if the other type succeeds.
    Example: if media is requested for audio & video, but audio fails – with this flag set, a warning will be logged for the failed audio
