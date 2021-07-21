@@ -210,7 +210,7 @@ Create media with video and/or audio. See [IMediaRequestOptions]
   for more information about available options.
 
 It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video' | 'both')`
-be called with each desired media type _before_ using `startMedia`. This will ensure
+be called with the desired media type(s) _before_ using `startMedia`. This will ensure
  all media permissions have been granted before starting media. If `requestMediaPermissions()`
  has not been called, this function will call it with `preserveMedia = true` and use
  the returning media.
