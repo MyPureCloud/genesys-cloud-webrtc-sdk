@@ -43,6 +43,7 @@ function initControls () {
   document.getElementById('get-current-media-state').addEventListener('click', () => sdkHandler.getCurrentMediaState());
   document.getElementById('request-mic-permissions').addEventListener('click', () => sdkHandler.requestMicPermissions());
   document.getElementById('request-camera-permissions').addEventListener('click', () => sdkHandler.requestCameraPermissions());
+  document.getElementById('request-both-permissions').addEventListener('click', () => sdkHandler.requestAllPermissions());
   document.getElementById('enumerate-devices').addEventListener('click', () => sdkHandler.enumerateDevices());
 
   /* misc */

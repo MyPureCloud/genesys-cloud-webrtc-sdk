@@ -383,6 +383,31 @@ export interface IMediaRequestOptions {
    *  with `monitorMicVolume = true`
    */
   session?: IExtendedMediaSession;
+
+  /**
+   * Flag to retry media (if available) when it fails. Example would
+   *  be if a specific microphone is requested, but fails. With this
+   *  falg set, it will try again with the SDK default microphone and/or
+   *  the system default microphone
+   */
+  retryOnFailure?: boolean;
+
+  /**
+   * Flag to ignore media errors for one type if the other type succeeds.
+   *  Example: if media is requested for audio & video, but audio fails –
+   *  with this flag set, a warning will be logged for the failed audio
+   *  but a valid stream will be returned with the successful video media.
+   *
+   * Notes:
+   *  1. This setting is only taken into consideration if _both_ media
+   *    types are requested. It has no effect if only one is requested.
+   *  2. If using this flag, you may need to verify what tracks are
+   *    received on the returned stream because it is not guaranteed
+   *    that the stream will contain both types of media.
+   *  3. If _both_ types of media fail, the error for the audio stream
+   *    request will be thrown.
+   */
+  preserveMediaIfOneTypeFails?: boolean;
 }
 
 /**

@@ -83,6 +83,10 @@ function requestCameraPermissions () {
   return webrtcSdk.media.requestMediaPermissions('video');
 }
 
+function requestAllPermissions() {
+  return webrtcSdk.media.requestMediaPermissions('both');
+}
+
 function enumerateDevices () {
   return webrtcSdk.media.enumerateDevices(true);
 }
@@ -495,6 +499,7 @@ export default {
   getCurrentMediaState,
   requestMicPermissions,
   requestCameraPermissions,
+  requestAllPermissions,
   enumerateDevices,
   makeOutboundCall,
   changeVolume,
