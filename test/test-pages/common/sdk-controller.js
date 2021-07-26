@@ -159,9 +159,8 @@ function makeOutboundCall () {
     return;
   }
 
-  let body = { phoneNumber: numberToCall };
-  conversationsApi.postConversationsCalls(body)
-    .catch(err => console.log(err));
+  let body = { sessionType: 'softphone', phoneNumber: numberToCall };
+  webrtcSdk.sessionManager.startSession(body);
 }
 
 function changeVolume () {
