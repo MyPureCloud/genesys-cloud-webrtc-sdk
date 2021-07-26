@@ -13,7 +13,8 @@ import {
   mockGetConversationApi,
   PARTICIPANT_ID,
   USER_ID,
-  mockPatchConversationApi
+  mockPatchConversationApi,
+  mockPostConversationApi
 } from '../../mock-apis';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -22,7 +23,7 @@ import { SessionTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
-import { IAcceptSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
+import { IAcceptSessionRequest, ISdkSoftphoneSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -522,5 +523,18 @@ describe('updateOutgoingMedia', () => {
 
     await handler.updateOutgoingMedia(session as any, opts);
     expect(superSpyUpdateOutgoingMedia).toHaveBeenCalledWith(session, { audioDeviceId: 'audioDevice', videoDeviceId: undefined });
+  });
+});
+
+describe('startSession', () => {
+  it('should start a softphone call', async () => {
+    const scope = createNock();
+    const postConversation = mockPostConversationApi({ nockScope: scope });
+    const opts = {
+      sessionType: 'softphone',
+      phoneNumber: '3172222222',
+    }
+    await expect(handler.startSession(opts as any)).resolves.toEqual(undefined);
+    expect(postConversation.isDone()).toBeTruthy();
   });
 });
