@@ -159,5 +159,5 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       method: 'post',
       data: JSON.stringify(params)
     });
-  };
+  }
 }
