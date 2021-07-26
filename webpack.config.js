@@ -1,6 +1,5 @@
 const path = require('path');
 const WebpackAutoInject = require('webpack-auto-inject-version');
-const nodeExternals = require('webpack-node-externals');
 
 module.exports = (env) => {
   const minimize = env && env.production;
@@ -50,9 +49,8 @@ module.exports = (env) => {
 
     filename += '.bundle';
   } else {
-    /* if we are building for 'module', don't polyfill, transpile, or bundle any dependencies */
-    babelExcludes = [/node_modules/];
-    externals.push(nodeExternals());
+    /* if we are building for 'module', don't polyfill, transpile, or bundle any dependencies – except stanza because it has node deps... */
+    babelExcludes = [/node_modules\/(?!(core\-util\-is)).*/];
 
     babelOptions = {
       sourceType: 'unambiguous',
