@@ -89,13 +89,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  `interface IMediaRequestOptions`. These options will be passed to
    *  the `startMedia()` call (which is used to gain permissions)
    *
-   * Note #1: media permissions requests will always be retried (see `startMedia()`
-   *   for more info). If using `preserveMedia = true`, be sure to check the
-   *   returned media to ensure it is the desired media device (if requested).
-   *
-   * Note #2: the default option for the media type will be `true` (which is SDK default
-   *  device). If a value of `false` or `undefined` is passed in, it will
-   *  always use `true`. Any options for the other media type will be ignored.
+   * Note #1: the default option for the media type will be `true` (which is SDK default
+   *   device). If a value of `false` or `undefined` is passed in, it will
+   *   always use `true`. Any options for the other media type will be ignored.
    * Example:
    * ``` ts
    * await requestMediaPermissions(
@@ -115,7 +111,20 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *   video: false
    * }
    * ```
-   * @param mediaType media type to request permissions for (`'audio' | 'video'`)
+   *
+   * Note #2: if requesting `'both'`, it will always ask for both permision types
+   *   even if the first is denied. For example, if `audio` permissions are denied, this
+   *   function will still ask for `video` permissions. If _at least_ one media permission
+   *   was denied, it will throw the error. Exception is if `IMediaRequestOptions`'
+   *   `preserveMediaIfOneTypeFails` option is `true`, then it will only the error if _both_
+   *   media types fail. And then it will throw the audio denied error.
+   *
+   * Note #3: in some browsers, permissions are not always guaranteed even after
+   *   using this function to gain permissions. See [Firefox Behavior] for more details.
+   *   It is recommended to use the [permissions event](#permissions) to watch for changes
+   *   in permissions since permissions could be denied anytime `startMedia()` is called.
+   *
+   * @param mediaType media type to request permissions for (`'audio' | 'video' | 'both'`)
    * @param preserveMedia flag to return media after permissions pass
    * @param options optional, advanced options to request media with.
    *
@@ -123,22 +132,30 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *   depending on the value of `preserveMedia`
    */
   async requestMediaPermissions (
-    mediaType: 'audio' | 'video',
+    mediaType: 'audio' | 'video' | 'both',
     preserveMedia = false,
     options?: IMediaRequestOptions
   ): Promise<MediaStream | void> {
     const optionsCopy = (options && { ...options }) || {};
-    const oppositeMediaType = mediaType === 'audio' ? 'video' : 'audio';
-    const permissionsReqKey: keyof ISdkMediaState = mediaType === 'audio'
-      ? 'micPermissionsRequested'
-      : 'cameraPermissionsRequested';
-    const permissionsKey: keyof ISdkMediaState = mediaType === 'audio'
-      ? 'hasMicPermissions'
-      : 'hasCameraPermissions';
+    const requestingAudio = mediaType === 'audio';
+    const requestingVideo = mediaType === 'video';
+    const requestingBoth = mediaType === 'both';
+
+    if (typeof optionsCopy.retryOnFailure !== 'boolean') {
+      optionsCopy.retryOnFailure = true; // default to `true`
+    }
 
     /* make sure the options are valid */
-    optionsCopy[mediaType] = this.getValidSdkMediaRequestDeviceId(optionsCopy[mediaType]);
-    optionsCopy[oppositeMediaType] = false;
+    if (requestingBoth) {
+      optionsCopy.audio = this.getValidSdkMediaRequestDeviceId(optionsCopy.audio);
+      optionsCopy.video = this.getValidSdkMediaRequestDeviceId(optionsCopy.video);
+    } else if (requestingAudio) {
+      optionsCopy.audio = this.getValidSdkMediaRequestDeviceId(optionsCopy.audio);
+      optionsCopy.video = false;
+    } else /* if (requestingVideo) */ {
+      optionsCopy.audio = false;
+      optionsCopy.video = this.getValidSdkMediaRequestDeviceId(optionsCopy.video);
+    }
 
     /* delete the session off this before logging */
     const optionsToLog = {
@@ -149,21 +166,24 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       conversationId: options?.session?.conversationId
     };
 
-    /* we have to set that we have requested permissions to prevent an infinite loop with `startMedia()` */
-    this.setPermissions({ [permissionsReqKey]: true });
-
     /* first load devices */
     await this.enumerateDevices();
 
+    let stream: MediaStream;
+
     this.sdk.logger.info('requesting media to gain permissions', optionsToLog);
 
-    const stream = await this.startMedia(optionsCopy);
-
-    /**
-     * if we get here, it means we have permissions
-     * setPermissions will get called in startMedia for no permissions
-     */
-    this.setPermissions({ [permissionsKey]: true });
+    if (requestingAudio) {
+      stream = await this.startSingleMedia('audio', optionsCopy);
+    } else if (requestingVideo) {
+      stream = await this.startSingleMedia('video', optionsCopy);
+    } else if (requestingBoth) {
+      /* startMedia() makes individual requests to requestMediaPermissions() and combines the returned media */
+      stream = await this.startMedia(optionsCopy);
+    } else {
+      /* should never get here, but just in case */
+      throw new Error('Must call `requestMediaPermissions()` with at least one valid media type: `audio`, `video`, or `both`');
+    }
 
     /* enumerate devices again because we may not have had labels the first time */
     await this.enumerateDevices();
@@ -247,7 +267,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  function will stop and the error thrown (any successful media will be destroyed).
    *  This is in line with `getUserMedia`'s current behavior in the browser.
    *
-   * If `retryOnFailure` is `true` (default), the SDK will have the following behavior:
+   * If `mediaReqOptions.retryOnFailure` is `true` (default), the SDK will have the following behavior:
    *  1. If the fail was due to a Permissions issue, it will _NOT_ retry
    *  2. For `video` only: some browsers/hardward configurations throw an error
    *      for invalid resolution requests. If `video` was requested with a
@@ -264,6 +284,11 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * Note: if using `retryOnFailure` it is recommended to check the media
    *  returned to ensure you received the desired device.
    *
+   * _If_ `mediaReqOptions.preserveMediaIfOneTypeFails` is `true` (default is `false`),
+   *  _both_ `audio` and `video` media types are requested, _and_ only one type of media fails
+   *  then the media error for the failed media type will be ignored and the successful media will be
+   *  returned. See `IMediaRequestOptions` for more information.
+   *
    * Warning: if `sdk.media.requestPermissions(type)` has NOT been called before
    *  calling `startMedia`, `startMedia` will call `sdk.media.requestPermissions(type)`.
    *  If calling `startMedia` with both `audio` and `video` _before_ requesting permissions,
@@ -273,11 +298,14 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *
    * @param mediaReqOptions request video and/or audio with a default device or deviceId.
    *  Defaults to `{video: true, audio: true}`
-   * @param retryOnFailure whether the sdk should retry on an error
+   * @param retryOnFailure (this option is deprectated – use `mediaReqOptions.retryOnFailure`) whether the sdk should retry on an error
    *
    * @returns a promise containing a `MediaStream` with the requested media
    */
-  async startMedia (mediaReqOptions: IMediaRequestOptions = { video: true, audio: true }, retryOnFailure: boolean = true): Promise<MediaStream> {
+  async startMedia (
+    mediaReqOptions: IMediaRequestOptions = { video: true, audio: true },
+    retryOnFailure: boolean = true
+  ): Promise<MediaStream> {
     /* `getStandardConstraints` will set media type to `truthy` if `null` was passed in */
     const requestingVideo = mediaReqOptions.video || mediaReqOptions.video === null;
     const requestingAudio = mediaReqOptions.audio || mediaReqOptions.audio === null;
@@ -288,6 +316,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       cameraPermissionsRequested
     } = this.getState();
 
+    if (typeof mediaReqOptions.retryOnFailure !== 'boolean') {
+      mediaReqOptions.retryOnFailure = retryOnFailure;
+    }
+
     const loggingExtras = {
       mediaReqOptions: { ...mediaReqOptions, session: undefined },
       retryOnFailure,
@@ -297,15 +329,18 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       cameraPermissionsRequested
     };
 
-    let mediaStream: MediaStream;
-
     this.sdk.logger.info('calling sdk.media.startMedia()', loggingExtras);
 
     /* if we aren't requesting any media, call through to gUM to throw an error */
     if (!requestingAudio && !requestingVideo) {
       /* 'none' will throw the error we want so make sure to set `retry` to `false` */
-      return this.startSingleMedia('none', mediaReqOptions, false);
+      return this.startSingleMedia('none', { ...mediaReqOptions, retryOnFailure: false });
     }
+
+    let audioStream: MediaStream;
+    let videoStream: MediaStream;
+    let audioError: Error;
+    let videoError: Error;
 
     /**
      * `startMedia` will always request 1 media type at a time. If permissions have not been
@@ -318,21 +353,24 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
      */
     if (requestingAudio) {
       /* determine how to call through to startSingleMedia */
-      if (!micPermissionsRequested) {
-        this.sdk.logger.info(
-          'attempted to get audio media before permissions checked. requesting audio permissions first and will preserve media response',
-          loggingExtras
-        );
-        mediaStream = await this.requestMediaPermissions('audio', true, mediaReqOptions) as MediaStream;
-        /* not catching this because we want it to throw error */
-      } else {
-        mediaStream = await this.startSingleMedia('audio', mediaReqOptions, retryOnFailure);
+      try {
+        if (!micPermissionsRequested) {
+          this.sdk.logger.info(
+            'attempted to get audio media before permissions checked. requesting audio permissions first and will preserve media response',
+            loggingExtras
+          );
+          audioStream = await this.requestMediaPermissions('audio', true, mediaReqOptions) as MediaStream;
+          /* not catching this because we want it to throw error */
+        } else {
+          audioStream = await this.startSingleMedia('audio', mediaReqOptions);
+        }
+      } catch (error) {
+        audioError = error;
       }
     }
 
     if (requestingVideo) {
       try {
-        let videoStream: MediaStream;
         if (!cameraPermissionsRequested) {
           this.sdk.logger.info(
             'attempted to get video media before permissions checked. requesting video permissions first and will preserve media response',
@@ -340,24 +378,43 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
           );
           videoStream = await this.requestMediaPermissions('video', true, mediaReqOptions) as MediaStream;
         } else {
-          videoStream = await this.startSingleMedia('video', mediaReqOptions, retryOnFailure);
-        }
-
-        if (!mediaStream) {
-          mediaStream = videoStream;
-        } else {
-          videoStream.getTracks().forEach(t => mediaStream.addTrack(t));
+          videoStream = await this.startSingleMedia('video', mediaReqOptions);
         }
       } catch (error) {
-        /* stop audio media if there was any */
-        if (mediaStream) {
-          mediaStream.getTracks().forEach(t => t.stop());
-        }
-        throw error;
+        videoError = error;
       }
     }
 
-    return mediaStream;
+    /* if we requested audio and video */
+    if (requestingAudio && requestingVideo) {
+      /* if one errored, but not the other AND we don't want to throw for just one error */
+      if (
+        ((audioError && !videoError) || (!audioError && videoError)) &&
+        mediaReqOptions.preserveMediaIfOneTypeFails
+      ) {
+        const succeededMedia = audioStream || videoStream;
+        this.sdk.logger.warn(
+          'one type of media failed while one succeeded. not throwing the error for the failed media',
+          { audioError, videoError, mediaReqOptions, succeededMedia: succeededMedia.getTracks() }
+        );
+        return succeededMedia;
+      } else if (audioError && videoError) {
+        throw audioError; // just pick one to throw
+      } else if (audioStream && videoStream) {
+        /* else, both media succeeded so combine them */
+        videoStream.getTracks().forEach(t => audioStream.addTrack(t));
+      }
+    }
+
+    /* if we have an error here, we need to throw it - `preserveMediaIfOneTypeFails` is handled above */
+    if (audioError || videoError) {
+      /* if we have one error that means we _may_ have one stream */
+      this.stopMedia(audioStream || videoStream);
+      throw audioError || videoError;
+    }
+
+    /* if both were requested, the tracks are combined into audioStream */
+    return audioStream || videoStream;
   }
 
   /**
@@ -589,6 +646,23 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     this.removeAllListeners();
     window.navigator.mediaDevices.removeEventListener('devicechange', this.handleDeviceChange.bind(this));
     this.allMediaTracksCreated.forEach(t => t.stop());
+  }
+
+  /**
+   * Determine if the passed in error is a media permissions error.
+   *
+   * @param error to check
+   * @returns whether the error denied permissions or not
+   */
+  isPermissionsError (error: Error): boolean {
+    return (
+      /* User denies browser permissions prompt */
+      error.name === 'NotAllowedError' ||
+      /* OS permissions error in chrome (no error is thrown for not having mic OS permissions) */
+      (error.name === 'DOMException' && error.message === 'Could not start video source') ||
+      /* OS permissions error in FF */
+      (error.name === 'NotFoundError' && error.message === 'The object can not be found here.')
+    );
   }
 
   // ================================================================
@@ -899,6 +973,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const requestingAudio = mediaType === 'audio';
     const requestingVideo = mediaType === 'video';
 
+    const permissionsKey: keyof ISdkMediaState = requestingAudio ? 'hasMicPermissions' : 'hasCameraPermissions';
+    const requestedPermissionsKey: keyof ISdkMediaState = requestingAudio ? 'micPermissionsRequested' : 'cameraPermissionsRequested';
+
     const getCurrentSdkDefault = () => requestingAudio
       ? this.sdk._config.defaults.audioDeviceId
       : requestingVideo
@@ -949,6 +1026,12 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         mediaTracks: stream.getTracks()
       });
 
+      /* if we haven't requested permissions for this media type yet OR if our permissions are now allowed */
+      const currState = this.getState();
+      if (!currState[requestedPermissionsKey] || !currState[permissionsKey]) {
+        this.setPermissions({ [permissionsKey]: true, [requestedPermissionsKey]: true });
+      }
+
       return stream;
     } catch (e) {
       /* refetch the sdk default because it could have changed by the time we get here */
@@ -956,16 +1039,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
       /* PERMISSIONS ERRORS */
       if (this.isPermissionsError(e)) {
-        const permissionsKey: keyof ISdkMediaState = requestingAudio
-          ? 'hasMicPermissions'
-          : 'hasCameraPermissions';
-
-        const reqPermsKey: keyof ISdkMediaState = requestingAudio
-          ? 'micPermissionsRequested'
-          : 'cameraPermissionsRequested';
-
         /* set the requested media type permission to `false` */
-        this.setPermissions({ [permissionsKey]: false, [reqPermsKey]: true });
+        this.setPermissions({ [permissionsKey]: false, [requestedPermissionsKey]: true });
 
         this.sdk.logger.warn('Permission was denied for media type. Setting sdk state', {
           ...getLoggingExtras(),
@@ -1057,6 +1132,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     }
   }
 
+  private stopMedia (stream?: MediaStream): void {
+    stream?.getTracks().forEach(t => t.stop());
+  }
+
   private trackMedia (stream: MediaStream, monitorAudio: boolean = false, sessionId?: string): void {
     stream.getTracks().forEach(track => {
       this.allMediaTracksCreated.set(track.id, track);
@@ -1081,16 +1160,5 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         remove();
       });
     });
-  }
-
-  private isPermissionsError (error: Error): boolean {
-    return (
-      /* User denies browser permissions prompt */
-      error.name === 'NotAllowedError' ||
-      /* OS permissions error in chrome (no error is thrown for not having mic OS permissions) */
-      (error.name === 'DOMException' && error.message === 'Could not start video source') ||
-      /* OS permissions error in FF */
-      (error.name === 'NotFoundError' && error.message === 'The object can not be found here.')
-    );
   }
 }

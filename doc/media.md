@@ -10,14 +10,14 @@
 * [Important Notes About Media in the Browser]?
 
 ## Why Use SdkMedia?
-Why use this instead of the native `navigator.mediaDevices.getUserMedia()`? 
-Since the SDK is built to be compatible with multiple browsers, it has to be able to handle media, devices, 
-and permissions across all the supported browsers. Currently, the supported browsers are 
+Why use this instead of the native `navigator.mediaDevices.getUserMedia()`?
+Since the SDK is built to be compatible with multiple browsers, it has to be able to handle media, devices,
+and permissions across all the supported browsers. Currently, the supported browsers are
 **Chrome, Firefox, & Edge** (but most any browser running on Chromium will work including Chromium Embedded Framework
- desktop applications). 
+ desktop applications).
 
 It was decided to expose the underlying media implementation to help consumers leverage all the shimming, error handling,
-and heavy lifting involved with media implementations. 
+and heavy lifting involved with media implementations.
 
 
 --------
@@ -26,8 +26,8 @@ and heavy lifting involved with media implementations.
 
 ### Example Usage
 
-This is a very basic usage of the WebRTC SDK Media utility. Be sure to read through the documentation for more advanced usage. 
-For the remainder of this documentation, it will be assumed that there is already an initialized sdk instance. 
+This is a very basic usage of the WebRTC SDK Media utility. Be sure to read through the documentation for more advanced usage.
+For the remainder of this documentation, it will be assumed that there is already an initialized sdk instance.
 
 ``` ts
 import { ISdkMediaState, SdkMediaStateWithType } from 'genesys-cloud-webrtc-sdk';
@@ -40,7 +40,7 @@ async function run () {
 
   sdk.media.on('state', (state: SdkMediaStateWithType) => {
     // emits every time devices or permissions change
-    // this value can always be synchronously attained 
+    // this value can always be synchronously attained
     // using `sdk.media.getState()`
     mediaState = state;
   });
@@ -55,7 +55,7 @@ async function run () {
 
     if (!hasMicPermissions) {
       // decide what to do. the sdk cannot function
-      // without media permissions. generally it is best 
+      // without media permissions. generally it is best
       // to kick the user out of the app and explain how they
       // can grant permissions for their specific browser
     }
@@ -88,7 +88,7 @@ async function run () {
 run();
 ```
 
-Be sure to check out the [SdkMediaStateWithType] interface for more information about the `ISdkMediaState` object. 
+Be sure to check out the [SdkMediaStateWithType] interface for more information about the `ISdkMediaState` object.
 
 --------
 
@@ -128,50 +128,53 @@ If `preserveMedia` is `true`, the `MediaStream` attained through the
   [IMediaRequestOptions]. These options will be passed to
  the `startMedia()` call (which is used to gain permissions)
 
-> Note #1: media permissions requests will always be retried (see `startMedia()` 
-  for more info). If using `preserveMedia = true`, be sure to check the 
-  returned media to ensure it is the desired media device (if requested). 
-
-> Note #2: the default option for the media type will be `true` (which is SDK default
+> Note #1: the default option for the media type will be `true` (which is SDK default
   device). If a value of `false` or `undefined` is passed in, it will
   always use `true`. Any options for the other media type will be ignored.
-Example:
-``` ts
-await requestMediaPermissions(
-  'audio',
-  false,
+  Example:
+  ``` ts
+  await requestMediaPermissions(
+    'audio',
+    false,
+    {
+      audio: false,
+      video: 'some-video-device-id',
+      videoFrameRate: 30
+    }
+  );
+  // since type === 'audio', the options will be converted to:
   {
-    audio: false,
-    video: 'some-video-device-id',
-    videoFrameRate: 30
+    // a valid option must be set (`false|undefined` are invalid)
+    audio: true,
+    // video will be ignored since permissions are requested one at a time
+    video: false
   }
-);
-// since type === 'audio', the options will be converted to:
-{
-  // a valid option must be set (`false|undefined` are invalid)
-  audio: true,
-  // video will be ignored since permissions are requested one at a time
-  video: false
-}
-```
+  ```
 
-> Note: in some browsers, permissions are not always guaranteed even after 
-using this function to gain permissions. See [Firefox Behavior] for more details. 
-It is recommended to use the [permissions event](#permissions) to watch for changes
-in permissions since permissions could be denied anytime [startMedia()](#startmedia) is called. 
-    
+> Note #2: if requesting `'both'`, it will always ask for both permision types
+  even if the first is denied. For example, if `audio` permissions are denied, this
+  function will still ask for `video` permissions. If _at least_ one media permission
+  was denied, it will throw the error. Exception is if [IMediaRequestOptions]'
+  `preserveMediaIfOneTypeFails` option is `true`, then it will only the error if _both_
+  media types fail. And then it will throw the audio denied error.
+
+> Note #3: in some browsers, permissions are not always guaranteed even after
+  using this function to gain permissions. See [Firefox Behavior] for more details.
+  It is recommended to use the [permissions event](#permissions) to watch for changes
+  in permissions since permissions could be denied anytime [startMedia()](#startmedia) is called.
+
 Declaration:
 ``` ts
-requestMediaPermissions(mediaType: 'audio' | 'video', preserveMedia?: boolean, options?: IMediaRequestOptions): Promise<MediaStream | void>;
+requestMediaPermissions(mediaType: 'audio' | 'video' | 'both', preserveMedia?: boolean, options?: IMediaRequestOptions): Promise<MediaStream | void>;
 ```
 
 Params:
-* `mediaType: 'audio' | 'video'` – mediaType media type to request permissions for (`'audio' | 'video'`)
+* `mediaType: 'audio' | 'video' | 'both'` – mediaType media type to request permissions for (`'audio' | 'video' | 'both'`)
 * `preserveMedia?: boolean` – Optional: Defaults to `false` – flag to return media after permissions pass
-* `options?: IMediaRequestOptions` – Optional: Defaults to mediaType `true`. See [IMediaRequestOptions] for additional details. 
+* `options?: IMediaRequestOptions` – Optional: Defaults to mediaType `true`. See [IMediaRequestOptions] for additional details.
   See note above explaining mediaType always being requested.
 
-Returns: a promise either containing a `MediaStream` or `undefined` 
+Returns: a promise either containing a `MediaStream` or `undefined`
 depending on the value of `preserveMedia`
 
 #### `enumerateDevices()`
@@ -181,14 +184,14 @@ Call to enumerate available devices. This will update the
 If the devices returned from the browser are the same as the cached
   devices, a new event will _NOT_ emit. To force an emit pass in `true`.
 
-It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video')`
-  be called at least once to ensure permissions are granted before loading devices. 
+It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video' | 'both')`
+  be called at least once to ensure permissions are granted before loading devices.
   See [requestMediaPermissions()](#requestmediapermissions) for more details.
 
 > Note: if media permissions have not been granted by the browser,
   enumerated devices will not return the full list of devices
   and/or the devices will not have ids/labels (varies per browser).
-    
+
 Declaration:
 ``` ts
 enumerateDevices(forceEmit?: boolean): Promise<MediaDeviceInfo[]>;
@@ -206,11 +209,11 @@ from `navigator.mediaDevices.enumerateDevices()`
 Create media with video and/or audio. See [IMediaRequestOptions]
   for more information about available options.
 
-It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video')` 
-be called with each desired media type _before_ using `startMedia`. This will ensure
+It is _highly_ recommended that `sdk.media.requestMediaPermissions('audio' | 'video' | 'both')`
+be called with the desired media type(s) _before_ using `startMedia`. This will ensure
  all media permissions have been granted before starting media. If `requestMediaPermissions()`
  has not been called, this function will call it with `preserveMedia = true` and use
- the returning media. 
+ the returning media.
 
 `getUserMedia` is requested one media type at a time. If requesting both `audio`
   and `video`, `getUserMedia` will be called two times -- 1st with `audio` and 2nd
@@ -219,7 +222,7 @@ be called with each desired media type _before_ using `startMedia`. This will en
   function will stop and the error thrown (any successful media will be destroyed).
   This is is line with `getUserMedia`'s current behavior in the browser.
 
- If `retryOnFailure` is `true` (default), the SDK will have the following behavior:
+ If `IMediaRequestOptions.retryOnFailure` is `true` (default), the SDK will have the following behavior:
   1. If the fail was due to a Permissions issue, it will _NOT_ retry
   2. For `video` only: some browsers/hardward configurations throw an error
       for invalid resolution requests. If `video` was requested with a
@@ -235,6 +238,11 @@ be called with each desired media type _before_ using `startMedia`. This will en
 
 > Note: if using `retryOnFailure` it is recommended to check the media returned to ensure you received the desired device.
 
+_If_ `IMediaRequestOptions.preserveMediaIfOneTypeFails` is `true` (default is `false`),
+ _both_ `audio` and `video` media types are requested, _and_ only one type of media fails
+ then the media error for the failed media type will be ignored and the successful media will be
+ returned. See `IMediaRequestOptions` for more information.
+
 > Warning: if `sdk.media.requestPermissions(type)` has NOT been called before
   calling `startMedia`, `startMedia` will call `sdk.media.requestPermissions(type)`.
   If calling `startMedia` with both `audio` and `video` _before_ requesting permissions,
@@ -243,7 +251,6 @@ be called with each desired media type _before_ using `startMedia`. This will en
   not attempt to gain permissions for `video` – the error will stop execution.
 
 
-    
 Declaration:
 ``` ts
 startMedia(mediaReqOptions?: IMediaRequestOptions, retryOnFailure?: boolean): Promise<MediaStream>;
@@ -252,7 +259,7 @@ startMedia(mediaReqOptions?: IMediaRequestOptions, retryOnFailure?: boolean): Pr
 Params:
 * `mediaReqOptions?: IMediaRequestOptions` – Optional: defaults to `{ video: true, audio: true }` –
   request video and/or audio with a default device or deviceId. See [IMediaRequestOptions] for more details.
-* `retryOnFailure?: boolean` – Optional: default `true` – whether the sdk should retry on an error
+* `retryOnFailure?: boolean` – Optional: (this option is deprectated – use `mediaReqOptions.retryOnFailure`) default `true` – whether the sdk should retry on an error
 
 Returns: a promise containing a `MediaStream` with the requested media
 
@@ -280,15 +287,15 @@ based on the passed in `deviceId`. This will follow these steps looking for a de
  2. If device could not be found _or_ `deviceId` was not a `string`,
      it will look for the sdk default device
  3. If device could not be found it will return `undefined`
-    
+
 Declaration:
 ``` ts
 getValidDeviceId(kind: MediaDeviceKind, deviceId: string | boolean | null, ...sessions: IExtendedMediaSession[]): string | undefined;
 ```
 
-Params: 
+Params:
 * `kind: MediaDeviceKind` – kind desired device kind
-* `deviceId: string | boolean | null` – `deviceId` for specific device to look for, 
+* `deviceId: string | boolean | null` – `deviceId` for specific device to look for,
   `true` for sdk default device, or `null` for system default
 * `...sessions: IExtendedMediaSession[]` – Optional: any active sessions (used for logging)
 
@@ -298,7 +305,7 @@ no device could be found.
 #### `getValidSdkMediaRequestDeviceId()`
 Helper function to quickly get a valid SDK media request param. This is
  mostly an internally used function to ensure a valid SDK media request
- param was used to accept a session. See [ISdkMediaDeviceIds] 
+ param was used to accept a session. See [ISdkMediaDeviceIds]
  for more details on requesting media from the SDK.
 
 Example: `string | true | null` are valid and be returned as is.
@@ -308,7 +315,7 @@ Example: `string | true | null` are valid and be returned as is.
 getValidSdkMediaRequestDeviceId(deviceId?: string | boolean | null): string | null | true;
 ```
 
-Params: 
+Params:
 * `deviceId?: string | boolean | null` – media request param to validate
 
 Returns: a valid requestable SDK media value `string|null|true`
@@ -381,7 +388,7 @@ Returns: an array of all cached output devices
 #### `getAllActiveMediaTracks()`
 This will return all active media tracks that
 were created by the sdk
-    
+
 Declaration:
 ``` ts
 getAllActiveMediaTracks(): MediaStreamTrack[];
@@ -401,7 +408,7 @@ Declaration:
 findCachedDeviceByTrackLabel(track?: MediaStreamTrack): MediaDeviceInfo | undefined;
 ```
 
-Params: 
+Params:
 * `track?: MediaStreamTrack` – Optional: `MediaStreamTrack` with the label to search for.
 
 Returns: the found device or `undefined` if the
@@ -410,7 +417,7 @@ device could not be found.
 #### `findCachedOutputDeviceById()`
 Look through the cached output devices and match based on
  the passed in output deviceId.
-    
+
 Declaration:
 ``` ts
 findCachedOutputDeviceById(id?: string): MediaDeviceInfo | undefined;
@@ -450,10 +457,23 @@ Params: none
 
 Returns: `void`
 
+#### `isPermissionsError()`
+Determine if the passed in error is a media permissions error.
+
+Declaration:
+``` ts
+isPermissionsError (error: Error): boolean;
+```
+
+Params:
+* `error: Error` – error to check
+
+Returns: `boolean` whether the error denied permissions or not
+
 --------
 
 ### Events
-SDK Media Utility implements the same `EventEmitter` interface and strict-typings that the base WebRTC SDK does. 
+SDK Media Utility implements the same `EventEmitter` interface and strict-typings that the base WebRTC SDK does.
 See [SDK Events] for the full list of inherited functions.
 
 #### `audioTrackVolume`
@@ -472,7 +492,7 @@ This event can be used to determine if a microphone is not picking
  up audio. Reasons for this can be the microphone is on "hardware mute"
  or the OS does not have microphone permissions for the given browser
  being used. Both of these reasons cannot be detected on the media track
- and can only be "guessed" based on no audio being picked up from the mic. 
+ and can only be "guessed" based on no audio being picked up from the mic.
 
 
 Declaration:
@@ -484,7 +504,7 @@ sdk.media.on('audioTrackVolume', (event: {
     sessionId?: string;
   }) => { });
 ```
-Value of event: 
+Value of event:
 * `track: MediaStreamTrack` – the audio track the volume is emitting for
 * `volume: number` – average volume of audio received during time range
 * `muted: boolean` – flag indicating if the track is not `enabled` or
@@ -512,9 +532,9 @@ Declaration:
 ``` ts
 sdk.media.on('state', (state: SdkMediaStateWithType) => { });
 ```
-Value of event: 
+Value of event:
 * See [SdkMediaStateWithType]
-* See the [devices event](#devices) and [permissions event](#permissions) 
+* See the [devices event](#devices) and [permissions event](#permissions)
   for info on other state events
 
 
@@ -534,41 +554,41 @@ Declaration:
 ``` ts
 sdk.media.on('devices', (state: SdkMediaStateWithType) => { /* evt.eventType === 'devices' */});
 ```
-Value of event: 
+Value of event:
 * See [SdkMediaStateWithType]
 
 
 #### `permissions`
 Event when media permissions change. Values
 that trigger this event are any of the following
-in the [ISdkMediaState]: 
-``` ts 
+in the [ISdkMediaState]:
+``` ts
   hasMicPermissions: boolean;
   hasCameraPermissions: boolean;
   micPermissionsRequested: boolean;
   cameraPermissionsRequested: boolean;
 ```
-For example, when calling through to 
+For example, when calling through to
   `sdk.media.requestMediaPermissions('audio')`, this
-  event will emit two times: 
+  event will emit two times:
  1. for `micPermissionsRequested` changing to `true`
   (which happens right before requesting `getUserMedia()`)
-  event will emit two times: 
+  event will emit two times:
  2. for `hasMicPermissions` changing to `true` or `false`
   depending on the outcome of the `getUserMedia()` request
 
 
-> Note: in some browsers, permissions are not always guaranteed even after 
-using [requestMediaPermissions()](#requestmediapermissions) to gain permissions. See [Firefox Behavior] for more details. 
+> Note: in some browsers, permissions are not always guaranteed even after
+using [requestMediaPermissions()](#requestmediapermissions) to gain permissions. See [Firefox Behavior] for more details.
 It is recommended to use this event to watch for changes
-in permissions since permissions could be denied anytime [startMedia()](#startmedia) is called. 
+in permissions since permissions could be denied anytime [startMedia()](#startmedia) is called.
 
 Declaration:
 ``` ts
 sdk.media.on('permissions', (state: SdkMediaStateWithType) => { /* evt.eventType === 'permissions' */});
 ```
 
-Value of event: 
+Value of event:
 * See [SdkMediaStateWithType]
 
 --------
@@ -578,7 +598,7 @@ Value of event:
 
 #### SdkMediaStateWithType
 This is used when emitting state changes on `sdk.media.on('state', (evt: SdkMediaStateWithType) => {})`
-to determine what event type caused the state change. 
+to determine what event type caused the state change.
 
 ``` ts
 type SdkMediaStateWithType = ISdkMediaState & {
@@ -593,7 +613,7 @@ type SdkMediaStateWithType = ISdkMediaState & {
 
 
 #### ISdkMediaState
-The current state of devices, permissions, and other media related information: 
+The current state of devices, permissions, and other media related information:
 ``` ts
 interface ISdkMediaState {
   devices: MediaDeviceInfo[];
@@ -612,7 +632,7 @@ interface ISdkMediaState {
 ```
 * `devices: MediaDeviceInfo[]` – a list of all current devices
 * `oldDevices: MediaDeviceInfo[]` – a list of all devices from the last emission. This will only
-   differ from `devices` if `devices` changed. Otherwise, these devices will match `devices`. 
+   differ from `devices` if `devices` changed. Otherwise, these devices will match `devices`.
    This is useful for diffing which devices changed.
 * `audioDevices: MediaDeviceInfo[]` – a list of all current audio (microphone) devices
 * `videoDevices: MediaDeviceInfo[]` – a list of all current video (camera) devices
@@ -628,9 +648,9 @@ interface ISdkMediaState {
 #### IMediaRequestOptions
 Interface for defining the SDK's contract for requesting media.
 
-> Important note: anywhere in the SDK where media can be requested this contract will apply. 
+> Important note: anywhere in the SDK where media can be requested this contract will apply.
 * `string` for a specified deviceId
-* `true` for sdk default deviceId 
+* `true` for sdk default deviceId
 * `null` for system default device
 * `false|undefined` to not request or update media type
 
@@ -645,14 +665,16 @@ interface IMediaRequestOptions {
   videoFrameRate?: ConstrainDouble | false;
   monitorMicVolume?: boolean;
   session?: IExtendedMediaSession;
+  retryOnFailure?: boolean;
+  preserveMediaIfOneTypeFails?: boolean;
 }
 ```
-* `audio?: string | boolean | null` – Optional: value for how to request audio media 
+* `audio?: string | boolean | null` – Optional: value for how to request audio media
   (See important note above explaining available options)
-* `video?: string | boolean | null` – Optional: value for how to request video media 
+* `video?: string | boolean | null` – Optional: value for how to request video media
   (See important note above explaining available options)
 * `videoResolution?: { width: ConstrainULong, height: ConstrainULong } | false` – Optional:
-  Video resolution to request from getUserMedia. Default is SDK configured 
+  Video resolution to request from getUserMedia. Default is SDK configured
   resolution. `false` will explicitly not use any resolution including the sdk default
   * ```ts
     type ConstrainULong = number | {
@@ -664,15 +686,25 @@ interface IMediaRequestOptions {
     ```
 * `videoFrameRate?: ConstrainDouble | false` – Optional: default value is `{ ideal: 30 }` – 
   Video frame rate to request from getUserMedia. `false` will explicitly not use any frameRate.
-  * Example, if is set `videoFrameRate: { ideal: 45 }` then the translated constraint to   
+  * Example, if is set `videoFrameRate: { ideal: 45 }` then the translated constraint to
    `getUserMedia` will be `video: { frameRate: { ideal: 45 } }`
-* `monitorMicVolume?: boolean` – Optional: default is SDK configured default – Flag to emit volume 
+* `monitorMicVolume?: boolean` – Optional: default is SDK configured default – Flag to emit volume
   change events for audio tracks. If this is a `boolean` value, it will override the SDK
-  default configuration of `monitorMicVolume`. If it is not a `boolean` (ie. left `undefined`) then 
+  default configuration of `monitorMicVolume`. If it is not a `boolean` (ie. left `undefined`) then
   the SDK default will be used
-* `session?: IExtendedMediaSession` – Optional: Session to associate logs to. It will also tie 
+* `session?: IExtendedMediaSession` – Optional: Session to associate logs to. It will also tie
   `audioTrackVolume` events to a sessionId if requesting audio with `monitorMicVolume = true`
-
+* `retryOnFailure?: boolean;` – Optional: Flag to retry media (if available) when it fails. Example would
+   be if a specific microphone is requested, but fails. With this flag set, it will try again with the SDK
+   default microphone and/or the system default microphone.
+* `preserveMediaIfOneTypeFails?: boolean;` –  Optional: Flag to ignore media errors for one type if the other type succeeds.
+   Example: if media is requested for audio & video, but audio fails – with this flag set, a warning will be logged for the failed audio
+   but a valid stream will be returned with the successful video media.
+   * Notes:
+      1. This setting is only taken into consideration if _both_ media types are requested. It has no effect if only one is requested.
+      2. If using this flag, you may need to verify what tracks are received on the returned stream because it is not guaranteed
+        that the stream will contain both types of media.
+      3. If _both_ types of media fail, the error for the audio stream request will be thrown.
 #### IUpdateOutgoingMedia
 Interface for available options when requesting to update outgoing media.
 ``` ts
@@ -711,10 +743,10 @@ interface ISdkMediaDeviceIds {
 
 
 ## Important Notes About Media in the Browser
-There are many nuances and differences with how individual browsers and Operating Systems (OS) 
+There are many nuances and differences with how individual browsers and Operating Systems (OS)
 handle media, errors, devices, and permissions. The SDK attempts to account for as many
-of these as possible. Here are some limitations and observations when working with 
-media in the browser: 
+of these as possible. Here are some limitations and observations when working with
+media in the browser:
 
 ### Mac OS
 On macOS, the user has to grant the browser permission to use certain media. These options can
@@ -723,39 +755,39 @@ and their corresponding responses:
 * **Camera**
   * If not granted, the browser will throw an error when attempting to request video media
 * **Microphone**
-  * If not granted, the browser _will still return_ an audio media track that looks normal and 
-    not throw an error. However, there will be _no actual audio_ 
+  * If not granted, the browser _will still return_ an audio media track that looks normal and
+    not throw an error. However, there will be _no actual audio_
     being picked up by the microphone. It will act as if in a **hardware mute** state. See
     [Microphone OS Permissions and Hardware Mute] for more information.
 * **Screen Recording** (which is the permission needed for sharing a screen)
-  * If not granted, the browser will still prompt the use for a scren selection. However, the 
-    user will only be able to share the browser-in-use window _or_ any desktop screen 
-    _with only the background present_ (ie. they will not see any other applications). 
+  * If not granted, the browser will still prompt the use for a scren selection. However, the
+    user will only be able to share the browser-in-use window _or_ any desktop screen
+    _with only the background present_ (ie. they will not see any other applications).
 
 
 ### Microphone OS Permissions and Hardware Mute
-There is no way for the browser to know if a microphone is in a **hardware mute** state. 
+There is no way for the browser to know if a microphone is in a **hardware mute** state.
 When a microphone is in a hardware mute state, the audio media track will still appear
-to be normal (meaning `track.enabled === true` & `track.muted === false`). However, 
-there will be _no actual audio_ being picked up by the microphone. 
+to be normal (meaning `track.enabled === true` & `track.muted === false`). However,
+there will be _no actual audio_ being picked up by the microphone.
 
 Two reasons a microphone would end up in **hardware mute**:
 1. The microphone has a mute button on the physical device, external of the browser
-2. The OS has not been granted permissions for microphone usage. See [Mac OS] for more 
-    information about OS permissions and behaviors. 
-    
-To account for hardware mute scenarios, you will need implement logic for checking 
-the volume on an audio track. See the [audioTrackVolume event](#audiotrackvolume) for 
+2. The OS has not been granted permissions for microphone usage. See [Mac OS] for more
+    information about OS permissions and behaviors.
+
+To account for hardware mute scenarios, you will need implement logic for checking
+the volume on an audio track. See the [audioTrackVolume event](#audiotrackvolume) for
 more details. Also, see [requestMediaPermissions()](#requestmediapermissions) for important
-notes about requesting audio permissions when the OS has not given permissions. 
+notes about requesting audio permissions when the OS has not given permissions.
 
 ### Chrome Behavior
-Chrome handles media and permissions in a very straight forward manner. 
+Chrome handles media and permissions in a very straight forward manner.
 
 #### Normal Chrome Instance
 If a user grants or denies permissions for a media type then
 the decision will be remembered for that domain _until_ the user manually
-resets the permission via chrome settings. 
+resets the permission via chrome settings.
 
 #### Incognito Chrome Instance
 If a user grants or denies permissions for a media type then
@@ -766,68 +798,68 @@ via chrome settings.
 
 #### Screen Share in Chrome
 If a user denies screen share permissions in chrome by clicking
-the **Cancel** button on the screen selection prompt, you will 
-still be able to request the screen stream to prompt the 
-user to select a screen again. 
+the **Cancel** button on the screen selection prompt, you will
+still be able to request the screen stream to prompt the
+user to select a screen again.
 
 
 ### Firefox Behavior
 
-Firefox has a **Remember this decision** (Rtd) checkbox when prompting for a media type. 
-This checkbox changes the behavior for both Normal and Private Firefox instances in 
-different ways. 
+Firefox has a **Remember this decision** (Rtd) checkbox when prompting for a media type.
+This checkbox changes the behavior for both Normal and Private Firefox instances in
+different ways.
 
-* If **Rtd** _is_ checked: 
-  * The media type and domain will be added to Firefox's privacy tab with 
-    the selected decision. (You can navigate to `about:preferences#privacy` then 
+* If **Rtd** _is_ checked:
+  * The media type and domain will be added to Firefox's privacy tab with
+    the selected decision. (You can navigate to `about:preferences#privacy` then
     scroll down to the **Permissions** section to view remembered media decisions
-    and domains). 
+    and domains).
   * For permissions granted: the media type will not prompt for user approval
-    of any future media requests for the granted media type. 
+    of any future media requests for the granted media type.
   * For permissions denied: the browser will throw an error for denied permissions
     and never ask the user for approval for any future media requests (until
     the permission setting is reset)
-* If **Rtd** _is not_ checked: 
+* If **Rtd** _is not_ checked:
   * The media type and domain will not be added to Firefox's privacy tab
     with the selected decision
-  * For permissions granted: the media type will always prompt for user 
-    approval of any future media requests. Meaning the user will have to 
+  * For permissions granted: the media type will always prompt for user
+    approval of any future media requests. Meaning the user will have to
     approve any new media requests even if they have already approved some
-    in the past. 
-  * For permissions denies: the media type will still prompt for user 
-    approval of any future media requests. Meaning the user will again have 
+    in the past.
+  * For permissions denies: the media type will still prompt for user
+    approval of any future media requests. Meaning the user will again have
     the option to approve or deny any new media requests even if they have denied some
-    in the past. 
+    in the past.
 
-A few caveats about **Rtd** behavior: 
-* **Rtd** is _not_ presented to users if they are using Firefox in Private Mode. This is the main 
+A few caveats about **Rtd** behavior:
+* **Rtd** is _not_ presented to users if they are using Firefox in Private Mode. This is the main
   difference between a regular Firefox instance and a Private Mode Firefox instance.
 * If **Rtd** is checked in a _non_ Private Mode browser, the domain & media type
   result will still be read by Private Mode browsers.
-    * Example: if **Rtd** is checked for approving `audio` on `https://yourwebsit.com`, the 
-      user will not be prompted for `audio` media permissions on `https://yourwebsit.com` 
-      even if they visit that site in a Private Mode Firefox instance. 
-* Since permissions are not always guaranteed in Firefox because of the **Rtd** behavior, even after using 
-  [requestMediaPermissions()](#requestmediapermissions) to gain permissions, it is recommended 
-  to use the [permissions event](#permissions) to watch for changes in the permissions state 
-  since permissions could be denied anytime [startMedia()](#startmedia) is called. 
+    * Example: if **Rtd** is checked for approving `audio` on `https://yourwebsit.com`, the
+      user will not be prompted for `audio` media permissions on `https://yourwebsit.com`
+      even if they visit that site in a Private Mode Firefox instance.
+* Since permissions are not always guaranteed in Firefox because of the **Rtd** behavior, even after using
+  [requestMediaPermissions()](#requestmediapermissions) to gain permissions, it is recommended
+  to use the [permissions event](#permissions) to watch for changes in the permissions state
+  since permissions could be denied anytime [startMedia()](#startmedia) is called.
 
 
 #### Screen Share in Firefox
 If a user denies screen share permissions in Firefox by clicking
-the **Cancel** button on the screen selection prompt, you will 
+the **Cancel** button on the screen selection prompt, you will
 still be able to request the screen stream, however, it will throw
-an error instantly and not prompt the user to select a screen. In 
-order to reset the permission to allow for the prompt again, 
+an error instantly and not prompt the user to select a screen. In
+order to reset the permission to allow for the prompt again,
 the user has to do 1 of 2 things:
 1. Refresh the browser
-2. Reset the screen share permissions (which will be set to 
+2. Reset the screen share permissions (which will be set to
   _"Share the Screen – Temporarily Blocked"_. This can be found by clicking the button
   just to the left of the URL in the navigation bar).
 
 One way to account for this is to time how long it takes for [startDisplayMedia()](#startdisplaymedia)
-to throw a permissions error. If it is almost instant, then you may be able to assume that the 
-user has temporarily denied screen share permissions. 
+to throw a permissions error. If it is almost instant, then you may be able to assume that the
+user has temporarily denied screen share permissions.
 
 [SDK Events]: index.md#events
 
