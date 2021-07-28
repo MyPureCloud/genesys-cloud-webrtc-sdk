@@ -23,7 +23,7 @@ import { SessionTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
-import { IAcceptSessionRequest, ISdkSoftphoneSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
+import { IAcceptSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;

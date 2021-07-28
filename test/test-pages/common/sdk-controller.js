@@ -152,15 +152,15 @@ function _getLogHeader (functionName) {
   return `${functionName}\n---------------------`;
 }
 
-function makeOutboundCall () {
+function startSoftphoneSession () {
   const numberToCall = getInputValue('outbound-phone-number');
   if (!numberToCall) {
     document.getElementById('log-data').value += 'Phone Number is required to place an outbound call\n';
     return;
   }
 
-  let body = { sessionType: 'softphone', phoneNumber: numberToCall };
-  webrtcSdk.sessionManager.startSession(body);
+  let body = { phoneNumber: numberToCall };
+  webrtcSdk.startSoftphoneSession(body);
 }
 
 function changeVolume () {
@@ -495,7 +495,7 @@ export default {
   requestMicPermissions,
   requestCameraPermissions,
   enumerateDevices,
-  makeOutboundCall,
+  startSoftphoneSession,
   changeVolume,
   startVideoConference,
   setVideoMute,

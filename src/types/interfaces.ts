@@ -865,7 +865,7 @@ export interface ISdkMediaState {
   cameraPermissionsRequested: boolean;
 }
 
-export interface ISdkSoftphoneSessionRequest extends IStartSessionParams {
+export interface IStartSoftphoneSessionParams extends IStartSessionParams {
   /** phone number to dial */
   phoneNumber?: string;
   /** caller id phone number for outbound call */

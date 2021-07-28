@@ -3,7 +3,7 @@ import utils from './utils';
 
 function initControls () {
   /* softphone */
-  document.getElementById('outbound-call-start').addEventListener('click', sdkHandler.makeOutboundCall);
+  document.getElementById('outbound-call-start').addEventListener('click', sdkHandler.startSoftphoneSession);
   document.getElementById('outbound-call-end').addEventListener('click', sdkHandler.endSession);
   document.getElementById('answer-inbound-call').addEventListener('click', sdkHandler.answerCall);
   document.getElementById('inbound-call-end').addEventListener('click', sdkHandler.endSession);
