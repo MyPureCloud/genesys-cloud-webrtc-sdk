@@ -218,6 +218,7 @@ export function logDeviceChange (
 
     /* other random stuff */
     currentAudioElementSinkId: currentOutputDeviceId,
+    // TODO: these don't log in sumo as tracks...
     currentSessionSenderTracks: pcSenders.map(s => s.track),
     currentSessionReceiverTracks: session.pc.getReceivers().filter(s => s.track && s.track.id).map(s => s.track),
 
