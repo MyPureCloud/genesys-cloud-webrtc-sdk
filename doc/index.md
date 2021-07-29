@@ -463,12 +463,12 @@ Starts a softphone call session with the given peer or peers.
 
 Declaration:
 ``` ts
-startSoftphoneSession(softphoneSessionParams: IStartSoftphoneSessionParams): Promise<any>;
+startSoftphoneSession(softphoneSessionParams: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}>;
 ```
 Params:
 * `softphoneSessionParams: IStartSoftphoneSessionParams` Required: Contains participant information for placing the call. See [softphone#IStartSoftphoneSessionParams](softphone.md#istartsoftphonesessionparams) for full details on the request parameters.
 
-Returns: a promise with an object containing the session details.
+Returns: a promise with an object containing the `id` and `selfUri` for the conversation.
 #### `startScreenShare()`
 Start a screen share. Start a screen share. Currently, screen share is only supported
 for guest users.
