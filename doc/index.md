@@ -456,6 +456,19 @@ Returns: a Promise that is fulled one the web socket is connected
   and other necessary async tasks are complete.
 
 
+#### `startSoftphoneSession()`
+Starts a softphone call session with the given peer or peers.
+
+`initialize()` must be called first.
+
+Declaration:
+``` ts
+startSoftphoneSession(softphoneSessionParams: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}>;
+```
+Params:
+* `softphoneSessionParams: IStartSoftphoneSessionParams` Required: Contains participant information for placing the call. See [softphone#IStartSoftphoneSessionParams](softphone.md#istartsoftphonesessionparams) for full details on the request parameters.
+
+Returns: a promise with an object containing the `id` and `selfUri` for the conversation.
 #### `startScreenShare()`
 Start a screen share. Start a screen share. Currently, screen share is only supported
 for guest users.

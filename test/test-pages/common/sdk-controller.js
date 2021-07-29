@@ -156,7 +156,7 @@ function _getLogHeader (functionName) {
   return `${functionName}\n---------------------`;
 }
 
-function makeOutboundCall () {
+function startSoftphoneSession () {
   const numberToCall = getInputValue('outbound-phone-number');
   if (!numberToCall) {
     document.getElementById('log-data').value += 'Phone Number is required to place an outbound call\n';
@@ -164,8 +164,7 @@ function makeOutboundCall () {
   }
 
   let body = { phoneNumber: numberToCall };
-  conversationsApi.postConversationsCalls(body)
-    .catch(err => console.log(err));
+  webrtcSdk.startSoftphoneSession(body);
 }
 
 function changeVolume () {
@@ -501,7 +500,7 @@ export default {
   requestCameraPermissions,
   requestAllPermissions,
   enumerateDevices,
-  makeOutboundCall,
+  startSoftphoneSession,
   changeVolume,
   startVideoConference,
   setVideoMute,

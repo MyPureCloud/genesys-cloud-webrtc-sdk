@@ -889,3 +889,38 @@ export interface ISdkMediaState {
   /** if permissions have been requested by the sdk */
   cameraPermissionsRequested: boolean;
 }
+
+export interface IStartSoftphoneSessionParams extends IStartSessionParams {
+  /** phone number to dial */
+  phoneNumber?: string;
+  /** caller id phone number for outbound call */
+  callerId?: string;
+  /** caller id name for outbound call */
+  callerIdName?: string;
+  /** the queue ID to call on behalf of */
+  callFromQueueId?: string;
+  /** queue ID to call */
+  callQueueId?: string;
+  /** user ID to call */
+  callUserId?: string;
+  /** priority to assign to call if calling a queue */
+  priority?: number;
+  /** language skill ID to use for routing call if calling a queue */
+  languageId?: string;
+  /** skill IDs to use for routing if calling a queue */
+  routingSkillsIds?: string[];
+  /** list of existing conversations to merge into new ad-hoc conference */
+  conversationIds?: string[];
+  /** Used for starting conference calls with multiple participants. */
+  participants?: ISdkSoftphoneDestination[];
+  /** user to user information managed by SIP session app */
+  uuiData?: string;
+}
+
+export interface ISdkSoftphoneDestination {
+  /** address or phone number */
+  address: string;
+  name?: string;
+  userId?: string;
+  queueId?: string;
+}

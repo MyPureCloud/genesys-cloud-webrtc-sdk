@@ -1,6 +1,6 @@
 # Genesys Cloud WebRTC SDK Softphone
 
-This SDK supports receiving inbound and outbound WebRTC Softphone audio
+This SDK supports creating or receiving inbound/outbound WebRTC Softphone audio
 sessions. The API is used in conjunction with the public API for call controls.
 
 When initiating a conversation that will use a WebRTC session, the call is placed
@@ -10,6 +10,14 @@ It is up to the consuming application to link the outbound session returned from
 the API request and push notification events to the WebRTC session by comparing
 `conversationId` properties. The incoming session will include a `conversationId`
 attribute with the associated `conversationId`.
+
+## WebRTC SDK Softphone Index
+This documentation expands upon the [GenesysCloudWebrtcSdk] documention but is specific to
+softphone calls and conferencing. See the full list of the [APIs], [methods], and [events].
+
+* See [sdk.startSoftphoneSession()] for usage
+* [Example usage](#example-usage)
+* [Softphone Session Methods](#softphone-session-methods)
 
 ## Session Flow
 
@@ -70,7 +78,7 @@ Alice                     Push Notifications    WebRTC SDK
 
 \^ denotes optional API usage outside of the SDK to get complete conversation details
 
-## Usage
+## Example Usage
 
 After creating an instance of the SDK, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `pendingSession` is an example
@@ -81,6 +89,71 @@ API (or the Public API javascript SDK).
 Once the client has a session, it can add event handlers for lower level control
 over sessions. `terminated` is an example of a session event;
 [all session events are detailed here].
+
+Once you have an initialized instance of the WebrtcSdk and events setup, you can create a softphone session in the following manner:
+
+``` ts
+await sdk.startSoftphoneSession({phoneNumber: '15555555555'});
+```
+ ## Softphone Session Methods
+
+ #### `startSoftphoneSession(params: IStartSoftphoneSessionParams)`
+ Creates a new softphone call with the given peer or peers.
+
+ Params:
+ * `params: IStartSoftphoneSessionParams` - Required: Contains the peers to start the session with. See interfaces below for more details regarding `IStartSoftphoneSessionParams`
+
+ Returns: a promise with an object containing the `id` and `selfUri` for the conversation.
+
+### Interfaces
+
+#### `IStartSoftphoneSessionParams`
+Contains the peer information for the outbound call.
+
+```ts
+interface IStartSoftphoneSessionParams {
+  phoneNumber?: string;
+  callerId?: string;
+  callerIdName?: string;
+  callFromQueueId?: string;
+  callQueueId?: string;
+  callUserId?: string;
+  priority?: number;
+  languageId?: string;
+  routingSkillsIds?: string[];
+  conversationIds?: string[];
+  participants?: ISdkSoftphoneDestination[];
+  uuiData?: string;
+}
+```
+
+* `phoneNumber?: string` - Optional: The phone number to dial.
+* `callerId?: string` - Optional: The caller id phone number for outbound call.
+* `callerIdName?: string` - Optional: The caller id name for outbound call.
+* `callFromQueueId?: string` - Optional: The queue id to place the call on behalf of.
+* `callQueueId?: string` - Optional: The queue id to call.
+* `callUserId?: string` - Optional: The user id to call.
+* `priority?: number` - Optional: The priority of the call.
+* `languageId?: string` - Optional: The language skill id to use for routing call if calling a queue.
+* `routingSkillsIds?: string[]` - Optional: The routing skills ids to use for routing call if calling a queue.
+* `conversationIds?: string[]` - Optional: List of existing conversations to merge into new ad-hoc conference.
+* `participants?: ISdkSoftphoneDestination[]` - Optional: List of participants to add to the call if starting a conference call.
+* `uuiData?: string` - Optional: User to user information managed by SIP session app.
+
+
+
+#### `ISdkSoftphoneDestination`
+```ts
+interface ISdkSoftphoneDestination {
+  address: string;
+  name?: string;
+  userId?: string;
+  queueId?: string;
+}
+```
+
+* address: string - Required: The address or phone number to dial.
+
 
 ## API
 
@@ -104,9 +177,10 @@ can be correlated by conversationId together, and should not be expected to
 arrive in a guaranteed order.
 
 - If you wish to control the MediaStream settings (i.e., input device) you can
-provide it as an option to `acceptSession` or as a default in the sdk's constructor. 
+provide it as an option to `acceptSession` or as a default in the sdk's constructor.
 
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
+[sdk.startSoftphoneSession()]: index.md#startsoftphonesession
 [APIs]: index.md#genesyscloudwebrtcsdk
 [methods]: index.md#methods
 [events]: index.md#events

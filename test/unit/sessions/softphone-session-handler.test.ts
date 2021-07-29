@@ -13,7 +13,8 @@ import {
   mockGetConversationApi,
   PARTICIPANT_ID,
   USER_ID,
-  mockPatchConversationApi
+  mockPatchConversationApi,
+  mockPostConversationApi
 } from '../../mock-apis';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -522,5 +523,19 @@ describe('updateOutgoingMedia', () => {
 
     await handler.updateOutgoingMedia(session as any, opts);
     expect(superSpyUpdateOutgoingMedia).toHaveBeenCalledWith(session, { audioDeviceId: 'audioDevice', videoDeviceId: undefined });
+  });
+});
+
+describe('startSession', () => {
+  it('should start a softphone call', async () => {
+    const scope = createNock();
+    const postConversation = mockPostConversationApi({ nockScope: scope });
+    const opts = {
+      sessionType: 'softphone',
+      phoneNumber: '3172222222',
+    }
+    let response = {id: undefined, selfUri: undefined};
+    await expect(handler.startSession(opts as any)).resolves.toEqual(response);
+    expect(postConversation.isDone()).toBeTruthy();
   });
 });

@@ -14,7 +14,8 @@ import {
   ISessionMuteRequest,
   IUpdateOutgoingMedia,
   IStartVideoSessionParams,
-  IExtendedMediaSession
+  IExtendedMediaSession,
+  IStartSoftphoneSessionParams
 } from '../types/interfaces';
 import { ConversationUpdate } from '../types/conversation-update';
 
@@ -119,7 +120,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams): Promise<any> {
+  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartSoftphoneSessionParams): Promise<any> {
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     if (handler.disabled) {
