@@ -289,8 +289,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  then the media error for the failed media type will be ignored and the successful media will be
    *  returned. See `IMediaRequestOptions` for more information.
    *
-   * Warning: if `sdk.media.requestPermissions(type)` has NOT been called before
-   *  calling `startMedia`, `startMedia` will call `sdk.media.requestPermissions(type)`.
+   * Warning: if `sdk.media.requestMediaPermissions(type)` has NOT been called before
+   *  calling `startMedia`, `startMedia` will call `sdk.media.requestMediaPermissions(type)`.
+   *
    *  If calling `startMedia` with both `audio` and `video` _before_ requesting permissions,
    *  `startMedia` will attempt to gain permissions for `audio` first and then `video` (because
    *  media permissions must be requested one at a time). If `audio` fails, it will

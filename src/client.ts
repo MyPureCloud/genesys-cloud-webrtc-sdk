@@ -585,19 +585,23 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     stream.getAudioTracks().forEach(track => {
       const stopTrack = track.stop.bind(track);
 
-      const remove = () => {
-        this._config.defaults.audioStream = null;
+      const remove = (track: MediaStreamTrack) => {
+        stream.removeTrack(track);
+
+        if (!stream.getAudioTracks().length) {
+          this._config.defaults.audioStream = null;
+        }
       };
 
       track.stop = () => {
         this.logger.warn('stopping defaults.audioStream track from track.stop(). removing from sdk.defauls', track);
-        remove();
+        remove(track);
         stopTrack();
       };
 
       track.addEventListener('ended', _evt => {
         this.logger.warn('stopping defaults.audioStream track from track.onended. removing from sdk.defauls', track);
-        remove();
+        remove(track);
       });
     });
   }
