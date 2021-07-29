@@ -11,6 +11,14 @@ the API request and push notification events to the WebRTC session by comparing
 `conversationId` properties. The incoming session will include a `conversationId`
 attribute with the associated `conversationId`.
 
+## WebRTC SDK Softphone Index
+This documentation expands upon the [GenesysCloudWebrtcSdk] documention but is specific to
+softphone calls and conferencing. See the full list of the [APIs], [methods], and [events].
+
+* See [sdk.startSoftphoneSession()] for usage
+* [Example usage](#example-usage)
+* [Softphone Session Methods](#softphone-session-methods)
+
 ## Session Flow
 
 
@@ -95,6 +103,8 @@ await sdk.startSoftphoneSession({phoneNumber: '15555555555'});
  Params:
  * `params: IStartSoftphoneSessionParams` - Required: Contains the peers to start the session with. See interfaces below for more details regarding `IStartSoftphoneSessionParams`
 
+ Returns: a promise with an object containing the `id` and `selfUri` for the conversation.
+
 ### Interfaces
 
 #### `IStartSoftphoneSessionParams`
@@ -117,18 +127,18 @@ interface IStartSoftphoneSessionParams {
 }
 ```
 
-* phoneNumber?: string - Optional: The phone number to dial.
-* callerId?: string - Optional: The caller id phone number for outbound call.
-* callerIdName?: string - Optional: The caller id name for outbound call.
-* callFromQueueId?: string - Optional: The queue id to place the call on behalf of.
-* callQueueId?: string - Optional: The queue id to call.
-* callUserId?: string - Optional: The user id to call.
-* priority?: number - Optional: The priority of the call.
-* languageId?: string - Optional: The language skill id to use for routing call if calling a queue.
-* routingSkillsIds?: string[] - Optional: The routing skills ids to use for routing call if calling a queue.
-* conversationIds?: string[] - Optional: List of existing conversations to merge into new ad-hoc conference.
-* participants?: ISdkSoftphoneDestination[] - Optional: List of participants to add to the call if starting a conference call.
-* uuiData?: string - Optional: User to user information managed by SIP session app.
+* `phoneNumber?: string` - Optional: The phone number to dial.
+* `callerId?: string` - Optional: The caller id phone number for outbound call.
+* `callerIdName?: string` - Optional: The caller id name for outbound call.
+* `callFromQueueId?: string` - Optional: The queue id to place the call on behalf of.
+* `callQueueId?: string` - Optional: The queue id to call.
+* `callUserId?: string` - Optional: The user id to call.
+* `priority?: number` - Optional: The priority of the call.
+* `languageId?: string` - Optional: The language skill id to use for routing call if calling a queue.
+* `routingSkillsIds?: string[]` - Optional: The routing skills ids to use for routing call if calling a queue.
+* `conversationIds?: string[]` - Optional: List of existing conversations to merge into new ad-hoc conference.
+* `participants?: ISdkSoftphoneDestination[]` - Optional: List of participants to add to the call if starting a conference call.
+* `uuiData?: string` - Optional: User to user information managed by SIP session app.
 
 
 
@@ -170,6 +180,7 @@ arrive in a guaranteed order.
 provide it as an option to `acceptSession` or as a default in the sdk's constructor.
 
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
+[sdk.startSoftphoneSession()]: index.md#startsoftphonesession
 [APIs]: index.md#genesyscloudwebrtcsdk
 [methods]: index.md#methods
 [events]: index.md#events

@@ -609,7 +609,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
    */
-  async startSoftphoneSession (softphoneParams: IStartSoftphoneSessionParams): Promise<any> {
+  async startSoftphoneSession (softphoneParams: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}> {
     softphoneParams.sessionType = SessionTypes.softphone;
     return this.sessionManager.startSession(softphoneParams);
   }

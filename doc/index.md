@@ -456,7 +456,7 @@ Returns: a Promise that is fulled one the web socket is connected
   and other necessary async tasks are complete.
 
 
-#### `startSoftphoneSesssion(softphoneSessionParams: IStartSoftphoneSessionParams)`
+#### `startSoftphoneSession()`
 Starts a softphone call session with the given peer or peers.
 
 `initialize()` must be called first.

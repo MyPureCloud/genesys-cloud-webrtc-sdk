@@ -534,7 +534,8 @@ describe('startSession', () => {
       sessionType: 'softphone',
       phoneNumber: '3172222222',
     }
-    await expect(handler.startSession(opts as any)).resolves.toEqual(undefined);
+    let response = {id: undefined, selfUri: undefined};
+    await expect(handler.startSession(opts as any)).resolves.toEqual(response);
     expect(postConversation.isDone()).toBeTruthy();
   });
 });
