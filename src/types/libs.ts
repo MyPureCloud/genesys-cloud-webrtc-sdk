@@ -1,5 +1,5 @@
 declare module 'browserama' {
-  const broswerama: {
+  const browserama: {
     readonly isChrome: boolean;
     readonly isChromeOrChromium: boolean;
     readonly isChromium: boolean;
@@ -11,5 +11,5 @@ declare module 'browserama' {
     readonly isBlink: boolean;
   };
 
-  export default broswerama;
+  export default browserama;
 }

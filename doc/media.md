@@ -830,6 +830,9 @@ different ways.
     approval of any future media requests. Meaning the user will again have
     the option to approve or deny any new media requests even if they have denied some
     in the past.
+  * The browser [`devicechange`](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/devicechange_event)
+    event will not fire when the devices change. This can cause issues when enumerating and attempting to spin up
+    media with specific devices in the SDK.
 
 A few caveats about **Rtd** behavior:
 * **Rtd** is _not_ presented to users if they are using Firefox in Private Mode. This is the main
