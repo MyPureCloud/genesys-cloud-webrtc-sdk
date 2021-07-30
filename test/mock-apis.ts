@@ -61,6 +61,7 @@ interface MockApiReturns {
   patchConversation: nock.Scope;
   sdk: GenesysCloudWebrtcSdk;
   mockCustomerData: ICustomerData;
+  postConversation: nock.Scope;
 }
 
 // polyfill window.getRandomValues() for node (because we are using jest)
@@ -140,8 +141,17 @@ export function mockPatchConversationApi (params: MockSingleApiOptions): nock.Sc
   if (params.shouldFail) {
     return intercept.reply(401);
   }
-
   return intercept.reply(202, {});
+}
+
+export function mockPostConversationApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.post(`/api/v2/conversations/calls`);
+
+  if (params.shouldFail) {
+    return intercept.reply(401);
+  }
+
+  return intercept.reply(202, params.response);
 }
 
 export function mockGetOrgApi (params: MockSingleApiOptions): nock.Scope {
@@ -250,6 +260,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     patchConversation = mockPatchConversationApi({ conversationId, nockScope: conversationsApi, participantId, shouldFail: failConversationPatch });
   }
 
+  let postConversation = mockPostConversationApi({ nockScope: conversationsApi });
   Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
 
   Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true });
@@ -290,7 +301,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
 
   setupWss({ guestSdk, failStreaming });
 
-  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, mockCustomerData, notificationSubscription };
+  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, mockCustomerData, notificationSubscription, postConversation };
 }
 
 function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {

@@ -720,4 +720,14 @@ describe('Client', () => {
       expect(spy).toHaveBeenCalled();
     });
   });
+
+  describe('startSoftphoneSession()', () => {
+    it('should call session manager to start softphone session', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.startSession.mockResolvedValue({});
+      await sdk.startSoftphoneSession({phoneNumber: '123'} as any);
+      expect(sessionManagerMock.startSession).toBeCalledWith({ phoneNumber: '123', sessionType: 'softphone' });
+    });
+  });
 });

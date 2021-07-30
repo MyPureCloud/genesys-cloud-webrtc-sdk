@@ -17,7 +17,8 @@ import {
   SdkEvents,
   IMediaSettings,
   isSecurityCode,
-  isCustomerData
+  isCustomerData,
+  IStartSoftphoneSessionParams
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -604,6 +605,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         remove(track);
       });
     });
+  }
+
+  /**
+   * Start a softphone session with the given peer or peers.
+   *  `initialize()` must be called first.
+   *
+   * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
+   */
+  async startSoftphoneSession (softphoneParams: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}> {
+    softphoneParams.sessionType = SessionTypes.softphone;
+    return this.sessionManager.startSession(softphoneParams);
   }
 }
 

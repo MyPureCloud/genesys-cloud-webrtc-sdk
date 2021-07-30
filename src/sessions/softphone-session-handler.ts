@@ -2,7 +2,7 @@ import { pick } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
+import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia, IStartSoftphoneSessionParams } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { attachAudioMedia, logDeviceChange } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
@@ -151,5 +151,14 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<any> {
     const newOptions: IUpdateOutgoingMedia = { ...options, videoDeviceId: undefined };
     return super.updateOutgoingMedia(session, newOptions);
+  }
+
+  async startSession (params: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}> {
+    this.log('info', 'Creating softphone call from SDK', { conversationIds: params.conversationIds });
+    let response = await requestApi.call(this.sdk, `/conversations/calls`, {
+      method: 'post',
+      data: JSON.stringify(params)
+    });
+    return { id: response.body.id, selfUri: response.body.selfUri };
   }
 }
