@@ -110,7 +110,7 @@
     "watch": "^1.0.2",
     "webpack": "^4.35.3",
     "webpack-auto-inject-version": "^1.2.2",
-    "webpack-cli": "^3.3.5",
+    "webpack-cli": "^4.7.2",
     "ws": "^7.4.0"
   },
   "false": {}
