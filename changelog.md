@@ -3,34 +3,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.0...HEAD)
+
+# [v6.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.1...v6.1.0)
+
+### Maintenance
+* Merged dependabot PRs
 ### Added
 * [PCM-1669](https://inindca.atlassian.net/browse/PCM-1669) - Added functionality to start softphone calls from SDK.
-
-### Fixed
-* [PCM-1693](https://inindca.atlassian.net/browse/PCM-1693) - Fixed event listeners for media tracks by adding in a check for the amount of `audioTracks`; if no `audioTracks` are present, the default media stream is cleaned up. Also passed in value that represents the tracks to be removed which were not present previously.
-
+* [PCM-1624](https://inindca.atlassian.net/browse/PCM-1624) - Added logging for failed HTTP requests to console, consuming formatRequestError from streaming-client to remove potential PII from errors.
+* Exposed the `sdk.media.isPermissionsError(error)` function for consumers to be able to utilize. See [the docs for isPermissionsError()](doc/media.md#ispermissionserror).
+* Added a `'both'` option to `sdk.media.requestMediaPermissions()`. See [the docs for requestMediaPermissions()](doc/media.md#requestmediapermissions).
+* Added `preserveMediaIfOneTypeFails` & `retryOnFailure` to `IMediaRequestOptions`. See [the docs for IMediaRequestOptions](doc/media.md#imediarequestoptions).
 ### Fixed
 * [PCM-1679](https://inindca.atlassian.net/browse/PCM-1679) and [Issue #576](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/576)– Fixed package.json `browser` and `module` fields, as well as added a `cjs` field. Added `core-util-is` (a dep of `stanza`) to compiled webpack build used under `main`and `browser` fields.
-
-### Added
-* [PCM-1624](https://inindca.atlassian.net/browse/PCM-1624) - Added logging for failed HTTP requests to console, consuming formatRequestError from streaming-client to remove potential PII from errors.
-
-### Deprecated
-* Deprecting `retryOnFailure` function param for `sdk.media.startMedia(options, retryOnFailure)`. Moved to be an
-  option in `IMediaRequestOptions`. See the **Added** section for this release for more info.
-
-### Fixed
+* [PCM-1693](https://inindca.atlassian.net/browse/PCM-1693) - Fixed event listeners for media tracks by adding in a check for the amount of `audioTracks`; if no `audioTracks` are present, the default media stream is cleaned up. Also passed in value that represents the tracks to be removed which were not present previously.
 * [PCM-1647](https://inindca.atlassian.net/browse/PCM-1647) – Fixed issue where `requestedMicPermissions` would be
   `true` before we knew if `hasMicPermissions` was also `true` (same for `camera` permissions). This bug was causing
   it to be impossible for consumers to know for certain by looking at the `SdkMediaState` as to whether permissions
   were actually granted (due to the bad timing of setting the state).
-
-### Added
-* Exposed the `sdk.media.isPermissionsError(error)` function for consumers to be able to utilize. See [the docs for isPermissionsError()](doc/media.md#ispermissionserror).
-* Added a `'both'` option to `sdk.media.requestMediaPermissions()`. See [the docs for requestMediaPermissions()](doc/media.md#requestmediapermissions).
-* Added `preserveMediaIfOneTypeFails` & `retryOnFailure` to `IMediaRequestOptions`. See [the docs for IMediaRequestOptions](doc/media.md#imediarequestoptions).
-
+### Deprecated
+* Deprecting `retryOnFailure` function param for `sdk.media.startMedia(options, retryOnFailure)`. Moved to be an
+  option in `IMediaRequestOptions`. See the **Added** section for this release for more info.
 # [v6.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.0...v6.0.1)
 ### Fixed
 * [PCM-1628](https://inindca.atlassian.net/browse/PCM-1628) – Fixed issue where debounce time was causing `users.{id}.conversations` subscription to fail.
