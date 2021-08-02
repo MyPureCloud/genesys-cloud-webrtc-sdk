@@ -4,7 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.1...HEAD)
+### Added
 * [PCM-1669](https://inindca.atlassian.net/browse/PCM-1669) - Added functionality to start softphone calls from SDK.
+
+### Fixed
+* [PCM-1693](https://inindca.atlassian.net/browse/PCM-1693) - Fixed event listeners for media tracks by adding in a check for the amount of `audioTracks`; if no `audioTracks` are present, the default media stream is cleaned up. Also passed in value that represents the tracks to be removed which were not present previously.
 
 ### Fixed
 * [PCM-1679](https://inindca.atlassian.net/browse/PCM-1679) and [Issue #576](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/576)– Fixed package.json `browser` and `module` fields, as well as added a `cjs` field. Added `core-util-is` (a dep of `stanza`) to compiled webpack build used under `main`and `browser` fields.

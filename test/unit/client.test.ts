@@ -536,9 +536,15 @@ describe('Client', () => {
     });
 
     it('should do nothing if no stream is passed in', () => {
-      trackDefaultAudioStreamFn(null);
-      expect('it did not throw an error for `getAudioTracks()` of `undefined`').toBeTruthy();
+      expect(trackDefaultAudioStreamFn(null)).toBeFalsy();
     });
+
+    it('should not clear the audioStream if audioTracks are present', () => {
+      mockSteam.getAudioTracks = jest.fn().mockReturnValue([{label: 'notTest', stop: jest.fn(), addEventListener: jest.fn()}]);
+      trackDefaultAudioStreamFn(mockSteam);
+      mockTrack.stop();
+      expect(sdk._config.defaults.audioStream).not.toEqual(null);
+    })
 
     it('should remove sdk.defaults.audioStream when track is stopped via `track.stop()`', () => {
       trackDefaultAudioStreamFn(sdk._config.defaults.audioStream);
