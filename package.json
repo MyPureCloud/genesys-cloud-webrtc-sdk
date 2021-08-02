@@ -98,7 +98,7 @@
     "nock": "^13.0.2",
     "npm-watch": "^0.10.0",
     "pre-push": "^0.1.1",
-    "purecloud-platform-client-v2": "^116.0.0",
+    "purecloud-platform-client-v2": "^117.0.0",
     "rimraf": "^3.0.0",
     "stupid-server": "^0.2.5",
     "ts-jest": "^26.4.4",
