@@ -112,6 +112,6 @@ export class PuppeteerManager {
     } catch (e) {
       this.logger.warn('Failed to get webrtc internals content');
     }
-    process.exit(stats.failures > 0 ? 1 : 0);
+    process.exit(!stats || stats.failures > 0 ? 1 : 0);
   }
 }
