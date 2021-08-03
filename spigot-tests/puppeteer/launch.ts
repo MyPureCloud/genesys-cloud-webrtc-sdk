@@ -94,7 +94,7 @@ export class PuppeteerManager {
     } else {
       this.logger.log('Tests passed', stats);
     }
-    if (stats.xunit) {
+    if (stats && stats.xunit) {
       const outputPath = this.config.testOutputPath;
       this.logger.warn('Writing xunit results to', outputPath);
       const pathEndIndex = outputPath.lastIndexOf('/');

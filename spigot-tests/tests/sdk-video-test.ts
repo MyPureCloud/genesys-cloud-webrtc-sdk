@@ -1,6 +1,6 @@
 import * as testUtils from './utils/test-utils';
 import { v4 as uuid } from 'uuid';
-import { IExtendedMediaSession } from '../../dist/src/types/interfaces';
+import { IExtendedMediaSession } from '../../';
 
 const logger = testUtils.getLogger();
 
