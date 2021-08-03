@@ -1,6 +1,6 @@
 import * as testUtils from './utils/test-utils';
-import { IExtendedMediaSession } from '../../dist/src/types/interfaces';
-import GenesysCloudWebrtcSdk from '../../dist/src/client';
+import { IExtendedMediaSession } from '../../';
+import { GenesysCloudWebrtcSdk } from '../../';
 import Client from 'genesys-cloud-streaming-client';
 
 const logger = testUtils.getLogger();

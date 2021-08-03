@@ -1,7 +1,7 @@
 /* global describe, it, beforeEach, after */
 
-import GenesysCloudWebrtcSdk from '../../dist/src/client';
-import { IExtendedMediaSession } from '../../dist/src/types/interfaces';
+import { GenesysCloudWebrtcSdk } from '../../';
+import { IExtendedMediaSession } from '../../';
 import * as testUtils from './utils/test-utils';
 
 const logger = testUtils.getLogger();
