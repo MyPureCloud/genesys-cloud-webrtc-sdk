@@ -28,10 +28,10 @@ window.startTests = () => {
   let xunitReport = '<?xml version="1.0" encoding="UTF-8"?>';
 
   return window.prepareTests()
-    .then(() => {
+    .then((user) => {
       // When using xunit reporter in the browser, mocha just dumps each line to console.log
       // So override console.log and redirect the xunit result lines.
-      console.info('running in headless mode');
+      console.info('running in headless mode', stringify(user));
       const consoleLog = console.log.bind(console);
       console.log = function (arg1) {
         if (arg1 && typeof arg1 === 'string' && arg1.startsWith('<')) {
@@ -92,7 +92,10 @@ window.startTests = () => {
         };
         check();
       });
-    });
+    }).catch(e => {
+      console.error('error running tests', stringify(e));
+      throw e;
+    })
 };
 
 if (window.location.search.indexOf('headless') > 0) {

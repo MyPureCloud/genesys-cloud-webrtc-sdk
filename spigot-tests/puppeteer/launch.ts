@@ -84,7 +84,11 @@ export class PuppeteerManager {
   async verify (page: Page, webrtcInternals: Page) {
     let stats;
     try {
-      stats = await page.evaluate(() => (window as any).testStats);
+      stats = await page.evaluate(() => {
+        const testStats = (window as any).testStats;
+        console.log('testStats from window', JSON.stringify({ href: window.location.href, testStats }));
+        return testStats;
+      });
     } catch (e) {
       this.logger.error('Error in running tests', e);
       stats = { failures: 1 };
