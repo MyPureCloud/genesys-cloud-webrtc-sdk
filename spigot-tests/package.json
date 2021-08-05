@@ -37,7 +37,8 @@
     "pretest": "cd ../ && npm run build && cd -",
     "test": "npm run test:fast",
     "test:fast": "ts-node index.ts",
-    "test:ci": "npm run pretest && CI_MODE=true ts-node index.ts"
+    "test:ci": "npm run pretest && CI_MODE=true ts-node index.ts",
+    "test:headless": "npm run pretest && SINGLE_RUN=true ts-node index.ts"
   },
   "keywords": [],
   "author": "",

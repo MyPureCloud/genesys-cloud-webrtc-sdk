@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import * as loginHandler from './login';
 import { TestConfig } from '../types/test-config';
-import { Logger } from 'genesys-cloud-client-logger/dist/src/logger';
+import Logger from 'genesys-cloud-client-logger';
 import puppeteer, { Page } from 'puppeteer';
 import mkdirp from 'mkdirp';
 

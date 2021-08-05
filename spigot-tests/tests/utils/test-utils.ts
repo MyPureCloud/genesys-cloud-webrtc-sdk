@@ -3,7 +3,7 @@ import { TestConfig } from '../../types/test-config';
 import { Subject, Observable, throwError } from 'rxjs';
 // import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { v4 as uuid } from 'uuid';
-import { Logger } from 'genesys-cloud-client-logger';
+import Logger from 'genesys-cloud-client-logger';
 import GenesysCloudStreamingClient from 'genesys-cloud-streaming-client';
 import { assert } from 'chai';
 import { filter, first, timeoutWith } from 'rxjs/operators';

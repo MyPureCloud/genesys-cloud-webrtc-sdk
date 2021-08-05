@@ -2,6 +2,21 @@ import stringify from 'json-stringify-safe';
 
 const LOG_UPLOAD_WAIT = 1200;
 
+if (window.location.search.indexOf('headless') > 0) {
+  mocha.setup({
+      ui: 'bdd',
+      reporter: 'xunit',
+      timeout: 10000
+  });
+  window._headless = true;
+} else {
+  mocha.setup({
+      timeout: 10000,
+      ui: 'bdd'
+  });
+  window._headless = false;
+}
+
 if (window._headless) {
   const mapArgs = function (fn) {
     return function () {
@@ -97,18 +112,3 @@ window.startTests = () => {
       throw e;
     })
 };
-
-if (window.location.search.indexOf('headless') > 0) {
-  mocha.setup({
-      ui: 'bdd',
-      reporter: 'xunit',
-      timeout: 10000
-  });
-  window._headless = true;
-} else {
-  mocha.setup({
-      timeout: 10000,
-      ui: 'bdd'
-  });
-  window._headless = false;
-}
