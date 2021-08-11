@@ -380,13 +380,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         defaultOutputDeviceId: options.outputDeviceId
       });
 
-      if (updateVideo || updateAudio) {
+      if ((updateVideo || updateAudio) && this.sessionManager) {
         promises.push(
           this.sessionManager.updateOutgoingMediaForAllSessions()
         );
       }
 
-      if (updateOutput) {
+      if (updateOutput && this.sessionManager) {
         promises.push(
           this.sessionManager.updateOutputDeviceForAllSessions(this._config.defaults.outputDeviceId)
         );
@@ -426,7 +426,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     });
 
     if (settings.updateActiveSessions) {
-      return this.sessionManager.updateOutgoingMediaForAllSessions();
+      return this.sessionManager?.updateOutgoingMediaForAllSessions();
     }
   }
 
@@ -443,7 +443,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Invalid volume level. Must be between 0 and 100 inclusive.', { providedVolume: volume });
     }
     this._config.defaults.audioVolume = volume;
-    this.sessionManager.updateAudioVolume(volume);
+    this.sessionManager?.updateAudioVolume(volume);
   }
 
   /**
