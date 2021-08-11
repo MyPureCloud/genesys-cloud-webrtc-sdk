@@ -354,6 +354,22 @@ describe('Client', () => {
       expect(sdk._config.defaults.outputDeviceId).toBe(null);
     });
 
+    it('should set defaultDevice Ids if values are passed in and sessionManager is not defined', async () => {
+      sdk = constructSdk();
+      const options: IMediaDeviceIds = {
+        videoDeviceId: 'new-video-device',
+        audioDeviceId: 'new-audio-device',
+        outputDeviceId: 'new-output-device',
+      };
+
+      sdk.sessionManager = null;
+      await sdk.updateDefaultDevices({...options, updateActiveSessions: true});
+
+      expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
+      expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
+    });
+
     it('should set defaultDevice Ids if values are passed in', async () => {
       sdk = constructSdk();
       const options: IMediaDeviceIds = {
@@ -367,7 +383,6 @@ describe('Client', () => {
       expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
       expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
       expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
-
     });
 
     it('should call through to sessionManager to update active sessions', async () => {
@@ -671,6 +686,21 @@ describe('Client', () => {
       expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).not.toHaveBeenCalled();
     });
 
+    it('should only update specified defaults if no sessionManager', async () => {
+      sdk.sessionManager = null;
+
+      await sdk.updateDefaultMediaSettings({
+        micAutoGainControl: false,
+        updateActiveSessions: true
+      });
+
+      expect(sdk._config.defaults).toMatchObject({
+        micAutoGainControl: false,
+        micEchoCancellation: false,
+        micNoiseSuppression: true
+      });
+    });
+
     it('should update outgoing media', async () => {
       await sdk.updateDefaultMediaSettings({
         micAutoGainControl: false,
@@ -718,6 +748,21 @@ describe('Client', () => {
 
       sdk.updateAudioVolume(50);
       expect(spy).toHaveBeenCalled();
+    });
+
+    it('should validate allowed volume levels even if theres no session manager', async () => {
+      expect(() => sdk.updateAudioVolume(-1)).toThrowError('Invalid volume level');
+      expect(() => sdk.updateAudioVolume(101)).toThrowError('Invalid volume level');
+      sdk.sessionManager = null;
+
+      sdk.updateAudioVolume(0);
+      expect(sdk._config.defaults.audioVolume).toBe(0);
+
+      sdk.updateAudioVolume(100);
+      expect(sdk._config.defaults.audioVolume).toBe(100);
+
+      sdk.updateAudioVolume(50);
+      expect(sdk._config.defaults.audioVolume).toBe(50);
     });
   });
 
