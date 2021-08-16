@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.0...HEAD)
 
+# Fixed
+* [PCM-1696](https://inindca.atlassian.net/browse/PCM-1696) & [Issue #618](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/618) - Ensure all modules are exported from barrel file.
+* Correctly clean up mediaDevices `devicechange` event listeners inside SdkMedia class.
+
 # [v6.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.1...v6.1.0)
 
 ### Maintenance

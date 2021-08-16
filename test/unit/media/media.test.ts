@@ -817,12 +817,14 @@ describe('SdkMedia', () => {
     it('should clean up the sdk media', () => {
       jest.spyOn(sdkMedia, 'removeAllListeners');
       const mockTrack = new MockTrack('audio');
-      sdkMedia['allMediaTracksCreated'].set(mockTrack.id, mockTrack as any);
+      const mockEventListenerRef = () => { console.log('mock function'); }
 
+      sdkMedia['allMediaTracksCreated'].set(mockTrack.id, mockTrack as any);
+      sdkMedia['onDeviceChangeListenerRef'] = mockEventListenerRef;
       sdkMedia.destroy();
 
       expect(sdkMedia.removeAllListeners).toHaveBeenCalled();
-      expect(navigatorMediaDevicesMock.removeEventListener).toHaveBeenCalledWith('devicechange', expect.any(Function));
+      expect(navigatorMediaDevicesMock.removeEventListener).toHaveBeenCalledWith('devicechange', mockEventListenerRef);
       expect(mockTrack.stop).toHaveBeenCalled();
     });
   });
