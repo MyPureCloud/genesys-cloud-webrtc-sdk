@@ -28,6 +28,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private state: ISdkMediaState;
   private audioTracksBeingMonitored: { [trackId: string]: any } = {};
   private allMediaTracksCreated = new Map<string, MediaStreamTrack>();
+  private onDeviceChangeListenerRef: any;
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super();
@@ -645,7 +646,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   destroy () {
     this.removeAllListeners();
-    window.navigator.mediaDevices.removeEventListener('devicechange', this.handleDeviceChange.bind(this));
+    window.navigator.mediaDevices.removeEventListener('devicechange', this.onDeviceChangeListenerRef);
     this.allMediaTracksCreated.forEach(t => t.stop());
   }
 
@@ -675,7 +676,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private initialize () {
     /* tslint:disable-next-line:no-floating-promises */
     this.enumerateDevices();
-    window.navigator.mediaDevices.addEventListener('devicechange', this.handleDeviceChange.bind(this));
+    this.onDeviceChangeListenerRef = this.handleDeviceChange.bind(this);
+    window.navigator.mediaDevices.addEventListener('devicechange', this.onDeviceChangeListenerRef);
   }
 
   private setDevices (devices: MediaDeviceInfo[]) {
