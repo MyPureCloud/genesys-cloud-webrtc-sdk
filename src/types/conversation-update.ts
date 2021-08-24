@@ -46,21 +46,21 @@ export interface IConversationParticipantFromEvent {
 }
 
 export interface IParticipantVideo {
-  context: string,
-  audioMuted: boolean,
-  videoMuted: boolean,
-  id: string,
-  state: CommunicationStates,
-  peerCount: number,
-  sharingScreen: boolean
+  context: string;
+  audioMuted: boolean;
+  videoMuted: boolean;
+  id: string;
+  state: CommunicationStates;
+  peerCount: number;
+  sharingScreen: boolean;
 }
 
 export interface IParticipantCall {
-  id: string,
-  state: CommunicationStates,
-  muted: boolean,
-  confined: boolean,
-  held: boolean,
-  direction: 'inbound' | 'outbound',
-  provider: string
+  id: string;
+  state: CommunicationStates;
+  muted: boolean;
+  confined: boolean;
+  held: boolean;
+  direction: 'inbound' | 'outbound';
+  provider: string;
 }
