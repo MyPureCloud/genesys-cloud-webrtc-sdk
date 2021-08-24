@@ -30,6 +30,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
 
   options.environment = environmentData.uri;
   options.logLevel = 'info';
+  options.optOutOfTelemetry = true;
 
   options.defaults = { monitorMicVolume: true };
 
@@ -236,7 +237,8 @@ function pendingSession (options) {
     sessionType: ${JSON.stringify(options.sessionType)}
     address: ${JSON.stringify(options.address)}
     conversationId: ${JSON.stringify(options.conversationId)}
-    autoAnswer: ${JSON.stringify(options.autoAnswer)}`;
+    autoAnswer: ${JSON.stringify(options.autoAnswer)}
+    `;
 
   currentSessionId = options.id;
 
@@ -255,7 +257,7 @@ function handledPendingSession (id) {
   let output = `${_getLogHeader('handledPendingSession')}
     id: ${id}`;
 
-  currentSessionId = null;
+  // currentSessionId = null;
   utils.writeToLog(output);
 }
 
@@ -267,6 +269,7 @@ function getDeviceId (type) {
 
 async function sessionStarted (session) {
   let output = `${_getLogHeader('sessionStarted')}
+    conversationId: ${session.conversationId}
     sessionId: ${session.sid}`;
 
   currentSessionId = session.sid;
@@ -375,6 +378,8 @@ function updateDefaultDevices (options) {
 function sessionEnded (session, reason) {
   let output = `${_getLogHeader('sessionEnded')}
     sessionId: ${session.sid}
+    conversationId: ${session.conversationId}
+    isPersistentConnectionActive: ${session.isPersistentConnectionActive}
     reason: ${JSON.stringify(reason, null, 2)}`;
 
   currentSessionId = null;
@@ -401,6 +406,7 @@ function error (error, details) {
 function terminated (session, reason) {
   let output = `${_getLogHeader('terminated')}
     reason: ${reason}
+    conversationId: ${session.conversationId}
     sessionId: ${session.sid}`;
 
   utils.writeToLog(output);
@@ -409,6 +415,7 @@ function terminated (session, reason) {
 function changeConnectionState (session, connectionState) {
   let output = `${_getLogHeader('changeConnectionState')}
     connectionState: ${JSON.stringify(connectionState)}
+    conversationId: ${session.conversationId}
     sessionId: ${session.sid}`;
 
   utils.writeToLog(output);
@@ -416,6 +423,7 @@ function changeConnectionState (session, connectionState) {
 
 function changeInterrupted (session, interrupted) {
   let output = `${_getLogHeader('changeInterrupted')}
+    conversationId: ${session.conversationId}
     sessionId: ${session.sid}
     interrupted: ${interrupted}`;
 
@@ -424,6 +432,7 @@ function changeInterrupted (session, interrupted) {
 
 function changeActive (session, active) {
   let output = `${_getLogHeader('changeActive')}
+    conversationId: ${session.conversationId}
     sessionId: ${session.sid}
     active: ${active}`;
 

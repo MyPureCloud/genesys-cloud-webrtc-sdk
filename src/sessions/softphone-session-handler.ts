@@ -3,15 +3,57 @@ import { JingleReason } from 'stanza/protocol';
 
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia, IStartSoftphoneSessionParams } from '../types/interfaces';
-import { SessionTypes, SdkErrorTypes } from '../types/enums';
+import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
+import { ConversationUpdate, IConversationParticipantFromEvent, IParticipantCall } from '../types/conversation-update';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
+  previousConversationUpdates: { [conversationId: string]: ConversationUpdate } = {};
 
   shouldHandleSessionByJid (jid: string): boolean {
     return isSoftphoneJid(jid);
+  }
+
+  handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {
+    /* this just logs the event */
+    super.handleConversationUpdate(session, update);
+
+    const previousConversationUpdate = this.previousConversationUpdates[update.id];
+    this.previousConversationUpdates[update.id] = update;
+
+    const participant = this.getUserParticipant(update);
+    if (!participant) {
+      return this.log('debug', 'user participant not found on the conversation update', update, true);
+    }
+
+    const newCallState = this.getParticipantsCall(participant);
+    if (!newCallState) {
+      return this.log('debug', "user participant's call state not found on the conversation update", update, true);
+    }
+
+    const previousParticipantEvent = this.getUserParticipant(previousConversationUpdate);
+    const previousCallState = this.getParticipantsCall(previousParticipantEvent);
+
+    this.log('debug', 'comparing call states', { conversationId: update.id, previousCallState, newCallState });
+    /* if we went from a held state to an unheld state, we need to ensure our stream is updated */
+    if (
+      previousCallState &&
+      previousCallState.held &&
+      !newCallState.held &&
+      session.state === 'active' &&
+      !(session._outputAudioElement.srcObject as MediaStream).active
+    ) {
+      this.log('info', '"held" status changed and current inbound stream is not active. re-adding tracks');
+      const stream = session._outputAudioElement.srcObject as MediaStream;
+      /* prune dead tracks */
+      stream.getAudioTracks().filter(t => t.readyState === 'ended').forEach(t => stream.removeTrack(t));
+
+      /* ensure the receiver tracks are added */
+      const tracks = this.getReceiversByTrackType(session, 'audio').map(receiver => receiver.track);
+      tracks.forEach(t => stream.addTrack(t));
+    }
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
@@ -153,12 +195,74 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return super.updateOutgoingMedia(session, newOptions);
   }
 
-  async startSession (params: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}> {
+  async startSession (params: IStartSoftphoneSessionParams): Promise<{ id: string, selfUri: string }> {
     this.log('info', 'Creating softphone call from SDK', { conversationIds: params.conversationIds });
     let response = await requestApi.call(this.sdk, `/conversations/calls`, {
       method: 'post',
       data: JSON.stringify(params)
     });
     return { id: response.body.id, selfUri: response.body.selfUri };
+  }
+
+
+  private getUserParticipant (update: ConversationUpdate, state?: CommunicationStates): IConversationParticipantFromEvent | undefined {
+    if (!update) {
+      return;
+    }
+
+    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id);
+    let participant: IConversationParticipantFromEvent;
+
+    if (!participantsForUser.length) {
+      this.log('warn', 'user not found on conversations as a participant', { conversationId: update.id });
+      return;
+    }
+
+    /* one participant */
+    if (participantsForUser.length === 1) {
+      participant = participantsForUser[0];
+    }
+
+    /* find user participant with desired call state */
+    if (!participant && state) {
+      participant = participantsForUser.filter(p => p.calls.find(c => c.state === state))[0];
+    }
+
+    /* find user participant with a call */
+    if (!participant) {
+      participant = participantsForUser.find(p => p.calls.length)
+    }
+
+    /* find the most recent user participant */
+    if (!participant) {
+      participant = participantsForUser[0];
+    }
+
+    return participant;
+  }
+
+  private getParticipantsCall (participant: IConversationParticipantFromEvent): IParticipantCall | undefined {
+    const calls = participant?.calls;
+    const callLen = calls?.length;
+
+    if (!callLen) {
+      this.log('debug', 'no call found on participant', { userId: participant?.userId, participantId: participant?.id });
+      return;
+    }
+
+    /* if we only have one, use it */
+    if (callLen === 1) {
+      return calls[0];
+    }
+
+    const nonEndedCalls = calls.filter(c => c.state !== 'disconnected' && c.state !== 'terminated');
+
+    /* if we only have one non-ended call, use it */
+    if (nonEndedCalls.length === 1) {
+      return nonEndedCalls[0];
+    }
+
+    /* else, grab the last one (which should be the most recent) */
+    return calls[callLen - 1];
   }
 }

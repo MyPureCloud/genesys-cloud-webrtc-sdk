@@ -444,7 +444,7 @@ describe('startSession', () => {
     const logSpy = jest.spyOn(mockSdk.logger, 'error');
     await expect(handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
-    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything());
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything(), undefined);
   });
 });
 
@@ -878,7 +878,7 @@ describe('setVideoMute', () => {
     await handler.setVideoMute(session, { sessionId: session.id, mute: true });
 
     expect(track.stop).not.toHaveBeenCalled();
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find outbound camera'), expect.any(Object));
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find outbound camera'), expect.any(Object), undefined);
   });
 
   it('mute: should do nothing if there are no video tracks to mute', async () => {
@@ -890,7 +890,7 @@ describe('setVideoMute', () => {
 
     await handler.setVideoMute(session, { sessionId: session.id, mute: true });
 
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find outbound camera'), expect.any(Object));
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find outbound camera'), expect.any(Object), undefined);
   });
 
   it('mute: should mute video track when there is no screen track and remove track from outboundStream', async () => {
@@ -1174,7 +1174,7 @@ describe('startScreenShare', () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('screen selection cancelled'), {
       conversationId: session.conversationId,
       sessionId: session.id
-    });
+    }, undefined);
   });
 });
 
