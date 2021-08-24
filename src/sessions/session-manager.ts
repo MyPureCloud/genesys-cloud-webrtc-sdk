@@ -55,9 +55,11 @@ export class SessionManager {
     // only handle a conversation update if we can associate it with a session
     const sessions = Object.values(this.jingle.sessions);
     (sessions as any).forEach((session: IExtendedMediaSession) => {
-      if (session.conversationId === update.id) {
-        const handler = this.getSessionHandler({ sessionType: session.sessionType });
-
+      const handler = this.getSessionHandler({ sessionType: session.sessionType });
+      /* if convoId matches OR we have a persistent connection for softphone conversationso1;l;l, ., */
+      if (session.conversationId === update.id ||
+        (handler.sessionType === SessionTypes.softphone && (handler as SoftphoneSessionHandler).hasActivePersistentConnect())
+      ) {
         if (handler.disabled) {
           return;
         }
@@ -224,9 +226,11 @@ export class SessionManager {
 
     const pendingSession: IPendingSession = {
       id: sessionInfo.sessionId,
+      sessionId: sessionInfo.sessionId,
       autoAnswer: sessionInfo.autoAnswer,
       address: sessionInfo.fromJid,
       conversationId: sessionInfo.conversationId,
+      persistentConversationId: sessionInfo.persistentConversationId,
       sessionType: handler.sessionType,
       originalRoomJid: sessionInfo.originalRoomJid,
       fromUserId: sessionInfo.fromUserId
@@ -273,11 +277,11 @@ export class SessionManager {
   }
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
-    if (!params || !params.sessionId) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A sessionId is required for acceptSession');
+    if (!params || !params.conversationId) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A conversationId is required for acceptSession');
     }
 
-    const session = this.getSession({ sessionId: params.sessionId });
+    const session = this.getSession({ conversationId: params.conversationId });
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }

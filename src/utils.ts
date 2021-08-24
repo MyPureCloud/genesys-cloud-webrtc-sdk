@@ -118,6 +118,7 @@ export const logPendingSession = function (
     sessionId: (pendingSession as IPendingSession).id || (pendingSession as ISessionInfo).sessionId,
     autoAnswer: pendingSession.autoAnswer,
     conversationId: pendingSession.conversationId,
+    persistentConversationId: pendingSession.persistentConversationId,
     fromUserId: pendingSession.fromUserId
   };
 

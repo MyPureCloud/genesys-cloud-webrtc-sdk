@@ -18,7 +18,9 @@ import {
   IMediaSettings,
   isSecurityCode,
   isCustomerData,
-  IStartSoftphoneSessionParams
+  IStartSoftphoneSessionParams,
+  IOrgDetails,
+  IStation
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -81,8 +83,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _connected: boolean;
   _streamingConnection: StreamingClient;
   _http: HttpClient;
-  _orgDetails: any;
+  _orgDetails: IOrgDetails;
   _personDetails: IPersonDetails;
+  _stationDetails?: IStation;
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
@@ -136,10 +139,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       }
     };
 
-    this._orgDetails = { id: options.organizationId };
-    this._config.logger = this.logger;
+    this._orgDetails = { id: options.organizationId } as IOrgDetails;
 
-    setupLogging.call(this, options.logger);
+    setupLogging.call(this, options.logger || console);
+
+    this._config.logger = this.logger;
     this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
     this.media = new SdkMedia(this);
@@ -158,6 +162,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         details: error.details
         /* logging errors is dangerous because they could contain PII */
       }, true);
+    });
+    this.on('ready', () => {
+      /* if we are allowing softphone calls, we need station information */
+      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone)) {
+        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
+        this.fetchUsersStation();
+      }
     });
 
     this._connected = false;
@@ -209,17 +220,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       httpRequests.push(guestPromise);
     } else {
-      const getOrg = requestApiWithRetry.call(this, '/organizations/me').promise
-        .then(({ body }) => {
-          this._orgDetails = body;
-          this.logger.debug('Fetched organization details', body, true); // don't log PII
-        });
-
-      const getPerson = requestApiWithRetry.call(this, '/users/me').promise
-        .then(({ body }) => {
-          this._personDetails = body;
-          this.logger.debug('Fetched person details', body, true); // don't log PII
-        });
+      const getOrg = this.fetchOrganization();
+      const getPerson = this.fetchAuthenticatedUser();
 
       httpRequests.push(getOrg);
       httpRequests.push(getPerson);
@@ -446,6 +448,51 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this.sessionManager?.updateAudioVolume(volume);
   }
 
+  async fetchOrganization (): Promise<IOrgDetails> {
+    return requestApiWithRetry.call(this, '/organizations/me').promise
+      .then(({ body }) => {
+        this._orgDetails = body;
+        this.logger.debug('Fetched organization details', body, true); // don't log PII
+        return body;
+      });
+  }
+
+  async fetchAuthenticatedUser (): Promise<IPersonDetails> {
+    return requestApiWithRetry.call(this, '/users/me?expand=station').promise
+      .then(({ body }) => {
+        this._personDetails = body;
+        this.logger.debug('Fetched person details', body, true); // don't log PII
+        return body;
+      });
+  }
+
+  async fetchUsersStation (): Promise<IStation> {
+    try {
+      if (!this._personDetails) {
+        await this.fetchAuthenticatedUser();
+      }
+
+      const stationId = this._personDetails?.station?.associatedStation?.id;
+      if (!stationId) {
+        throw new Error('User does not have an associated station');
+      }
+
+      return requestApiWithRetry.call(this, `/stations/${stationId}`).promise
+        .then(({ body }) => {
+          this._stationDetails = body;
+          this.logger.debug('Fetched user station', body, true); // don't log PII
+          return body;
+        });
+    } catch (err) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
+    }
+  }
+
+  isPersistentConnectionEnabled (): boolean {
+    return this._stationDetails?.webRtcPersistentEnabled &&
+      this._stationDetails?.type === 'inin_webrtc_softphone';
+  }
+
   /**
    * Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
    * Will fail if the session is not found.
@@ -613,7 +660,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
    */
-  async startSoftphoneSession (softphoneParams: IStartSoftphoneSessionParams): Promise<{id: string, selfUri: string}> {
+  async startSoftphoneSession (softphoneParams: IStartSoftphoneSessionParams): Promise<{ id: string, selfUri: string }> {
     softphoneParams.sessionType = SessionTypes.softphone;
     return this.sessionManager.startSession(softphoneParams);
   }

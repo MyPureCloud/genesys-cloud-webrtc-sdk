@@ -517,7 +517,9 @@ export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
 
 export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   /** id of the session to accept */
-  sessionId: string;
+  // sessionId: string;
+
+  conversationId: string;
 
   /**
    * media stream to use on the session. if this is
@@ -547,6 +549,29 @@ export interface IPersonDetails {
   chat: {
     jabberId: string;
   };
+  station?: {
+    associatedStation?: IStation;
+    effectiveStation?: IStation;
+    lastAssociatedStation?: IStation;
+  }
+}
+
+export interface IOrgDetails {
+  id: string;
+  name: string;
+}
+
+export interface IStation {
+  id: string;
+  name: string;
+  status: 'ASSOCIATED' | 'AVAILABLE';
+  userId: string;
+  webRtcUserId: string;
+  type: 'inin_webrtc_softphone' | 'inin_remote';
+  webRtcPersistentEnabled: boolean;
+  webRtcForceTurn: boolean;
+  // webRtcMediaDscp: 46;
+  // lineAppearanceId: string;
 }
 
 export interface ILogger {
@@ -625,9 +650,11 @@ export function isSecurityCode (data: { securityCode: string } | ICustomerData):
 
 export interface IPendingSession {
   id: string;
+  sessionId: string;
   autoAnswer: boolean;
   address: string;
   conversationId: string;
+  persistentConversationId: string;
   sessionType: SessionTypes;
   originalRoomJid: string;
   fromUserId?: string;
@@ -639,6 +666,7 @@ export interface ISessionInfo {
   fromJid: string;
   conversationId: string;
   originalRoomJid: string;
+  persistentConversationId: string;
   fromUserId?: string;
 }
 
@@ -696,6 +724,8 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   fromUserId?: string;
+  isPersistentConnection?: boolean;
+  persistentConversationId?: string; // this id is almost always present regardless of `isPersistentConnection`
   pcParticipant?: IConversationParticipant;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;

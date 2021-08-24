@@ -83,14 +83,14 @@ Alice                     Push Notifications    WebRTC SDK
 After creating an instance of the SDK, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `pendingSession` is an example
 of an SDK event. You can answer and control sessions via the SDK methods documented
-in [GenesysCloudWebrtcSdk] documentation. Most call control actions, however, should be done via the GenesysCloud Public
+in [GenesysCloudWebrtcSdk](index.md#genesyscloudwebrtcsdk) documentation. Most call control actions, however, should be done via the GenesysCloud Public
 API (or the Public API javascript SDK).
 
 Once the client has a session, it can add event handlers for lower level control
 over sessions. `terminated` is an example of a session event;
-[all session events are detailed here].
+[all session events are detailed here](index.md#session-level-events).
 
-Once you have an initialized instance of the WebrtcSdk and events setup, you can create a softphone session in the following manner:
+Once you have an initialized instance of the WebrtcSdk and events setup, you can create a softphone session in the following maner:
 
 ``` ts
 await sdk.startSoftphoneSession({phoneNumber: '15555555555'});
@@ -152,12 +152,73 @@ interface ISdkSoftphoneDestination {
 }
 ```
 
-* address: string - Required: The address or phone number to dial.
+* `address: string` - Required: The address or phone number to dial.
 
 
 ## API
 
-See the full list of the [APIs], [methods], and [events].
+See the full list of the [APIs](index.md#genesyscloudwebrtcsdk), [methods](index.md#methods), and [events](index.md#events).
+
+## Persistent Connection Notes
+
+
+TODO:
+* looking for `"purpose": "user"` most recent
+* use softphone handler `getParticipantForSession` – actually just save the most recent softphone event
+* answering `data: JSON.stringify({ state: 'connected' })`
+* hanging up `data: JSON.stringify({ state: 'disconnected' })`
+
+
+Convo with Garrett:
+* We can turn on an org setting to only use one single persistent connection (meaning new calls will come through on this one)
+* if we have an active (persistent) session we always use converation events
+  * we have to watch for connection states
+  * `alerting` – assume non-auto answer
+  * `connecting` – assume we answered (or is auto answer if we haven't emitted pending)
+  * NOTE: we will receive `disconnected` and then another event for `terminated` (usually).
+  * `connected` – emit `sessionStarted` and drop `sdk.acceptSession()` on the floor (maybe create a session info as an immutable)
+   `disconnected | terminated` (unsure) (disconnect reason "timeout" – retract)
+
+# Persistent Connection Working Progress
+* Only applicable for softphone
+* If there is no active persistant connection, it will behavior as normal (propose, session-accept, session-terminate, etc)
+* If there _is_ an active persistant connection and a new call comes in:
+    * Will emit `pendingSession` – should be `alerting` for autoanswer = false
+    * `acceptPendingSession(pendingSessionId)` will send a `PATCH` to update the conversation. state = `connected`
+    * `rejectPendingSession(pendingSessionId)` will send a `PATCH` to update the conversation. state = `terminated` **CHECK**
+    * Once a conversation event is received saying the call was answered, `sdk.on('sessionStarted')` will emit the _original_ webrtc session with the new conversationId.
+    * `sessionEnd(sessionId)` will send a `PATCH` to update the conversation (state `disconnected`) _and_ emit `sdk.on('sessionEnded')` with the existing persistent connection webrtc session with `isPersistentConnection: true` and `active: boolean` can be checked.
+    * when the webrtc session finally expires, `sdk.on('sessionEnded')` will still emit the session but `active: boolean` will be false.
+    * any subsequent calls answered while there is already a call using the persistent connection will receive a new webrtc session and will _not_ use the persistent connection webrtc session. **CHECK**
+* make sure when a new converstion is active make sure to update the `session.conversationId`
+  * whatever conversation is `connected` will be the conversationId on the session
+* Josh Rucker for conversation update questions
+  * double check with Josh to see if our `user` participant `calls[]` will only ever have 1 call in there
+    * could have more than one if doing outbound and customer has multiple phone numbers
+    * only one should be in a `alerting | contacting | connected` state
+  * the last participant in is the most recent
+    * yes
+  * difference between `disconnected` and `terminated`
+
+* if we have an active per/conn, and receive a new call and accept we now have two sessions.
+
+## To Do
+* fetch station
+* acceptPendingSession
+* rejectPendingSession
+* acceptSession
+* endSession
+* inside `initialize` don't use a listener.. only emit on `ready` once we have loaded the station.
+* What happens if we have an active per/conn and we receive another inbound?
+* What convo event do we get with an inbound autoanswer call while we have an active persistent connection
+* document caveats for persistent connection:
+  * `config.autoConnectSessions` will do nothing if you already have a persistent connection
+  * `acceptSession` will do nothing if you already have a persistent connection
+  * if using peristent connection, you should use `conversationId` to accept/reject/end sessions (since the session ID will be the same – could cause unpredictable)
+* (maybe) remove the use of accepting session with `sessionId`.
+* callState `held` or something... what to do with this
+* sending two `sessionEnded` events when ending (because we are sending `disconnected` and `terminated`)
+## Done
 
 #### Softphone behavior notes
 
