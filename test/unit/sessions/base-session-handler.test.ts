@@ -738,3 +738,17 @@ describe('updateAudioVolume', () => {
     expect(session._outputAudioElement.volume).toEqual(.75);
   });
 });
+
+describe('getSendersByTrackType()', () => {
+  it('should return receivers that have the same track type', () => {
+    const session = new MockSession(SessionTypes.softphone);
+    const audioTrack = new MockTrack('audio');
+    const videoTrack = new MockTrack('video');
+
+    session.pc._addReceiver(audioTrack);
+    session.pc._addReceiver(videoTrack);
+
+    const results = handler.getReceiversByTrackType(session as any, 'audio');
+    expect(results[0].track).toEqual(audioTrack);
+  });
+});

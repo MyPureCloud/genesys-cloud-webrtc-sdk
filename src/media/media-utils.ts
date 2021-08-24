@@ -1,3 +1,5 @@
+import { v4 } from 'uuid';
+
 import { GenesysCloudWebrtcSdk } from '../client';
 import { IExtendedMediaSession, ISessionAndConversationIds } from '../types/interfaces';
 
@@ -7,18 +9,24 @@ export let _hasTransceiverFunctionality: boolean;
 
 /**
  * Select or create the `audio.__gc-webrtc-inbound` element
+ * @deprecated use `createUniqueAudioMediaElement()` instead
  */
-export const getOrCreateAudioMediaElement = function (): HTMLAudioElement {
-  const existing = document.querySelector(`audio.${GC_AUDIO_EL_CLASS}`);
+export const getOrCreateAudioMediaElement = function (className: string = GC_AUDIO_EL_CLASS): HTMLAudioElement {
+  const existing = document.querySelector(`audio.${className}`);
   if (existing) {
     return existing as HTMLAudioElement;
   }
   const audio = document.createElement('audio');
-  audio.classList.add(GC_AUDIO_EL_CLASS);
+  audio.classList.add(className);
   (audio.style as any) = 'visibility: hidden';
 
   document.body.append(audio);
   return audio;
+};
+
+export const createUniqueAudioMediaElement = function (): HTMLAudioElement {
+  const className = `${GC_AUDIO_EL_CLASS}-${v4()}`;
+  return getOrCreateAudioMediaElement(className);
 };
 
 /**
@@ -39,7 +47,7 @@ export const attachAudioMedia = function (
   ids?: ISessionAndConversationIds
 ): HTMLAudioElement {
   if (!audioElement) {
-    audioElement = getOrCreateAudioMediaElement();
+    audioElement = createUniqueAudioMediaElement();
   }
 
   if (audioElement.srcObject) {

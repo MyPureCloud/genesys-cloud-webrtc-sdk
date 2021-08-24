@@ -21,7 +21,7 @@ export enum CommunicationStates {
   contacting = 'contacting',
   connected = 'connected',
   disconnected = 'disconnected',
-  terminated = 'terminated',
+  terminated = 'terminated'
 }
 
 export enum JingleReasons {
