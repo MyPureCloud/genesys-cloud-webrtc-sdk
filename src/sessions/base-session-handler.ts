@@ -28,8 +28,8 @@ export default abstract class BaseSessionHandler {
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
-  protected log (level: LogLevels, message: any, details?: any): void {
-    this.sdk.logger[level].call(this.sdk.logger, message, details);
+  protected log (level: LogLevels, message: any, details?: any, skipServer?: boolean): void {
+    this.sdk.logger[level].call(this.sdk.logger, message, details, skipServer);
   }
 
   handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {

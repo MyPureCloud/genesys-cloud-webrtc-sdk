@@ -14,7 +14,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   persistentConnectionSession?: IExtendedMediaSession;
   lastConversationEvent: { [conversationId: string]: ConversationUpdate } = {};
 
-  constructor(sdk, handler) {
+  constructor (sdk, handler) {
     super(sdk, handler);
     (window as any).s = this;
   }
@@ -23,7 +23,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return isSoftphoneJid(jid);
   }
 
-  hasActivePersistentConnect(): boolean {
+  hasActivePersistentConnect (): boolean {
     return this.persistentConnectionSession?.state === 'active';
   }
 
