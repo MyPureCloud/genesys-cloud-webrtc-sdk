@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v6.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.0...v6.1.1)
 ### Fixed
+* [PCM-1587](https://inindca.atlassian.net/browse/PCM-1587) - Added in value to help with current issue of popouts in one to one calls ending the call.
 * [PCM-1706](https://inindca.atlassian.net/browse/PCM-1706) - Allow certain actions that affect the default to work before the sdk has been formally initialized.
 * [PCM-1696](https://inindca.atlassian.net/browse/PCM-1696) & [Issue #618](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/618) - Ensure all modules are exported from barrel file.
 * Correctly clean up mediaDevices `devicechange` event listeners inside SdkMedia class.
