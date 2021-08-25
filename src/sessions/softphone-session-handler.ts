@@ -4,7 +4,7 @@ import { JingleReason } from 'stanza/protocol';
 import BaseSessionHandler from './base-session-handler';
 import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia, IStartSoftphoneSessionParams } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
-import { attachAudioMedia, logDeviceChange } from '../media/media-utils';
+import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate, IConversationParticipantFromEvent, IParticipantCall } from '../types/conversation-update';
 
@@ -262,13 +262,26 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
 
-    const element = params.audioElement || this.sdk._config.defaults.audioElement;
     const ids = { conversationId: session.conversationId, sessionId: session.id };
     const volume = this.sdk._config.defaults.audioVolume;
+
+    let element = params.audioElement || this.sdk._config.defaults.audioElement;
+
+    /* if we aren't given an element, then we need to setup our own, unique one (per session), then tear it down on terminate */
+    if (!element) {
+      element = createUniqueAudioMediaElement();
+      session.once('terminated', () => {
+        if (session._outputAudioElement === element) {
+          this.log('debug', 'session ended and was using a unique audio element. removing from DOM', { sessionId: session.id, conversationId: session.conversationId });
+          session._outputAudioElement.parentNode.removeChild(session._outputAudioElement);
+        }
+      });
+    }
+
     if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
       session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], volume, element, ids);
     } else {
-      session.on('peerTrackAdded', (track: MediaStreamTrack, stream: MediaStream) => {
+      session.on('peerTrackAdded', (_track: MediaStreamTrack, stream: MediaStream) => {
         session._outputAudioElement = attachAudioMedia(this.sdk, stream, volume, element, ids);
       });
     }

@@ -315,10 +315,10 @@ describe('updateOutgoingMedia()', () => {
       expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
       /* logs */
       expect(mockSdk.logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Sending mute for audio'), expect.any(Object)
+        expect.stringContaining('Sending mute for audio'), expect.any(Object), undefined
       );
       expect(mockSdk.logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Sending mute for video'), expect.any(Object)
+        expect.stringContaining('Sending mute for video'), expect.any(Object), undefined
       );
     }
 
@@ -373,7 +373,7 @@ describe('updateOutputDevice()', () => {
   it('should log and return if the session does not have an _outputAudioElement', async () => {
     const session = new MockSession();
     await handler.updateOutputDevice(session as any, 'deviceId');
-    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Cannot update audio output'), expect.any(Object));
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Cannot update audio output'), expect.any(Object), undefined);
   });
 
   it('should throw if the audio element does not have the `setSinkId` property', async () => {
@@ -625,7 +625,8 @@ describe('_warnNegotiationNeeded', () => {
 
     expect(mockSdk.logger.error).toHaveBeenCalledWith(
       expect.stringContaining('negotiation needed and not supported'),
-      { conversationId: session.conversationId, sessionId: session.id }
+      { conversationId: session.conversationId, sessionId: session.id },
+      undefined
     );
   });
 });
@@ -735,5 +736,19 @@ describe('updateAudioVolume', () => {
     handler.updateAudioVolume(session as any, 75);
 
     expect(session._outputAudioElement.volume).toEqual(.75);
+  });
+});
+
+describe('getSendersByTrackType()', () => {
+  it('should return receivers that have the same track type', () => {
+    const session = new MockSession(SessionTypes.softphone);
+    const audioTrack = new MockTrack('audio');
+    const videoTrack = new MockTrack('video');
+
+    session.pc._addReceiver(audioTrack);
+    session.pc._addReceiver(videoTrack);
+
+    const results = handler.getReceiversByTrackType(session as any, 'audio');
+    expect(results[0].track).toEqual(audioTrack);
   });
 });

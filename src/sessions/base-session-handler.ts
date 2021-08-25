@@ -20,7 +20,6 @@ type ExtendedHTMLAudioElement = HTMLAudioElement & {
 };
 
 export default abstract class BaseSessionHandler {
-  removePendingSessionDelay = 1000;
   disabled = true;
   abstract sessionType: SessionTypes;
 
@@ -115,7 +114,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    this.log('info', 'ending session', { conversationId: session.conversationId });
+    this.log('info', 'ending session', { conversationId: session.conversationId, sessionId: session.id });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
@@ -404,6 +403,12 @@ export default abstract class BaseSessionHandler {
   getSendersByTrackType (session: IExtendedMediaSession, kind: 'audio' | 'video'): RTCRtpSender[] {
     return session.pc.getSenders().filter(sender => {
       return sender.track && sender.track.kind === kind;
+    });
+  }
+
+  getReceiversByTrackType (session: IExtendedMediaSession, kind: 'audio' | 'video'): RTCRtpReceiver[] {
+    return session.pc.getReceivers().filter(receiver => {
+      return receiver.track && receiver.track.kind === kind;
     });
   }
 

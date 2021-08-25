@@ -206,7 +206,8 @@ describe('updateOutgoingMedia()', () => {
       expect(e.type).toBe(SdkErrorTypes.not_supported);
       expect(mockSdk.logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Cannot update outgoing media for acd screen share sessions'),
-        expect.any(Object)
+        expect.any(Object),
+        undefined
       );
     }
   });

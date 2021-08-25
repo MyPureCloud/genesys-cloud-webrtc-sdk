@@ -3,9 +3,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.1...HEAD)
+### Fixed
+* [PCM-1711](https://inindca.atlassian.net/browse/PCM-1711) - Changed default behavior for softphone `sdk.acceptSession` to create and use unique `HTMLAudioElement`s for each session.
+It will then remove the audio element from the DOM once the session ends. Note: it will only create the unique audio element (and remove it from the DOM on `sessionEnded`) if `sdk.acceptSession` is _not_
+passed an audioElement _and_ there is _not_ a SDK `defaults.audioElement`.
+
+# [v6.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.0...v6.1.1)
 ### Fixed
 * [PCM-1706](https://inindca.atlassian.net/browse/PCM-1706) - Allow certain actions that affect the default to work before the sdk has been formally initialized.
+* [PCM-1696](https://inindca.atlassian.net/browse/PCM-1696) & [Issue #618](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/618) - Ensure all modules are exported from barrel file.
+* Correctly clean up mediaDevices `devicechange` event listeners inside SdkMedia class.
+* Update `sdk.startSoftphoneSession` to not require a `SessionType`.
 
 # [v6.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.0.1...v6.1.0)
 
