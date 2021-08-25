@@ -1,4 +1,5 @@
 import { differenceBy, intersection } from 'lodash';
+import { Constants } from 'stanza';
 
 import {
   IPendingSession,
@@ -401,9 +402,9 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async endSession (session: IExtendedMediaSession) {
+  async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition) {
     await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
-    await super.endSession(session);
+    await super.endSession(session, reason);
     session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 

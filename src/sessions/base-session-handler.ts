@@ -115,7 +115,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    this.log('info', 'ending session', { conversationId: session.conversationId });
+    this.log('info', 'ending session', { conversationId: session.conversationId, reason });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
