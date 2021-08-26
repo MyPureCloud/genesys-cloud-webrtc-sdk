@@ -17,9 +17,11 @@ export enum SessionTypes {
 }
 
 export enum CommunicationStates {
+  alerting = 'alerting',
   contacting = 'contacting',
   connected = 'connected',
-  disconnected = 'disconnected'
+  disconnected = 'disconnected',
+  terminated = 'terminated'
 }
 
 export enum JingleReasons {

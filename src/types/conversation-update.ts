@@ -2,35 +2,7 @@ import { CommunicationStates } from './enums';
 
 export class ConversationUpdate {
   id: string;
-  participants: Array<
-    {
-      id: string;
-      purpose: string;
-      userId: string;
-      videos: Array<
-        {
-          context: string,
-          audioMuted: boolean,
-          videoMuted: boolean,
-          id: string,
-          state: CommunicationStates,
-          peerCount: number,
-          sharingScreen: boolean
-        }
-      >
-      calls: Array<
-        {
-          id: string,
-          state: CommunicationStates,
-          muted: boolean,
-          confined: boolean,
-          held: boolean,
-          direction: 'inbound' | 'outbound',
-          provider: string
-        }
-      >
-    }
-  >;
+  participants: Array<IConversationParticipantFromEvent>;
 
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types */
   constructor (rawUpdate: any) {
@@ -65,4 +37,31 @@ export class ConversationUpdate {
       };
     });
   }
+}
+export interface IConversationParticipantFromEvent {
+  id: string;
+  purpose: string;
+  userId: string;
+  videos: Array<IParticipantVideo>;
+  calls: Array<IParticipantCall>;
+}
+
+export interface IParticipantVideo {
+  context: string;
+  audioMuted: boolean;
+  videoMuted: boolean;
+  id: string;
+  state: CommunicationStates;
+  peerCount: number;
+  sharingScreen: boolean;
+}
+
+export interface IParticipantCall {
+  id: string;
+  state: CommunicationStates;
+  muted: boolean;
+  confined: boolean;
+  held: boolean;
+  direction: 'inbound' | 'outbound';
+  provider: string;
 }

@@ -197,9 +197,11 @@ describe('acceptSession', () => {
   });
 
   it('should add media using created stream accept session', async () => {
+    const mockAudioElement = {} as HTMLAudioElement;
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
     const addMediaSpy = jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+    jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
 
     const createdStream = new MockStream({ audio: true });
     const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
@@ -223,7 +225,7 @@ describe('acceptSession', () => {
     expect(acceptSpy).toHaveBeenCalled();
     expect(startMediaSpy).toHaveBeenCalled();
     expect(addMediaSpy).toHaveBeenCalledWith(session, createdStream);
-    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, undefined, ids);
+    expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, mockAudioElement, ids);
   });
 
   it('should wait to attachAudioMedia until session has a track', async () => {
@@ -254,6 +256,65 @@ describe('acceptSession', () => {
     session.emit('peerTrackAdded', track, mockIncomingStream);
 
     expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, element, ids);
+  });
+
+  it('should setup listener and remove audio element from DOM once session ends', async () => {
+    const mockAudioElement = { parentNode: { removeChild: jest.fn() } } as any as HTMLAudioElement;
+    jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
+
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation((_sdk, _stream, _volume, element) => element);
+    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+
+    const createdStream = new MockStream({ audio: true });
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
+
+    const mockIncomingStream = new MockStream({ audio: true });
+    mockSdk._config.defaults.audioVolume = 100;
+
+    const session: any = new MockSession();
+    session.streams = [mockIncomingStream];
+
+    const params: IAcceptSessionRequest = {
+      sessionId: session.sid
+    };
+
+    await handler.acceptSession(session, params);
+
+    session.emit('terminated');
+
+    expect(mockAudioElement.parentNode.removeChild).toHaveBeenCalledWith(mockAudioElement);
+  });
+
+  it('should setup listener but not remove the audio element from the DOM if it was not tracked', async () => {
+    const mockAudioElement = { parentNode: { removeChild: jest.fn() } } as any as HTMLAudioElement;
+    jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
+
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation((_sdk, _stream, _volume, element) => element);
+    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+
+    const createdStream = new MockStream({ audio: true });
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
+
+    const mockIncomingStream = new MockStream({ audio: true });
+    mockSdk._config.defaults.audioVolume = 100;
+
+    const session: any = new MockSession();
+    session.streams = [mockIncomingStream];
+
+    const params: IAcceptSessionRequest = {
+      sessionId: session.sid
+    };
+
+    await handler.acceptSession(session, params);
+
+    /* mimic if someone changes this (which they shouldn't) */
+    session._outputAudioElement = {};
+
+    session.emit('terminated');
+
+    expect(mockAudioElement.parentNode.removeChild).not.toHaveBeenCalledWith(mockAudioElement);
   });
 });
 
@@ -534,7 +595,7 @@ describe('startSession', () => {
       sessionType: 'softphone',
       phoneNumber: '3172222222',
     }
-    let response = {id: undefined, selfUri: undefined};
+    let response = { id: undefined, selfUri: undefined };
     await expect(handler.startSession(opts as any)).resolves.toEqual(response);
     expect(postConversation.isDone()).toBeTruthy();
   });
