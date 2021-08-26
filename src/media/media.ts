@@ -14,7 +14,7 @@ import {
   SdkMediaEventTypes
 } from '../types/interfaces';
 
-declare var window: {
+declare const window: {
   navigator: {
     mediaDevices: {
       getDisplayMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream>;
@@ -228,7 +228,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * @returns a promise containing the devices enumerated
    *  from `navigator.mediaDevices.enumerateDevices()`
    */
-  async enumerateDevices (forceEmit: boolean = false): Promise<MediaDeviceInfo[]> {
+  async enumerateDevices (forceEmit = false): Promise<MediaDeviceInfo[]> {
     const enumeratedDevices = await window.navigator.mediaDevices.enumerateDevices();
     const oldDevices = this.getDevices();
     const mappedDevices = this.mapOldToNewDevices(
@@ -306,7 +306,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   async startMedia (
     mediaReqOptions: IMediaRequestOptions = { video: true, audio: true },
-    retryOnFailure: boolean = true
+    retryOnFailure = true
   ): Promise<MediaStream> {
     /* `getStandardConstraints` will set media type to `truthy` if `null` was passed in */
     const requestingVideo = mediaReqOptions.video || mediaReqOptions.video === null;
@@ -967,7 +967,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private async startSingleMedia (
     mediaType: 'audio' | 'video' | 'none',
     mediaRequestOptions: IMediaRequestOptions,
-    retryOnFailure: boolean = true
+    retryOnFailure = true
   ): Promise<MediaStream> {
     const reqOptionsCopy = { ...mediaRequestOptions };
     const conversationId = reqOptionsCopy.session?.conversationId;
@@ -1139,7 +1139,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     stream?.getTracks().forEach(t => t.stop());
   }
 
-  private trackMedia (stream: MediaStream, monitorAudio: boolean = false, sessionId?: string): void {
+  private trackMedia (stream: MediaStream, monitorAudio = false, sessionId?: string): void {
     stream.getTracks().forEach(track => {
       this.allMediaTracksCreated.set(track.id, track);
 
@@ -1158,7 +1158,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         remove();
         stopTrack();
       };
-      track.addEventListener('ended', _evt => {
+      track.addEventListener('ended', () => {
         this.sdk.logger.debug('stopping track from track.onended', track);
         remove();
       });
