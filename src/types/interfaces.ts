@@ -1,8 +1,10 @@
-import { LogLevels, SessionTypes, JingleReasons } from './enums';
 import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
 import { SdkError } from '../utils';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
+
+import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
+import { ConversationUpdate } from '../conversations/conversation-update';
 
 // extend the emittable events
 declare module 'genesys-cloud-streaming-client' {
@@ -669,6 +671,41 @@ export interface ISessionInfo {
   persistentConversationId: string;
   fromUserId?: string;
 }
+export interface IConversationParticipantFromEvent {
+  id: string;
+  purpose: string;
+  userId: string;
+  videos: Array<IParticipantVideo>;
+  calls: Array<ICallFromParticipant>;
+}
+
+export interface IParticipantVideo {
+  context: string;
+  audioMuted: boolean;
+  videoMuted: boolean;
+  id: string;
+  state: CommunicationStates;
+  peerCount: number;
+  sharingScreen: boolean;
+}
+
+export interface ICallFromParticipant {
+  id: string;
+  state: CommunicationStates;
+  muted: boolean;
+  confined: boolean;
+  held: boolean;
+  direction: 'inbound' | 'outbound';
+  provider: string;
+}
+
+export interface IConversationInfo {
+  conversationUpdate: ConversationUpdate;
+  session: IExtendedMediaSession;
+  conversationId: string;
+  mostRecentUserParticipant?: IConversationParticipantFromEvent;
+  mostRecentCallState?: ICallFromParticipant;
+}
 
 export interface ISessionAndConversationIds {
   sessionId?: string;
@@ -724,8 +761,9 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   fromUserId?: string;
-  isPersistentConnection?: boolean;
-  persistentConversationId?: string; // this id is almost always present regardless of `isPersistentConnection`
+  isPersistentConnection: boolean;
+  persistentConversationId: string; // this id is almost always present regardless of `isPersistentConnection`
+  activeConversationId: string;
   pcParticipant?: IConversationParticipant;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;

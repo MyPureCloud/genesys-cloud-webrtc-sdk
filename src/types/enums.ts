@@ -16,11 +16,23 @@ export enum SessionTypes {
   acdScreenShare = 'screenShare'
 }
 
+/**
+ * See https://developer.genesys.cloud/api/rest/v2/analytics/conversation_detail_model
+ */
 export enum CommunicationStates {
+  /** An agent is being alerted about an incoming call */
   alerting = 'alerting',
+  /** An agent is performing an outbound call and is currently trying to establish a connection with the agent's station. */
   contacting = 'contacting',
+  /** The participant is performing an outbound call and is currently dialing and waiting for the other party to pick up. */
+  dialing = 'dialing',
+  /** The agent has put the customer on hold. */
+  hold = 'hold',
+  /** call has connected */
   connected = 'connected',
+  /** call has ended */
   disconnected = 'disconnected',
+  /** not really sure, but it means it is done-done */
   terminated = 'terminated'
 }
 

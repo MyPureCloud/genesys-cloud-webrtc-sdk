@@ -1,11 +1,12 @@
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
+
 import { GenesysCloudWebrtcSdk } from '../client';
-import { LogLevels, SessionTypes, SdkErrorTypes, JingleReasons } from '../types/enums';
+import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
 import { createAndEmitSdkError, logPendingSession } from '../utils';
-import { ConversationUpdate } from '../types/conversation-update';
+import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
   IStartSessionParams,
@@ -63,6 +64,9 @@ export default abstract class BaseSessionHandler {
       session.conversationId = session.conversationId || pendingSession.conversationId;
       session.fromUserId = pendingSession.fromUserId;
       session.originalRoomJid = pendingSession.originalRoomJid;
+      session.persistentConversationId = pendingSession.persistentConversationId;
+      session.isPersistentConnection = session.sessionType === SessionTypes.softphone && this.sdk.isPersistentConnectionEnabled();
+      Object.defineProperty(session, 'active', { get: () => session.state === 'active' });
     }
     this.sessionManager.removePendingSession(session.id);
 
@@ -87,7 +91,7 @@ export default abstract class BaseSessionHandler {
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
     this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id });
     this.endTracks(session._outboundStream);
-    session._screenShareStream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    this.endTracks(session._screenShareStream);
     this.sdk.emit('sessionEnded', session, reason);
   }
 

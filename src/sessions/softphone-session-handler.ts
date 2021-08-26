@@ -2,17 +2,16 @@ import { pick } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia, IStartSoftphoneSessionParams } from '../types/interfaces';
+import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia, IStartSoftphoneSessionParams, IConversationParticipantFromEvent, ICallFromParticipant, IConversationInfo } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
-import { ConversationUpdate, IConversationParticipantFromEvent, IParticipantCall } from '../types/conversation-update';
+import { ConversationUpdate } from '../conversations/conversation-update';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
-
   persistentConnectionSession?: IExtendedMediaSession;
-  lastConversationEvent: { [conversationId: string]: ConversationUpdate } = {};
+  conversations: { [convesationId: string]: IConversationInfo } = {};
 
   constructor (sdk, handler) {
     super(sdk, handler);
@@ -43,8 +42,19 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return this.log('debug', 'conversation event received but there is no persistent connection. ignoring', update, true);
     }
 
-    const lastConversationUpdate = this.lastConversationEvent[update.id];
-    this.lastConversationEvent[update.id] = update;
+    const lastConversationUpdate = this.conversations[update.id];
+
+    if (!lastConversationUpdate) {
+      this.conversations[update.id] = {
+        conversationUpdate: update,
+        conversationId: update.id,
+        session,
+        mostRecentCallState: undefined,
+        mostRecentUserParticipant: undefined
+      };
+    } else {
+      this.conversations[update.id].conversationUpdate = update;
+    }
 
     const participant = this.getUserParticipant(update);
 
@@ -52,19 +62,24 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return this.log('debug', 'user participant not found on the conversation update', update, true);
     }
 
+    this.conversations[update.id].mostRecentUserParticipant = participant;
     const callState = this.getParticipantsCall(participant);
 
     if (!callState) {
       return this.log('debug', "user participant's call state not found on the conversation update", update, true);
     }
+    this.conversations[update.id].mostRecentCallState = callState;
 
-    const lastParticipantEvent = this.getUserParticipant(lastConversationUpdate);
+    const lastParticipantEvent = this.getUserParticipant(lastConversationUpdate?.conversationUpdate);
     const previousCallState = this.getParticipantsCall(lastParticipantEvent);
-    const stateChangedFromPreviousState = previousCallState?.state !== callState.state;
+    const stateChangedFromPreviousState = previousCallState?.state !== callState.state || previousCallState?.held !== callState.held;
 
-    if (lastParticipantEvent) {
-      session.pcParticipant = lastParticipantEvent as any;
-    }
+    // TODO: this only needs to set pcParticipant if this conversation is active
+    // if (lastParticipantEvent) {
+    //   session.pcParticipant = lastParticipantEvent as any;
+    // }
+
+    // TODO:
 
     /* if the call state hasn't changed, we don't need to process anything */
     if (!stateChangedFromPreviousState) {
@@ -180,7 +195,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return participant;
   }
 
-  private getParticipantsCall (participant: IConversationParticipantFromEvent): IParticipantCall | undefined {
+  private getParticipantsCall (participant: IConversationParticipantFromEvent): ICallFromParticipant | undefined {
     const calls = participant?.calls;
     const callLen = calls?.length;
 
@@ -217,7 +232,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     this.log('info', 'setting persistent connection session', loggy());
 
     this.persistentConnectionSession = session;
-    session.on('terminated', () => {
+    session.once('terminated', () => {
       this.log('info', 'Persistent connection has terminated', loggy());
       this.persistentConnectionSession = null;
     });
@@ -227,8 +242,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     await super.handleSessionInit(session);
 
     /* if we started a persistent connection */
-    // TODO: need to know what happens if we have an active PC and a new session is started
-    if (session.isPersistentConnection) {
+    if (this.sdk.isPersistentConnectionEnabled()) {
       this.setPersistentConnection(session);
     }
 

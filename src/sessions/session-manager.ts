@@ -17,7 +17,7 @@ import {
   IExtendedMediaSession,
   IStartSoftphoneSessionParams
 } from '../types/interfaces';
-import { ConversationUpdate } from '../types/conversation-update';
+import { ConversationUpdate } from '../conversations/conversation-update';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -56,14 +56,14 @@ export class SessionManager {
     const sessions = Object.values(this.jingle.sessions);
     (sessions as any).forEach((session: IExtendedMediaSession) => {
       const handler = this.getSessionHandler({ sessionType: session.sessionType });
-      /* if convoId matches OR we have a persistent connection for softphone conversationso1;l;l, ., */
-      if (session.conversationId === update.id ||
-        (handler.sessionType === SessionTypes.softphone && (handler as SoftphoneSessionHandler).hasActivePersistentConnect())
+      /* if convoId matches OR we have a persistent connection for softphone conversation */
+      if (
+        !handler.disabled &&
+        (
+          session.conversationId === update.id ||
+          (handler.sessionType === SessionTypes.softphone && this.sdk.isPersistentConnectionEnabled())
+        )
       ) {
-        if (handler.disabled) {
-          return;
-        }
-
         handler.handleConversationUpdate(session, update);
       }
     });

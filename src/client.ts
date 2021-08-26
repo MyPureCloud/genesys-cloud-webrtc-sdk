@@ -31,6 +31,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
+import { ConversationManager } from './conversations/conversation-manager';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -78,6 +79,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   readonly VERSION = '[AIV]{version}[/AIV]';
   logger: ILogger;
   sessionManager: SessionManager;
+  conversationManager: ConversationManager;
   media: SdkMedia;
 
   _connected: boolean;
@@ -147,6 +149,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
     this.media = new SdkMedia(this);
+    this.conversationManager = new ConversationManager(this);
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers

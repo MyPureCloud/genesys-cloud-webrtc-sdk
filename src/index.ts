@@ -2,7 +2,7 @@ export * from './client';
 export * from './media/media';
 export * from './types/interfaces';
 export * from './types/enums';
-export * from './types/conversation-update';
+export * from './conversations/conversation-update';
 
 import * as utils from './utils';
 import * as mediaUtils from './media/media-utils';

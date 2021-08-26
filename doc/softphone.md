@@ -218,6 +218,8 @@ Convo with Garrett:
 * (maybe) remove the use of accepting session with `sessionId`.
 * callState `held` or something... what to do with this
 * sending two `sessionEnded` events when ending (because we are sending `disconnected` and `terminated`)
+* add `hold` function to the client
+* keep conversation history, call states, and session info in one place...
 ## Done
 
 #### Softphone behavior notes
