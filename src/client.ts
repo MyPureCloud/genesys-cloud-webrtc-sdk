@@ -1,5 +1,3 @@
-/// <reference path="types/libs.ts" />
-
 import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
@@ -179,7 +177,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  and other necessary async tasks are complete.
    */
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
-    let httpRequests: Promise<any>[] = [];
+    const httpRequests: Promise<any>[] = [];
     if (this.isGuest) {
       let guestPromise: Promise<void>;
 

@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.1...HEAD)
+### Fixed
+* [PCM-1587](https://inindca.atlassian.net/browse/PCM-1587) - Added in value to help with current issue of popouts in one to one calls ending the call.
 
 # [v6.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.0...v6.1.1)
 ### Fixed
