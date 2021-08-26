@@ -47,9 +47,7 @@
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
     "lint": "eslint -c .eslintrc.json --ext .ts src",
-    "lint:fix": "npm run eslint:fix",
-    "eslint": "eslint --project . --config eslint.json",
-    "eslint:fix": "eslint --project . --config eslint.json --fix",
+    "lint:fix": "npm run lint -- --fix",
     "greenkeep": "npx npm-check --update",
     "codecov": "codecov"
   },
