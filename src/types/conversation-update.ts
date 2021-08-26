@@ -4,6 +4,7 @@ export class ConversationUpdate {
   id: string;
   participants: Array<IConversationParticipantFromEvent>;
 
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types */
   constructor (rawUpdate: any) {
     this.id = rawUpdate.id;
     this.participants = rawUpdate.participants.map((p) => {

@@ -168,7 +168,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async startSession (params: IStartSoftphoneSessionParams): Promise<{ id: string, selfUri: string }> {
     this.log('info', 'Creating softphone call from SDK', { conversationIds: params.conversationIds });
-    let response = await requestApi.call(this.sdk, `/conversations/calls`, {
+    const response = await requestApi.call(this.sdk, `/conversations/calls`, {
       method: 'post',
       data: JSON.stringify(params)
     });

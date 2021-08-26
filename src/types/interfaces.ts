@@ -1,3 +1,4 @@
+/* eslint-disable-line @typescript-eslint/no-explicit-any */
 import { LogLevels, SessionTypes, JingleReasons } from './enums';
 import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
 import { SdkError } from '../utils';

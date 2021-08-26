@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-explicit-any: "off" */
 import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 

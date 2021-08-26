@@ -1,4 +1,5 @@
 import { differenceBy, intersection } from 'lodash';
+import { Constants } from 'stanza';
 
 import {
   IPendingSession,
@@ -376,7 +377,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     await Promise.all([videoMute, audioMute]);
   }
 
-  setupTransceivers (session: IExtendedMediaSession) {
+  setupTransceivers (session: IExtendedMediaSession): void {
     // not supported in edge at time of writing https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addTransceiver
     if (!session.pc.addTransceiver) {
       this.log('warn', 'addTransceiver not supported, video experience may be sub optimal', {
@@ -401,13 +402,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async endSession (session: IExtendedMediaSession) {
+  async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
-    await super.endSession(session);
+    await super.endSession(session, reason);
     session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 
-  async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean) {
+  async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean): Promise<void> {
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
     if (replayMuteRequest) {
@@ -478,7 +479,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     session.videoMuted = !!params.mute;
   }
 
-  async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest) {
+  async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<void> {
     const replayMuteRequest = !!session.audioMuted === !!params.mute;
 
     // if conversation is already muted, we wont get an update so dont wait for one
@@ -530,12 +531,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  handleMediaChangeEvent (session: IExtendedMediaSession, event: IMediaChangeEvent) {
+  handleMediaChangeEvent (session: IExtendedMediaSession, event: IMediaChangeEvent): void {
     this.updateParticipantsOnScreen(session, event);
     this.updateSpeakers(session, event);
   }
 
-  async startScreenShare (session: IExtendedMediaSession) {
+  async startScreenShare (session: IExtendedMediaSession): Promise<void> {
     session._resurrectVideoOnScreenShareEnd = !session.videoMuted;
     try {
       this.log('info', 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId });
@@ -588,7 +589,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
   }
 
-  async pinParticipantVideo (session: IExtendedMediaSession, participantId?: string) {
+  async pinParticipantVideo (session: IExtendedMediaSession, participantId?: string): Promise<void> {
     if (!session.pcParticipant) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to pin participant video. Local participant is unknown.', {
         conversation: session.conversationId,

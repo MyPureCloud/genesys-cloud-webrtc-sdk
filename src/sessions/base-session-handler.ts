@@ -114,7 +114,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    this.log('info', 'ending session', { conversationId: session.conversationId, sessionId: session.id });
+    this.log('info', 'ending session', { sessionId: session.id, conversationId: session.conversationId, reason });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
@@ -358,7 +358,7 @@ export default abstract class BaseSessionHandler {
    */
   async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
     // find a transceiver with the same kind of track
-    let transceiver = session.pc.getTransceivers().find(t => {
+    const transceiver = session.pc.getTransceivers().find(t => {
       return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
     });
 
