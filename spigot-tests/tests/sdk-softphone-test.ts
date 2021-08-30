@@ -1,8 +1,11 @@
 /* global describe, it, beforeEach, after */
 
+import { v4 as uuid } from 'uuid';
+
 import { GenesysCloudWebrtcSdk } from '../../';
 import { IExtendedMediaSession } from '../../';
 import * as testUtils from './utils/test-utils';
+import { wait } from './utils/test-utils';
 
 const logger = testUtils.getLogger();
 
@@ -105,8 +108,11 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
 
     activeCall = conversationId;
     await peerTrackAdded;
+    await wait(100); // we have to wait for some async tasks to finish before the `_outputAudioElement` is available
 
-    const autoAttachedMediaEl = await testUtils.pollForTruthy(() => document.querySelector('audio.__gc-webrtc-inbound'));
+    const id = 'audio-' + uuid();
+    session._outputAudioElement.id = id;
+    const autoAttachedMediaEl = await testUtils.pollForTruthy(() => document.querySelector(`audio#${id}`));
     if (!autoAttachedMediaEl) {
       throw new Error('Failed to find auto attached media');
     }
