@@ -5,6 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.2...HEAD)
 
+
+# [v6.1.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.2...v6.1.3)
+### Added
+* [PCM-1715](https://inindca.atlassian.net/browse/PCM-1715) - Bumped streaming-client to include `stanza` override for ending sessions via the client. Now the client will manually close the peer connection if it is not closed automatically after sending `session-terminate`.
+### Fixed
+* [PCM-1722](https://inindca.atlassian.net/browse/PCM-1722) - Bumped streaming-client to version `13.3.0` to fix a dependency file path issue.
+
 # [v6.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.1...v6.1.2)
 ### Fixed
 * [PCM-1711](https://inindca.atlassian.net/browse/PCM-1711) - Changed default behavior for softphone `sdk.acceptSession` to create and use unique `HTMLAudioElement`s for each session.
