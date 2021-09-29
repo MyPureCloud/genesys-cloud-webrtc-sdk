@@ -10,7 +10,7 @@
   "cjs": "dist/cjs/index.js",
   "module": "dist/es/index.js",
   "main": "dist/genesys-cloud-webrtc-sdk.js",
-  "browser": "dist/genesys-cloud-webrtc-sdk.js",
+  "web": "dist/genesys-cloud-webrtc-sdk.bundle.js",
   "typings": "dist/es/index.d.ts",
   "files": [
     "dist"
@@ -59,7 +59,7 @@
     "browserama": "^3.1.1",
     "core-js": "^3.7.0",
     "genesys-cloud-client-logger": "^2.0.0",
-    "genesys-cloud-streaming-client": "^13.3.0",
+    "genesys-cloud-streaming-client": "^13.3.1-branch.PCM1726.1",
     "lodash": "^4.17.15",
     "safe-json-stringify": "^1.2.0",
     "strict-event-emitter-types": "^2.0.0",
