@@ -5,12 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...HEAD)
 
-
 # [v6.1.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.2...v6.1.3)
 ### Added
-* [PCM-1715](https://inindca.atlassian.net/browse/PCM-1715) - Bumped streaming-client to include `stanza` override for ending sessions via the client. Now the client will manually close the peer connection if it is not closed automatically after sending `session-terminate`.
+* [PCM-1729](https://inindca.atlassian.net/browse/PCM-1729) – Added `sessionType` to log messages (mainly `propose` and `session-init` events).
+* [PCM-1715](https://inindca.atlassian.net/browse/PCM-1715)/[PCM-1726](https://inindca.atlassian.net/browse/PCM-1726) -
+Bumped streaming-client to v13.3.1 which includes `stanza` override for ending sessions via the client. Now the client will manually close the peer connection if it is not closed automatically after sending `session-terminate`.
 ### Fixed
-* [PCM-1722](https://inindca.atlassian.net/browse/PCM-1722) - Bumped streaming-client to version `13.3.0` to fix a dependency file path issue.
+* [PCM-1726](https://inindca.atlassian.net/browse/PCM-1726)/[PCM-1722](https://inindca.atlassian.net/browse/PCM-1722) – Renamed package.json `"browser" -> "web"` to prevent build tools from bundling the already web-bundled/built version of the SDK. Streaming-client bump also fixes a dependency file path issue.
 
 # [v6.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.1...v6.1.2)
 ### Fixed
