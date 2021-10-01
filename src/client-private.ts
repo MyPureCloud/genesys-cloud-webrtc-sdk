@@ -20,7 +20,9 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     signalIceConnected: true,
     host: this._config.wsHost || `wss://streaming.${this._config.environment}`,
     apiHost: this._config.environment,
-    logger: this.logger
+    logger: this.logger,
+    appName: 'sdk-demo',
+    appVersion: this.VERSION
   };
 
   if (this._personDetails) {

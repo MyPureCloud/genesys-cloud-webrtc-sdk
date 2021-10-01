@@ -151,7 +151,7 @@ export class SessionManager {
     const sessions = this.getAllActiveSessions();
 
     this.log('info', 'Updating outgoing deviceId(s) for all active sessions', {
-      sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId })),
+      sessionInfos: sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId, sessionType: s.sessionType })),
       videoDeviceId: opts.videoDeviceId,
       audioDeviceId: opts.audioDeviceId
     });
@@ -182,7 +182,7 @@ export class SessionManager {
   async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
     const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
     const _outputDeviceId = this.sdk.media.getValidDeviceId('audiooutput', outputDeviceId, ...sessions) || '';
-    const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }));
+    const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId, sessionType: s.sessionType }));
 
     if (typeof outputDeviceId === 'string' && _outputDeviceId !== outputDeviceId) {
       this.log('warn', 'Output deviceId not found. Not updating output media', { sessions: ids, outputDeviceId });
@@ -332,7 +332,7 @@ export class SessionManager {
           );
           if (deviceExists) {
             this.log('debug', 'sessions outgoing track still has available device',
-              { deviceLabel: track.label, kind: track.kind, sessionId: session.id });
+              { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, kind: track.kind, deviceLabel: track.label });
             return;
           }
 
@@ -341,7 +341,7 @@ export class SessionManager {
           updates.set(session.id, currVal);
 
           this.log('info', 'session lost media device and will attempt to switch devices',
-            { conversationId: session.conversationId, sessionId: session.id, kind: track.kind, deviceLabel: track.label });
+            { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, kind: track.kind, deviceLabel: track.label });
         });
 
       /* check output device */
@@ -354,7 +354,7 @@ export class SessionManager {
           updateOutputDeviceForAllSessions = true;
 
           this.log('info', 'session lost output device and will attempt to switch device',
-            { conversationId: session.conversationId, sessionId: session.id, kind: 'output' });
+            { conversationId: session.conversationId, sessionId: session.id, kind: 'output', sessionType: session.sessionType });
         }
       }
     }
@@ -379,7 +379,7 @@ export class SessionManager {
           opts.videoDeviceId = true;
         } else {
           this.log('warn', 'no available video devices to switch to. setting video to mute for session',
-            { conversationId: jingleSession.conversationId, sessionId, kind: 'video' });
+            { conversationId: jingleSession.conversationId, sessionId, kind: 'video', sessionType: jingleSession.sessionType });
           promises.push(
             handler.setVideoMute(jingleSession, { mute: true, sessionId: jingleSession.id })
           );
@@ -392,9 +392,9 @@ export class SessionManager {
           opts.audioDeviceId = true;
         } else {
           this.log('warn', 'no available audio devices to switch to. setting audio to mute for session',
-            { conversationId: jingleSession.conversationId, sessionId, kind: 'audio' });
+            { conversationId: jingleSession.conversationId, sessionId, kind: 'audio', sessionType: jingleSession.sessionType });
           promises.push(
-            handler.setAudioMute(jingleSession, { mute: true, sessionId: jingleSession.id })
+            handler.setAudioMute(jingleSession, { mute: true, sessionId })
           );
 
           const senders = handler.getSendersByTrackType(jingleSession, 'audio')

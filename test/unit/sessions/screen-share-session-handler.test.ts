@@ -61,7 +61,8 @@ describe('startSession', () => {
       jid,
       conversationId: data.conversation.id,
       sourceCommunicationId: data.sourceCommunicationId,
-      mediaPurpose: SessionTypes.acdScreenShare
+      mediaPurpose: SessionTypes.acdScreenShare,
+      sessionType: SessionTypes.acdScreenShare
     };
 
     expect(mockSdk._streamingConnection.webrtcSessions.initiateRtcSession)

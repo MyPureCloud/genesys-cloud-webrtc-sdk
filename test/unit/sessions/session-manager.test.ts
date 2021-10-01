@@ -575,7 +575,7 @@ describe('updateOutputDeviceForAllSessions()', () => {
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Output deviceId not found. Not updating output media'),
       {
-        sessions: [{ conversationId: videoSession.conversationId, sessionId: videoSession.id }],
+        sessions: [{ conversationId: videoSession.conversationId, sessionId: videoSession.id, sessionType: SessionTypes.collaborateVideo }],
         outputDeviceId
       }
     );
@@ -670,13 +670,14 @@ describe('validateOutgoingMediaTracks()', () => {
   it('should not update the session if the media did not get lost', async () => {
     const mockTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const session = sessions[0];
+    session.sessionType = SessionTypes.softphone
     session.pc['_addSender'](mockTrack); /* this is a mock PC */
 
     await sessionManager.validateOutgoingMediaTracks();
 
     expect(mockSdk.logger.debug).toHaveBeenCalledWith(
       'sessions outgoing track still has available device',
-      { deviceLabel: mockTrack.label, kind: mockTrack.kind, sessionId: session.id }
+      { deviceLabel: mockTrack.label, kind: mockTrack.kind, sessionId: session.id, conversationId: session.conversationId, sessionType: SessionTypes.softphone }
     );
   });
 

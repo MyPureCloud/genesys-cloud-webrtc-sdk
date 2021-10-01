@@ -15,7 +15,7 @@ if (APP_VERSION.indexOf('AIV') > -1 &&
 }
 
 export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
-  this.logger = logger;
+  this.logger = logger || console;
 
   if (logger || this._config.optOutOfTelemetry) {
     // using provided logger, do nothing

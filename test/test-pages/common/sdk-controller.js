@@ -30,7 +30,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
 
   options.environment = environmentData.uri;
   options.logLevel = 'info';
-  options.optOutOfTelemetry = true;
+  // options.optOutOfTelemetry = true;
 
   options.defaults = { monitorMicVolume: true };
 
