@@ -71,7 +71,7 @@ function validateOptions (options: ISdkConfig): string | null {
  * SDK to interact with GenesysCloud WebRTC functionality
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
-  readonly VERSION = '[AIV]{version}[/AIV]';
+  readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
   logger: ILogger;
   sessionManager: SessionManager;
   media: SdkMedia;
