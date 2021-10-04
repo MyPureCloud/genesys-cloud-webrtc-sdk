@@ -14,7 +14,7 @@ Bumped streaming-client to v13.3.1 which includes `stanza` override for ending s
 * [PCM-1726](https://inindca.atlassian.net/browse/PCM-1726)/[PCM-1722](https://inindca.atlassian.net/browse/PCM-1722) – Changed:
     * Renamed package.json `"browser" -> "web"` to prevent build tools from bundling the already web-bundled/built version of the SDK.
     * Pointed `"main": "dist/cjs/index.js"` (it was `dist/genesys-cloud-webrtc-sdk.js` which was a hodge-podge webpack build with minimal deps bundled but target was still web). Most build tools should
-      still be able to pick the commonJS built filesf when building. Note: the commonJS build does not bundle deps. The sdk is not intended to run in a node environment. If using the sdk cjs build
+      still be able to pick the commonJS built files when building. Note: the commonJS build does not bundle deps. The sdk is not intended to run in a node environment. If using the sdk cjs build
       in a node env, you must provide your own polyfills for certain browser specific APIs (suchas the `fetch` API).
     * `dist/genesys-cloud-webrtc-sdk.js` is now the same file as `dist/genesys-cloud-webrtc-sdk.bundle.js` which is built for the CDN (meaning all deps are bundled into the file). This is also true for the `.min` files as well.
     * Streaming-client bump also fixes a dependency file path issue.
