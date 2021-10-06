@@ -3,8 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
 
+# [v6.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...v6.1.4)
+
+### Fixed
+* [PCM-1745](https://inindca.atlassian.net/browse/PCM-1745) – Adding `process-fast` to webpack build to ensure the bundled CDN build does not get throttled in Chrome.
 # [v6.1.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.2...v6.1.3)
 ### Added
 * [PCM-1729](https://inindca.atlassian.net/browse/PCM-1729) – Added `sessionType` to log messages (mainly `propose` and `session-init` events).

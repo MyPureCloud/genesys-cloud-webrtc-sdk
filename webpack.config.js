@@ -1,3 +1,4 @@
+const webpack = require('webpack');
 const path = require('path');
 
 /* used for copying to non `.bundle` filenames (see `scripts/build.ts`) */
@@ -81,7 +82,11 @@ module.exports = (env) => {
       libraryExport: cdn ? 'GenesysCloudWebrtcSdk' : '',
       libraryTarget: 'umd'
     },
-    plugins: [],
+    plugins: [
+      new webpack.ProvidePlugin({
+        process: 'process-fast'
+      })
+    ],
     resolve: {
       extensions: ['.ts', '.js', '.cjs', '.mjs', '.json']
     },
