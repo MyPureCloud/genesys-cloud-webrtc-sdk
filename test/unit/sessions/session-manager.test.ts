@@ -220,6 +220,7 @@ describe('startSession', () => {
     const mockHandler: any = {
       startSession: jest.fn()
     };
+    Object.defineProperty(sessionManager['sdk'], 'isInitialized', { get: () => true});
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const mockParams = { sessionType: SessionTypes.softphone };
@@ -232,12 +233,26 @@ describe('startSession', () => {
       startSession: jest.fn(),
       disabled: true
     };
+    Object.defineProperty(sessionManager['sdk'], 'isInitialized', { get: () => true});
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const mockParams = { sessionType: SessionTypes.softphone };
     await expect(sessionManager.startSession(mockParams)).rejects.toThrowError(/disabled session/);
     expect(mockHandler.startSession).not.toHaveBeenCalledWith(mockParams);
   });
+
+  it('should throw if trying to start a session without streaming client connected', async () => {
+    const mockHandler: any = {
+      startSession: jest.fn(),
+      disabled: false
+    };
+    Object.defineProperty(sessionManager['sdk'], 'isInitialized', { get: () => false});
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const mockParams = { sessionType: SessionTypes.softphone };
+    await expect(sessionManager.startSession(mockParams)).rejects.toThrowError(/streaming client/);
+    expect(mockHandler.startSession).not.toHaveBeenCalledWith(mockParams);
+  })
 });
 
 describe('onPropose', () => {
