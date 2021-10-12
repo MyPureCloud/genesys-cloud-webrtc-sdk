@@ -220,7 +220,7 @@ describe('startSession', () => {
     const mockHandler: any = {
       startSession: jest.fn()
     };
-    Object.defineProperty(sessionManager['sdk'], 'isInitialized', { get: () => true});
+    Object.defineProperty(sessionManager['sdk'], 'connected', { get: () => true});
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const mockParams = { sessionType: SessionTypes.softphone };
@@ -233,7 +233,7 @@ describe('startSession', () => {
       startSession: jest.fn(),
       disabled: true
     };
-    Object.defineProperty(sessionManager['sdk'], 'isInitialized', { get: () => true});
+    Object.defineProperty(sessionManager['sdk'], 'connected', { get: () => true});
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const mockParams = { sessionType: SessionTypes.softphone };
@@ -246,7 +246,7 @@ describe('startSession', () => {
       startSession: jest.fn(),
       disabled: false
     };
-    Object.defineProperty(sessionManager['sdk'], 'isInitialized', { get: () => false});
+    Object.defineProperty(sessionManager['sdk'], 'connected', { get: () => false});
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const mockParams = { sessionType: SessionTypes.softphone };

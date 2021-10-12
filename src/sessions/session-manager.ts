@@ -121,7 +121,7 @@ export class SessionManager {
   }
 
   async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartSoftphoneSessionParams): Promise<any> {
-    if(!this.sdk.isInitialized) {
+    if(!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', {startSessionParams});
     } else {
       const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
