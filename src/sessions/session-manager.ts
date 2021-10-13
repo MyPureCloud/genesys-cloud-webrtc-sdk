@@ -123,15 +123,14 @@ export class SessionManager {
   async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartSoftphoneSessionParams): Promise<any> {
     if(!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', {startSessionParams});
-    } else {
-      const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
-
-      if (handler.disabled) {
-        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
-      }
-
-      return handler.startSession(startSessionParams);
     }
+    const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
+
+    if (handler.disabled) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
+    }
+
+    return handler.startSession(startSessionParams);
   }
 
   /**
