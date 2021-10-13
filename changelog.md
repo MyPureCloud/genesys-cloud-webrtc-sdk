@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
 ### Added
-* [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Added in check to properly handle scenario where a session cannot be started without streaming client connected
+* [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
 
 # [v6.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...v6.1.4)
 
