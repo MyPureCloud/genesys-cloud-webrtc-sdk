@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
+### Added
+* [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Added in check to properly handle scenario where a session cannot be started without streaming client connected
 
 # [v6.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...v6.1.4)
 
