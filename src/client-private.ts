@@ -1,4 +1,4 @@
-import StreamingClient from 'genesys-cloud-streaming-client';
+import StreamingClient, { IClientOptions } from 'genesys-cloud-streaming-client';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
@@ -16,13 +16,24 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     await this._streamingConnection.disconnect();
   }
 
-  const connectionOptions: any = {
+  const {
+    optOutOfTelemetry,
+    wsHost,
+    environment,
+    originAppId,
+    originAppName,
+    originAppVersion
+  } = this._config;
+
+  const connectionOptions: IClientOptions = {
     signalIceConnected: true,
-    host: this._config.wsHost || `wss://streaming.${this._config.environment}`,
-    apiHost: this._config.environment,
-    logger: this.logger,
-    appName: 'webrtc-sdk',
-    appVersion: this.VERSION
+    host: wsHost || `wss://streaming.${environment}`,
+    apiHost: environment,
+    logger: this.logger['secondaryLogger'],
+    appName: originAppName || 'webrtc-sdk',
+    appVersion: originAppVersion || this.VERSION,
+    appId: originAppId || this.logger.clientId,
+    optOutOfWebrtcStatsTelemetry: optOutOfTelemetry
   };
 
   if (this._personDetails) {
