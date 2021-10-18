@@ -1,5 +1,4 @@
 import StreamingClient, { IClientOptions } from 'genesys-cloud-streaming-client';
-import Logger from 'genesys-cloud-client-logger';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
@@ -30,7 +29,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     signalIceConnected: true,
     host: wsHost || `wss://streaming.${environment}`,
     apiHost: environment,
-    logger: this.logger,
+    logger: this.logger['secondaryLogger'],
     appName: originAppName || 'webrtc-sdk',
     appVersion: originAppVersion || this.VERSION,
     appId: originAppId || this.logger.clientId,

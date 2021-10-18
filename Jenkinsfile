@@ -43,9 +43,7 @@ webappPipeline {
     postReleaseStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
             sh("""
-                # patch to prep for the next version – this will create a commit
-                npm version patch -m "Prep next version: %s"
-                git push origin HEAD:master --tags
+                node scripts/prep-version.js
             """)
         }
     }
