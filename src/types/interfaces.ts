@@ -117,19 +117,19 @@ export interface ISdkConfig {
 
   /**
    * This is name of the app that is consuming the SDK. This field is optional and only
-   *  used for loggering purposes.
+   *  used for logging purposes.
    */
   originAppName?: string;
 
   /**
    * This is the version of the app that is consuming the SDK. This field is optional and only
-   *  used for loggering purposes.
+   *  used for logging purposes.
    */
   originAppVersion?: string;
 
   /**
    * This is an unique ID from the app that is consuming the SDK. This field is optional and only
-   *  used for loggering purposes to tie the consuming app client instance with the
+   *  used for logging purposes to tie the consuming app client instance with the
    *  SDK's logger instance.
    */
   originAppId?: string;

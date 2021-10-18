@@ -200,21 +200,21 @@ send logs to the server unless this option is `true`
 Optional
 
 This is name of the app that is consuming the SDK. This field is optional and only
- used for loggering purposes.
+ used for logging purposes.
 
 #### `originAppVersion`
 `originAppVersion?: string;`
 Optional
 
 This is the version of the app that is consuming the SDK. This field is optional and only
- used for loggering purposes.
+ used for logging purposes.
 
  #### `originAppId`
 `originAppId?: string;`
 Optional
 
 This is an unique ID from the app that is consuming the SDK. This field is optional and only
- used for loggering purposes to tie the consuming app client instance with the
+ used for logging purposes to tie the consuming app client instance with the
  SDK's logger instance.
 #### `allowedSessionTypes`
 `allowedSessionTypes?: SessionTypes[];` Optional: defaults to all session types.
