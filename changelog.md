@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
 
+### Added
+* A static `VERSION` accessed at `GenesysCloudWebrtcSdk.VERSION`
+* [PCM-1738](https://inindca.atlassian.net/browse/PCM-1738) – Pulled in [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger) v3.0.0 which changes how the SDK logs:
+    * The logger will now send logs to the server if a logger is passed into the SDK on construction. The way to turn this off is to use the `optOutOfWebTelemtry` config option.
+* [PCM-1738](https://inindca.atlassian.net/browse/PCM-1738) – Pulled in streaming-client v13.2.2 (which also using gc-client-logger v3) and is now passing app name/version/id to the streaming-client's logger.
+
 # [v6.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...v6.1.4)
 
 ### Fixed

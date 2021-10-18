@@ -90,6 +90,9 @@ interface ISdkConfig {
     logLevel?: LogLevels;
     logger?: ILogger;
     optOutOfTelemetry?: boolean;
+    originAppName?: string;
+    originAppVersion?: string;
+    originAppId?: string;
     allowedSessionTypes?: SessionTypes[];
     defaults?: {
       audioStream?: MediaStream;
@@ -178,9 +181,11 @@ type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error'
 `logger?: ILogger;`
 Logger to use. Must implement the `ILogger` interface (see [WebRTC properties](#properties) for `ILogger` definition).
 
-Defaults to [GenesysCloudClientLogger]
-which sends logs to the server (unless `optOutOfTelemetry` is `true`)
-and outputs them in the console.
+Secondary logger to use. Must implement the `ILogger` interface. Defaults to `console`.
+
+> NOTE: The SDK will always use [GenesysCloudClientLogger]
+> which sends logs to the server (unless `optOutOfTelemetry` is `true`) and outputs them to the secondary logger
+> (ie. which ever logger was passed in using this config property).
 
 #### `optOutOfTelemetry`
 `optOutOfTelemetry?: boolean;`
@@ -190,6 +195,27 @@ Opt out of sending logs to the server. Logs are only sent to the server
 if the default [GenesysCloudClientLogger] is used. The default logger will
 send logs to the server unless this option is `true`
 
+#### `originAppName`
+`originAppName?: string;`
+Optional
+
+This is name of the app that is consuming the SDK. This field is optional and only
+ used for loggering purposes.
+
+#### `originAppVersion`
+`originAppVersion?: string;`
+Optional
+
+This is the version of the app that is consuming the SDK. This field is optional and only
+ used for loggering purposes.
+
+ #### `originAppId`
+`originAppId?: string;`
+Optional
+
+This is an unique ID from the app that is consuming the SDK. This field is optional and only
+ used for loggering purposes to tie the consuming app client instance with the
+ SDK's logger instance.
 #### `allowedSessionTypes`
 `allowedSessionTypes?: SessionTypes[];` Optional: defaults to all session types.
 
