@@ -239,10 +239,11 @@ function initializeLogging () {
     accessToken: authToken,
     url: `https://api.${envHost}/api/v2/diagnostics/trace`,
     appVersion,
-    logTopic: `spigot-${appName}`,
+    appName: `spigot-${appName}`,
     logLevel: 'debug',
     uploadDebounceTime: 1000,
-    initializeServerLogging: true
+    initializeServerLogging: true,
+    stringify: true
   });
 }
 
@@ -287,8 +288,10 @@ export async function getNewSdkConnection () {
   const newSdk = new (window as any).GenesysCloudWebrtcSdk({
     environment: config.envHost,
     accessToken: getAuthToken(),
-    logLevel: 'debug',
-    logger: console
+    logLevel: 'info',
+    appName: logger.config.appName,
+    appVersion: logger.config.appVersion,
+    appId: logger.clientId
   });
 
   await newSdk.initialize();
