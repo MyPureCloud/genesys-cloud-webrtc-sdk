@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
 
+* [PCM-1754](https://inindca.atlassian.net/browse/PCM-1754) – Removed several webrtc related logs as they will be logged by streaming-client ^13.3.4. Bumped to streaming-client v13.3.4
+
 ### Added
 * A static `VERSION` accessed at `GenesysCloudWebrtcSdk.VERSION`
 * [PCM-1738](https://inindca.atlassian.net/browse/PCM-1738) – Pulled in [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger) v3.0.0 which changes how the SDK logs:
