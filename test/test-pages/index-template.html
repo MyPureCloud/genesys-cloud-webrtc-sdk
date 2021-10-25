@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
     integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <script src="https://sdk-cdn.mypurecloud.com/javascript/28.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://apps.inindca.com/genesys-cloud-client-logger/genesys-cloud-client-logger.min.js"></script>
   <script>
     if (window.location.href.indexOf('/cdn') > -1) {
       const script = document.createElement('script');
@@ -101,12 +102,17 @@
   </div>
   <div id="auth-text" class="auth-text">Authenticated</div>
   <div id="init-text" class="init-text">Initializing SDK...</div>
-  <hr />
 
   <div id="app-content" class="app-content">
     <div class="top">
       <div id="app-controls" class="app-controls">
 
+        <h2>Softphone</h2>
+        <h5>Misc. Controls</h5>
+        <div class="control-section">
+          <button id="on-queue" type="button" class="btn btn-success">Go On Queue</button>
+          <button id="off-queue" type="button" class="btn btn-warning">Go Off Queue</button>
+        </div>
         <!-- outbound call -->
         <h5>Outbound phone call</h5>
         <div class="control-section">
@@ -114,23 +120,37 @@
           <input id="outbound-phone-number" type="text" class="text-input">
           <div>
             <button type="button" class="btn btn-success" id="outbound-call-start">Start Call</button>
-            <button type="button" class="btn btn-danger" id="outbound-call-end">End Call</button>
+            <!-- <button type="button" class="btn btn-danger" id="outbound-call-end">End Call</button> -->
           </div>
         </div>
 
         <!-- inbound call -->
-        <h5>Inbound phone call</h5>
+        <!-- <h5>Inbound phone call</h5>
         <div class="control-section">
-          <button type="button" class="btn btn-success" id="answer-inbound-call">Answer</button>
+          <button type="button" class="btn btn-success btn-sm" id="answer-inbound-call">Answer</button>
           <button type="button" class="btn btn-danger" id="inbound-call-end">End Call</button>
+        </div> -->
+
+        <h5>Active Sessions</h5>
+        <div id="sessions-element">
+          <!-- table get dynamically rendered -->
+        </div>
+        <hr>
+        <h5>Pending Sessions</h5>
+        <div id="pending-sessions">
+          <!-- table get dynamically rendered -->
         </div>
 
+        <hr>
+        <!-- audio volume -->
         <h5>Audio Volume</h5>
         <div class="control-section">
           <input id="volume-input" type="text" class="text-input">
         </div>
 
         <!-- video -->
+        <hr>
+        <h2>Video</h2>
         <h5>Video conference</h5>
         <div class="control-section">
           <div>

@@ -11,6 +11,7 @@
       true,
       "allow-empty-catch",
       "allow-empty-functions"
-    ]
+    ],
+    "no-implicit-any-catch": false
   }
 }

@@ -676,7 +676,7 @@ export interface IConversationParticipantFromEvent {
   purpose: string;
   userId: string;
   videos: Array<IParticipantVideo>;
-  calls: Array<ICallFromParticipant>;
+  calls: Array<ICallStateFromParticipant>;
 }
 
 export interface IParticipantVideo {
@@ -689,7 +689,7 @@ export interface IParticipantVideo {
   sharingScreen: boolean;
 }
 
-export interface ICallFromParticipant {
+export interface ICallStateFromParticipant {
   id: string;
   state: CommunicationStates;
   muted: boolean;
@@ -699,17 +699,25 @@ export interface ICallFromParticipant {
   provider: string;
 }
 
-export interface IConversationInfo {
+export interface IStoredConversationState {
   conversationUpdate: ConversationUpdate;
-  session: IExtendedMediaSession;
+  session?: IExtendedMediaSession;
   conversationId: string;
   mostRecentUserParticipant?: IConversationParticipantFromEvent;
-  mostRecentCallState?: ICallFromParticipant;
+  mostRecentCallState?: ICallStateFromParticipant;
 }
 
-export interface ISessionAndConversationIds {
+export interface ISdkConversationUpdateEvent {
+  activeConversationId: string;
+  // perrsistentConnectionEnabled: boolean;
+  current: IStoredConversationState[];
+  added: IStoredConversationState[];
+  removed: IStoredConversationState[];
+}
+
+export interface ISessionIdAndConversationId {
   sessionId?: string;
-  conversationId?: string;
+  conversationId: string;
 }
 
 export interface IStartSessionParams extends ISdkMediaDeviceIds {
@@ -727,10 +735,19 @@ export interface IStartVideoSessionParams extends IStartSessionParams {
  * mute: update the conversation's mute status to match this value
  */
 export interface ISessionMuteRequest {
-  /** session id */
-  sessionId: string;
+  /** conversation id */
+  conversationId: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
+  /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
+  unmuteDeviceId?: string | boolean | null;
+}
+
+export interface IConversationHeldRequest {
+  /** conversation id */
+  conversationId: string;
+  /** `true` to mute, `false` to unmute using default device */
+  held: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
   unmuteDeviceId?: string | boolean | null;
 }
@@ -830,8 +847,9 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
-  handledPendingSession: (sessionId: string) => void;
-  cancelPendingSession: (sessionId: string) => void;
+  handledPendingSession: ISessionIdAndConversationId;
+  cancelPendingSession: ISessionIdAndConversationId;
+  conversationUpdate: ISdkConversationUpdateEvent;
 }
 
 /**

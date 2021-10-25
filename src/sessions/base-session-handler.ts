@@ -13,7 +13,8 @@ import {
   IAcceptSessionRequest,
   ISessionMuteRequest,
   IExtendedMediaSession,
-  IUpdateOutgoingMedia
+  IUpdateOutgoingMedia,
+  IConversationHeldRequest
 } from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -33,7 +34,7 @@ export default abstract class BaseSessionHandler {
   }
 
   handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {
-    this.log('info', 'conversation update received', { conversationId: session.conversationId, update });
+    this.log('info', 'conversation update received', { conversationId: update.id, update, sessionConversationId: session?.conversationId, sessionId: session?.id });
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
@@ -52,14 +53,14 @@ export default abstract class BaseSessionHandler {
   }
 
   async rejectPendingSession (session: IPendingSession): Promise<any> {
-    this.log('info', 'rejecting propose', { conversationId: session.conversationId });
+    this.log('info', 'rejecting propose', { conversationId: session.conversationId, sessionId: session.id });
     this.sessionManager.webrtcSessions.rejectRtcSession(session.id);
   }
 
   async handleSessionInit (session: IExtendedMediaSession): Promise<any> {
     session.id = session.sid;
 
-    const pendingSession = this.sessionManager.getPendingSession(session.id);
+    const pendingSession = this.sessionManager.getPendingSession(session);
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
       session.fromUserId = pendingSession.fromUserId;
@@ -68,7 +69,6 @@ export default abstract class BaseSessionHandler {
       session.isPersistentConnection = session.sessionType === SessionTypes.softphone && this.sdk.isPersistentConnectionEnabled();
       Object.defineProperty(session, 'active', { get: () => session.state === 'active' });
     }
-    this.sessionManager.removePendingSession(session.id);
 
     try {
       this.log('info', 'handling session init', { sessionId: session.id, conversationId: session.conversationId });
@@ -138,6 +138,14 @@ export default abstract class BaseSessionHandler {
 
   async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params
+    });
+  }
+
+  async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest): Promise<any> {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Setting conversation on "hold" not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -288,7 +296,7 @@ export default abstract class BaseSessionHandler {
 
         /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
         if (track.kind === 'audio' && session.audioMuted) {
-          await this.sdk.setAudioMute({ sessionId: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
+          await this.sdk.setAudioMute({ conversationId: session.conversationId, mute: true, unmuteDeviceId: options.audioDeviceId });
         }
       });
 

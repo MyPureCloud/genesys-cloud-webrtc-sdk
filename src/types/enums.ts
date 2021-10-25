@@ -17,7 +17,7 @@ export enum SessionTypes {
 }
 
 /**
- * See https://developer.genesys.cloud/api/rest/v2/analytics/conversation_detail_model
+ * https://developer.genesys.cloud/api/rest/v2/analytics/conversation_detail_model#overview
  */
 export enum CommunicationStates {
   /** An agent is being alerted about an incoming call */

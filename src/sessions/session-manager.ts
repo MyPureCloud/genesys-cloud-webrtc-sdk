@@ -15,7 +15,9 @@ import {
   IUpdateOutgoingMedia,
   IStartVideoSessionParams,
   IExtendedMediaSession,
-  IStartSoftphoneSessionParams
+  IStartSoftphoneSessionParams,
+  ISessionIdAndConversationId,
+  IConversationHeldRequest
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 
@@ -27,7 +29,9 @@ const sessionHandlersToConfigure: any[] = [
 
 export class SessionManager {
   sessionHandlers: BaseSessionHandler[];
-  pendingSessions: { [sessionId: string]: IPendingSession } = {};
+  /* use conversationId to index to account for persistent connections */
+  pendingSessions: { [conversationId: string]: IPendingSession } = {};
+  chain = []; // TODO: remove me
 
   constructor (private sdk: GenesysCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
@@ -37,6 +41,9 @@ export class SessionManager {
       const handler = this.getSessionHandler({ sessionType });
       handler.disabled = false;
     });
+
+    // TODO: take me out
+    (window as any).dump = () => console.log(JSON.stringify(this.chain));
   }
 
   private log (level: LogLevels, message: any, details?: any): void {
@@ -52,37 +59,68 @@ export class SessionManager {
   }
 
   handleConversationUpdate (update: ConversationUpdate) {
+    this.chain.push(update); // TODO: remove me
+    this.log('debug', 'conversation event received from hawk', update);
+
+    let wasHandled = false;
+
     // only handle a conversation update if we can associate it with a session
-    const sessions = Object.values(this.jingle.sessions);
-    (sessions as any).forEach((session: IExtendedMediaSession) => {
+    const sessions = Object.values(this.jingle.sessions) as IExtendedMediaSession[];
+    sessions.forEach((session: IExtendedMediaSession) => {
       const handler = this.getSessionHandler({ sessionType: session.sessionType });
-      /* if convoId matches OR we have a persistent connection for softphone conversation */
-      if (
-        !handler.disabled &&
-        (
-          session.conversationId === update.id ||
-          (handler.sessionType === SessionTypes.softphone && this.sdk.isPersistentConnectionEnabled())
-        )
-      ) {
-        handler.handleConversationUpdate(session, update);
+      if (handler.disabled) {
+        return;
       }
+      wasHandled = true;
+      handler.handleConversationUpdate(session, update);
     });
+
+    /* we always want to handle softphone events */
+    const softphoneHander = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+    /* we always want to make sure we handle conversation events for softphone */
+    if (!wasHandled && !softphoneHander.disabled && softphoneHander.getUserParticipantFromConversationEvent(update)) {
+      softphoneHander.handleConversationUpdate(null, update);
+    }
   }
 
-  getPendingSession (sessionId: string): IPendingSession | undefined {
-    return this.pendingSessions[sessionId];
-  }
+  getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
+    if (params.conversationId) {
+      return this.pendingSessions[params.conversationId];
+    }
 
-  removePendingSession (sessionId: string) {
-    delete this.pendingSessions[sessionId];
-  }
-
-  getSession (params: { sessionId?: string, conversationId?: string }): IExtendedMediaSession {
-    let session: IExtendedMediaSession;
     if (params.sessionId) {
-      session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
+      const pendingSessions = Object.values(this.pendingSessions).filter(s => s.sessionId === params.sessionId);
+      if (pendingSessions.length > 1) {
+        this.log('warn', 'retrieving pending session by `sessionId` and there are multiple pendingSessions with the provided `sessionId`. this can have negative side effects. please accept/reject pendingSessions using `conversationId` to avoid conflicts', {
+          params,
+          foundPendingSession: pendingSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
+        });
+        // TODO: get conversation that is not in a connected state
+
+        // finish this – currently the client-private on("cancelIncomingRtcSession") is not getting a conversationId
+      }
+
+      return this.pendingSessions[pendingSessions[0]?.conversationId];
+    }
+  }
+
+  removePendingSession (params: ISessionIdAndConversationId | IPendingSession) {
+    const conversationId = params.conversationId || this.getPendingSession(params)?.conversationId;
+    delete this.pendingSessions[conversationId];
+  }
+
+  getSession (params: ISessionIdAndConversationId): IExtendedMediaSession {
+    let session: IExtendedMediaSession;
+    if (params.conversationId) {
+      const softphoneHanlder = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+
+      session = Object.values(softphoneHanlder.conversations)
+        .find((c) => c.conversationId === params.conversationId)
+        ?.session;
+
+      session = session || (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
     } else {
-      session = (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
+      session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
     }
 
     if (!session) {
@@ -217,7 +255,7 @@ export class SessionManager {
 
     logPendingSession(this.sdk.logger, 'onPendingSession', sessionInfo);
 
-    const existingSession = this.getPendingSession(sessionInfo.sessionId);
+    const existingSession = this.getPendingSession(sessionInfo);
 
     if (existingSession) {
       logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
@@ -236,16 +274,52 @@ export class SessionManager {
       fromUserId: sessionInfo.fromUserId
     };
 
-    this.pendingSessions[pendingSession.id] = pendingSession;
+    this.pendingSessions[pendingSession.conversationId] = pendingSession;
 
     await handler.handlePropose(pendingSession);
   }
 
-  async proceedWithSession (sessionId: string): Promise<void> {
-    const pendingSession = this.getPendingSession(sessionId);
+  /**
+   * If we get this event from streaming-client, that means the session was
+   *  canceled. We no longer care if it was a persistent connection or not
+   *  because streaming-client will only emit events for actual sessions
+   *  and not our psuedo-events we emit for persistent connection conversation
+   *  events.
+   * @param sessionId session id canceled by streaming client
+   */
+  onCancelPendingSession (sessionId: string, conversationId?: string): void {
+    const pendingSession = this.getPendingSession({ sessionId, conversationId });
+    if (!pendingSession) {
+      return;
+    }
+
+    this.sdk.emit('cancelPendingSession', { sessionId, conversationId: pendingSession?.conversationId });
+    this.removePendingSession(pendingSession);
+  }
+
+  /**
+   * If we get this event from streaming-client, that means the session was
+   *  canceled. We no longer care if it was a persistent connection or not
+   *  because streaming-client will only emit events for actual sessions
+   *  and not our psuedo-events we emit for persistent connection conversation
+   *  events.
+   * @param sessionId session id canceled by streaming client
+   */
+  onHandledPendingSession (sessionId: string, conversationId?: string): void {
+    const pendingSession = this.getPendingSession({ sessionId, conversationId });
+    if (!pendingSession) {
+      return;
+    }
+
+    this.sdk.emit('handledPendingSession', { sessionId, conversationId: pendingSession?.conversationId });
+    this.removePendingSession(pendingSession);
+  }
+
+  async proceedWithSession (params: ISessionIdAndConversationId): Promise<void> {
+    const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { params });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -253,11 +327,11 @@ export class SessionManager {
     await sessionHandler.proceedWithSession(pendingSession);
   }
 
-  async rejectPendingSession (sessionId: string): Promise<void> {
-    const pendingSession = this.getPendingSession(sessionId);
+  async rejectPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { params });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -294,22 +368,45 @@ export class SessionManager {
     const session = this.getSession(params);
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
+
+    // TODO: this is ugly....
+    if (
+      params.conversationId &&
+      sessionHandler instanceof SoftphoneSessionHandler &&
+      sessionHandler.hasActivePersistentConnection() &&
+      sessionHandler.persistentConnectionSession === session &&
+      sessionHandler.conversations[params.conversationId]
+    ) {
+      const update = sessionHandler.conversations[params.conversationId];
+      session.pcParticipant = update.mostRecentUserParticipant as any;
+      session.conversationId = params.conversationId;
+      console.debug('doing some fancy magic to find the correct conversationId on the persistent connection');
+    }
+
     return sessionHandler.endSession(session, params.reason);
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ sessionId: params.sessionId });
+    const session = this.getSession({ conversationId: params.conversationId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setVideoMute(session, params);
   }
 
   async setAudioMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ sessionId: params.sessionId });
+    const session = this.getSession({ conversationId: params.conversationId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setAudioMute(session, params);
   }
+
+  async setConversationHeld (params: IConversationHeldRequest): Promise<void> {
+    const session = this.getSession({ conversationId: params.conversationId });
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    await handler.setConversationHeld(session, params);
+  }
+
   async validateOutgoingMediaTracks () {
     const sessions = this.getAllActiveSessions();
     const { videoDevices, audioDevices, outputDevices, hasOutputDeviceSupport } = this.sdk.media.getState();
@@ -385,7 +482,7 @@ export class SessionManager {
           this.log('warn', 'no available video devices to switch to. setting video to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'video' });
           promises.push(
-            handler.setVideoMute(jingleSession, { mute: true, sessionId: jingleSession.id })
+            handler.setVideoMute(jingleSession, { mute: true, conversationId: jingleSession.conversationId })
           );
         }
       }
@@ -398,7 +495,7 @@ export class SessionManager {
           this.log('warn', 'no available audio devices to switch to. setting audio to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'audio' });
           promises.push(
-            handler.setAudioMute(jingleSession, { mute: true, sessionId: jingleSession.id })
+            handler.setAudioMute(jingleSession, { mute: true, conversationId: jingleSession.conversationId })
           );
 
           const senders = handler.getSendersByTrackType(jingleSession, 'audio')

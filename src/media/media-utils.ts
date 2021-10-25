@@ -1,7 +1,7 @@
 import { v4 } from 'uuid';
 
 import { GenesysCloudWebrtcSdk } from '../client';
-import { IExtendedMediaSession, ISessionAndConversationIds } from '../types/interfaces';
+import { IExtendedMediaSession, ISessionIdAndConversationId } from '../types/interfaces';
 
 const GC_AUDIO_EL_CLASS = '__gc-webrtc-inbound';
 
@@ -44,7 +44,7 @@ export const attachAudioMedia = function (
   stream: MediaStream,
   volume = 100,
   audioElement?: HTMLAudioElement,
-  ids?: ISessionAndConversationIds
+  ids?: ISessionIdAndConversationId
 ): HTMLAudioElement {
   if (!audioElement) {
     audioElement = createUniqueAudioMediaElement();

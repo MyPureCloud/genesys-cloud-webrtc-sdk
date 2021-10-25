@@ -20,7 +20,9 @@ import {
   isCustomerData,
   IStartSoftphoneSessionParams,
   IOrgDetails,
-  IStation
+  IStation,
+  ISessionIdAndConversationId,
+  IConversationHeldRequest
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -44,6 +46,9 @@ const ENVIRONMENTS = [
   'euw2.pure.cloud',
   'apne2.pure.cloud'
 ];
+
+const DISASSOCIATED_EVENT = 'Disassociated';
+const ASSOCIATED_EVENT = 'Associated';
 
 /**
  * Validate SDK construct options.
@@ -76,7 +81,8 @@ function validateOptions (options: ISdkConfig): string | null {
  * SDK to interact with GenesysCloud WebRTC functionality
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
-  readonly VERSION = '[AIV]{version}[/AIV]';
+  static readonly VERSION = '[AIV]{version}[/AIV]';
+
   logger: ILogger;
   sessionManager: SessionManager;
   conversationManager: ConversationManager;
@@ -103,6 +109,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   get isGuest (): boolean {
     return !this._config.accessToken;
+  }
+
+  get VERSION (): string {
+    return GenesysCloudWebrtcSdk.VERSION;
   }
 
   constructor (options: ISdkConfig) {
@@ -154,8 +164,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
     this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
-    this.on('cancelPendingSession', (sessionId: string) => this.logger.info('cancelPendingSession', { sessionId }));
-    this.on('handledPendingSession', (sessionId: string) => this.logger.info('handledPendingSession', { sessionId }));
+    this.on('cancelPendingSession', (ids: ISessionIdAndConversationId) => this.logger.info('cancelPendingSession', ids));
+    this.on('handledPendingSession', (ids: ISessionIdAndConversationId) => this.logger.info('handledPendingSession', ids));
     this.on('sdkError', (error) => {
       /* this prints it more readable in the console */
       this.logger.error('sdkError', {
@@ -165,13 +175,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         details: error.details
         /* logging errors is dangerous because they could contain PII */
       }, true);
-    });
-    this.on('ready', () => {
-      /* if we are allowing softphone calls, we need station information */
-      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone)) {
-        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
-        this.fetchUsersStation();
-      }
     });
 
     this._connected = false;
@@ -228,6 +231,21 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       httpRequests.push(getOrg);
       httpRequests.push(getPerson);
+
+      /* if we are allowing softphone calls, we need station information */
+      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone)) {
+        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
+        httpRequests.push(
+          this.fetchUsersStation().catch((err) => {
+            this.logger.warn('error fetching users station', err);
+          })
+        );
+
+        // TODO: do we always want to listen or just after we have successfully initialized?
+        //  I am thinking if we get an error for the station request, we may still want to listen
+        //  for new events in case the station is suddenly associated
+        this.once('ready', () => this._listenForStationEvents());
+      }
     }
 
     try {
@@ -480,6 +498,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         throw new Error('User does not have an associated station');
       }
 
+      // TODO: what happens if we don't have a station? Do we get a 404
       return requestApiWithRetry.call(this, `/stations/${stationId}`).promise
         .then(({ body }) => {
           this._stationDetails = body;
@@ -528,6 +547,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
+  async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
+    await this.sessionManager.setConversationHeld(heldOptions);
+  }
+
   /**
    * Set the accessToken the sdk uses to authenticate
    *  to the API.
@@ -540,23 +563,27 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Accept a pending session based on the passed in ID.
+   * Accept a pending session based on the passed in conversation or session ID.
+   * > NOTE: it is recommended to use the conversation ID to avoid conflicts
+   *  when using persistent connection
    *
-   * @param sessionId id of the pending session to accept
+   * @param params conversationId or sessionId of the pending session to accept
    * @returns a promise that fullfils once the session accept goes out
    */
-  async acceptPendingSession (sessionId: string): Promise<void> {
-    await this.sessionManager.proceedWithSession(sessionId);
+  async acceptPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    await this.sessionManager.proceedWithSession(params);
   }
 
   /**
-   * Reject a pending session based on the passed in ID.
+   * Reject a pending session based on the passed in conversation or session ID.
+   * > NOTE: it is recommended to use the conversation ID to avoid conflicts
+   *  when using persistent connection
    *
-   * @param sessionId id of the pending session to reject
+   * @param params conversationId or sessionId of the pending session to reject
    * @returns a promise that fullfils once the session reject goes out
    */
-  async rejectPendingSession (sessionId: string): Promise<void> {
-    await this.sessionManager.rejectPendingSession(sessionId);
+  async rejectPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    await this.sessionManager.rejectPendingSession(params);
   }
 
   /**
@@ -655,6 +682,28 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         remove(track);
       });
     });
+  }
+
+  private _listenForStationEvents () {
+    this._streamingConnection._notifications.subscribe(
+      `v2.users.${this._personDetails.id}.station`,
+      (event) => {
+        console.log('==== station event', event);
+        if (event.metadata.action === DISASSOCIATED_EVENT) {
+          this.logger.info('station disassociated', {
+            stationId: this._stationDetails?.id
+          });
+          this._stationDetails = null;
+        } else if (event.metadata.action === ASSOCIATED_EVENT) {
+          this.logger.info('station associated. fetching station', {
+            stationId: event.eventBody.associatedStation.id
+          });
+
+          this._personDetails.station = event.eventBody;
+          return this.fetchUsersStation();
+        }
+      }
+    );
   }
 
   /**
