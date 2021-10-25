@@ -3,7 +3,20 @@ import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IAcceptSessionRequest, ISessionMuteRequest, IConversationParticipant, IExtendedMediaSession, IUpdateOutgoingMedia, IStartSoftphoneSessionParams, IConversationParticipantFromEvent, ICallStateFromParticipant, IStoredConversationState, ISdkConversationUpdateEvent, IConversationHeldRequest } from '../types/interfaces';
+import {
+  IPendingSession,
+  IAcceptSessionRequest,
+  ISessionMuteRequest,
+  IConversationParticipant,
+  IExtendedMediaSession,
+  IUpdateOutgoingMedia,
+  IStartSoftphoneSessionParams,
+  IConversationParticipantFromEvent,
+  ICallStateFromParticipant,
+  IStoredConversationState,
+  ISdkConversationUpdateEvent,
+  IConversationHeldRequest
+} from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
@@ -339,12 +352,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     let stream = params.mediaStream || this.sdk._config.defaults.audioStream;
     if (!stream) {
-      this.log('info', 'No mediaStream provided, starting media', { conversationId: session.conversationId, sessionId: session.id });
+      this.log('info', 'No mediaStream provided, starting media', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       stream = await this.sdk.media.startMedia({
         audio: this.sdk.media.getValidSdkMediaRequestDeviceId(params.audioDeviceId),
         session
       });
-      this.log('debug', 'Media started', { conversationId: session.conversationId });
+      this.log('debug', 'Media started', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     }
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
@@ -359,7 +372,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       element = createUniqueAudioMediaElement();
       session.once('terminated', () => {
         if (session._outputAudioElement === element) {
-          this.log('debug', 'session ended and was using a unique audio element. removing from DOM', { sessionId: session.id, conversationId: session.conversationId });
+          this.log('debug', 'session ended and was using a unique audio element. removing from DOM', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
           session._outputAudioElement.parentNode.removeChild(session._outputAudioElement);
         }
       });
@@ -472,11 +485,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async endSessionFallback (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    this.log('info', 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId });
+    this.log('info', 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType, reason });
     try {
       await super.endSession(session, reason);
-    } catch (err) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, error: err });
+    } catch (error) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, error });
     }
   }
 
@@ -530,7 +543,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       }
 
       if (!participant) {
-        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType });
+        throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find a participant for session', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       }
 
       session.pcParticipant = participant;
@@ -557,23 +570,31 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     this.log('info', 'setting audio mute state', {
       params,
       sessionId: session.id,
-      conversationId
+      conversationId,
+      sessionType: session.sessionType
     });
 
     try {
       const userParticipant = await this.getUserParticipantFromConversationId(conversationId);
 
       return await this.patchPhoneCall(conversationId, userParticipant.id, { muted: params.mute });
-    } catch (err) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', { conversationId, params, err });
+    } catch (error) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set audioMute', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        sessionType: session.sessionType,
+        params,
+        error
+      });
     }
   }
 
   async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest) {
     this.log('info', 'setting conversation "held" state', {
-      params,
+      conversationId: session.conversationId,
       sessionId: session.id,
-      conversationId: session.conversationId
+      sessionType: session.sessionType,
+      params
     });
 
     try {
@@ -584,9 +605,13 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         userParticipant.id,
         { held: params.held }
       );
-    } catch (err) {
+    } catch (error) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set held state', {
-        conversationId: session.conversationId, params, err
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        sessionType: session.sessionType,
+        params,
+        error
       });
     }
   }
@@ -598,8 +623,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async startSession (params: IStartSoftphoneSessionParams): Promise<{ id: string, selfUri: string }> {
-    this.log('info', 'Creating softphone call from SDK', { conversationIds: params.conversationIds });
-    let response = await requestApi.call(this.sdk, `/conversations/calls`, {
+    this.log('info', 'Creating softphone call from SDK', { conversationIds: params.conversationIds, sessionType: this.sessionType });
+    const response = await requestApi.call(this.sdk, `/conversations/calls`, {
       method: 'post',
       data: JSON.stringify(params)
     });

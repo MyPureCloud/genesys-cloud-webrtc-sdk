@@ -1,5 +1,3 @@
-/// <reference path="types/libs.ts" />
-
 import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
@@ -81,8 +79,7 @@ function validateOptions (options: ISdkConfig): string | null {
  * SDK to interact with GenesysCloud WebRTC functionality
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
-  static readonly VERSION = '[AIV]{version}[/AIV]';
-
+  static readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
   logger: ILogger;
   sessionManager: SessionManager;
   conversationManager: ConversationManager;
@@ -196,7 +193,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  and other necessary async tasks are complete.
    */
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
-    let httpRequests: Promise<any>[] = [];
+    const httpRequests: Promise<any>[] = [];
     if (this.isGuest) {
       let guestPromise: Promise<void>;
 

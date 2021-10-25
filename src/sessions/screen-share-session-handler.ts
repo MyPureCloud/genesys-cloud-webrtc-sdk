@@ -22,7 +22,8 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       jid,
       conversationId: conversation.id,
       sourceCommunicationId: sourceCommunicationId,
-      mediaPurpose: SessionTypes.acdScreenShare
+      mediaPurpose: SessionTypes.acdScreenShare,
+      sessionType: this.sessionType
     };
 
     this.log('info', 'starting acd screen share session', opts);
@@ -70,7 +71,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
         throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Screen share sessions not supported for authenticated users');
       }
 
-      const sessionInfo = { sessionId: session.id, conversationId: session.conversationId };
+      const sessionInfo = { sessionId: session.id, conversationId: session.conversationId, sessionType: this.sessionType };
 
       if (!this._screenStreamPromise) {
         const errMsg = 'No pending or active screen share media promise';

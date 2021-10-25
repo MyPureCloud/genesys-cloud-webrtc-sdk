@@ -1,8 +1,9 @@
+/* eslint-disable-line @typescript-eslint/no-explicit-any */
 import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
-import { SdkError } from '../utils';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
+import { SdkError } from '../utils';
 import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
 import { ConversationUpdate } from '../conversations/conversation-update';
 
@@ -509,6 +510,7 @@ export interface ISdkMediaDeviceIds {
 }
 
 export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
+  conversationId?: string;
   /** session id (this _OR_ `session` is required) */
   sessionId?: string;
   /** session (this _OR_ `sessionId` is required) */
@@ -717,7 +719,7 @@ export interface ISdkConversationUpdateEvent {
 
 export interface ISessionIdAndConversationId {
   sessionId?: string;
-  conversationId: string;
+  conversationId?: string;
 }
 
 export interface IStartSessionParams extends ISdkMediaDeviceIds {

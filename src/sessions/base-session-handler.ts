@@ -34,7 +34,7 @@ export default abstract class BaseSessionHandler {
   }
 
   handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {
-    this.log('info', 'conversation update received', { conversationId: update.id, update, sessionConversationId: session?.conversationId, sessionId: session?.id });
+    this.log('info', 'conversation update received', { conversationId: update.id, update, sessionConversationId: session?.conversationId, sessionId: session?.id, sessionType: session.sessionType });
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
@@ -48,12 +48,12 @@ export default abstract class BaseSessionHandler {
   }
 
   async proceedWithSession (session: IPendingSession): Promise<any> {
-    this.log('info', 'proceeding with proposed session', { conversationId: session.conversationId, sessionId: session.id });
+    this.log('info', 'proceeding with proposed session', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
   async rejectPendingSession (session: IPendingSession): Promise<any> {
-    this.log('info', 'rejecting propose', { conversationId: session.conversationId, sessionId: session.id });
+    this.log('info', 'rejecting propose', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     this.sessionManager.webrtcSessions.rejectRtcSession(session.id);
   }
 
@@ -71,7 +71,7 @@ export default abstract class BaseSessionHandler {
     }
 
     try {
-      this.log('info', 'handling session init', { sessionId: session.id, conversationId: session.conversationId });
+      this.log('info', 'handling session init', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
     } catch (e) {
       // don't let log errors ruin a session
     }
@@ -81,7 +81,7 @@ export default abstract class BaseSessionHandler {
     session.pc.addEventListener('negotiationneeded', this._warnNegotiationNeeded.bind(this, session));
 
     session.on('connectionState' as any, (state: string) => {
-      this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.sid });
+      this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.sid, sessionType: session.sessionType });
     });
 
     session.on('terminated', this.onSessionTerminated.bind(this, session));
@@ -89,7 +89,7 @@ export default abstract class BaseSessionHandler {
   }
 
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
-    this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id });
+    this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id, sessionType: session.sessionType });
     this.endTracks(session._outboundStream);
     this.endTracks(session._screenShareStream);
     this.sdk.emit('sessionEnded', session, reason);
@@ -118,7 +118,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    this.log('info', 'ending session', { conversationId: session.conversationId, sessionId: session.id });
+    this.log('info', 'ending session', { sessionId: session.id, conversationId: session.conversationId, reason, sessionType: session.sessionType });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
@@ -252,11 +252,11 @@ export default abstract class BaseSessionHandler {
 
           const userId = this.sdk._personDetails.id;
           if (updateAudio) {
-            this.log('warn', 'User denied media permissions. Sending mute for audio', { sessionId: session.id, conversationId: session.conversationId });
+            this.log('warn', 'User denied media permissions. Sending mute for audio', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
             audioMute = session.mute(userId as any, 'audio');
           }
           if (updateVideo) {
-            this.log('warn', 'User denied media permissions. Sending mute for video', { sessionId: session.id, conversationId: session.conversationId });
+            this.log('warn', 'User denied media permissions. Sending mute for video', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
             videoMute = session.mute(userId as any, 'video');
           }
 
@@ -330,7 +330,7 @@ export default abstract class BaseSessionHandler {
     const el: ExtendedHTMLAudioElement = session._outputAudioElement as ExtendedHTMLAudioElement;
 
     if (!el) {
-      this.log('warn', 'Cannot update audio output because there is no attached audio element to the session', { sessionId: session.id, conversationId: session.conversationId });
+      this.log('warn', 'Cannot update audio output because there is no attached audio element to the session', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       return;
     }
 
@@ -352,14 +352,14 @@ export default abstract class BaseSessionHandler {
   async addMediaToSession (session: IExtendedMediaSession, stream: MediaStream): Promise<void> {
     const promises: any[] = [];
     if (checkHasTransceiverFunctionality()) {
-      this.log('info', 'Using track based actions', { conversationId: session.conversationId });
+      this.log('info', 'Using track based actions', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       stream.getTracks().forEach(t => {
-        this.log('debug', 'Adding track to session', { track: t, conversationId: session.conversationId });
+        this.log('debug', 'Adding track to session', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
         promises.push(session.pc.addTrack(t));
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, errMsg, { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     }
 
     await Promise.all(promises);
@@ -370,7 +370,7 @@ export default abstract class BaseSessionHandler {
    */
   async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
     // find a transceiver with the same kind of track
-    let transceiver = session.pc.getTransceivers().find(t => {
+    const transceiver = session.pc.getTransceivers().find(t => {
       return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
     });
 
@@ -404,11 +404,11 @@ export default abstract class BaseSessionHandler {
   }
 
   _warnNegotiationNeeded (session: IExtendedMediaSession): void {
-    this.log('error', 'negotiation needed and not supported', { conversationId: session.conversationId, sessionId: session.id });
+    this.log('error', 'negotiation needed and not supported', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
   }
 
   removeMediaFromSession (session: IExtendedMediaSession, sender: RTCRtpSender): Promise<void> {
-    this.log('debug', 'Removing track from session', { sender, conversationId: session.conversationId, sessionId: session.id });
+    this.log('debug', 'Removing track from session', { sender, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     return sender.replaceTrack(null);
   }
 

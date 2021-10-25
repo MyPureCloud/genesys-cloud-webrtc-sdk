@@ -1,72 +1,69 @@
+const webpack = require('webpack');
 const path = require('path');
-const WebpackAutoInject = require('webpack-auto-inject-version');
+
+/* used for copying to non `.bundle` filenames (see `scripts/build.ts`) */
+const fileNames = {
+  bundle: 'genesys-cloud-webrtc-sdk.bundle.js',
+  bundleMap: 'genesys-cloud-webrtc-sdk.bundle.js.map',
+  bundleMin: 'genesys-cloud-webrtc-sdk.bundle.min.js',
+  bundleMinMap: 'genesys-cloud-webrtc-sdk.bundle.min.js.map'
+};
 
 module.exports = (env) => {
   const minimize = env && env.production;
   const cdn = env && env.cdn;
   const mode = minimize ? 'production' : 'development';
 
-  let filename = 'genesys-cloud-webrtc-sdk';
-  let babelExcludes = [];
-  let babelOptions;
-  let externals = [];
+  const filename = `genesys-cloud-webrtc-sdk.bundle${minimize ? '.min.js' : '.js'}`;
 
-  /* if building for the cdn */
-  if (cdn) {
-    /*
-      this is so babel doesn't try to polyfill/transpile core-js (which is the polyfill)
-        and the build tools.
-      But we want it polyfill/transpile all other node_modules when building for the web
-    */
-    babelExcludes = [
-      /@babel\//,
-      /\bcore-js\b/,
-      /\bwebpack\/buildin\b/
-    ];
-
-    babelOptions = {
-      sourceType: 'unambiguous',
-      presets: [
-        ['@babel/preset-env', {
-          debug: false,
-          targets: [
-            'last 2 versions',
-            '> 5%',
-            'IE 11',
-            'not dead'
-          ]
-        }],
-        '@babel/preset-typescript'
-      ],
-      plugins: [
-        ['@babel/plugin-transform-runtime', {
-          corejs: 3
-        }],
-        '@babel/plugin-proposal-class-properties',
-        '@babel/plugin-transform-property-mutators'
-      ]
-    };
-
-    filename += '.bundle';
-  } else {
-    /* if we are building for 'module', don't polyfill, transpile, or bundle any dependencies – except stanza because it has node deps... */
-    babelExcludes = [/node_modules\/(?!(core\-util\-is)).*/];
-
-    babelOptions = {
-      sourceType: 'unambiguous',
-      presets: [
-        '@babel/preset-env',
-        '@babel/preset-typescript'
-      ],
-      plugins: [
-        '@babel/plugin-proposal-class-properties'
-      ]
-    };
+  if (!cdn) {
+    console.error(new Error('Webpack build can only be built for the CDN. \n  Be sure to pass in `--env.cdn` param to build script\n'));
+    process.exit(1);
   }
 
-  filename += minimize ? '.min.js' : '.js';
+  /*
+    this is so babel doesn't try to polyfill/transpile core-js (which is the polyfill)
+      and the build tools.
+    But we want it polyfill/transpile all other node_modules when building for the web
+  */
+  const babelExcludes = [
+    /@babel\//,
+    /\bcore-js\b/,
+    /\bwebpack\/buildin\b/
+  ];
 
-  console.log(`build mode: ${mode}`);
+  const babelOptions = {
+    sourceType: 'unambiguous',
+    presets: [
+      ['@babel/preset-env', {
+        debug: false,
+        targets: [
+          'last 2 versions',
+          '> 5%',
+          'IE 11',
+          'not dead'
+        ]
+      }],
+      '@babel/preset-typescript'
+    ],
+    plugins: [
+      ['@babel/plugin-transform-runtime', {
+        corejs: 3
+      }],
+      '@babel/plugin-proposal-class-properties',
+      '@babel/plugin-transform-property-mutators'
+    ]
+  };
+
+  console.log('building: ', env);
+
+
+  const allowedFilenames = Object.values(fileNames);
+  if (!allowedFilenames.includes(filename)) {
+    console.error('Generated file name is not in the fileNames map', { allowedFilenames, filename });
+    console.error(new Error('cannot build to desired file name'));
+    process.exit(1);
+  }
 
   return {
     target: 'web',
@@ -75,7 +72,6 @@ module.exports = (env) => {
     optimization: {
       minimize
     },
-    externals,
     devtool: 'source-map',
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -87,14 +83,8 @@ module.exports = (env) => {
       libraryTarget: 'umd'
     },
     plugins: [
-      new WebpackAutoInject({
-        components: {
-          AutoIncreaseVersion: false,
-          InjectByTag: {
-            fileRegex: /\.+/,
-            AIVTagRegexp: /(\[AIV])(([a-zA-Z{} ,:;!()_@\-"'\\\/])+)(\[\/AIV])/g // eslint-disable-line
-          }
-        }
+      new webpack.ProvidePlugin({
+        process: 'process-fast'
       })
     ],
     resolve: {
@@ -112,3 +102,5 @@ module.exports = (env) => {
     }
   };
 };
+
+module.exports.fileNames = fileNames;

@@ -3,7 +3,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
+
+# [v6.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...v6.1.4)
+
+### Fixed
+* [PCM-1745](https://inindca.atlassian.net/browse/PCM-1745) – Adding `process-fast` to webpack build to ensure the bundled CDN build does not get throttled in Chrome.
+# [v6.1.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.2...v6.1.3)
+### Added
+* [PCM-1729](https://inindca.atlassian.net/browse/PCM-1729) – Added `sessionType` to log messages (mainly `propose` and `session-init` events).
+* [PCM-1715](https://inindca.atlassian.net/browse/PCM-1715)/[PCM-1726](https://inindca.atlassian.net/browse/PCM-1726) -
+Bumped streaming-client to v13.3.1 which includes `stanza` override for ending sessions via the client. Now the client will manually close the peer connection if it is not closed automatically after sending `session-terminate`.
+### Fixed
+* [PCM-1726](https://inindca.atlassian.net/browse/PCM-1726)/[PCM-1722](https://inindca.atlassian.net/browse/PCM-1722) – Changed:
+    * Renamed package.json `"browser" -> "web"` to prevent build tools from bundling the already web-bundled/built version of the SDK.
+    * Pointed `"main": "dist/cjs/index.js"` (it was `dist/genesys-cloud-webrtc-sdk.js` which was a hodge-podge webpack build with minimal deps bundled but target was still web). Most build tools should
+      still be able to pick the commonJS built files when building. Note: the commonJS build does not bundle deps. The sdk is not intended to run in a node environment. If using the sdk cjs build
+      in a node env, you must provide your own polyfills for certain browser specific APIs (suchas the `fetch` API).
+    * `dist/genesys-cloud-webrtc-sdk.js` is now the same file as `dist/genesys-cloud-webrtc-sdk.bundle.js` which is built for the CDN (meaning all deps are bundled into the file). This is also true for the `.min` files as well.
+    * Streaming-client bump also fixes a dependency file path issue.
+
+# [v6.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.1...v6.1.2)
+### Fixed
+* [PCM-1711](https://inindca.atlassian.net/browse/PCM-1711) - Changed default behavior for softphone `sdk.acceptSession` to create and use unique `HTMLAudioElement`s for each session.
+It will then remove the audio element from the DOM once the session ends. Note: it will only create the unique audio element (and remove it from the DOM on `sessionEnded`) if `sdk.acceptSession` is _not_
+passed an audioElement _and_ there is _not_ a SDK `defaults.audioElement`.
+* [PCM-1587](https://inindca.atlassian.net/browse/PCM-1587) - Ensure video-sessions pass up the `reason` to stanza for ending a session.
 
 ### BREAKING CHANGE
 * Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable:
