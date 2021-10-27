@@ -574,6 +574,7 @@ export interface IStation {
   type: 'inin_webrtc_softphone' | 'inin_remote';
   webRtcPersistentEnabled: boolean;
   webRtcForceTurn: boolean;
+  webRtcCallAppearances: number;
   // webRtcMediaDscp: 46;
   // lineAppearanceId: string;
 }
@@ -852,6 +853,8 @@ export interface SdkEvents {
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;
   conversationUpdate: ISdkConversationUpdateEvent;
+  station: (event: { action: 'Associated' | 'Disassociated', station: IStation | null }) => void;
+  useSingleWebrtcSession: boolean;
 }
 
 /**

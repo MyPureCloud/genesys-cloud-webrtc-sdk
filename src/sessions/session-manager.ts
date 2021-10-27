@@ -373,8 +373,8 @@ export class SessionManager {
     if (
       params.conversationId &&
       sessionHandler instanceof SoftphoneSessionHandler &&
-      sessionHandler.hasActivePersistentConnection() &&
-      sessionHandler.persistentConnectionSession === session &&
+      sessionHandler.hasActiveSession() &&
+      sessionHandler.currentSession === session &&
       sessionHandler.conversations[params.conversationId]
     ) {
       const update = sessionHandler.conversations[params.conversationId];

@@ -84,13 +84,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   sessionManager: SessionManager;
   conversationManager: ConversationManager;
   media: SdkMedia;
+  station: IStation | null;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
   _http: HttpClient;
   _orgDetails: IOrgDetails;
   _personDetails: IPersonDetails;
-  _stationDetails?: IStation;
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
@@ -238,10 +238,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           })
         );
 
-        // TODO: do we always want to listen or just after we have successfully initialized?
-        //  I am thinking if we get an error for the station request, we may still want to listen
-        //  for new events in case the station is suddenly associated
-        this.once('ready', () => this._listenForStationEvents());
+        httpRequests.push(this._listenForStationEvents());
       }
     }
 
@@ -496,20 +493,28 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       }
 
       // TODO: what happens if we don't have a station? Do we get a 404
-      return requestApiWithRetry.call(this, `/stations/${stationId}`).promise
-        .then(({ body }) => {
-          this._stationDetails = body;
-          this.logger.debug('Fetched user station', body, true); // don't log PII
-          return body;
-        });
+      const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise
+      this.station = body;
+      this.logger.debug('Fetched user station', body, true); // don't log PII
+      this.emit('useSingleWebrtcSession', this.shouldUseSingleWebrtcSession());
+      this.emit('station', { action: 'Associated', station: body });
+      return body;
     } catch (err) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
     }
   }
 
   isPersistentConnectionEnabled (): boolean {
-    return this._stationDetails?.webRtcPersistentEnabled &&
-      this._stationDetails?.type === 'inin_webrtc_softphone';
+    return this.station?.webRtcPersistentEnabled &&
+      this.station?.type === 'inin_webrtc_softphone';
+  }
+
+  isOneLineAppearanceEnabled (): boolean {
+    return this.station?.webRtcCallAppearances === 1;
+  }
+
+  shouldUseSingleWebrtcSession (): boolean {
+    return this.isPersistentConnectionEnabled() || this.isOneLineAppearanceEnabled();
   }
 
   /**
@@ -682,21 +687,22 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   private _listenForStationEvents () {
-    this._streamingConnection._notifications.subscribe(
+    return this._streamingConnection._notifications.subscribe(
       `v2.users.${this._personDetails.id}.station`,
       (event) => {
-        console.log('==== station event', event);
         if (event.metadata.action === DISASSOCIATED_EVENT) {
           this.logger.info('station disassociated', {
-            stationId: this._stationDetails?.id
+            stationId: this.station?.id
           });
-          this._stationDetails = null;
+          this.station = null;
+          this.emit('station', { action: 'Disassociated', station: null });
         } else if (event.metadata.action === ASSOCIATED_EVENT) {
           this.logger.info('station associated. fetching station', {
             stationId: event.eventBody.associatedStation.id
           });
 
           this._personDetails.station = event.eventBody;
+          // we emit the associated station after it is loaded
           return this.fetchUsersStation();
         }
       }
