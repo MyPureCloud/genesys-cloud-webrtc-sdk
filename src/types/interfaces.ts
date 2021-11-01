@@ -659,7 +659,6 @@ export interface IPendingSession {
   autoAnswer: boolean;
   address: string;
   conversationId: string;
-  persistentConversationId: string;
   sessionType: SessionTypes;
   originalRoomJid: string;
   fromUserId?: string;
@@ -783,8 +782,6 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   fromUserId?: string;
-  persistentConversationId: string; // this id is almost always present regardless of `isPersistentConnection`
-  activeConversationId: string;
   pcParticipant?: IConversationParticipant;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;

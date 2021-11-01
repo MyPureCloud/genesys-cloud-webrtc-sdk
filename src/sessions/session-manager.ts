@@ -31,7 +31,6 @@ export class SessionManager {
   sessionHandlers: BaseSessionHandler[];
   /* use conversationId to index to account for persistent connections */
   pendingSessions: { [conversationId: string]: IPendingSession } = {};
-  chain = []; // TODO: remove me
 
   constructor (private sdk: GenesysCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
@@ -41,9 +40,6 @@ export class SessionManager {
       const handler = this.getSessionHandler({ sessionType });
       handler.disabled = false;
     });
-
-    // TODO: take me out
-    (window as any).dump = () => console.log(JSON.stringify(this.chain));
   }
 
   private log (level: LogLevels, message: any, details?: any): void {
@@ -59,10 +55,9 @@ export class SessionManager {
   }
 
   handleConversationUpdate (update: ConversationUpdate) {
-    this.chain.push(update); // TODO: remove me
     const sessions = this.getAllJingleSessions();
 
-    /* let each enabled handler pprocess updates */
+    /* let each enabled handler process updates */
     this.sessionHandlers
       .filter(handler => !handler.disabled)
       .forEach(handler =>
@@ -82,9 +77,6 @@ export class SessionManager {
           params,
           foundPendingSession: pendingSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
         });
-        // TODO: get conversation that is not in a connected state
-
-        // finish this – currently the client-private on("cancelIncomingRtcSession") is not getting a conversationId
       }
 
       return this.pendingSessions[pendingSessions[0]?.conversationId];
@@ -255,7 +247,6 @@ export class SessionManager {
       autoAnswer: sessionInfo.autoAnswer,
       address: sessionInfo.fromJid,
       conversationId: sessionInfo.conversationId,
-      persistentConversationId: sessionInfo.persistentConversationId,
       sessionType: handler.sessionType,
       originalRoomJid: sessionInfo.originalRoomJid,
       fromUserId: sessionInfo.fromUserId
@@ -268,9 +259,9 @@ export class SessionManager {
 
   /**
    * If we get this event from streaming-client, that means the session was
-   *  canceled. We no longer care if it was a persistent connection or not
+   *  canceled. We no longer care if it was a LA of 1 session or not
    *  because streaming-client will only emit events for actual sessions
-   *  and not our psuedo-events we emit for persistent connection conversation
+   *  and not our psuedo-events we emit for LA of 1 conversation
    *  events.
    * @param sessionId session id canceled by streaming client
    */
@@ -286,9 +277,9 @@ export class SessionManager {
 
   /**
    * If we get this event from streaming-client, that means the session was
-   *  canceled. We no longer care if it was a persistent connection or not
+   *  canceled. We no longer care if it was a LA of 1 session or not
    *  because streaming-client will only emit events for actual sessions
-   *  and not our psuedo-events we emit for persistent connection conversation
+   *  and not our psuedo-events we emit for LA of 1 conversation
    *  events.
    * @param sessionId session id canceled by streaming client
    */

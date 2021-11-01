@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * `sdk.endSession({ conversationId: string, ...otherOptions })`
     * `sdk.setVideoMute({ conversationId: string, ...otherOptions })`
     * `sdk.setAudioMute({ conversationId: string, ...otherOptions })`
+* [PCM-1708](https://inindca.atlassian.net/browse/PCM-1708) – CDN now exports all SDK exports and not just the client.
 
 ### Added
 * Added a static `VERSION` property

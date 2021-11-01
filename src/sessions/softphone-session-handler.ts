@@ -38,7 +38,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   constructor (sdk, handler) {
     super(sdk, handler);
-    (window as any).s = this; // TODO: take this out
+    (window as any).softphoneHandler = this; // TODO: take this out
   }
 
   shouldHandleSessionByJid (jid: string): boolean {
@@ -155,10 +155,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           const pendingSession: IPendingSession = {
             id: session.id,
             sessionId: session.id,
-            autoAnswer: callState.direction === 'outbound', // TODO: flesh this out
+            autoAnswer: callState.direction === 'outbound', // Not always accurate. If inbound auto answer, we don't know about it from convo evt
             address: session.peerID, // session.fromJid,
             conversationId,
-            persistentConversationId: session.persistentConversationId,
             sessionType: this.sessionType,
             originalRoomJid: session.originalRoomJid,
             fromUserId: session.fromUserId
@@ -349,9 +348,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   private setCurrentSession (session: IExtendedMediaSession): void {
-    // TODO: remove me
-    (window as any).pc = session;
-
     const loggy = () => ({
       persistentConnectionSessionId: session.id,
       currentConversationId: session.conversationId,
@@ -502,7 +498,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     try {
-      // TODO: fix me
       const conversationId = session.conversationId;
       const participant = await this.getUserParticipantFromConversationId(conversationId);
 
@@ -511,7 +506,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
       const terminatedPromise = new Promise<JingleReason>((resolve) => {
         const listener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
-          // TODO: make sure the PC is actually ended
           if (endedSession.id === session.id && endedSession.conversationId === session.conversationId) {
             this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', {
               endedSession,

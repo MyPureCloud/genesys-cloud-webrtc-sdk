@@ -90,7 +90,7 @@ Once the client has a session, it can add event handlers for lower level control
 over sessions. `terminated` is an example of a session event;
 [all session events are detailed here](index.md#session-level-events).
 
-Once you have an initialized instance of the WebrtcSdk and events setup, you can create a softphone session in the following maner:
+Once you have an initialized instance of the WebrtcSdk and events setup, you can create a softphone session in the following manner:
 
 ``` ts
 await sdk.startSoftphoneSession({phoneNumber: '15555555555'});
