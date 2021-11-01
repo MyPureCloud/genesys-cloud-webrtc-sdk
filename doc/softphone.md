@@ -203,25 +203,85 @@ Convo with Garrett:
 * if we have an active per/conn, and receive a new call and accept we now have two sessions.
 
 ## To Do
-* fetch station
-* acceptPendingSession
-* rejectPendingSession
-* acceptSession
-* endSession
-* inside `initialize` don't use a listener.. only emit on `ready` once we have loaded the station.
-* What happens if we have an active per/conn and we receive another inbound?
-* What convo event do we get with an inbound autoanswer call while we have an active persistent connection
+* [x] fetch station
+  * [ ] what happens when the user does not have a station?
+* [ ] acceptPendingSession (conversationId or sessionId) – breaking change
+* [ ] rejectPendingSession (conversationId or sessionId) – breaking change
+* [ ] acceptSession
+* [ ] endSession
+* [x] What happens if we have an active per/conn and we receive another inbound?
+  * should use the same persistent connection
+* [x] What convo event do we get with an inbound autoanswer call while we have an active persistent connection
+  * ~~all calls are autoanswer with persistent connection~~
+  * inbound collaborate calls are not autoanswer
+  * ACD calls are configured on the user level for autoanswer
+  * outbound calls should be autoanswer (dialing/contacting)
+  * ACD calls with autoanswer ON, we can't really tell if auto-answer is ON from convo events. We get `alerting` and then `connected`. May not be an issue because we could emit `pendingSession` with autoanswer=false and then turn around and emit `sessionStarted` when it goes to `connected`... but the consumer _could_ reject the pending session...
 * document caveats for persistent connection:
   * `config.autoConnectSessions` will do nothing if you already have a persistent connection
   * `acceptSession` will do nothing if you already have a persistent connection
-  * if using peristent connection, you should use `conversationId` to accept/reject/end sessions (since the session ID will be the same – could cause unpredictable)
-* (maybe) remove the use of accepting session with `sessionId`.
+    * NOTE: you must `acceptSession` the initial session
+  * if using peristent connection, you should use `conversationId` to accept/reject/end sessions (since the session ID will be the same – could cause unpredictable results)
+    * (maybe) remove the use of accepting session with `sessionId`.
+  *   autoanswer may not be correct for inbound calls. It will just answer it regardless of consumer action.
 * callState `held` or something... what to do with this
 * sending two `sessionEnded` events when ending (because we are sending `disconnected` and `terminated`)
-* add `hold` function to the client
-* keep conversation history, call states, and session info in one place...
-## Done
+* [ ] add `hold` function to the client
+* [ ] keep conversation history, call states, and session info in one place...
+  * [ ] add `conversationEvent` and `conversationActive` events to the sdk (for softphone)
+* [ ] keep the conversationId on the session in sync with the active conversation
+  * if only one – use it
+  * if two – use the `connected` one
+  * if both are `connected`, use the one that is not `"hold"` or `held: true`
+  * if both are are `held`, pick one? Or level whatever one is most recent
+* [ ] check web-dir to see if persistent connection with the new single-P/C
 
+* do not throw an error in `initialize` if station returns 404. drop log message
+* listen to station topic
+  * associated
+  * disassociated
+* what about softphone conference calls
+
+top level event
+* persistentConnectionEnable: boolean
+* added
+* removed
+* current
+  * conversationId
+  * sessionId
+* active conversation (maybe – )
+
+## Demo app
+* on queue
+* hold call
+* list of calls (active & pending)
+* call state
+* sessionStarted emitted 3 times
+* mute call button (does not mute the correct call – have two calls and try to mute the non-active one)
+* remove pending session from ui
+
+* ending does not emit sessionEnded
+  * scenario: two calls – end both. The last one does not end.
+
+* contacting or alerting is `pendingSession`
+
+## Have not tested
+* reject pending sessions
+* non-persistent connection ending multiple calls (and other functionality)
+
+## Option
+What if we didn't try to shoe horn all the conversation updates for a persistent connection into the standard events? Reasons:
+* the conversationId on the pc session will not be gauranteed to be accurate – so the consumer will have to manage that state or cross reference to the `sdkConversationEvents` that we will emit.
+* Since we are already emitting `sdkConversationEvents`, why don't we just solely use that event for any conversation events on the pc session...
+  * potential issue is what to do with `pendingSessions` on a PC...
+
+
+## Call appearance
+SDK needs to emit an event if using the "new" way
+If CA > 1, use the old method (no conversation events – ever)
+If CA == 1, use conversation events ALWAYS (if we have)
+
+Emit station events too... "associated", "disassociated"... maybe similar to the other thing
 #### Softphone behavior notes
 
 - In the case of an outbound call, the application initiating the call should
