@@ -41,17 +41,14 @@ export default abstract class BaseSessionHandler {
 
   async handlePropose (pendingSession: IPendingSession): Promise<any> {
     pendingSession.sessionType = this.sessionType;
-    logPendingSession(this.sdk.logger, 'handling propose', pendingSession);
     this.sdk.emit('pendingSession', pendingSession);
   }
 
   async proceedWithSession (session: IPendingSession): Promise<any> {
-    this.log('info', 'proceeding with proposed session', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
   async rejectPendingSession (session: IPendingSession): Promise<any> {
-    this.log('info', 'rejecting propose', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     this.sessionManager.webrtcSessions.rejectRtcSession(session.id);
   }
 

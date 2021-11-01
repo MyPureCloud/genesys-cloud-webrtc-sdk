@@ -1,4 +1,11 @@
+let loggerConstructorSpy: jest.SpyInstance;
+jest.mock('genesys-cloud-client-logger', () => {
+  loggerConstructorSpy = jest.fn((_config) => mockLogger)
+  return loggerConstructorSpy;
+});
+
 import StreamingClient from 'genesys-cloud-streaming-client';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 import { GenesysCloudWebrtcSdk, ICustomerData, ISdkConfig, SdkErrorTypes, SessionTypes } from '../../src';
 import { SessionManager } from '../../src/sessions/session-manager';
@@ -11,9 +18,13 @@ jest.mock('genesys-cloud-streaming-client');
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
 
-function getMockLogger () {
-  return { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn() };
-}
+const mockLogger: jest.Mocked<ILogger> = {
+  debug: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  info: jest.fn(),
+  log: jest.fn()
+};
 
 describe('Client', () => {
   let sdk: GenesysCloudWebrtcSdk;
@@ -27,18 +38,19 @@ describe('Client', () => {
     constructSdk = (config) => {
       /* if we have no config, then use some defaults */
       if (config === undefined) {
-        config = { logger: getMockLogger(), accessToken: 'secure', environment: 'mypurecloud.com' } as any;
+        config = { logger: mockLogger, accessToken: 'secure', environment: 'mypurecloud.com' } as any;
       }
       /* if we have `truthy`, make sure we always have the mock logger */
       else if (config) {
-        config = { logger: getMockLogger(), ...config } as any;
+        config = { logger: mockLogger, ...config } as any;
       }
 
       sdk = new GenesysCloudWebrtcSdk(config as any);
 
       /* set up mock instances */
+      // mockLogger = { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn(), log: jest.fn() };
       sessionManagerMock = sdk.sessionManager = new SessionManager(sdk) as any;
-      streamingClientMock = sdk._streamingConnection = new StreamingClient({} as any) as any;
+      streamingClientMock = sdk._streamingConnection = new StreamingClient({ apiHost: 'poptarts.com' } as any) as any;
       mediaMock = sdk.media as any;
 
       /* mock needed returned values (needed for `afterEach => sdk.destroy()`) */
@@ -107,19 +119,18 @@ describe('Client', () => {
     it('sets up options when provided and track default audioStream', () => {
       const trackDefaultAudioStreamSpy = jest.spyOn(GenesysCloudWebrtcSdk.prototype, 'trackDefaultAudioStream' as any)
         .mockImplementation();
-      const logger = getMockLogger();
       const mockStream = {};
       const sdk = constructSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
-        logger: logger as any,
+        optOutOfTelemetry: true,
         defaults: {
           audioStream: mockStream,
         }
       } as ISdkConfig);
 
-      expect(sdk.logger).toBe(logger);
+      expect(sdk.logger).toBe(mockLogger);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.ie');
       expect(sdk._config.autoConnectSessions).toBe(false);
@@ -363,7 +374,7 @@ describe('Client', () => {
       };
 
       sdk.sessionManager = null;
-      await sdk.updateDefaultDevices({...options, updateActiveSessions: true});
+      await sdk.updateDefaultDevices({ ...options, updateActiveSessions: true });
 
       expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
       expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
@@ -555,7 +566,7 @@ describe('Client', () => {
     });
 
     it('should not clear the audioStream if audioTracks are present', () => {
-      mockSteam.getAudioTracks = jest.fn().mockReturnValue([{label: 'notTest', stop: jest.fn(), addEventListener: jest.fn()}]);
+      mockSteam.getAudioTracks = jest.fn().mockReturnValue([{ label: 'notTest', stop: jest.fn(), addEventListener: jest.fn() }]);
       trackDefaultAudioStreamFn(mockSteam);
       mockTrack.stop();
       expect(sdk._config.defaults.audioStream).not.toEqual(null);
@@ -771,7 +782,7 @@ describe('Client', () => {
       sdk = constructSdk();
 
       sessionManagerMock.startSession.mockResolvedValue({});
-      await sdk.startSoftphoneSession({phoneNumber: '123'} as any);
+      await sdk.startSoftphoneSession({ phoneNumber: '123' } as any);
       expect(sessionManagerMock.startSession).toBeCalledWith({ phoneNumber: '123', sessionType: 'softphone' });
     });
   });

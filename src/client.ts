@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
+import Logger from 'genesys-cloud-client-logger';
 
 import {
   ISdkConfig,
-  ILogger,
   ICustomerData,
   IEndSessionRequest,
   IAcceptSessionRequest,
@@ -71,8 +71,8 @@ function validateOptions (options: ISdkConfig): string | null {
  * SDK to interact with GenesysCloud WebRTC functionality
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
-  readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
-  logger: ILogger;
+  static readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
+  logger: Logger;
   sessionManager: SessionManager;
   media: SdkMedia;
 
@@ -96,6 +96,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   get isGuest (): boolean {
     return !this._config.accessToken;
+  }
+
+  get VERSION (): string {
+    return GenesysCloudWebrtcSdk.VERSION;
   }
 
   constructor (options: ISdkConfig) {
