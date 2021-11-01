@@ -5,6 +5,7 @@ import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOut
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { checkAllTracksHaveEnded } from '../media/media-utils';
 import { createAndEmitSdkError, isAcdJid } from '../utils';
+import { ConversationUpdate } from '../conversations/conversation-update';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;
@@ -12,6 +13,11 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
 
   shouldHandleSessionByJid (jid: string): boolean {
     return isAcdJid(jid);
+  }
+
+  handleConversationUpdate (_update: ConversationUpdate, _sessions: IExtendedMediaSession[]) {
+    /* no-op */
+    return;
   }
 
   async startSession (startParams: IStartSessionParams): Promise<MediaStream> {

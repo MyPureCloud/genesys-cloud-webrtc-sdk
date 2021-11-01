@@ -5,6 +5,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...HEAD)
 
+### BREAKING CHANGE
+* Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable:
+    * `sdk.acceptPendingSession({ conversationId: string })`
+    * `sdk.rejectPendingSession({ conversationId: string })`
+    * `sdk.acceptSession({ conversationId: string, ...otherOptions })`
+    * `sdk.endSession({ conversationId: string, ...otherOptions })`
+    * `sdk.setVideoMute({ conversationId: string, ...otherOptions })`
+    * `sdk.setAudioMute({ conversationId: string, ...otherOptions })`
+
+### Added
+* Added a static `VERSION` property
+* Loads station on initial _if_ `SesstionTypes.softphone` is in allowed list.
+* Added `sdk.setConversationHeld(conversationId)` that issues an API request to place a softphone conversation on hold.
+* Updated Demo App
+* Added `sdk.isPersistentConnectionEnabled()` and `sdk.station` and `sdk.concurrentSoftphoneSessionsEnabled()` and station events
+
 # [v6.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.3...v6.1.4)
 
 ### Fixed
@@ -29,21 +45,6 @@ Bumped streaming-client to v13.3.1 which includes `stanza` override for ending s
 It will then remove the audio element from the DOM once the session ends. Note: it will only create the unique audio element (and remove it from the DOM on `sessionEnded`) if `sdk.acceptSession` is _not_
 passed an audioElement _and_ there is _not_ a SDK `defaults.audioElement`.
 * [PCM-1587](https://inindca.atlassian.net/browse/PCM-1587) - Ensure video-sessions pass up the `reason` to stanza for ending a session.
-
-### BREAKING CHANGE
-* Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable:
-    * `sdk.acceptPendingSession({ conversationId: string })`
-    * `sdk.rejectPendingSession({ conversationId: string })`
-    * `sdk.acceptSession({ conversationId: string, ...otherOptions })`
-    * `sdk.endSession({ conversationId: string, ...otherOptions })`
-    * `sdk.setVideoMute({ conversationId: string, ...otherOptions })`
-    * `sdk.setAudioMute({ conversationId: string, ...otherOptions })`
-
-### Added
-* Added a static `VERSION` property
-* Loads station on initial _if_ `SesstionTypes.softphone` is in allowed list.
-* Added `sdk.setConversationHeld(conversationId)` that issues an API request to place a softphone conversation on hold.
-* Updated Demo App
 
 ### Fixed
 * [PCM-1711](https://inindca.atlassian.net/browse/PCM-1711) - Changed default behavior for softphone `sdk.acceptSession` to create and use unique `HTMLAudioElement`s for each session.

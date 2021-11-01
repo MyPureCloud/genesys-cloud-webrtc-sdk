@@ -228,18 +228,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       httpRequests.push(getOrg);
       httpRequests.push(getPerson);
-
-      /* if we are allowing softphone calls, we need station information */
-      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone)) {
-        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
-        httpRequests.push(
-          this.fetchUsersStation().catch((err) => {
-            this.logger.warn('error fetching users station', err);
-          })
-        );
-
-        httpRequests.push(this._listenForStationEvents());
-      }
     }
 
     try {
@@ -251,6 +239,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     try {
       await setupStreamingClient.call(this);
       await proxyStreamingClientEvents.call(this);
+
+      /* if we are allowing softphone calls, we need station information */
+      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone)) {
+        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
+        await this.fetchUsersStation()
+          .catch((err) => {
+            this.logger.warn('error fetching users station', err);
+          });
+      }
+
       this.emit('ready');
     } catch (err) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
@@ -492,11 +490,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         throw new Error('User does not have an associated station');
       }
 
-      // TODO: what happens if we don't have a station? Do we get a 404
       const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise
       this.station = body;
       this.logger.debug('Fetched user station', body, true); // don't log PII
-      this.emit('useSingleWebrtcSession', this.shouldUseSingleWebrtcSession());
+      this.emit('concurrentSoftphoneSessionsEnabled', this.concurrentSoftphoneSessionsEnabled());
       this.emit('station', { action: 'Associated', station: body });
       return body;
     } catch (err) {
@@ -509,12 +506,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       this.station?.type === 'inin_webrtc_softphone';
   }
 
-  isOneLineAppearanceEnabled (): boolean {
-    return this.station?.webRtcCallAppearances === 1;
-  }
-
-  shouldUseSingleWebrtcSession (): boolean {
-    return this.isPersistentConnectionEnabled() || this.isOneLineAppearanceEnabled();
+  concurrentSoftphoneSessionsEnabled (): boolean {
+    return this.station?.webRtcCallAppearances > 1;
   }
 
   /**

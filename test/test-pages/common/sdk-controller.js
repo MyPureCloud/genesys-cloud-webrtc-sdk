@@ -303,7 +303,7 @@ function renderSessions () {
           <th scope="col" scope="row">conversationId</th>
           <th scope="col">sessionId</th>
           <th scope="col">Is the active convo?</th>
-          <th scope="col">Per. Conn.</th>
+          <th scope="col">Non concurrent Sess.</th>
           <th scope="col">session state</th>
           <th scope="col">direction</th>
           <th scope="col">call state</th>
@@ -323,24 +323,23 @@ function renderSessions () {
 
   Object.values(conversationUpdatesToRender.conversations).forEach(update => {
     const isTheActiveConversation = update.conversationId === conversationUpdatesToRender.activeConversationId;
-    const isSessionActive = update.session.state === 'active';
+    const isSessionActive = update.session ? update.session.state === 'active' : undefined;
     const isCallActive = update.mostRecentCallState.state !== 'disconnected'
       && update.mostRecentCallState.state !== 'terminated'
     const isCallMuted = update.mostRecentCallState.muted;
     const isCallHeld = update.mostRecentCallState.held;
     const isCallConfined = update.mostRecentCallState.confined;
 
-
     html += `<tr>
     <th scope="row">${update.conversationId}</th>
-    <td>${update.session.id}</td>
+    <td>${update.session ? update.session.id : '(none)'}</td>
     <td
       class="${isTheActiveConversation ? 'text-success' : ''}"
     >${isTheActiveConversation}</td>
-    <td>${update.session.isPersistentConnection}</td>
+    <td>${!sdk.concurrentSoftphoneSessionsEnabled()}</td>
     <td
       class="${isSessionActive ? 'text-success' : 'text-danger'}"
-    >${update.session.state}</td>
+    >${update.session ? update.session.state : '(none)'}</td>
     <td>${update.mostRecentCallState.direction}</td>
     <td
       class="${isCallActive ? 'text-success' : 'text-danger'}"

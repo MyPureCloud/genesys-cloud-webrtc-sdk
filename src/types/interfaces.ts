@@ -739,7 +739,9 @@ export interface IStartVideoSessionParams extends IStartSessionParams {
  */
 export interface ISessionMuteRequest {
   /** conversation id */
-  conversationId: string;
+  conversationId?: string;
+  /** session Id */
+  sessionId?: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
@@ -781,7 +783,6 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   fromUserId?: string;
-  isPersistentConnection: boolean;
   persistentConversationId: string; // this id is almost always present regardless of `isPersistentConnection`
   activeConversationId: string;
   pcParticipant?: IConversationParticipant;
@@ -854,7 +855,7 @@ export interface SdkEvents {
   cancelPendingSession: ISessionIdAndConversationId;
   conversationUpdate: ISdkConversationUpdateEvent;
   station: (event: { action: 'Associated' | 'Disassociated', station: IStation | null }) => void;
-  useSingleWebrtcSession: boolean;
+  concurrentSoftphoneSessionsEnabled: boolean; // lineAppearence > 1
 }
 
 /**

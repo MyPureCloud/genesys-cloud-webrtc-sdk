@@ -29,12 +29,10 @@ export default abstract class BaseSessionHandler {
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
+  abstract handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]): void;
+
   protected log (level: LogLevels, message: any, details?: any, skipServer?: boolean): void {
     this.sdk.logger[level].call(this.sdk.logger, message, details, skipServer);
-  }
-
-  handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {
-    this.log('info', 'conversation update received', { conversationId: update.id, update, sessionConversationId: session?.conversationId, sessionId: session?.id, sessionType: session.sessionType });
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
@@ -66,7 +64,6 @@ export default abstract class BaseSessionHandler {
       session.fromUserId = pendingSession.fromUserId;
       session.originalRoomJid = pendingSession.originalRoomJid;
       session.persistentConversationId = pendingSession.persistentConversationId;
-      session.isPersistentConnection = session.sessionType === SessionTypes.softphone && this.sdk.isPersistentConnectionEnabled();
       Object.defineProperty(session, 'active', { get: () => session.state === 'active' });
     }
 

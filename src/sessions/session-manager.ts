@@ -60,27 +60,14 @@ export class SessionManager {
 
   handleConversationUpdate (update: ConversationUpdate) {
     this.chain.push(update); // TODO: remove me
-    this.log('debug', 'conversation event received from hawk', update);
+    const sessions = this.getAllJingleSessions();
 
-    let wasHandled = false;
-
-    // only handle a conversation update if we can associate it with a session
-    const sessions = Object.values(this.jingle.sessions) as IExtendedMediaSession[];
-    sessions.forEach((session: IExtendedMediaSession) => {
-      const handler = this.getSessionHandler({ sessionType: session.sessionType });
-      if (handler.disabled) {
-        return;
-      }
-      wasHandled = true;
-      handler.handleConversationUpdate(session, update);
-    });
-
-    /* we always want to handle softphone events */
-    const softphoneHander = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
-    /* we always want to make sure we handle conversation events for softphone */
-    if (!wasHandled && !softphoneHander.disabled && softphoneHander.getUserParticipantFromConversationEvent(update)) {
-      softphoneHander.handleConversationUpdate(null, update);
-    }
+    /* let each enabled handler pprocess updates */
+    this.sessionHandlers
+      .filter(handler => !handler.disabled)
+      .forEach(handler =>
+        handler.handleConversationUpdate(update, sessions.filter(s => s.sessionType === handler.sessionType))
+      );
   }
 
   getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
@@ -114,11 +101,8 @@ export class SessionManager {
     if (params.conversationId) {
       const softphoneHanlder = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
 
-      session = Object.values(softphoneHanlder.conversations)
-        .find((c) => c.conversationId === params.conversationId)
-        ?.session;
-
-      session = session || (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
+      session = Object.values(softphoneHanlder.conversations).find((c) => c.conversationId === params.conversationId)?.session
+        || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
     } else {
       session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
     }
@@ -368,20 +352,6 @@ export class SessionManager {
     const session = this.getSession(params);
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
-
-    // TODO: this is ugly....
-    if (
-      params.conversationId &&
-      sessionHandler instanceof SoftphoneSessionHandler &&
-      sessionHandler.hasActiveSession() &&
-      sessionHandler.currentSession === session &&
-      sessionHandler.conversations[params.conversationId]
-    ) {
-      const update = sessionHandler.conversations[params.conversationId];
-      session.pcParticipant = update.mostRecentUserParticipant as any;
-      session.conversationId = params.conversationId;
-      console.debug('doing some fancy magic to find the correct conversationId on the persistent connection');
-    }
 
     return sessionHandler.endSession(session, params.reason);
   }

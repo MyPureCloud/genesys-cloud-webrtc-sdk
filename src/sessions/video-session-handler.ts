@@ -79,8 +79,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     };
   }
 
-  handleConversationUpdate (session: IExtendedMediaSession, conversationUpdate: ConversationUpdate): void {
-    super.handleConversationUpdate(session, conversationUpdate);
+  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) {
+    sessions
+      .filter(s => s.conversationId === update.id)
+      .forEach(session => this.handleConversationUpdateForSession(update, session));
+  }
+
+  handleConversationUpdateForSession (conversationUpdate: ConversationUpdate, session: IExtendedMediaSession): void {
     session.pcParticipant = this.findLocalParticipantInConversationUpdate(conversationUpdate);
 
     const activeVideoParticipants: IParticipantUpdate[] = conversationUpdate.participants
@@ -371,7 +376,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
     if (!audioSender || !audioSender.track.enabled) {
       session.audioMuted = true;
-      this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id,sessionType: session.sessionType });
+      this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       audioMute = session.mute(userId as any, 'audio');
     }
 

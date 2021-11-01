@@ -21,13 +21,13 @@ import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from 
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
-import { SoftphoneMultipleSessionHandler, SoftphoneSingleSessionHandler } from './softphone-sub-session-handlers';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
 export default class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
-  currentSession?: IExtendedMediaSession;
+  /* Could be active persistent connection or non concurrent session */
+  activeSession?: IExtendedMediaSession;
   conversations: { [convesationId: string]: IStoredConversationState } = {};
   lastEmittedSdkConversationEvent: ISdkConversationUpdateEvent = {
     activeConversationId: undefined,
@@ -36,13 +36,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     removed: []
   };
 
-  multiSessionHandler: SoftphoneMultipleSessionHandler;
-  singleSessionHandler: SoftphoneSingleSessionHandler;
-
   constructor (sdk, handler) {
     super(sdk, handler);
-    this.multiSessionHandler = new SoftphoneMultipleSessionHandler(sdk, handler, this);
-    this.singleSessionHandler = new SoftphoneSingleSessionHandler(sdk, handler, this);
     (window as any).s = this; // TODO: take this out
   }
 
@@ -50,8 +45,47 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return isSoftphoneJid(jid);
   }
 
+  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) {
+    /* we will not have a user call participant if this is not a softphone conversation event */
+    const participant = this.getUserParticipantFromConversationEvent(update);
+    if (!participant) {
+      return this.log('debug', 'user participant not found on the conversation update', update, true);
+    }
+
+    const callState = this.getCallStateFromParticipant(participant);
+    if (!callState) {
+      return this.log('debug', "user participant's call state not found on the conversation update", { update, participant }, true);
+    }
+
+    /* if we get here it means it was a softphone conversation event */
+    const lastConversationUpdate = this.conversations[update.id];
+    let session: IExtendedMediaSession;
+
+    /* use our stored session for this conversation */
+    if (lastConversationUpdate?.session) {
+      session = lastConversationUpdate.session;
+    }
+    /* or, if LineAppearance is 1, use that session */
+    else if (!this.sdk.concurrentSoftphoneSessionsEnabled()) {
+      session = this.activeSession;
+    }
+    /* lastly, look through our sessions */
+    else {
+      session = sessions.find(s => s.conversationId === update.id);
+    }
+
+    /* if we didn't find a session AND we have persistent connection, we need to do an extra check */
+    if (!session && this.sdk.isPersistentConnectionEnabled()) {
+      /* if we have an active session, it is not currently being used by another conversation, AND our client handled it */
+      if (this.hasActiveSession() && !Object.values(this.conversations).find(c => c.session === this.activeSession)) {
+        session = this.activeSession;
+      }
+    }
+    this.handleSoftphoneConversationUpdate(update, participant, callState, session);
+  }
+
   hasActiveSession (): boolean {
-    return this.currentSession?.state === 'active';
+    return this.activeSession?.state === 'active';
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
@@ -62,26 +96,19 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {
-    /* this just logs the event */
-    super.handleConversationUpdate(session, update);
+  handleSoftphoneConversationUpdate (
+    update: ConversationUpdate,
+    participant: IConversationParticipantFromEvent,
+    callState: ICallStateFromParticipant,
+    session?: IExtendedMediaSession
+  ) {
+    const conversationId = update.id;
+    const lastConversationUpdate = this.conversations[conversationId] ? { ...this.conversations[conversationId] } : null;
 
-    const lastConversationUpdate = this.conversations[update.id] ? { ...this.conversations[update.id] } : null;
-
-    const participant = this.getUserParticipantFromConversationEvent(update);
-    if (!participant) {
-      return this.log('debug', 'user participant not found on the conversation update', update, true);
-    }
-
-    if (session && !this.hasActiveSession()) {
+    if (session) {
       session.pcParticipant = participant as any;
-      // return this.log('debug', 'conversation event received but there is no persistent connection. ignoring', update, true);
     }
 
-    const callState = this.getCallStateFromParticipant(participant);
-    if (!callState) {
-      return this.log('debug', "user participant's call state not found on the conversation update", { update, participant }, true);
-    }
     this.log('debug', 'about to process conversation event', { session, update, lastConversationUpdate, callState });
 
     /* if we didn't have a previous update and this one is NOT in a pending ended state, that means we are not responsible for this conversation (another client handled it or we have already emitted the `sessionEnded` for it) */
@@ -89,48 +116,52 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, true);
     }
 
-    if (!lastConversationUpdate?.session) {
-      this.conversations[update.id] = {
-        conversationUpdate: update,
-        conversationId: update.id,
-        session,
-        mostRecentCallState: callState,
-        mostRecentUserParticipant: participant
-      };
-    } else {
-      this.conversations[update.id].mostRecentCallState = callState;
-      this.conversations[update.id].mostRecentUserParticipant = participant;
-      this.conversations[update.id].conversationUpdate = update;
-      this.conversations[update.id].conversationId = update.id;
+    /* update the conversation state */
+    if (!lastConversationUpdate) {
+      this.conversations[conversationId] = {} as any;
     }
+
+    /* this is just a precaution – session for the conversation should be added in `this.acceptSession()` */
+    if (!this.conversations[conversationId].session) {
+      this.conversations[conversationId].session = session;
+    }
+
+    this.conversations[conversationId].mostRecentCallState = callState;
+    this.conversations[conversationId].mostRecentUserParticipant = participant;
+    this.conversations[conversationId].conversationUpdate = update;
+    this.conversations[conversationId].conversationId = conversationId;
 
     const previousCallState = this.getUsersCallStateFromConversationEvent(lastConversationUpdate?.conversationUpdate);
 
     /* if the state didn't change at all, we can skip processing */
     if (!this.diffConversationCallStates(previousCallState, callState)) {
-      return this.log('debug', 'conversation update received but state is unchanged. ignoring', { conversationId: update.id, previousCallState, callState });
+      return this.log('debug', 'conversation update received but state is unchanged. ignoring', {
+        conversationId,
+        previousCallState,
+        callState,
+        sessionType: this.sessionType
+      });
     }
 
     const communicationStateChanged = previousCallState?.state !== callState.state;
     let eventToEmit: boolean | SdkConversationEvents = 'updated';
-    const sessionToUse = this.conversations[update.id]?.session || this.currentSession || session;
 
     /* only check for emitting if the state changes */
     if (communicationStateChanged) {
       /* `pendingSession` – only process these if we have a persistent connection */
       if (this.isPendingState(callState)) {
-        /* only emit `pendingSession` if we have a PC */
-        if (this.hasActiveSession()) {
+        /* only emit `pendingSession` if we already have an active session */
+        if (session && session === this.activeSession) {
           const pendingSession: IPendingSession = {
-            id: sessionToUse.id,
-            sessionId: sessionToUse.id,
+            id: session.id,
+            sessionId: session.id,
             autoAnswer: callState.direction === 'outbound', // TODO: flesh this out
-            address: sessionToUse.peerID, // sessionToUse.fromJid,
-            conversationId: update.id,
-            persistentConversationId: sessionToUse.persistentConversationId,
+            address: session.peerID, // session.fromJid,
+            conversationId,
+            persistentConversationId: session.persistentConversationId,
             sessionType: this.sessionType,
-            originalRoomJid: sessionToUse.originalRoomJid,
-            fromUserId: sessionToUse.fromUserId
+            originalRoomJid: session.originalRoomJid,
+            fromUserId: session.fromUserId
           };
           this.sessionManager.pendingSessions[update.id] = pendingSession;
           this.sdk.emit('pendingSession', pendingSession);
@@ -143,21 +174,21 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           if our conversationId is not already on the session AND the previous state wasn't already connected, then
           we just accepted the session and we need to emit `sessionStarted`
         */
-        if (update.id !== sessionToUse?.conversationId || (previousCallState && !this.isConnectedState(previousCallState))) {
-          /* if we are adding a session, but we don't session – it means another client took the conversation */
-          if (!sessionToUse) {
+        if (conversationId !== session?.conversationId || (previousCallState && !this.isConnectedState(previousCallState))) {
+          /* if we are adding a session, but we don't have a session – it means another client took the conversation */
+          if (!session) {
             this.log('warn', 'incoming conversation started, but we do not have a session. assuming it was handled by a different client. ignoring', {
-              ignoredConversation: this.conversations[update.id],
+              ignoredConversation: this.conversations[conversationId],
               update
             });
-            delete this.conversations[update.id];
+            delete this.conversations[conversationId];
             return;
           }
-          /* only emit `sessionStarted` if we have a PC */
-          if (this.hasActiveSession()) {
-            sessionToUse.conversationId = update.id;
-            this.sdk.emit('sessionStarted', sessionToUse);
-            this.sessionManager.onHandledPendingSession(sessionToUse.id, update.id);
+          /* only emit `sessionStarted` if we have an active session */
+          if (session && session === this.activeSession) {
+            session.conversationId = conversationId;
+            this.sdk.emit('sessionStarted', session);
+            this.sessionManager.onHandledPendingSession(session.id, conversationId);
           }
           eventToEmit = 'added';
         }
@@ -166,18 +197,18 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         eventToEmit = false;
         /* we rejected a pendingSession */
         if (this.isPendingState(previousCallState)) {
-          if (this.hasActiveSession()) {
-            this.sessionManager.onCancelPendingSession(sessionToUse.id, update.id);
+          if (session && session === this.activeSession) {
+            this.sessionManager.onCancelPendingSession(session.id, conversationId);
           }
-          delete this.conversations[update.id];
+          delete this.conversations[conversationId];
         } else if (previousCallState) {
           /*
             if there is a previous state, that means we are ending this call – otherwise it means we have
             already ended it (we get `disconnected` and `terminated` events back-to-back for ending calls. We only want to process one of them.)
           */
-          if (this.hasActiveSession()) {
-            sessionToUse.conversationId = update.id;
-            this.sdk.emit('sessionEnded', sessionToUse, { condition: JingleReasons.success });
+          if (session && session === this.activeSession) {
+            session.conversationId = conversationId;
+            this.sdk.emit('sessionEnded', session, { condition: JingleReasons.success });
           }
           eventToEmit = 'removed';
         }
@@ -185,8 +216,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (eventToEmit) {
-      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[update.id], previousCallState, callState, sessionToUse }, true);
-      this.emitConversationEvent(eventToEmit, this.conversations[update.id], sessionToUse);
+      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, session }, true);
+      this.emitConversationEvent(eventToEmit, this.conversations[conversationId], session);
     }
   }
 
@@ -224,7 +255,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   determineActiveConversationId (session?: IExtendedMediaSession): string {
     const conversations = Object.values(this.conversations);
     if (conversations.length === 0) {
-      return session?.conversationId;
+      return this.activeSession?.conversationId || session?.conversationId;
     } else if (conversations.length === 1) {
       return conversations[0].conversationId;
     }
@@ -265,7 +296,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     let participant: IConversationParticipantFromEvent;
 
     if (!participantsForUser.length) {
-      this.log('warn', 'user not found on conversations as a participant', { conversationId: update.id });
+      this.log('warn', 'user not found on conversation as a participant', { conversationId: update.id });
       return;
     }
 
@@ -323,17 +354,28 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     const loggy = () => ({
       persistentConnectionSessionId: session.id,
-      persistentConnectionConversationId: session.persistentConversationId,
       currentConversationId: session.conversationId,
+      concurrentSoftphoneSessionsEnabled: this.sdk.concurrentSoftphoneSessionsEnabled(),
       isPersistentConnectionEnabled: this.sdk.isPersistentConnectionEnabled(),
-      isOneLineAppearanceEnabled: this.sdk.isOneLineAppearanceEnabled()
+      otherActiveSession: this.sdk.sessionManager.getAllActiveSessions()
+        .map(s => ({ sessionId: session.id, conversationId: session.conversationId }))
     });
     this.log('info', 'setting current session', loggy());
 
-    this.currentSession = session;
+    this.activeSession = session;
     session.once('terminated', () => {
       this.log('info', 'current session has terminated', loggy());
-      this.currentSession = null;
+      const otherActiveSessions = this.sdk.sessionManager.getAllActiveSessions();
+      if (this.sdk.isPersistentConnectionEnabled() && !!otherActiveSessions.length) {
+        this.log('debug', 'active session ended. Using next available session as persistent connection', {
+          terminatedSession: { sessionId: session.id, conversationId: session.conversationId },
+          selectedSession: { sessionId: otherActiveSessions[0].id, conversationId: otherActiveSessions[0].conversationId }
+        });
+        this.setCurrentSession(otherActiveSessions[0]);
+      } else {
+        this.activeSession = null;
+        (window as any).pc = null; // delete me
+      }
     });
   }
 
@@ -346,15 +388,20 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    /* if we have an active persistent connection, we can drop this accept on the floor */
-    if (this.hasActiveSession()) {
+    const lineAppearance1 = !this.sdk.concurrentSoftphoneSessionsEnabled();
+    /* if we have an active non-concurrent session, we can drop this accept on the floor */
+    if (lineAppearance1 && this.hasActiveSession() && session.id === this.activeSession.id) {
       return this.log('debug',
-        '`acceptSession` called with an active persistent connection. no further action needed. session will automatically accept', {
+        '`acceptSession` called with an active session and LineAppearance of 1. no further action needed. session will automatically accept', {
         conversationId: session.conversationId,
-        sessionId: session.id,
-        persistentConversationId: this.currentSession.persistentConversationId
+        sessionId: session.id
       });
-    } else if (this.sdk.shouldUseSingleWebrtcSession()) {
+    }
+    /* If we are don't already have a session stored, store this one */
+    else if (
+      (this.sdk.isPersistentConnectionEnabled() || lineAppearance1) &&
+      !this.hasActiveSession()
+    ) {
       this.setCurrentSession(session);
     }
 
@@ -365,7 +412,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         audio: this.sdk.media.getValidSdkMediaRequestDeviceId(params.audioDeviceId),
         session
       });
-      this.log('debug', 'Media started', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+      this.log('info', 'Media started', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     }
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
@@ -394,19 +441,25 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
     }
 
+    /* make sure we store the session with the conversation state */
+    if (!this.conversations[session.conversationId]) {
+      this.conversations[session.conversationId] = { session } as any;
+    } else {
+      this.conversations[session.conversationId].session = session;
+    }
+
     await super.acceptSession(session, params);
     logDeviceChange(this.sdk, session, 'sessionStarted');
   }
 
   async proceedWithSession (pendingSession: IPendingSession) {
-    if (!this.hasActiveSession()) {
+    if (!this.hasActiveSession() || pendingSession.id !== this.activeSession?.id) {
       return super.proceedWithSession(pendingSession);
     }
 
-    this.log('info', 'proceeding with proposed session via persistent connection', {
+    this.log('info', 'proceeding with proposed session via HTTP request', {
       conversationId: pendingSession.conversationId,
-      sessionId: pendingSession.id,
-      persistentConversationId: this.currentSession.persistentConversationId
+      sessionId: pendingSession.id
     });
 
     let participant = this.getUserParticipantFromConversationEvent(
@@ -420,8 +473,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     // const participant = await this.getParticipantForSession(pendingSession);
     this.log('info', '`acceptSession` called with an active persistent connection. accepting via HTTP request', {
       sessionId: pendingSession.id,
-      conversationId: pendingSession.conversationId,
-      persistentConversationId: this.currentSession.persistentConversationId
+      conversationId: pendingSession.conversationId
     });
 
     return this.patchPhoneCall(pendingSession.conversationId, participant.id, {
@@ -435,8 +487,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
     this.log('info', 'rejecting pending session with an active persistent connection', {
       sessionId: pendingSession.id,
-      conversationId: pendingSession.conversationId,
-      persistentConversationId: this.currentSession.persistentConversationId
+      conversationId: pendingSession.conversationId
     });
 
     let participant = this.conversations[pendingSession.conversationId]?.mostRecentUserParticipant;
@@ -486,7 +537,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       this.log('error', 'Failed to end session gracefully', { conversationId: session.conversationId, error: err });
 
       // TODO: do we want to do this if the patch didn't work?
-      if (!this.hasActiveSession()) {
+      if (session.id !== this.activeSession?.id) {
         return this.endSessionFallback(session, reason);
       }
     }
