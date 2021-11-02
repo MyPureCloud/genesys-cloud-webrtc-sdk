@@ -158,8 +158,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         message: error.message,
         type: error.type,
         details: error.details
-        /* logging errors is dangerous because they could contain PII */
-      }, true);
+      });
     });
 
     this._connected = false;
