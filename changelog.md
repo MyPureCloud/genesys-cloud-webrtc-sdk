@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v6.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...v6.1.6)
 ### Changed
 * Errors are now logged remotely
-* Bumped streaming client to 13.3.6
+* Bumped streaming client to 13.3.7
 
 ### Removed
 * Removed build examples for gulp and browserify and their dependencies
