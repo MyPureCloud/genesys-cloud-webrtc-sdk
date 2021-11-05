@@ -16,10 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * `sdk.setVideoMute({ conversationId: string, ...otherOptions })`
     * `sdk.setAudioMute({ conversationId: string, ...otherOptions })`
 * [PCM-1708](https://inindca.atlassian.net/browse/PCM-1708) – CDN now exports all SDK exports and not just the client.
+* Removing `address` from pendingSession.
 
 ### Added
 * Added a static `VERSION` property
-* Loads station on initial _if_ `SesstionTypes.softphone` is in allowed list.
+* Loads station on initialization _if_ `SesstionTypes.softphone` is in allowed list.
 * Added `sdk.setConversationHeld(conversationId)` that issues an API request to place a softphone conversation on hold.
 * Updated Demo App
 * Added `sdk.isPersistentConnectionEnabled()` and `sdk.station` and `sdk.concurrentSoftphoneSessionsEnabled()` and station events

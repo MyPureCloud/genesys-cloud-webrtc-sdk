@@ -38,7 +38,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   constructor (sdk, handler) {
     super(sdk, handler);
-    (window as any).softphoneHandler = this; // TODO: take this out
   }
 
   shouldHandleSessionByJid (jid: string): boolean {
@@ -103,7 +102,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     session?: IExtendedMediaSession
   ) {
     const conversationId = update.id;
-    const lastConversationUpdate = this.conversations[conversationId] ? { ...this.conversations[conversationId] } : null;
+    const lastConversationUpdate = this.conversations[conversationId];
 
     if (session) {
       session.pcParticipant = participant as any;
@@ -117,21 +116,21 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     /* update the conversation state */
-    if (!lastConversationUpdate) {
-      this.conversations[conversationId] = {} as any;
-    }
+    const conversationState: IStoredConversationState = {
+      mostRecentCallState: callState,
+      mostRecentUserParticipant: participant,
+      conversationUpdate: update,
+      conversationId: conversationId
+    };
 
     /* this is just a precaution – session for the conversation should be added in `this.acceptSession()` */
-    if (!this.conversations[conversationId].session) {
-      this.conversations[conversationId].session = session;
+    if (!this.conversations[conversationId]?.session) {
+      conversationState.session = session;
     }
 
-    this.conversations[conversationId].mostRecentCallState = callState;
-    this.conversations[conversationId].mostRecentUserParticipant = participant;
-    this.conversations[conversationId].conversationUpdate = update;
-    this.conversations[conversationId].conversationId = conversationId;
-
     const previousCallState = this.getUsersCallStateFromConversationEvent(lastConversationUpdate?.conversationUpdate);
+
+    this.conversations[conversationId] = conversationState;
 
     /* if the state didn't change at all, we can skip processing */
     if (!this.diffConversationCallStates(previousCallState, callState)) {
@@ -156,11 +155,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
             id: session.id,
             sessionId: session.id,
             autoAnswer: callState.direction === 'outbound', // Not always accurate. If inbound auto answer, we don't know about it from convo evt
-            address: session.peerID, // session.fromJid,
             conversationId,
             sessionType: this.sessionType,
             originalRoomJid: session.originalRoomJid,
-            fromUserId: session.fromUserId
+            fromUserId: session.fromUserId,
+            fromJid: session.peerID,
+            toJid: this.sdk._personDetails.chat.jabberId // TODO: what should this be?
           };
           this.sessionManager.pendingSessions[update.id] = pendingSession;
           this.sdk.emit('pendingSession', pendingSession);
@@ -176,7 +176,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         if (conversationId !== session?.conversationId || (previousCallState && !this.isConnectedState(previousCallState))) {
           /* if we are adding a session, but we don't have a session – it means another client took the conversation */
           if (!session) {
-            this.log('warn', 'incoming conversation started, but we do not have a session. assuming it was handled by a different client. ignoring', {
+            this.log('info', 'incoming conversation started, but we do not have a session. assuming it was handled by a different client. ignoring', {
               ignoredConversation: this.conversations[conversationId],
               update
             });
@@ -228,27 +228,28 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   emitConversationEvent (event: SdkConversationEvents, conversation: IStoredConversationState, session: IExtendedMediaSession): void {
-    const previousEmittedEvent = { ...this.lastEmittedSdkConversationEvent };
-    const currentConversations = Object.values(this.conversations);
+    const current = Object.values(this.conversations);
+    const currentEmittedEvent: ISdkConversationUpdateEvent = {
+      added: [],
+      removed: [],
+      current,
+      activeConversationId: ''
+    };
+
 
     if (event === 'added') {
-      this.lastEmittedSdkConversationEvent.added = [conversation];
-      this.lastEmittedSdkConversationEvent.removed = [];
+      currentEmittedEvent.added.push(conversation);
     } else if (event === 'removed') {
-      this.lastEmittedSdkConversationEvent.added = [];
-      this.lastEmittedSdkConversationEvent.removed = [conversation];
+      currentEmittedEvent.removed.push(conversation);
       delete this.conversations[conversation.conversationId];
-    } else {
-      this.lastEmittedSdkConversationEvent.added = [];
-      this.lastEmittedSdkConversationEvent.removed = [];
     }
 
-    this.lastEmittedSdkConversationEvent.current = currentConversations;
-    this.lastEmittedSdkConversationEvent.activeConversationId = this.determineActiveConversationId(session);
+    currentEmittedEvent.activeConversationId = this.determineActiveConversationId(session);
 
-    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent, currentEmittedEvent: { ...this.lastEmittedSdkConversationEvent }, session }, true);
+    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, session }, true);
+    this.lastEmittedSdkConversationEvent = currentEmittedEvent;
 
-    this.sdk.emit('conversationUpdate', this.lastEmittedSdkConversationEvent);
+    this.sdk.emit('conversationUpdate', currentEmittedEvent);
   }
 
   determineActiveConversationId (session?: IExtendedMediaSession): string {

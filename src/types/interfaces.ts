@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
+import { GenesysCloudMediaSession, ISessionInfo } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -653,25 +653,10 @@ export function isSecurityCode (data: { securityCode: string } | ICustomerData):
   );
 }
 
-export interface IPendingSession {
+export { ISessionInfo };
+export interface IPendingSession extends ISessionInfo {
   id: string;
-  sessionId: string;
-  autoAnswer: boolean;
-  address: string;
-  conversationId: string;
   sessionType: SessionTypes;
-  originalRoomJid: string;
-  fromUserId?: string;
-}
-
-export interface ISessionInfo {
-  sessionId: string;
-  autoAnswer: boolean;
-  fromJid: string;
-  conversationId: string;
-  originalRoomJid: string;
-  persistentConversationId: string;
-  fromUserId?: string;
 }
 export interface IConversationParticipantFromEvent {
   id: string;
@@ -739,8 +724,6 @@ export interface IStartVideoSessionParams extends IStartSessionParams {
 export interface ISessionMuteRequest {
   /** conversation id */
   conversationId?: string;
-  /** session Id */
-  sessionId?: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
@@ -752,8 +735,6 @@ export interface IConversationHeldRequest {
   conversationId: string;
   /** `true` to mute, `false` to unmute using default device */
   held: boolean;
-  /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
-  unmuteDeviceId?: string | boolean | null;
 }
 
 /**

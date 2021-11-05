@@ -245,11 +245,12 @@ export class SessionManager {
       id: sessionInfo.sessionId,
       sessionId: sessionInfo.sessionId,
       autoAnswer: sessionInfo.autoAnswer,
-      address: sessionInfo.fromJid,
       conversationId: sessionInfo.conversationId,
       sessionType: handler.sessionType,
       originalRoomJid: sessionInfo.originalRoomJid,
-      fromUserId: sessionInfo.fromUserId
+      fromUserId: sessionInfo.fromUserId,
+      toJid: sessionInfo.toJid,
+      fromJid: sessionInfo.fromJid
     };
 
     this.pendingSessions[pendingSession.conversationId] = pendingSession;

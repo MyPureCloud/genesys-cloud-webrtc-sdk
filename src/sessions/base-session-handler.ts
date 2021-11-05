@@ -63,8 +63,6 @@ export default abstract class BaseSessionHandler {
       session.conversationId = session.conversationId || pendingSession.conversationId;
       session.fromUserId = pendingSession.fromUserId;
       session.originalRoomJid = pendingSession.originalRoomJid;
-      session.persistentConversationId = pendingSession.persistentConversationId;
-      Object.defineProperty(session, 'active', { get: () => session.state === 'active' });
     }
 
     try {

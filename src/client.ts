@@ -31,7 +31,6 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
-import { ConversationManager } from './conversations/conversation-manager';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -82,7 +81,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   static readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
   logger: ILogger;
   sessionManager: SessionManager;
-  conversationManager: ConversationManager;
   media: SdkMedia;
   station: IStation | null;
 
@@ -156,7 +154,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
     this.media = new SdkMedia(this);
-    this.conversationManager = new ConversationManager(this);
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
@@ -480,25 +477,26 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   async fetchUsersStation (): Promise<IStation> {
-    try {
-      if (!this._personDetails) {
-        await this.fetchAuthenticatedUser();
-      }
-
-      const stationId = this._personDetails?.station?.associatedStation?.id;
-      if (!stationId) {
-        throw new Error('User does not have an associated station');
-      }
-
-      const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise
-      this.station = body;
-      this.logger.debug('Fetched user station', body, true); // don't log PII
-      this.emit('concurrentSoftphoneSessionsEnabled', this.concurrentSoftphoneSessionsEnabled());
-      this.emit('station', { action: 'Associated', station: body });
-      return body;
-    } catch (err) {
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
+    if (!this._personDetails) {
+      await this.fetchAuthenticatedUser().catch((err) => {
+        throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
+      });
     }
+
+    const stationId = this._personDetails?.station?.associatedStation?.id;
+    if (!stationId) {
+      const error = new Error('User does not have an associated station');
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
+    }
+
+    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise.catch((err) => {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
+    });
+    this.station = body;
+    this.logger.debug('Fetched user station', body, true); // don't log PIIdefineProperty
+    this.emit('concurrentSoftphoneSessionsEnabled', this.concurrentSoftphoneSessionsEnabled());
+    this.emit('station', { action: 'Associated', station: body });
+    return body;
   }
 
   isPersistentConnectionEnabled (): boolean {
