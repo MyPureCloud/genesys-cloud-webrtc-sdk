@@ -84,7 +84,6 @@ export default abstract class BaseSessionHandler {
   }
 
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
-    this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id, sessionType: session.sessionType });
     this.endTracks(session._outboundStream);
     this.endTracks(session._screenShareStream);
     this.sdk.emit('sessionEnded', session, reason);

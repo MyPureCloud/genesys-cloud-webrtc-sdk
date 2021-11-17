@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-explicit-any: "off" */
-import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
+import { RequestApiOptions } from 'genesys-cloud-streaming-client';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
 import { GenesysCloudWebrtcSdk } from './client';
@@ -119,7 +119,6 @@ export const logPendingSession = function (
     sessionId: (pendingSession as IPendingSession).id || (pendingSession as ISessionInfo).sessionId,
     autoAnswer: pendingSession.autoAnswer,
     conversationId: pendingSession.conversationId,
-    persistentConversationId: pendingSession.persistentConversationId,
     fromUserId: pendingSession.fromUserId
   };
 

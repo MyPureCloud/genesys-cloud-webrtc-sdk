@@ -540,7 +540,7 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 
 export interface IEndSessionRequest {
   sessionId?: string;
-  conversationId?: string;
+  conversationId: string;
   reason?: Constants.JingleReasonCondition;
 }
 

@@ -1,4 +1,4 @@
-import StreamingClient from 'genesys-cloud-streaming-client';
+import StreamingClient, { IClientOptions } from 'genesys-cloud-streaming-client';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
@@ -16,13 +16,14 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     await this._streamingConnection.disconnect();
   }
 
-  const connectionOptions: any = {
+  const connectionOptions: IClientOptions = {
     signalIceConnected: true,
     host: this._config.wsHost || `wss://streaming.${this._config.environment}`,
     apiHost: this._config.environment,
     logger: this.logger,
     appName: 'webrtc-sdk',
-    appVersion: this.VERSION
+    appVersion: this.VERSION,
+    optOutOfWebrtcStatsTelemetry: this._config.optOutOfTelemetry
   };
 
   if (this._personDetails) {
@@ -82,7 +83,7 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   on('rtcSessionError', this.emit.bind(this, 'error'));
   on('traceRtcSession', this.emit.bind(this, 'trace'));
 
-  /* if streaming-client is emitting these events, that means we should have the pendingSession stored where we can look up the corresponding conversationId – and it won't interfer with any persistent connection */
+  /* if streaming-client is emitting these events, that means we should have the pendingSession stored where we can look up the corresponding conversationId – and it won't interfer with any persistent connection */
   on('cancelIncomingRtcSession', this.sessionManager.onCancelPendingSession.bind(this.sessionManager));
   on('handledIncomingRtcSession', this.sessionManager.onHandledPendingSession.bind(this.sessionManager));
 

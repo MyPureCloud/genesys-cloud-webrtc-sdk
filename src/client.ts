@@ -238,12 +238,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       await proxyStreamingClientEvents.call(this);
 
       /* if we are allowing softphone calls, we need station information */
-      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone)) {
+      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone) && !this.isGuest) {
         this.logger.info('SDK initialized to handle Softphone session. Requesting station');
-        await this.fetchUsersStation()
+        const stationReq = this.fetchUsersStation()
           .catch((err) => {
+            // these errors shouldn't halt initialization
             this.logger.warn('error fetching users station', err);
           });
+        const stationSub = this.listenForStationEvents();
+
+        await Promise.all([stationReq, stationSub]);
       }
 
       this.emit('ready');
@@ -493,15 +497,19 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
     });
     this.station = body;
-    this.logger.debug('Fetched user station', body, true); // don't log PIIdefineProperty
+    this.logger.debug('Fetched user station', body, true); // don't log PII
     this.emit('concurrentSoftphoneSessionsEnabled', this.concurrentSoftphoneSessionsEnabled());
     this.emit('station', { action: 'Associated', station: body });
     return body;
   }
 
   isPersistentConnectionEnabled (): boolean {
-    return this.station?.webRtcPersistentEnabled &&
-      this.station?.type === 'inin_webrtc_softphone';
+    const station = this.station;
+    return !!(
+      station &&
+      station.webRtcPersistentEnabled &&
+      station.type === 'inin_webrtc_softphone'
+    );
   }
 
   concurrentSoftphoneSessionsEnabled (): boolean {
@@ -677,7 +685,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     });
   }
 
-  private _listenForStationEvents () {
+  private listenForStationEvents () {
     return this._streamingConnection._notifications.subscribe(
       `v2.users.${this._personDetails.id}.station`,
       (event) => {

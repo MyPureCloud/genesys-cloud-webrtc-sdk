@@ -12,6 +12,7 @@ import { Constants } from 'stanza';
 const JingleReasonCondition = Constants.JingleReasonCondition;
 
 export { utils, mediaUtils, JingleReason, JingleReasonCondition, JingleInfo };
+export { SdkError } from './utils';
 
 /* make sure to export the default */
 import GenesysCloudWebrtSdk from './client';

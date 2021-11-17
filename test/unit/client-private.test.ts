@@ -3,7 +3,7 @@ import { SimpleMockSdk } from '../test-utils';
 import { CommunicationStates } from '../../src/types/enums';
 import { SubscriptionEvent } from '../../src/types/interfaces';
 import { handleConversationUpdate } from '../../src/client-private';
-import { ConversationUpdate } from '../../src/types/conversation-update';
+import { ConversationUpdate } from '../../src/';
 
 let mockSdk: GenesysCloudWebrtcSdk;
 

@@ -252,7 +252,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    if (isPeerVideoJid(pendingSession.address)) {
+    if (isPeerVideoJid(pendingSession.fromJid)) {
       if (pendingSession.fromUserId === this.sdk._personDetails.id) {
         logPendingSession(this.sdk.logger,
           'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
@@ -555,7 +555,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
 
       if (!session.videoMuted) {
-        await this.setVideoMute(session, { sessionId: session.id, mute: true }, true);
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, true);
       }
 
       stream.getTracks().forEach((track: MediaStreamTrack) => {
@@ -587,7 +587,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (session._resurrectVideoOnScreenShareEnd) {
       this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      await this.setVideoMute(session, { sessionId: session.id, mute: false }, true);
+      await this.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
     } else {
       await sender.replaceTrack(null);
     }

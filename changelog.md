@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
 
 ### BREAKING CHANGE
-* Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable:
+* Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable functions include (but are not limited to):
     * `sdk.acceptPendingSession({ conversationId: string })`
     * `sdk.rejectPendingSession({ conversationId: string })`
     * `sdk.acceptSession({ conversationId: string, ...otherOptions })`

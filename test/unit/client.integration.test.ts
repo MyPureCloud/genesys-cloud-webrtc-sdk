@@ -51,8 +51,8 @@ describe('Client (integration)', () => {
   });
 
   describe('initialize()', () => {
-    it('fetches org and person details, sets up the streaming connection', async () => {
-      const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
+    it('fetches org and person details, sets up the streaming connection, and fetches the station', async () => {
+      const { getOrg, getUser, getChannel, sdk, notificationSubscription, getStation } = mockApis();
       await sdk.initialize();
 
       expect(sdk._streamingConnection).toBeTruthy();

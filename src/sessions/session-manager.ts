@@ -66,38 +66,19 @@ export class SessionManager {
   }
 
   getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
-    if (params.conversationId) {
-      return this.pendingSessions[params.conversationId];
-    }
-
-    if (params.sessionId) {
-      const pendingSessions = Object.values(this.pendingSessions).filter(s => s.sessionId === params.sessionId);
-      if (pendingSessions.length > 1) {
-        this.log('warn', 'retrieving pending session by `sessionId` and there are multiple pendingSessions with the provided `sessionId`. this can have negative side effects. please accept/reject pendingSessions using `conversationId` to avoid conflicts', {
-          params,
-          foundPendingSession: pendingSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
-        });
-      }
-
-      return this.pendingSessions[pendingSessions[0]?.conversationId];
-    }
+    return this.pendingSessions[params.conversationId];
   }
 
   removePendingSession (params: ISessionIdAndConversationId | IPendingSession) {
-    const conversationId = params.conversationId || this.getPendingSession(params)?.conversationId;
+    const conversationId = params.conversationId;
     delete this.pendingSessions[conversationId];
   }
 
   getSession (params: ISessionIdAndConversationId): IExtendedMediaSession {
-    let session: IExtendedMediaSession;
-    if (params.conversationId) {
-      const softphoneHanlder = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+    const softphoneHanlder = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
 
-      session = Object.values(softphoneHanlder.conversations).find((c) => c.conversationId === params.conversationId)?.session
-        || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
-    } else {
-      session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
-    }
+    const session = Object.values(softphoneHanlder.conversations).find((c) => c.conversationId === params.conversationId)?.session
+      || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
 
     if (!session) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
@@ -137,7 +118,7 @@ export class SessionManager {
   }
 
   async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartSoftphoneSessionParams): Promise<any> {
-    if(!this.sdk.connected) {
+    if (!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
     }
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
@@ -272,7 +253,7 @@ export class SessionManager {
       return;
     }
 
-    this.sdk.emit('cancelPendingSession', { sessionId, conversationId: pendingSession?.conversationId });
+    this.sdk.emit('cancelPendingSession', { sessionId, conversationId: pendingSession.conversationId });
     this.removePendingSession(pendingSession);
   }
 
@@ -290,7 +271,7 @@ export class SessionManager {
       return;
     }
 
-    this.sdk.emit('handledPendingSession', { sessionId, conversationId: pendingSession?.conversationId });
+    this.sdk.emit('handledPendingSession', { sessionId, conversationId: pendingSession.conversationId });
     this.removePendingSession(pendingSession);
   }
 
@@ -340,8 +321,8 @@ export class SessionManager {
   }
 
   async endSession (params: IEndSessionRequest) {
-    if (!params.sessionId && !params.conversationId) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
+    if (!params.conversationId) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide a conversationId.');
     }
 
     const session = this.getSession(params);
