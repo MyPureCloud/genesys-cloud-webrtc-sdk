@@ -3,9 +3,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
 ### BREAKING
 * [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
+
+# [v6.1.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v6.1.7)
+### Fixed
+* [PCM-1764](https://inindca.atlassian.net/browse/PCM-1764) – updated webpack config to skip `amd` build which was polluting the global namespace with
+dependencies, namely lodash (`window._`).
+
+# [v6.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...v6.1.6)
+### Changed
+* Errors are now logged remotely
+* Bumped streaming client to 13.3.7
+
+### Removed
+* Removed build examples for gulp and browserify and their dependencies
+
 
 # [v6.1.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.4...v6.1.5)
 ### Added
