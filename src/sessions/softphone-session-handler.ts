@@ -174,7 +174,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
             originalRoomJid: session.originalRoomJid,
             fromUserId: session.fromUserId,
             fromJid: session.peerID,
-            toJid: this.sdk._personDetails.chat.jabberId // TODO: what should this be?
+            toJid: this.sdk._personDetails.chat.jabberId
           };
           this.sessionManager.pendingSessions[update.id] = pendingSession;
           this.sdk.emit('pendingSession', pendingSession);
@@ -573,7 +573,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       }
 
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.http,
-        'Unable to end the session directly as a fallback because LineAppearance is 1 and there are other active conversation', {
+        'Unable to end the session directly as a fallback because LineAppearance is 1 and there are other active conversations', {
         failedSession: { conversationId, sessionId: session.id },
         otherActiveSessions,
         error

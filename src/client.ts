@@ -497,7 +497,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
     });
     this.station = body;
-    this.logger.debug('Fetched user station', body, true); // don't log PII
+    this.logger.info('Fetched user station', {
+      userId: body.userId,
+      type: body.type,
+      webRtcPersistentEnabled: body.webRtcPersistentEnabled,
+      webRtcForceTurn: body.webRtcForceTurn,
+      webRtcCallAppearances: body.webRtcCallAppearances,
+    });
     this.emit('concurrentSoftphoneSessionsEnabled', this.concurrentSoftphoneSessionsEnabled());
     this.emit('station', { action: 'Associated', station: body });
     return body;

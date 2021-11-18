@@ -1645,7 +1645,7 @@ describe('endSession()', () => {
       fail('should have thrown');
     } catch (err) {
       expect(err).toEqual(new SdkError(SdkErrorTypes.http,
-        'Unable to end the session directly as a fallback because LineAppearance is 1 and there are other active conversation', {
+        'Unable to end the session directly as a fallback because LineAppearance is 1 and there are other active conversations', {
         failedSession: { conversationId: convoToEnd.conversationId, sessionId: session.id },
         otherActiveSessions: [pendingConvo, connectedConvo].map(convo => ({
           conversationId: convo.conversationId,
