@@ -1,10 +1,11 @@
 /* eslint @typescript-eslint/no-explicit-any: "off" */
 import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SdkErrorTypes, LogLevels } from './types/enums';
-import { IPendingSession, ISessionInfo, ILogger } from './types/interfaces';
+import { IPendingSession, ISessionInfo } from './types/interfaces';
 
 export class SdkError extends Error {
   type: SdkErrorTypes;

@@ -14,6 +14,7 @@ import {
   IExtendedMediaSession,
   IUpdateOutgoingMedia
 } from '../types/interfaces';
+import { ILogMessageOptions } from 'genesys-cloud-client-logger';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -27,8 +28,8 @@ export default abstract class BaseSessionHandler {
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
-  protected log (level: LogLevels, message: any, details?: any, skipServer?: boolean): void {
-    this.sdk.logger[level].call(this.sdk.logger, message, details, skipServer);
+  protected log (level: LogLevels, message: any, details?: any, logOptions?: ILogMessageOptions): void {
+    this.sdk.logger[level].call(this.sdk.logger, message, details, logOptions);
   }
 
   handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {

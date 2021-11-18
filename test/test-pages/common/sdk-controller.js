@@ -43,6 +43,17 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
     utils.writeToLog(`Using default audioStream with device: ${audioLabel}`);
   }
 
+  const formatter = (level, message, details, opts, next) => {
+    if (message.includes('propose')) {
+      message = 'decorated propose!!!'
+    } else {
+      message = `[decorated other] ${message}`
+    }
+
+    next(level, message, details, opts);
+  };
+  options.logFormatters = [formatter];
+
   const SDK = GenesysCloudWebrtcSdk || getSdk();
   webrtcSdk = new SDK(options);
   window.webrtcSdk = webrtcSdk;

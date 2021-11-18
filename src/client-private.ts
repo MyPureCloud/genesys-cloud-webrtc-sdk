@@ -50,6 +50,8 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     connectionOptions.jwt = this._customerData.jwt;
   }
 
+  connectionOptions.logFormatters = this._config.logFormatters;
+
   this.logger.debug('Streaming client WebSocket connection options', connectionOptions);
   this._hasConnected = false;
 

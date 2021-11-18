@@ -213,13 +213,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       const getOrg = requestApiWithRetry.call(this, '/organizations/me').promise
         .then(({ body }) => {
           this._orgDetails = body;
-          this.logger.debug('Fetched organization details', body, true); // don't log PII
+          this.logger.debug('Fetched organization details', body, { skipServer: true }); // don't log PII
         });
 
       const getPerson = requestApiWithRetry.call(this, '/users/me').promise
         .then(({ body }) => {
           this._personDetails = body;
-          this.logger.debug('Fetched person details', body, true); // don't log PII
+          this.logger.debug('Fetched person details', body, { skipServer: true }); // don't log PII
         });
 
       httpRequests.push(getOrg);
