@@ -1,5 +1,5 @@
 // this will need to be pipeline-library@master when the pr merges
-@Library('pipeline-library') _
+@Library('pipeline-library@ui-pipeline-legacy') _
 
 webappPipeline {
     slaveLabel = 'dev_v2'
