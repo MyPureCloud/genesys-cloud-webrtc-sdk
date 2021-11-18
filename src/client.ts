@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
+import Logger from 'genesys-cloud-client-logger';
 
 import {
   ISdkConfig,
-  ILogger,
   ICustomerData,
   IEndSessionRequest,
   IAcceptSessionRequest,
@@ -79,7 +79,7 @@ function validateOptions (options: ISdkConfig): string | null {
  */
 export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkEvents> }) {
   static readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
-  logger: ILogger;
+  logger: Logger;
   sessionManager: SessionManager;
   media: SdkMedia;
   station: IStation | null;
@@ -167,8 +167,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         message: error.message,
         type: error.type,
         details: error.details
-        /* logging errors is dangerous because they could contain PII */
-      }, true);
+      });
     });
 
     this._connected = false;

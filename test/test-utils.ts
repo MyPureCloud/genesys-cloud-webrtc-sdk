@@ -7,8 +7,6 @@ import { GenesysCloudWebrtcSdk } from '../src/index';
 import { SdkMedia } from '../src/media/media';
 import { HttpClient } from 'genesys-cloud-streaming-client';
 
-
-
 /* spy here and in the constructor because some tests restoreMocks before initializing a SimpleMockSdk */
 jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
 

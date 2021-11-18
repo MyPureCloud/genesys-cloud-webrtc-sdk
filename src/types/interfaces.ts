@@ -99,11 +99,11 @@ export interface ISdkConfig {
   logLevel?: LogLevels;
 
   /**
-   * Logger to use. Must implement the `ILogger` interface.
+   * Secondary logger to use. Must implement the `ILogger` interface. Defaults to `console`.
    *
-   * Defaults to [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
-   *  which sends logs to the server (unless `optOutOfTelemetry` is `true`)
-   *  and outputs them in the console.
+   * NOTE: The SDK will always use [GenesysCloudClientLogger](https://github.com/purecloudlabs/genesys-cloud-client-logger)
+   *  which sends logs to the server (unless `optOutOfTelemetry` is `true`) and outputs them to the secondary logger
+   * (ie. which ever logger was passed in using this config property).
    *
    * ``` ts
    * interface ILogger {
@@ -116,6 +116,25 @@ export interface ISdkConfig {
    * ```
    */
   logger?: ILogger;
+
+  /**
+   * This is name of the app that is consuming the SDK. This field is optional and only
+   *  used for logging purposes.
+   */
+  originAppName?: string;
+
+  /**
+   * This is the version of the app that is consuming the SDK. This field is optional and only
+   *  used for logging purposes.
+   */
+  originAppVersion?: string;
+
+  /**
+   * This is an unique ID from the app that is consuming the SDK. This field is optional and only
+   *  used for logging purposes to tie the consuming app client instance with the
+   *  SDK's logger instance.
+   */
+  originAppId?: string;
 
   /**
    * Opt out of sending logs to the server. Logs are only sent to the server

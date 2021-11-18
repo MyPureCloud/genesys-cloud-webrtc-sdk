@@ -1,4 +1,11 @@
+let loggerConstructorSpy: jest.SpyInstance;
+jest.mock('genesys-cloud-client-logger', () => {
+  loggerConstructorSpy = jest.fn((_config) => mockLogger)
+  return loggerConstructorSpy;
+});
+
 import StreamingClient from 'genesys-cloud-streaming-client';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockTrack, MockStream, MockSession, random } from '../test-utils';
@@ -26,9 +33,13 @@ import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
 
-function getMockLogger () {
-  return { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn(), log: jest.fn() };
-}
+const mockLogger: jest.Mocked<ILogger> = {
+  debug: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  info: jest.fn(),
+  log: jest.fn()
+};
 
 describe('Client', () => {
   let sdk: GenesysCloudWebrtcSdk;
@@ -42,16 +53,17 @@ describe('Client', () => {
     constructSdk = (config?: ISdkConfig) => {
       /* if we have no config, then use some defaults */
       if (config === undefined) {
-        config = { logger: getMockLogger(), accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
+        config = { logger: mockLogger, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
       }
       /* if we have `truthy`, make sure we always have the mock logger */
       else if (config) {
-        config = { logger: getMockLogger(), optOutOfTelemetry: true, ...config };
+        config = { logger: mockLogger, optOutOfTelemetry: true, ...config };
       }
 
       sdk = new GenesysCloudWebrtcSdk(config);
 
       /* set up mock instances */
+      // mockLogger = { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn(), log: jest.fn() };
       sessionManagerMock = sdk.sessionManager = new SessionManager(sdk) as any;
       streamingClientMock = {
         disconnect: jest.fn()
@@ -126,19 +138,18 @@ describe('Client', () => {
     it('sets up options when provided and track default audioStream', () => {
       const trackDefaultAudioStreamSpy = jest.spyOn(GenesysCloudWebrtcSdk.prototype, 'trackDefaultAudioStream' as any)
         .mockImplementation();
-      const logger = getMockLogger();
       const mockStream = {};
       const sdk = constructSdk({
         accessToken: '1234',
         environment: 'mypurecloud.ie',
         autoConnectSessions: false,
-        logger: logger as any,
+        optOutOfTelemetry: true,
         defaults: {
           audioStream: mockStream,
         }
       } as ISdkConfig);
 
-      expect(sdk.logger).toBe(logger);
+      expect(sdk.logger).toBe(mockLogger);
       expect(sdk._config.accessToken).toBe('1234');
       expect(sdk._config.environment).toBe('mypurecloud.ie');
       expect(sdk._config.autoConnectSessions).toBe(false);
