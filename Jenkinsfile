@@ -15,6 +15,8 @@ webappPipeline {
 
     buildStep = {
         sh('''
+            npm i -g npm@7
+            npm --versions
             export CDN_URL="$(npx cdn --ecosystem pc --name $APP_NAME --build $BUILD_ID --version $VERSION)"
             echo "CDN_URL $CDN_URL"
             npm ci && npm test && npm run build
