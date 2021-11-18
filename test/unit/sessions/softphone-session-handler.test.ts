@@ -37,7 +37,6 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
-import { ISessionAndConversationIds } from '../../../dist/cjs/types/interfaces';
 import { SdkError } from '../../../src/utils';
 
 let handler: SoftphoneSessionHandler;
@@ -246,7 +245,7 @@ describe('acceptSession()', () => {
       audioElement: element as any,
       mediaStream: mockOutgoingStream as any
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -279,7 +278,7 @@ describe('acceptSession()', () => {
     const params: IAcceptSessionRequest = {
       conversationId: session.conversationId
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -311,7 +310,7 @@ describe('acceptSession()', () => {
     const params: IAcceptSessionRequest = {
       conversationId: session.conversationId
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -338,7 +337,7 @@ describe('acceptSession()', () => {
       audioElement: element as any,
       mediaStream: new MockStream() as any
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
