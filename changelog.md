@@ -4,9 +4,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
-### BREAKING
-* [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
 
+### BREAKING CHANGE
+* [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
+* Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable functions include (but are not limited to):
+    * `sdk.acceptPendingSession({ conversationId: string })`
+    * `sdk.rejectPendingSession({ conversationId: string })`
+    * `sdk.acceptSession({ conversationId: string, ...otherOptions })`
+    * `sdk.endSession({ conversationId: string, ...otherOptions })`
+    * `sdk.setVideoMute({ conversationId: string, ...otherOptions })`
+    * `sdk.setAudioMute({ conversationId: string, ...otherOptions })`
+* [PCM-1708](https://inindca.atlassian.net/browse/PCM-1708) – CDN now exports all SDK exports and not just the client.
+* Removing `address` from pendingSession.
+
+### Added
+* Added a static `VERSION` property
+* Loads station on initialization _if_ `SesstionTypes.softphone` is in allowed list.
+* Added `sdk.setConversationHeld(conversationId)` that issues an API request to place a softphone conversation on hold.
+* Updated Demo App
+* Added `sdk.isPersistentConnectionEnabled()` and `sdk.station` and `sdk.concurrentSoftphoneSessionsEnabled()` and station events
 # [v6.1.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v6.1.7)
 ### Fixed
 * [PCM-1764](https://inindca.atlassian.net/browse/PCM-1764) – updated webpack config to skip `amd` build which was polluting the global namespace with

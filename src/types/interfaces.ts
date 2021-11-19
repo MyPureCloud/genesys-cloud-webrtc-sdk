@@ -1,9 +1,11 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { LogLevels, SessionTypes, JingleReasons } from './enums';
-import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
-import { SdkError } from '../utils';
+import { GenesysCloudMediaSession, ISessionInfo } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
+
+import { SdkError } from '../utils';
+import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
+import { ConversationUpdate } from '../conversations/conversation-update';
 
 // extend the emittable events
 declare module 'genesys-cloud-streaming-client' {
@@ -527,6 +529,7 @@ export interface ISdkMediaDeviceIds {
 }
 
 export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
+  conversationId?: string;
   /** session id (this _OR_ `session` is required) */
   sessionId?: string;
   /** session (this _OR_ `sessionId` is required) */
@@ -537,7 +540,9 @@ export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
 
 export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   /** id of the session to accept */
-  sessionId: string;
+  // sessionId: string;
+
+  conversationId: string;
 
   /**
    * media stream to use on the session. if this is
@@ -554,7 +559,7 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 
 export interface IEndSessionRequest {
   sessionId?: string;
-  conversationId?: string;
+  conversationId: string;
   reason?: Constants.JingleReasonCondition;
 }
 
@@ -567,6 +572,30 @@ export interface IPersonDetails {
   chat: {
     jabberId: string;
   };
+  station?: {
+    associatedStation?: IStation;
+    effectiveStation?: IStation;
+    lastAssociatedStation?: IStation;
+  }
+}
+
+export interface IOrgDetails {
+  id: string;
+  name: string;
+}
+
+export interface IStation {
+  id: string;
+  name: string;
+  status: 'ASSOCIATED' | 'AVAILABLE';
+  userId: string;
+  webRtcUserId: string;
+  type: 'inin_webrtc_softphone' | 'inin_remote';
+  webRtcPersistentEnabled: boolean;
+  webRtcForceTurn: boolean;
+  webRtcCallAppearances: number;
+  // webRtcMediaDscp: 46;
+  // lineAppearanceId: string;
 }
 
 export interface ILogger {
@@ -643,26 +672,56 @@ export function isSecurityCode (data: { securityCode: string } | ICustomerData):
   );
 }
 
-export interface IPendingSession {
+export { ISessionInfo };
+export interface IPendingSession extends ISessionInfo {
   id: string;
-  autoAnswer: boolean;
-  address: string;
-  conversationId: string;
   sessionType: SessionTypes;
-  originalRoomJid: string;
-  fromUserId?: string;
+}
+export interface IConversationParticipantFromEvent {
+  id: string;
+  purpose: string;
+  userId: string;
+  videos: Array<IParticipantVideo>;
+  calls: Array<ICallStateFromParticipant>;
 }
 
-export interface ISessionInfo {
-  sessionId: string;
-  autoAnswer: boolean;
-  fromJid: string;
+export interface IParticipantVideo {
+  context: string;
+  audioMuted: boolean;
+  videoMuted: boolean;
+  id: string;
+  state: CommunicationStates;
+  peerCount: number;
+  sharingScreen: boolean;
+}
+
+export interface ICallStateFromParticipant {
+  id: string;
+  state: CommunicationStates;
+  muted: boolean;
+  confined: boolean;
+  held: boolean;
+  direction: 'inbound' | 'outbound';
+  provider: string;
+}
+
+export interface IStoredConversationState {
+  conversationUpdate: ConversationUpdate;
+  session?: IExtendedMediaSession;
   conversationId: string;
-  originalRoomJid: string;
-  fromUserId?: string;
+  mostRecentUserParticipant?: IConversationParticipantFromEvent;
+  mostRecentCallState?: ICallStateFromParticipant;
 }
 
-export interface ISessionAndConversationIds {
+export interface ISdkConversationUpdateEvent {
+  activeConversationId: string;
+  // perrsistentConnectionEnabled: boolean;
+  current: IStoredConversationState[];
+  added: IStoredConversationState[];
+  removed: IStoredConversationState[];
+}
+
+export interface ISessionIdAndConversationId {
   sessionId?: string;
   conversationId?: string;
 }
@@ -682,12 +741,19 @@ export interface IStartVideoSessionParams extends IStartSessionParams {
  * mute: update the conversation's mute status to match this value
  */
 export interface ISessionMuteRequest {
-  /** session id */
-  sessionId: string;
+  /** conversation id */
+  conversationId?: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
   unmuteDeviceId?: string | boolean | null;
+}
+
+export interface IConversationHeldRequest {
+  /** conversation id */
+  conversationId: string;
+  /** `true` to mute, `false` to unmute using default device */
+  held: boolean;
 }
 
 /**
@@ -782,8 +848,11 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
-  handledPendingSession: (sessionId: string) => void;
-  cancelPendingSession: (sessionId: string) => void;
+  handledPendingSession: ISessionIdAndConversationId;
+  cancelPendingSession: ISessionIdAndConversationId;
+  conversationUpdate: ISdkConversationUpdateEvent;
+  station: (event: { action: 'Associated' | 'Disassociated', station: IStation | null }) => void;
+  concurrentSoftphoneSessionsEnabled: boolean; // lineAppearence > 1
 }
 
 /**

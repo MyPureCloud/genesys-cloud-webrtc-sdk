@@ -3,11 +3,15 @@
 import { getSdk, GenesysCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
 
-let currentSession;
 let videoOpts;
-let currentSessionId;
 let webrtcSdk;
 let conversationsApi;
+let currentSessionId;
+let pendingSessions = [];
+let conversationUpdatesToRender = {
+  conversations: {},
+  activeConversationId: ''
+};
 
 async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDefaultAudio) {
   let options = {};
@@ -30,6 +34,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
 
   options.environment = environmentData.uri;
   options.logLevel = 'info';
+  // for sumo debugging
   // options.optOutOfTelemetry = true;
 
   options.defaults = { monitorMicVolume: true };
@@ -44,8 +49,21 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
   }
 
   const SDK = GenesysCloudWebrtcSdk || getSdk();
+  window.SDK = SDK;
+
   webrtcSdk = new SDK(options);
   window.webrtcSdk = webrtcSdk;
+  window.sdk = webrtcSdk;
+
+  if (!options.optOutOfTelemetry) {
+    sdk.logger = sdk._config.logger = new GenesysCloudClientLogger({
+     accessToken: options.accessToken,
+     url: `https://api.${options.environment}/api/v2/diagnostics/trace`,
+     appVersion: 'dev',
+     logLevel: 'info',
+     logTopic: 'webrtc-demo-app',
+   });
+ }
 
   connectEventHandlers();
   return webrtcSdk.initialize(initOptions)
@@ -70,6 +88,7 @@ function connectEventHandlers () {
   webrtcSdk.on('endOfCandidates', endOfCandidates);
   webrtcSdk.on('disconnected', disconnected);
   webrtcSdk.on('connected', connected);
+  webrtcSdk.on('conversationUpdate', handleConversationUpdate);
 
   /* media related */
   webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
@@ -84,7 +103,7 @@ function requestCameraPermissions () {
   return webrtcSdk.media.requestMediaPermissions('video');
 }
 
-function requestAllPermissions() {
+function requestAllPermissions () {
   return webrtcSdk.media.requestMediaPermissions('both');
 }
 
@@ -174,37 +193,6 @@ function changeVolume () {
   webrtcSdk.updateAudioVolume(volume);
 }
 
-async function endSession () {
-  if (!currentSessionId) {
-    utils.writeToLog('No active session');
-    return;
-  }
-
-  try {
-    await webrtcSdk.endSession({ sessionId: currentSessionId });
-
-    const controls = document.getElementById('video-actions');
-    controls.classList.add('hidden');
-
-    const startControls = document.querySelectorAll('.start-controls');
-    startControls.forEach(el => el.classList.remove('hidden'));
-
-    utils.writeToLog('Call ended');
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function answerCall () {
-  if (!currentSessionId) {
-    utils.writeToLog('There is no session to connect to');
-    return;
-  }
-
-  webrtcSdk.acceptPendingSession(currentSessionId);
-  currentSessionId = null;
-}
-
 function disconnectSdk () {
   const reallyDisconnect = window.confirm('Are you sure you want to disconnect?');
   if (!reallyDisconnect) {
@@ -240,24 +228,172 @@ function pendingSession (options) {
     autoAnswer: ${JSON.stringify(options.autoAnswer)}
     `;
 
-  currentSessionId = options.id;
+  const existingPendingSession = pendingSessions.find(s => s.conversationId === options.conversationId);
+  if (!existingPendingSession) {
+    pendingSessions.push(options);
+    renderPendingSessions();
+  }
 
   utils.writeToLog(output);
 }
 
-function cancelPendingSession (id) {
+function renderPendingSessions () {
+  const parentNode = document.getElementById('pending-sessions');
+  console.log('rendering pending sessions table', pendingSessions);
+  if (!pendingSessions.length) {
+    parentNode.innerHTML = '';
+    return;
+  }
+
+  let html = `<table class="table">
+    <thead>
+      <tr>
+        <th scope="col">conversationId</th>
+        <th scope="col">sessionId</th>
+        <th scope="col">autoAnswer</th>
+        <th scope="col">Answer</th>
+        <th scope="col">Decline</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+
+  pendingSessions.forEach(session => {
+    html += `<tr>
+    <th scope="row">${session.conversationId}</th>
+    <td>${session.id}</td>
+    <td>${session.autoAnswer}</td>
+    <td><button type="button" class="btn btn-success btn-sm" onclick="webrtcSdk.acceptPendingSession({conversationId:'${session.conversationId}'})"
+      >Answer</button>
+    </td>
+    <td><button type="button" class="btn btn-danger btn-sm" onclick="webrtcSdk.rejectPendingSession({conversationId:'${session.conversationId}'})"
+      >Decline</button>
+    </td>
+  </tr>`
+  });
+
+  html += `</tbody>
+  </table>`;
+
+  parentNode.innerHTML = html;
+}
+
+function handleConversationUpdate (event) {
+  console.debug('received `conversationUpdate` event', event);
+  conversationUpdatesToRender.activeConversationId = event.activeConversationId;
+  event.current.forEach(convoEvt => {
+    conversationUpdatesToRender.conversations[convoEvt.conversationId] = convoEvt;
+  });
+  event.removed.forEach(convoEvt => {
+    conversationUpdatesToRender.conversations[convoEvt.conversationId] = convoEvt;
+  });
+  renderSessions();
+}
+
+function renderSessions () {
+  const tableBodyId = 'session-tbody';
+  let tableBody = document.getElementById(tableBodyId);
+  let html = '';
+
+  if (!tableBody) {
+    const parentNode = document.getElementById('sessions-element');
+    parentNode.innerHTML = `<table class="table">
+      <thead>
+        <tr>
+          <th scope="col" scope="row">conversationId</th>
+          <th scope="col">sessionId</th>
+          <th scope="col">Is the active convo?</th>
+          <th scope="col">Non concurrent Sess.</th>
+          <th scope="col">session state</th>
+          <th scope="col">direction</th>
+          <th scope="col">call state</th>
+          <th scope="col">muted</th>
+          <th scope="col">held</th>
+          <th scope="col">confined</th>
+          <th scope="col">Mute</th>
+          <th scope="col">Hold</th>
+          <th scope="col">End</th>
+        </tr>
+      </thead>
+      <tbody id="${tableBodyId}">
+      </tbody>
+    </table>`;
+    tableBody = document.getElementById(tableBodyId);
+  }
+
+  Object.values(conversationUpdatesToRender.conversations).forEach(update => {
+    const isTheActiveConversation = update.conversationId === conversationUpdatesToRender.activeConversationId;
+    const isSessionActive = update.session ? update.session.state === 'active' : undefined;
+    const isCallActive = update.mostRecentCallState.state !== 'disconnected'
+      && update.mostRecentCallState.state !== 'terminated'
+    const isCallMuted = update.mostRecentCallState.muted;
+    const isCallHeld = update.mostRecentCallState.held;
+    const isCallConfined = update.mostRecentCallState.confined;
+
+    html += `<tr>
+    <th scope="row">${update.conversationId}</th>
+    <td>${update.session ? update.session.id : '(none)'}</td>
+    <td
+      class="${isTheActiveConversation ? 'text-success' : ''}"
+    >${isTheActiveConversation}</td>
+    <td>${!sdk.concurrentSoftphoneSessionsEnabled()}</td>
+    <td
+      class="${isSessionActive ? 'text-success' : 'text-danger'}"
+    >${update.session ? update.session.state : '(none)'}</td>
+    <td>${update.mostRecentCallState.direction}</td>
+    <td
+      class="${isCallActive ? 'text-success' : 'text-danger'}"
+    >${update.mostRecentCallState.state}</td>
+    <td
+      class="${isCallMuted ? 'text-warning' : 'text-info'}"
+    >${isCallMuted}</td>
+    <td
+      class="${isCallHeld ? 'text-warning' : 'text-info'}"
+    >${isCallHeld}</td>
+    <td
+      class="${isCallConfined ? 'text-warning' : 'text-info'}"
+    >${isCallConfined}</td>
+
+    <td>
+      <button type="button" class="btn btn-info btn-sm"
+        onclick="webrtcSdk.setAudioMute({mute: ${!isCallMuted},conversationId:'${update.conversationId}'})"
+        ${isCallActive ? '' : 'disabled'}
+      >${isCallMuted ? 'Unmute' : 'Mute'}</button>
+    </td>
+    <td>
+      <button type="button" class="btn btn-info btn-sm"
+        onclick="webrtcSdk.setConversationHeld({held: ${!isCallHeld},conversationId:'${update.conversationId}'})"
+        ${isCallActive ? '' : 'disabled'}
+      >${isCallHeld ? 'Unhold' : 'Hold'}</button>
+    </td>
+    <td>
+      <button type="button" class="btn btn-danger btn-sm"
+        onclick="webrtcSdk.endSession({conversationId:'${update.conversationId}'})"
+        ${isCallActive ? '' : 'disabled'}
+      >End</button>
+    </td>
+  </tr>`
+  });
+  tableBody.innerHTML = html;
+}
+
+function cancelPendingSession (params) {
   let output = `${_getLogHeader('cancelPendingSession')}
-    id: ${id}`;
+    sessionId: ${params.sessionId}
+    conversationId: ${params.conversationId}`;
 
-  currentSessionId = null;
+  pendingSessions = pendingSessions.filter(s => s.conversationId !== params.conversationId);
+  renderPendingSessions();
   utils.writeToLog(output);
 }
 
-function handledPendingSession (id) {
+function handledPendingSession (params) {
   let output = `${_getLogHeader('handledPendingSession')}
-    id: ${id}`;
+    sessionId: ${params.sessionId}
+    conversationId: ${params.conversationId}`;
 
-  // currentSessionId = null;
+  pendingSessions = pendingSessions.filter(s => s.conversationId !== params.conversationId);
+  renderPendingSessions();
   utils.writeToLog(output);
 }
 
@@ -272,8 +408,8 @@ async function sessionStarted (session) {
     conversationId: ${session.conversationId}
     sessionId: ${session.sid}`;
 
-  currentSessionId = session.sid;
-  currentSession = session;
+  // conversationUpdatesToRender.push(session);
+  // renderSessions();
   utils.writeToLog(output);
 
   if (session.sessionType === 'collaborateVideo') {
@@ -379,7 +515,8 @@ function sessionEnded (session, reason) {
   let output = `${_getLogHeader('sessionEnded')}
     sessionId: ${session.sid}
     conversationId: ${session.conversationId}
-    isPersistentConnectionActive: ${session.isPersistentConnectionActive}
+    isPersistentConnection: ${session.isPersistentConnection}
+    isSessionStillActive: ${session.active}
     reason: ${JSON.stringify(reason, null, 2)}`;
 
   currentSessionId = null;
@@ -503,6 +640,32 @@ function pinParticipantVideo () {
   currentSession.pinParticipantVideo(getInputValue('participant-pin'));
 }
 
+let systemPresences;
+async function updateOnQueueStatus (goingOnQueue) {
+  if (!systemPresences) {
+    systemPresences = (await webrtcSdk._http.requestApi(`systempresences`, {
+      method: 'get',
+      host: webrtcSdk._config.environment,
+      authToken: webrtcSdk._config.accessToken
+    })).body;
+  }
+
+  let presenceDefinition;
+  if (goingOnQueue) {
+    presenceDefinition = systemPresences.find(p => p.name === 'ON_QUEUE');
+  } else {
+    presenceDefinition = systemPresences.find(p => p.name === 'AVAILABLE');
+  }
+
+  const requestOptions = {
+    method: 'patch',
+    host: webrtcSdk._config.environment,
+    authToken: webrtcSdk._config.accessToken,
+    data: JSON.stringify({ presenceDefinition })
+  };
+  return await webrtcSdk._http.requestApi(`users/${webrtcSdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
+}
+
 export default {
   getCurrentMediaState,
   requestMicPermissions,
@@ -516,12 +679,11 @@ export default {
   setAudioMute,
   startScreenShare,
   stopScreenShare,
-  endSession,
   updateOutgoingMediaDevices,
   updateOutputMediaDevice,
   updateDefaultDevices,
-  answerCall,
   disconnectSdk,
   initWebrtcSDK,
-  pinParticipantVideo
+  pinParticipantVideo,
+  updateOnQueueStatus
 };

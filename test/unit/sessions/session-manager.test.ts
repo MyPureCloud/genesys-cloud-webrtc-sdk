@@ -34,31 +34,34 @@ describe('allowedSessionTypes', () => {
   });
 });
 
-describe('getPendingSession', () => {
-  it('should find session by sessionId', () => {
+describe('getPendingSession()', () => {
+  it('should find session by conversationId', () => {
     const pendingSession1 = createPendingSession();
     const pendingSession2 = createPendingSession();
-    sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
-    sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
+    sessionManager.pendingSessions[pendingSession1.conversationId] = pendingSession1;
+    sessionManager.pendingSessions[pendingSession2.conversationId] = pendingSession2;
 
-    expect(sessionManager.getPendingSession(pendingSession1.id)).toBe(pendingSession1);
-    expect(sessionManager.getPendingSession(pendingSession2.id)).toBe(pendingSession2);
+    expect(sessionManager.getPendingSession({ conversationId: pendingSession1.conversationId })).toBe(pendingSession1);
+    expect(sessionManager.getPendingSession({ conversationId: pendingSession2.conversationId })).toBe(pendingSession2);
   });
 });
 
 describe('handleConversationUpdate', () => {
-  it('should find all session that match the conversationId and call the associated handlers', () => {
+  it('should find all session that match the sessionType and call the associated handlers', () => {
     const conversationId = 'convoid123';
     const session1 = {
-      conversationId
+      conversationId,
+      sessionType: SessionTypes.collaborateVideo
     };
 
     const session2 = {
-      conversationId: 'not this one'
+      conversationId: 'convoId does not matter, but this is the wrong sessionType',
+      sessionType: SessionTypes.softphone
     };
 
     const session3 = {
-      conversationId
+      conversationId,
+      sessionType: SessionTypes.collaborateVideo
     };
 
     mockSdk._streamingConnection._webrtcSessions.jingleJs = {
@@ -70,16 +73,15 @@ describe('handleConversationUpdate', () => {
     } as any;
 
     const spy = jest.fn();
-    const fakeHandler = { handleConversationUpdate: spy };
-    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+    const fakeHandler = { handleConversationUpdate: spy, sessionType: SessionTypes.collaborateVideo };
+    sessionManager.sessionHandlers = [fakeHandler] as any;
 
     const fakeUpdate = {
       id: conversationId
     };
     sessionManager.handleConversationUpdate(fakeUpdate as any);
-    expect(spy).toBeCalledTimes(2);
-    expect(spy).toHaveBeenCalledWith(session1, fakeUpdate);
-    expect(spy).toHaveBeenCalledWith(session3, fakeUpdate);
+    expect(spy).toBeCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(fakeUpdate, [session1, session3]);
   });
 
   it('should not pass update to handler if the handler is disabled', async () => {
@@ -106,7 +108,7 @@ describe('handleConversationUpdate', () => {
 
     const spy = jest.fn();
     const fakeHandler = { handleConversationUpdate: spy, disabled: true };
-    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+    sessionManager.sessionHandlers = [fakeHandler] as any;
 
     const fakeUpdate = {
       id: conversationId
@@ -119,19 +121,35 @@ describe('handleConversationUpdate', () => {
 describe('getSession', () => {
   let session1: any;
   let session2: any;
+  let sessionsObj: any;
 
   beforeEach(() => {
     session1 = new MockSession();
     session2 = new MockSession();
 
+    sessionsObj = { [session1.sid]: session1, [session2.sid]: session2 };
     mockSdk._streamingConnection._webrtcSessions.jingleJs = {
-      sessions: { [session1.sid]: session1, [session2.sid]: session2 }
+      sessions: sessionsObj
     } as any;
   });
 
-  it('should get session by sessionId', () => {
-    expect(sessionManager.getSession({ sessionId: session1.id })).toBe(session1);
-    expect(sessionManager.getSession({ sessionId: session2.id })).toBe(session2);
+  it('should get softphone session by conversationStates', () => {
+    const softphoneHandler = {
+      sessionType: SessionTypes.softphone,
+      conversations: {
+        [session1.conversationId]: {
+          session: session1,
+          conversationId: session1.conversationId
+        }
+      }
+    };
+
+    /* mock like jingleJs doesn't have any sessions */
+    delete sessionsObj[session1.sid];
+    delete sessionsObj[session2.sid];
+    sessionManager.sessionHandlers = [softphoneHandler as any];
+
+    expect(sessionManager.getSession({ conversationId: session1.conversationId })).toBe(session1);
   });
 
   it('should get session by conversationId', () => {
@@ -139,24 +157,42 @@ describe('getSession', () => {
     expect(sessionManager.getSession({ conversationId: session2.conversationId })).toBe(session2);
   });
 
+  it('should throw if the conversationState on the softphoneHandler does not have a session', () => {
+    const softphoneHandler = {
+      sessionType: SessionTypes.softphone,
+      conversations: {
+        [session1.conversationId]: {
+          conversationId: session1.conversationId
+        }
+      }
+    };
+
+    /* mock like jingleJs doesn't have any sessions */
+    delete sessionsObj[session1.sid];
+    delete sessionsObj[session2.sid];
+    sessionManager.sessionHandlers = [softphoneHandler as any];
+
+    expect(() => sessionManager.getSession({ conversationId: session1.conversationId })).toThrowError(/Unable to find session/);
+  });
+
   it('should throw is no session is found', () => {
     expect(() => sessionManager.getSession({ sessionId: 'fakeId' })).toThrowError(/Unable to find session/);
   });
 });
 
-describe('removePendingSession', () => {
-  it('should remove pending session by sessionId', () => {
+describe('removePendingSession()', () => {
+  it('should remove pending session by conversationId', () => {
     const pendingSession1 = createPendingSession();
     const pendingSession2 = createPendingSession();
-    sessionManager.pendingSessions[pendingSession1.id] = pendingSession1;
-    sessionManager.pendingSessions[pendingSession2.id] = pendingSession2;
+    sessionManager.pendingSessions[pendingSession1.conversationId] = pendingSession1;
+    sessionManager.pendingSessions[pendingSession2.conversationId] = pendingSession2;
 
     expect(Object.values(sessionManager.pendingSessions).length).toBe(2);
 
-    sessionManager.removePendingSession(pendingSession1.id);
+    sessionManager.removePendingSession({ conversationId: pendingSession1.conversationId });
 
     expect(Object.values(sessionManager.pendingSessions).length).toBe(1);
-    expect(sessionManager.pendingSessions[pendingSession1.id]).toBeUndefined();
+    expect(sessionManager.pendingSessions[pendingSession1.conversationId]).toBeUndefined();
   });
 });
 
@@ -268,7 +304,7 @@ describe('onPropose', () => {
     await sessionManager.onPropose(sessionInfo);
 
     expect(mockHandler.handlePropose).toHaveBeenCalled();
-    expect(sessionManager.pendingSessions[sessionInfo.sessionId]).toBeTruthy();
+    expect(sessionManager.pendingSessions[sessionInfo.conversationId]).toBeTruthy();
   });
 
   it('should ignore if pendingSession already exists', async () => {
@@ -313,7 +349,7 @@ describe('proceedWithSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const sessionInfo = createSessionInfo();
-    await expect(sessionManager.proceedWithSession(sessionInfo.sessionId)).rejects.toThrowError(/Could not find a pendingSession/);
+    await expect(sessionManager.proceedWithSession({ conversationId: sessionInfo.conversationId })).rejects.toThrowError(/Could not find a pendingSession/);
 
     expect(mockHandler.proceedWithSession).not.toHaveBeenCalled();
   });
@@ -327,7 +363,7 @@ describe('proceedWithSession', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    await sessionManager.proceedWithSession('asldkfj');
+    await sessionManager.proceedWithSession({ conversationId: 'asldkfj' });
 
     expect(mockHandler.proceedWithSession).toHaveBeenCalled();
   });
@@ -343,7 +379,7 @@ describe('rejectPendingSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
     const sessionInfo = createSessionInfo();
-    await expect(sessionManager.rejectPendingSession(sessionInfo.sessionId)).rejects.toThrowError(/Could not find a pendingSession/);
+    await expect(sessionManager.rejectPendingSession({ conversationId: sessionInfo.conversationId })).rejects.toThrowError(/Could not find a pendingSession/);
 
     expect(mockHandler.rejectPendingSession).not.toHaveBeenCalled();
   });
@@ -357,7 +393,7 @@ describe('rejectPendingSession', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    await sessionManager.rejectPendingSession('asldkfj');
+    await sessionManager.rejectPendingSession({ conversationId: 'asldkfj' });
 
     expect(mockHandler.rejectPendingSession).toHaveBeenCalled();
   });
@@ -395,6 +431,67 @@ describe('onSessionInit', () => {
   });
 });
 
+describe('onCancelPendingSession()', () => {
+  it('should do nothing if it did not find a pending session', () => {
+    mockSdk.on('cancelPendingSession', () => {
+      fail('should not emit this event');
+    });
+    sessionManager.onCancelPendingSession('does not exist');
+  });
+
+  it('should emit and remove pending session', () => {
+    const pendingSession = createPendingSession();
+
+    sessionManager.pendingSessions[pendingSession.conversationId] = pendingSession;
+
+    mockSdk.on('cancelPendingSession', ({ sessionId, conversationId }) => {
+      // not an async event
+      expect(sessionId).toBe(pendingSession.sessionId);
+      expect(conversationId).toBe(pendingSession.conversationId);
+    });
+
+    sessionManager.onCancelPendingSession(pendingSession.sessionId, pendingSession.conversationId);
+  });
+});
+
+describe('onHandledPendingSession()', () => {
+  it('should do nothing if it did not find a pending session', () => {
+    mockSdk.on('cancelPendingSession', () => {
+      fail('should not emit this event');
+    });
+    sessionManager.onCancelPendingSession('does not exist');
+  });
+
+  it('should emit and remove pending session', () => {
+    const pendingSession = createPendingSession();
+
+    sessionManager.pendingSessions[pendingSession.conversationId] = pendingSession;
+
+    mockSdk.on('handledPendingSession', ({ sessionId, conversationId }) => {
+      // not an async event
+      expect(sessionId).toBe(pendingSession.sessionId);
+      expect(conversationId).toBe(pendingSession.conversationId);
+    });
+
+    sessionManager.onHandledPendingSession(pendingSession.sessionId, pendingSession.conversationId);
+  });
+});
+
+describe('setConversationHeld()', () => {
+  it('should proxy to handler', async () => {
+    const session = new MockSession();
+    jest.spyOn(sessionManager, 'getSession').mockReturnValue(session as any);
+
+    const fakeHandler = { setConversationHeld: jest.fn() };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(fakeHandler as any);
+
+    const params = { conversationId: '1', held: true };
+    await sessionManager.setConversationHeld(params);
+
+    expect(fakeHandler.setConversationHeld).toHaveBeenCalledWith(session, params);
+  });
+});
+
 describe('acceptSession', () => {
   it('should call acceptSession for the session handler and set the sessionType on the session', async () => {
     const session: any = {};
@@ -406,13 +503,13 @@ describe('acceptSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.acceptSession({ sessionId: 'asdf' });
+    await sessionManager.acceptSession({ conversationId: 'asdf' });
 
     expect(mockHandler.acceptSession).toHaveBeenCalled();
   });
 
   it('should throw if called without a sessionId', async () => {
-    await expect(sessionManager.acceptSession({} as any)).rejects.toThrowError(/sessionId is required/);
+    await expect(sessionManager.acceptSession({} as any)).rejects.toThrowError(/A conversationId is required for acceptSession/);
   });
 });
 
@@ -427,13 +524,13 @@ describe('endSession', () => {
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
 
-    await sessionManager.endSession({ sessionId: '123' });
+    await sessionManager.endSession({ conversationId: '123' });
 
     expect(mockHandler.endSession).toHaveBeenCalled();
   });
 
-  it('should throw if no id or conversationId in params', async () => {
-    await expect(sessionManager.endSession({})).rejects.toThrowError(/must provide session id or conversationId/);
+  it('should throw if no conversationId in params', async () => {
+    await expect(sessionManager.endSession({ sessionId: 'not-good-enough' } as any)).rejects.toThrowError(/must provide a conversationId/);
   });
 });
 
@@ -793,8 +890,8 @@ describe('validateOutgoingMediaTracks()', () => {
     /* mutes the session and does not update media (since there is none to update to) */
     expect(mockSessionHandler.getSendersByTrackType).toBeCalled();
     expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
-    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, sessionId: session.id });
-    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, sessionId: session.id });
+    expect(mockSessionHandler.setVideoMute).toHaveBeenCalledWith(session, { mute: true, conversationId: session.conversationId });
+    expect(mockSessionHandler.setAudioMute).toHaveBeenCalledWith(session, { mute: true, conversationId: session.conversationId });
 
     /* should also remove audio tracks because setAudioMute does not remove them (setVideoMute does) */
     const expectedSender = session.pc.getSenders().find(s => s.track === mockAudioTrack as any);

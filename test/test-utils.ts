@@ -63,10 +63,15 @@ export class SimpleMockSdk extends EventEmitter {
     }
   };
   sessionManager = {
-    validateOutgoingMediaTracks: jest.fn()
+    validateOutgoingMediaTracks: jest.fn(),
+    getAllActiveSessions: jest.fn().mockReturnValue([]),
+    pendingSessions: {},
+    aaid: random().toString()
   };
   setAudioMute = jest.fn();
   updateOutgoingMedia = jest.fn();
+  isPersistentConnectionEnabled = jest.fn();
+  concurrentSoftphoneSessionsEnabled = jest.fn();
 }
 
 export class MockSender {
@@ -138,9 +143,10 @@ class MockPC extends EventTarget {
 export class MockSession extends EventEmitter {
   streams: MockStream[] = [];
   tracks: MockTrack[] = [];
-  id: any;
+  id: string;
   sid = random().toString();
   conversationId = random().toString();
+  originalRoomJid = random().toString() + '@organization.com';
   pc = new MockPC(this);
   _statsGatherer: any;
   _outboundStream: any;
@@ -296,13 +302,17 @@ export function createSessionInfo (): ISessionInfo {
     conversationId: random().toString(),
     fromJid: roomJid,
     sessionId: random().toString(),
-    originalRoomJid: roomJid
+    originalRoomJid: roomJid,
+    toJid: '',
+    sessionType: SessionTypes.softphone
   };
 }
 
 export function createPendingSession (type: SessionTypes = SessionTypes.softphone): IPendingSession {
+  const sessionId = random();
   const base = {
-    id: random(),
+    sessionId,
+    id: sessionId,
     conversationId: random(),
     autoAnswer: false,
     sessionType: type

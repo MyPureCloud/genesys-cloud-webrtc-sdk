@@ -7,14 +7,29 @@ jest.mock('genesys-cloud-client-logger', () => {
 import StreamingClient from 'genesys-cloud-streaming-client';
 import { ILogger } from 'genesys-cloud-client-logger';
 
-import { GenesysCloudWebrtcSdk, ICustomerData, ISdkConfig, SdkErrorTypes, SessionTypes } from '../../src';
 import { SessionManager } from '../../src/sessions/session-manager';
-import { SdkError } from '../../src/utils';
 import { MockTrack, MockStream, MockSession, random } from '../test-utils';
-import { SdkMedia } from '../../src/media/media';
-import { ISdkMediaState, IUpdateOutgoingMedia, IExtendedMediaSession, IMediaDeviceIds, isSecurityCode, isCustomerData } from '../../src/types/interfaces';
+import {
+  GenesysCloudWebrtcSdk,
+  ICustomerData,
+  SdkError,
+  ISdkConfig,
+  SdkErrorTypes,
+  SessionTypes,
+  SdkMedia,
+  ISdkMediaState,
+  IUpdateOutgoingMedia,
+  IExtendedMediaSession,
+  IMediaDeviceIds,
+  isSecurityCode,
+  isCustomerData,
+  IStation,
+  IPersonDetails,
+  ISessionIdAndConversationId
+} from '../../src';
+import * as utils from '../../src/utils';
+import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
-jest.mock('genesys-cloud-streaming-client');
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
 
@@ -35,22 +50,26 @@ describe('Client', () => {
   let mediaMock: jest.Mocked<SdkMedia>;
 
   beforeEach(() => {
-    constructSdk = (config) => {
+    constructSdk = (config?: ISdkConfig) => {
       /* if we have no config, then use some defaults */
       if (config === undefined) {
-        config = { logger: mockLogger, accessToken: 'secure', environment: 'mypurecloud.com' } as any;
+        config = { logger: mockLogger, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
       }
       /* if we have `truthy`, make sure we always have the mock logger */
       else if (config) {
-        config = { logger: mockLogger, ...config } as any;
+        config = { logger: mockLogger, optOutOfTelemetry: true, ...config };
       }
 
-      sdk = new GenesysCloudWebrtcSdk(config as any);
+      sdk = new GenesysCloudWebrtcSdk(config);
 
       /* set up mock instances */
       // mockLogger = { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn(), log: jest.fn() };
       sessionManagerMock = sdk.sessionManager = new SessionManager(sdk) as any;
-      streamingClientMock = sdk._streamingConnection = new StreamingClient({ apiHost: 'poptarts.com' } as any) as any;
+      streamingClientMock = {
+        disconnect: jest.fn()
+      } as any;
+
+      sdk._streamingConnection = streamingClientMock;
       mediaMock = sdk.media as any;
 
       /* mock needed returned values (needed for `afterEach => sdk.destroy()`) */
@@ -137,6 +156,22 @@ describe('Client', () => {
       expect(sdk.isGuest).toBe(false);
       expect(trackDefaultAudioStreamSpy).toHaveBeenCalledWith(mockStream);
     });
+
+    it('sets up listeners for canceled and handled sessions', () => {
+      const sdk = constructSdk();
+
+      const ids: ISessionIdAndConversationId = {
+        conversationId: 'walk-talky',
+        sessionId: 'ants-marching'
+      };
+
+      sdk.emit('cancelPendingSession', ids);
+      sdk.emit('handledPendingSession', ids);
+
+      expect(sdk.logger.info).toHaveBeenCalledWith('cancelPendingSession', ids);
+      expect(sdk.logger.info).toHaveBeenCalledWith('handledPendingSession', ids);
+
+    });
   });
 
   describe('startVideoConference()', () => {
@@ -190,9 +225,9 @@ describe('Client', () => {
 
       sessionManagerMock.proceedWithSession.mockResolvedValue();
 
-      const sessionId = '5512551';
-      await sdk.acceptPendingSession(sessionId);
-      expect(sdk.sessionManager.proceedWithSession).toBeCalledWith(sessionId);
+      const conversationId = '5512551';
+      await sdk.acceptPendingSession({ conversationId });
+      expect(sdk.sessionManager.proceedWithSession).toBeCalledWith({ conversationId });
     });
   });
 
@@ -202,9 +237,9 @@ describe('Client', () => {
 
       sessionManagerMock.rejectPendingSession.mockResolvedValue();
 
-      const sessionId = '5512551';
-      await sdk.rejectPendingSession(sessionId);
-      expect(sdk.sessionManager.rejectPendingSession).toBeCalledWith(sessionId);
+      const conversationId = '5512551';
+      await sdk.rejectPendingSession({ conversationId });
+      expect(sdk.sessionManager.rejectPendingSession).toBeCalledWith({ conversationId });
     });
   });
 
@@ -214,7 +249,7 @@ describe('Client', () => {
 
       sessionManagerMock.acceptSession.mockResolvedValue({ conversationId: 'some-convo' });
 
-      const params = { sessionId: '5512551' };
+      const params = { conversationId: '5512551' };
       await sdk.acceptSession(params);
       expect(sdk.sessionManager.acceptSession).toBeCalledWith(params);
     });
@@ -225,10 +260,188 @@ describe('Client', () => {
       sdk = constructSdk();
 
       sessionManagerMock.endSession.mockResolvedValue();
-      const sessionId = random();
-      const params = { sessionId: sessionId };
+      const params = { conversationId: random() };
       await sdk.endSession(params);
       expect(sdk.sessionManager.endSession).toBeCalledWith(params);
+    });
+  });
+
+  describe('fetchUsersStation()', () => {
+    let station: IStation;
+    let user: IPersonDetails;
+    let mockStationResponse: Promise<{ body: IStation }>;
+
+    beforeEach(() => {
+      const stationId = 'the-bat-phone';
+      user = {
+        id: 'bat-123-man',
+        name: 'THE Batman',
+        chat: {
+          jabberId: 'bat.com',
+        },
+        station: {
+          associatedStation: { id: stationId } as any
+        }
+      };
+      station = {
+        id: stationId,
+        name: 'Batman WebRTC station',
+        status: 'ASSOCIATED',
+        userId: user.id,
+        webRtcUserId: user.id,
+        type: 'inin_webrtc_softphone',
+        webRtcPersistentEnabled: false,
+        webRtcForceTurn: false,
+        webRtcCallAppearances: 100
+      };
+      jest.spyOn(utils, 'requestApiWithRetry').mockImplementation(() => {
+        return {
+          promise: mockStationResponse || Promise.resolve({ body: station })
+        } as RetryPromise<{ body: IStation }>;
+      });
+      sdk = constructSdk();
+    });
+
+    it('should fetch the station and emit the necessary events', async () => {
+      sdk._personDetails = user;
+
+      const concurrentSessionEvent = new Promise<void>(res => {
+        sdk.once('concurrentSoftphoneSessionsEnabled', (bool) => {
+          expect(bool).toBe(true);
+          res();
+        });
+      });
+
+      const stationEvent = new Promise<void>(res => {
+        sdk.once('station', (evt) => {
+          expect(evt).toEqual({ action: 'Associated', station });
+          res();
+        });
+      });
+
+      expect(await sdk.fetchUsersStation()).toEqual(station);
+
+      await concurrentSessionEvent;
+      await stationEvent;
+    });
+
+    it('should fetch the user before the station if the user was not previously loaded', async () => {
+      const fetchAuthenticatedUserSpy = jest.spyOn(sdk, 'fetchAuthenticatedUser').mockImplementation(() => {
+        sdk._personDetails = user;
+        return Promise.resolve(user);
+      });
+
+      expect(await sdk.fetchUsersStation()).toEqual(station);
+      expect(fetchAuthenticatedUserSpy).toHaveBeenCalled();
+      expect(sdk._personDetails).toBe(user);
+    });
+
+    it('should throw an error if fetching the user fails', async () => {
+      const error = new Error('Bad HTTP happenings');
+      const fetchAuthenticatedUserSpy = jest.spyOn(sdk, 'fetchAuthenticatedUser').mockRejectedValue(error);
+
+      try {
+        await sdk.fetchUsersStation();
+        fail('should have throw');
+      } catch (e) {
+        expect(e).toEqual(error);
+      }
+
+      expect(fetchAuthenticatedUserSpy).toHaveBeenCalled();
+    });
+
+    it('should throw if the user does not have an associated station', async () => {
+      const expectThrow = async () => {
+        try {
+          await sdk.fetchUsersStation();
+          fail('should have throw');
+        } catch (e) {
+          expect(e.message).toBe('User does not have an associated station');
+        }
+      };
+
+      /* no user, even after trying to load one */
+      jest.spyOn(sdk, 'fetchAuthenticatedUser').mockResolvedValue(null);
+      await expectThrow();
+
+      /* no station for the user */
+      sdk._personDetails = { ...user, station: undefined };
+      await expectThrow();
+
+      /* no station Id on the station */
+      sdk._personDetails = { ...user, station: {} };
+      await expectThrow();
+    });
+
+    it('should throw an error if fetching the station fails', async () => {
+      sdk._personDetails = user;
+
+      mockStationResponse = Promise.reject(new Error('Bad Request'));
+
+      try {
+        await sdk.fetchUsersStation();
+        fail('should have throw');
+      } catch (e) {
+        expect(e.message).toEqual('Bad Request');
+      }
+    });
+  });
+
+  describe('isPersistentConnectionEnabled()', () => {
+    beforeEach(() => {
+      sdk = constructSdk();
+      sdk.station = {
+        type: 'inin_webrtc_softphone',
+        webRtcPersistentEnabled: true,
+      } as IStation;
+    });
+
+    it('should return "true" if persistent connection is enabled for a webrtc softphone', () => {
+      expect(sdk.isPersistentConnectionEnabled()).toBe(true);
+    });
+
+    it('should return "false" if there is no station', () => {
+      delete sdk.station;
+      expect(sdk.isPersistentConnectionEnabled()).toBe(false);
+    });
+
+    it('should return "false" if persistent connection is not enabled', () => {
+      delete sdk.station.webRtcPersistentEnabled;
+      expect(sdk.isPersistentConnectionEnabled()).toBe(false);
+
+      sdk.station.webRtcPersistentEnabled = false;
+      expect(sdk.isPersistentConnectionEnabled()).toBe(false);
+    });
+
+    it('should return "false" if not a webrt softphone', () => {
+      sdk.station.type = 'inin_remote';
+      expect(sdk.isPersistentConnectionEnabled()).toBe(false);
+
+      delete sdk.station.type;
+      expect(sdk.isPersistentConnectionEnabled()).toBe(false);
+    });
+  });
+
+  describe('concurrentSoftphoneSessionsEnabled()', () => {
+    beforeEach(() => {
+      sdk = constructSdk();
+      sdk.station = {
+        webRtcCallAppearances: 100
+      } as IStation;
+    });
+
+    it('should return "true" if station has lineCallAppearance > 1', () => {
+      expect(sdk.concurrentSoftphoneSessionsEnabled()).toBe(true);
+    });
+
+    it('should return "false" if station has lineCallAppearance === 1', () => {
+      sdk.station.webRtcCallAppearances = 1;
+      expect(sdk.concurrentSoftphoneSessionsEnabled()).toBe(false);
+    });
+
+    it('should return "false" if there is no station', () => {
+      delete sdk.station;
+      expect(sdk.concurrentSoftphoneSessionsEnabled()).toBe(false);
     });
   });
 
@@ -497,6 +710,19 @@ describe('Client', () => {
 
       await sdk.setVideoMute(params);
       expect(sdk.sessionManager.setVideoMute).toBeCalledWith(params);
+    });
+  });
+
+  describe('setConversationHeld()', () => {
+    it('proxies the call to the sessionManager', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.setConversationHeld.mockResolvedValue();
+
+      const params = { conversationId: '5512551', held: true };
+
+      await sdk.setConversationHeld(params);
+      expect(sdk.sessionManager.setConversationHeld).toBeCalledWith(params);
     });
   });
 
@@ -784,6 +1010,74 @@ describe('Client', () => {
       sessionManagerMock.startSession.mockResolvedValue({});
       await sdk.startSoftphoneSession({ phoneNumber: '123' } as any);
       expect(sessionManagerMock.startSession).toBeCalledWith({ phoneNumber: '123', sessionType: 'softphone' });
+    });
+  });
+
+  describe('listenForStationEvents()', () => {
+    let listenForStationEventsFn: typeof sdk['listenForStationEvents'];
+    let emitEvent;
+    beforeEach(() => {
+      sdk = constructSdk();
+      sdk._personDetails = {
+        id: 'peter-parker'
+      } as IPersonDetails;
+
+      listenForStationEventsFn = sdk['listenForStationEvents'].bind(sdk);
+      streamingClientMock._notifications = {
+        subscribe: jest.fn()
+          .mockImplementation((_event, callback) => emitEvent = callback)
+      } as any;
+    });
+
+    it('should subscribe to station events', async () => {
+      await listenForStationEventsFn();
+      expect(streamingClientMock._notifications.subscribe)
+        .toHaveBeenCalledWith(`v2.users.${sdk._personDetails.id}.station`, expect.any(Function));
+    });
+
+    it('should handle handle DISASSOCIATED_EVENT', async () => {
+      const station = { id: 'bane' } as IStation;
+      sdk.station = station;
+
+      await listenForStationEventsFn();
+
+      // this event isn't async so we don't have to wait for a promise
+      sdk.on('station', (evt) => {
+        expect(evt).toEqual({ action: 'Disassociated', station: null });
+      });
+
+      emitEvent({ metadata: { action: 'Disassociated' } });
+      expect(sdk.logger.info).toHaveBeenCalledWith('station disassociated', { stationId: station.id });
+
+      /* handle duplicate messages */
+      emitEvent({ metadata: { action: 'Disassociated' } });
+      expect(sdk.logger.info).toHaveBeenCalledWith('station disassociated', { stationId: undefined });
+    });
+
+    it('should handle handle ASSOCIATED_EVENT', async () => {
+      await listenForStationEventsFn();
+      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue(null);
+
+      emitEvent({
+        metadata: { action: 'Associated' },
+        eventBody: { associatedStation: { id: 'webrtc-station' } }
+      });
+      expect(sdk.fetchUsersStation).toHaveBeenCalled();
+    });
+
+    it('should ignore other events', async () => {
+      await listenForStationEventsFn();
+
+      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue(null);
+      sdk.on('station', (_evt) => {
+        fail('should not emit unknown events');
+      });
+
+      emitEvent({
+        metadata: { action: 'Something-Not-Station-Related' }
+      });
+
+      expect(sdk.fetchUsersStation).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-explicit-any: "off" */
-import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
+import { RequestApiOptions } from 'genesys-cloud-streaming-client';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
 import { GenesysCloudWebrtcSdk } from './client';

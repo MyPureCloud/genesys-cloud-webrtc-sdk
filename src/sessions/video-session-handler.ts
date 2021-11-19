@@ -18,7 +18,7 @@ import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
 import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
-import { ConversationUpdate } from '../types/conversation-update';
+import { ConversationUpdate } from '../conversations/conversation-update';
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -79,8 +79,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     };
   }
 
-  handleConversationUpdate (session: IExtendedMediaSession, conversationUpdate: ConversationUpdate): void {
-    super.handleConversationUpdate(session, conversationUpdate);
+  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) {
+    sessions
+      .filter(s => s.conversationId === update.id)
+      .forEach(session => this.handleConversationUpdateForSession(update, session));
+  }
+
+  handleConversationUpdateForSession (conversationUpdate: ConversationUpdate, session: IExtendedMediaSession): void {
     session.pcParticipant = this.findLocalParticipantInConversationUpdate(conversationUpdate);
 
     const activeVideoParticipants: IParticipantUpdate[] = conversationUpdate.participants
@@ -247,7 +252,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    if (isPeerVideoJid(pendingSession.address)) {
+    if (isPeerVideoJid(pendingSession.fromJid)) {
       if (pendingSession.fromUserId === this.sdk._personDetails.id) {
         logPendingSession(this.sdk.logger,
           'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
@@ -371,7 +376,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
     if (!audioSender || !audioSender.track.enabled) {
       session.audioMuted = true;
-      this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id,sessionType: session.sessionType });
+      this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       audioMute = session.mute(userId as any, 'audio');
     }
 
@@ -550,7 +555,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
 
       if (!session.videoMuted) {
-        await this.setVideoMute(session, { sessionId: session.id, mute: true }, true);
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, true);
       }
 
       stream.getTracks().forEach((track: MediaStreamTrack) => {
@@ -582,7 +587,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (session._resurrectVideoOnScreenShareEnd) {
       this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      await this.setVideoMute(session, { sessionId: session.id, mute: false }, true);
+      await this.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
     } else {
       await sender.replaceTrack(null);
     }

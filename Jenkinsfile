@@ -1,9 +1,8 @@
 // this will need to be pipeline-library@master when the pr merges
-@Library('pipeline-library') _
+@Library('pipeline-library@ui-pipeline-legacy') _
 
 webappPipeline {
     slaveLabel = 'dev_v2'
-    nodeVersion = '10.16.2'
     useArtifactoryRepo = false
     projectName = 'developercenter-cdn/webrtc-sdk'
     manifest = customManifest('dist') {
@@ -16,6 +15,8 @@ webappPipeline {
 
     buildStep = {
         sh('''
+            npm i -g npm@7
+            npm --versions
             export CDN_URL="$(npx cdn --ecosystem pc --name $APP_NAME --build $BUILD_ID --version $VERSION)"
             echo "CDN_URL $CDN_URL"
             npm ci && npm test && npm run build

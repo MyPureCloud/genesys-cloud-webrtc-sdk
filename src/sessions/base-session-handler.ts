@@ -1,18 +1,20 @@
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
+
 import { GenesysCloudWebrtcSdk } from '../client';
-import { LogLevels, SessionTypes, SdkErrorTypes, JingleReasons } from '../types/enums';
+import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
 import { createAndEmitSdkError, logPendingSession } from '../utils';
-import { ConversationUpdate } from '../types/conversation-update';
+import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
   IStartSessionParams,
   IAcceptSessionRequest,
   ISessionMuteRequest,
   IExtendedMediaSession,
-  IUpdateOutgoingMedia
+  IUpdateOutgoingMedia,
+  IConversationHeldRequest
 } from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -27,12 +29,10 @@ export default abstract class BaseSessionHandler {
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
+  abstract handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]): void;
+
   protected log (level: LogLevels, message: any, details?: any, skipServer?: boolean): void {
     this.sdk.logger[level].call(this.sdk.logger, message, details, skipServer);
-  }
-
-  handleConversationUpdate (session: IExtendedMediaSession, update: ConversationUpdate) {
-    this.log('info', 'conversation update received', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, update });
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
@@ -55,13 +55,12 @@ export default abstract class BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<any> {
     session.id = session.sid;
 
-    const pendingSession = this.sessionManager.getPendingSession(session.id);
+    const pendingSession = this.sessionManager.getPendingSession(session);
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
       session.fromUserId = pendingSession.fromUserId;
       session.originalRoomJid = pendingSession.originalRoomJid;
     }
-    this.sessionManager.removePendingSession(session.id);
 
     try {
       this.log('info', 'handling session init', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
@@ -82,9 +81,8 @@ export default abstract class BaseSessionHandler {
   }
 
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
-    this.log('info', 'handling session terminated', { conversationId: session.conversationId, reason, sessionId: session.id, sessionType: session.sessionType });
     this.endTracks(session._outboundStream);
-    session._screenShareStream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    this.endTracks(session._screenShareStream);
     this.sdk.emit('sessionEnded', session, reason);
   }
 
@@ -131,6 +129,14 @@ export default abstract class BaseSessionHandler {
 
   async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params
+    });
+  }
+
+  async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest): Promise<any> {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Setting conversation on "hold" not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
       params
@@ -281,7 +287,7 @@ export default abstract class BaseSessionHandler {
 
         /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
         if (track.kind === 'audio' && session.audioMuted) {
-          await this.sdk.setAudioMute({ sessionId: session.id, mute: true, unmuteDeviceId: options.audioDeviceId });
+          await this.sdk.setAudioMute({ conversationId: session.conversationId, mute: true, unmuteDeviceId: options.audioDeviceId });
         }
       });
 

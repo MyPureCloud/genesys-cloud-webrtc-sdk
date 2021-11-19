@@ -83,12 +83,12 @@ Alice                     Push Notifications    WebRTC SDK
 After creating an instance of the SDK, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `pendingSession` is an example
 of an SDK event. You can answer and control sessions via the SDK methods documented
-in [GenesysCloudWebrtcSdk] documentation. Most call control actions, however, should be done via the GenesysCloud Public
+in [GenesysCloudWebrtcSdk](index.md#genesyscloudwebrtcsdk) documentation. Most call control actions, however, should be done via the GenesysCloud Public
 API (or the Public API javascript SDK).
 
 Once the client has a session, it can add event handlers for lower level control
 over sessions. `terminated` is an example of a session event;
-[all session events are detailed here].
+[all session events are detailed here](index.md#session-level-events).
 
 Once you have an initialized instance of the WebrtcSdk and events setup, you can create a softphone session in the following manner:
 
@@ -140,8 +140,6 @@ interface IStartSoftphoneSessionParams {
 * `participants?: ISdkSoftphoneDestination[]` - Optional: List of participants to add to the call if starting a conference call.
 * `uuiData?: string` - Optional: User to user information managed by SIP session app.
 
-
-
 #### `ISdkSoftphoneDestination`
 ```ts
 interface ISdkSoftphoneDestination {
@@ -152,12 +150,11 @@ interface ISdkSoftphoneDestination {
 }
 ```
 
-* address: string - Required: The address or phone number to dial.
-
+* `address: string` - Required: The address or phone number to dial.
 
 ## API
 
-See the full list of the [APIs], [methods], and [events].
+See the full list of the [APIs](index.md#genesyscloudwebrtcsdk), [methods](index.md#methods), and [events](index.md#events).
 
 #### Softphone behavior notes
 

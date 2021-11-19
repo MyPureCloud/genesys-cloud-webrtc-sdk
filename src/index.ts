@@ -2,7 +2,7 @@ export * from './client';
 export * from './media/media';
 export * from './types/interfaces';
 export * from './types/enums';
-export * from './types/conversation-update';
+export * from './conversations/conversation-update';
 
 import * as utils from './utils';
 import * as mediaUtils from './media/media-utils';
@@ -12,6 +12,7 @@ import { Constants } from 'stanza';
 const JingleReasonCondition = Constants.JingleReasonCondition;
 
 export { utils, mediaUtils, JingleReason, JingleReasonCondition, JingleInfo };
+export { SdkError } from './utils';
 
 /* make sure to export the default */
 import GenesysCloudWebrtSdk from './client';

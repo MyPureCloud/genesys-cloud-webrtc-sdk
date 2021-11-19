@@ -77,9 +77,6 @@ module.exports = (env) => {
       path: path.resolve(__dirname, 'dist'),
       filename,
       library: 'GenesysCloudWebrtcSdk',
-      // TODO: exporting the SDK class here does not allow CDN imports access to any
-      //  other files/modules of this lib. See: https://inindca.atlassian.net/browse/PCM-1708
-      libraryExport: cdn ? 'GenesysCloudWebrtcSdk' : '',
       libraryTarget: 'umd'
     },
     plugins: [
