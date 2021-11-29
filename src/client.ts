@@ -465,7 +465,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return requestApiWithRetry.call(this, '/organizations/me').promise
       .then(({ body }) => {
         this._orgDetails = body;
-        this.logger.debug('Fetched organization details', body, true); // don't log PII
+        this.logger.debug('Fetched organization details', body, { skipServer: true }); // don't log PII
         return body;
       });
   }
@@ -474,7 +474,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return requestApiWithRetry.call(this, '/users/me?expand=station').promise
       .then(({ body }) => {
         this._personDetails = body;
-        this.logger.debug('Fetched person details', body, true); // don't log PII
+        this.logger.debug('Fetched person details', body, { skipServer: true }); // don't log PII
         return body;
       });
   }

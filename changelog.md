@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
 
 ### BREAKING CHANGE
+* If you are providing a *logger*:
+    * the ILogger interface has changed. The last param for `log`, `debug`, `info`, `warn`, and `error` functions is no longer a simple boolean,
+    it is an object. Please refer to the ILogger type for https://github.com/purecloudlabs/genesys-cloud-client-logger.
 * [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
 * Must use `conversationId`s when interacting with a conversation/webrtc-session. Most notable functions include (but are not limited to):
     * `sdk.acceptPendingSession({ conversationId: string })`
@@ -18,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Removing `address` from pendingSession.
 
 ### Added
+* [PCM-1753](https://inindca.atlassian.net/browse/PCM-1753) – Add an option for log formatters
 * Added a static `VERSION` property
 * Loads station on initialization _if_ `SesstionTypes.softphone` is in allowed list.
 * Added `sdk.setConversationHeld(conversationId)` that issues an API request to place a softphone conversation on hold.
