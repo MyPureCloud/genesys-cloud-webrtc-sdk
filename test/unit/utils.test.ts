@@ -7,8 +7,8 @@ import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
 import { SdkErrorTypes, SessionTypes, SdkError } from '../../src/';
 import { MOCK_CUSTOMER_DATA } from '../mock-apis';
-import { ILogger } from '../../src';
 import { IPendingSession } from '../../src/types/interfaces';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 let sdk: GenesysCloudWebrtcSdk;
 const baseUriWithoutVersion = 'https://api.mypurecloud.com/api';
