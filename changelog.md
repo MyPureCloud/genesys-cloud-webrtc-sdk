@@ -4,10 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
+
 # [v6.1.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v6.1.7)
 ### Fixed
 * [PCM-1764](https://inindca.atlassian.net/browse/PCM-1764) – updated webpack config to skip `amd` build which was polluting the global namespace with
 dependencies, namely lodash (`window._`).
+* [PCM-1773](https://inindca.atlassian.net/browse/PCM-1773) – add an `esModules` bundle for consumers to choose to use in builds. ([Initial bug report](https://developer.genesys.cloud/forum/t/issue-with-the-a-dependency-npm-package-for-the-sdk/11910))
 
 # [v6.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...v6.1.6)
 ### Changed
