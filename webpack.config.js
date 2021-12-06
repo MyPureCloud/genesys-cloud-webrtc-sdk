@@ -93,6 +93,7 @@ module.exports = (env) => {
     module: {
       rules: [
         {
+          parser: { amd: false },
           test: /\.(cjs|mjs|js|ts)$/,
           loader: 'babel-loader',
           exclude: babelExcludes,

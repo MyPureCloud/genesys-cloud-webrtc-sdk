@@ -4,21 +4,28 @@ import { GenesysCloudWebrtcSdk } from './client';
 import { ILogger } from './types/interfaces';
 
 export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
-  this.logger = logger || console;
-
-  if (logger || this._config.optOutOfTelemetry) {
-    // using provided logger, do nothing
-    return;
-  }
+  const {
+    logLevel,
+    accessToken,
+    optOutOfTelemetry,
+    originAppId,
+    originAppName,
+    originAppVersion
+  } = this._config;
 
   this.logger = new Logger({
-    accessToken: this._config.accessToken,
+    accessToken,
+    logLevel,
     url: `https://api.${this._config.environment}/api/v2/diagnostics/trace`,
     appVersion: this.VERSION,
-    logTopic: 'webrtc-sdk',
-    logLevel: this._config.logLevel,
+    appName: 'webrtc-sdk',
     uploadDebounceTime: 1000,
-    initializeServerLogging: !this.isGuest
+    initializeServerLogging: !(this.isGuest || optOutOfTelemetry),
+    logger,
+    /* consumerApp info */
+    originAppId,
+    originAppName,
+    originAppVersion
   });
 
   if (this.isGuest) {
