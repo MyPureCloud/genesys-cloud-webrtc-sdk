@@ -5,7 +5,7 @@ import polyfills from 'rollup-plugin-polyfill-node';
 export default {
   input: 'dist/es/index.js',
   output: {
-    file: 'dist/es/index.rollup.js',
+    file: 'dist/es/index.bundle.js',
     format: 'es'
   },
   global: {
