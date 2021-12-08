@@ -503,11 +503,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       webRtcForceTurn: body.webRtcForceTurn,
       webRtcCallAppearances: body.webRtcCallAppearances,
     });
-    this.emit('concurrentSoftphoneSessionsEnabled', this.concurrentSoftphoneSessionsEnabled());
+    this.emit('concurrentSoftphoneSessionsEnabled', this.isConcurrentSoftphoneSessionsEnabled());
     this.emit('station', { action: 'Associated', station: body });
     return body;
   }
 
+  /**
+   * Check to see if the user's currently associated station has
+   *  persistent connection enabled.
+   *
+   * @returns if the station has persistent connection enabled
+   */
   isPersistentConnectionEnabled (): boolean {
     const station = this.station;
     return !!(
@@ -517,7 +523,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     );
   }
 
-  concurrentSoftphoneSessionsEnabled (): boolean {
+  /**
+   * Check to see if the user's currently associated station has
+   *  Line Appearance > 1.
+   *
+   * @returns if the station has Line Appearance > 1
+   */
+  isConcurrentSoftphoneSessionsEnabled (): boolean {
     return this.station?.webRtcCallAppearances > 1;
   }
 
@@ -553,6 +565,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
+  /**
+   * Set a conversation's hold state.
+   *
+   * > NOTE: only applicable for softphone conversations
+   *
+   * @param heldOptions conversationId and desired held state
+   */
   async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
     await this.sessionManager.setConversationHeld(heldOptions);
   }

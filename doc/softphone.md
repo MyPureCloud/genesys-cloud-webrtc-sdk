@@ -176,6 +176,61 @@ arrive in a guaranteed order.
 - If you wish to control the MediaStream settings (i.e., input device) you can
 provide it as an option to `acceptSession` or as a default in the sdk's constructor.
 
+## V7 and Line Appearance
+v7 of the SDK introduces functionality to handle different Line Appearance values on the station.
+As such, this only applies to softphone sessions.
+
+This is a performance enhancement for the server and helps streamline the use of Persistent Connection
+within the SDK. Eventually, all stations will be migrated over to Line Appearance == 1
+(currently the default is 100). Clients should implement the SDK v7 to ensure the migration
+goes smoothly and no interruptions are experienced.
+
+### What Is Line Appearance?
+Line Appearance  is how many concurrent active webrtc sessions a user is allowed to have at a given time.
+Line Appearance will usually be **1** or **100**.
+For example:
+* If Line Appearance > 1 (ie. 100)
+  * Each webrtc phone call will receive its own Webrtc Session. Meaning if there are
+  3 active webrtc phone calls, there will be 3 corresponding Webrtc session.
+* If Line Appearancee == 1
+  * Each webrtc phone call will share the active Webrtc Session. Meaning if there is
+  already an active phone call, any new phone calls will use the same webrtc session.
+  Remember that only one call can be active at a time.
+
+### Session Flows for Different Line Appearances
+
+**With Line Appearance == 100** (current default):
+* Each session will receive standard session events (`pendingSession`, `sessionStarted`, `sessionEnded`, etc).
+
+**With Line Appearance == 1** (eventual new default):
+* With no active session
+  * The session will receive standard session events
+* With an existing active session
+  * The new session(s) will not receive standard session events, but instead will watch converversation events
+  and emit "mocked" events based on the conversation events (meaning, `pendingSession`, `sessionStarted`, `sessionEnded`, etc
+  will still be emitted from the SDK).
+* Persistent connection is not really effected when LA == 1. Having it enabled will keep the session alive after the call ends, making
+  the second bullet the more used case.
+
+### How Does This Affect Clients Using the SDK?
+If your application is using the SDK, you will want to update to v7 to make sure you do
+not miss the necessary code for the migration.
+
+1. Make all the necessary adjustments to avoid the breaking changes ([see changelog v7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/blob/master/changelog.md#v700))
+1. If you are _not_ using **persistent connection** on the station, there are no immediate breaking changes. However,
+  be sure to look over the [conversationUpdate event](index.md/#conversationupdate). It is _highly_ recommended that
+  your application start utilizing this event as the `conversationId` on the session will no longer be reliable
+  when Line Appearance == 1 (see conversationUpdate event docs for details). Please note that the normal SDK events
+  (`sessionStarted`, `sessionEnded`, etc) will still always be emitted.
+1. If you _are_ using **persistent connection** (this is less common) – Since the SDK did not support persistent connection
+  until v7, your application would have had to listen to the conversation events and responded appropriately. Now that
+  the SDK is configured to support persistent connection, there are two options:
+    1. Cut over to completely rely on the `conversationUpdate` and normal SDK events (`sessionStarted`, `sessionEnded`, etc).
+    2. If you would like your application to keep its own, already built logic for persistent connection, there are
+      a few new utilities to help out. You can use [isConcurrentSoftphoneSessionsEnabled()](index.md#isConcurrentSoftphoneSessionsEnabled)
+      and ['concurrentSoftphoneSessionsEnabled'](index.md#concurrentSoftphoneSessionsEnabled). There is also
+      [isPersistentConnectionEnabled()](index.md#isPersistentConnectionEnabled) which is available.
+
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
 [sdk.startSoftphoneSession()]: index.md#startsoftphonesession
 [APIs]: index.md#genesyscloudwebrtcsdk

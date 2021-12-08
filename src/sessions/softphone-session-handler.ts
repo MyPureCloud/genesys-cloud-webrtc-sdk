@@ -65,7 +65,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       session = lastConversationUpdate.session;
     }
     /* or, if LineAppearance is 1, use that session */
-    else if (!this.sdk.concurrentSoftphoneSessionsEnabled()) {
+    else if (!this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
       session = this.activeSession;
     }
     /* lastly, look through our sessions */
@@ -369,7 +369,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     const loggy = () => ({
       persistentConnectionSessionId: session.id,
       currentConversationId: session.conversationId,
-      concurrentSoftphoneSessionsEnabled: this.sdk.concurrentSoftphoneSessionsEnabled(),
+      isConcurrentSoftphoneSessionsEnabled: this.sdk.isConcurrentSoftphoneSessionsEnabled(),
       isPersistentConnectionEnabled: this.sdk.isPersistentConnectionEnabled(),
       otherActiveSession: this.sdk.sessionManager.getAllActiveSessions()
         .map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
@@ -401,7 +401,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    const lineAppearance1 = !this.sdk.concurrentSoftphoneSessionsEnabled();
+    const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
     /* if we have an active non-concurrent session, we can drop this accept on the floor */
     if (lineAppearance1 && this.hasActiveSession() && session.id === this.activeSession.id) {
       return this.log('debug',
@@ -551,7 +551,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     } catch (error) {
       this.log('error', 'Failed to end session gracefully', { conversationId, sessionId: session.id, error });
       /* if LA > 1, just end the session */
-      if (this.sdk.concurrentSoftphoneSessionsEnabled()) {
+      if (this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
         return this.endSessionFallback(session, reason);
       }
       /* LA == 1, we can only end it if our current call count is 1 (because multiple calls could be using this session) */
