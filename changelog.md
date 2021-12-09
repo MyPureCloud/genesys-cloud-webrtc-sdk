@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added top level SDK events of `'station'`, `'concurrentSoftphoneSessionsEnabled'`, `'conversationUpdate'` (see docs for more details on these events).
 * Loads station on initialization _if_ `SesstionTypes.softphone` is in allowed list. Sets response to `sdk.station` and emits on `station` event.
 * Added `sdk.setConversationHeld(options)` that makes an API request to place a softphone conversation on hold.
-* Added functions `sdk.isPersistentConnectionEnabled()` and `sdk.concurrentSoftphoneSessionsEnabled()`
+* Added functions `sdk.isPersistentConnectionEnabled()` and `sdk.isConcurrentSoftphoneSessionsEnabled()`
 
 ### Updated
 * Updated Demo App to use new events

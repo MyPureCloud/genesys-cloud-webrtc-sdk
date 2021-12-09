@@ -336,7 +336,7 @@ function renderSessions () {
     <td
       class="${isTheActiveConversation ? 'text-success' : ''}"
     >${isTheActiveConversation}</td>
-    <td>${!sdk.concurrentSoftphoneSessionsEnabled()}</td>
+    <td>${!sdk.isConcurrentSoftphoneSessionsEnabled()}</td>
     <td
       class="${isSessionActive ? 'text-success' : 'text-danger'}"
     >${update.session ? update.session.state : '(none)'}</td>
