@@ -703,6 +703,12 @@ export interface ICallStateFromParticipant {
   held: boolean;
   direction: 'inbound' | 'outbound';
   provider: string;
+  errorInfo?: {
+    code: string;
+    message: string;
+    messageWithParams: string;
+    messageParams: { [key: string]: any }
+  }
 }
 
 export interface IStoredConversationState {

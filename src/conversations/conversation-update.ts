@@ -25,7 +25,8 @@ export class ConversationUpdate {
         confined: call.confined,
         held: call.held,
         direction: call.direction,
-        provider: call.provider
+        provider: call.provider,
+        errorInfo: call.errorInfo
       })) : [];
 
       return {

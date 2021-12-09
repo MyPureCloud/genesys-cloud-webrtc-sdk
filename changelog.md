@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Removing `address` from pendingSession.
 
 ### Added
+* [PCM-1755](https://inindca.atlassian.net/browse/PCM-1755) Added call error handling for softphone which will be emitted as a sdkError event with a type of `call`
 * Added a static `VERSION` property
 * Loads station on initialization _if_ `SesstionTypes.softphone` is in allowed list.
 * Added `sdk.setConversationHeld(conversationId)` that issues an API request to place a softphone conversation on hold.
