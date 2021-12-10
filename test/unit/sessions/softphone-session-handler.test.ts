@@ -2047,3 +2047,33 @@ describe('isEndedState()', () => {
     expect(isEndedState(call)).toBe(false);
   });
 });
+
+describe('checkForCallErrors', () => {
+  it('should call debounce fn if call errorInfo', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: {
+        code: 'myerrorcode'
+      }
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should not call debounce fn if no call errorInfo', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: null
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+});

@@ -5,6 +5,7 @@ export enum SdkErrorTypes {
   invalid_options = 'invalid_options',
   not_supported = 'not_supported',
   session = 'session',
+  call = 'call',
   media = 'media'
 }
 

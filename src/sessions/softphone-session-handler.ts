@@ -1,4 +1,4 @@
-import { pick } from 'lodash';
+import { pick, debounce, DebouncedFunc } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -21,6 +21,8 @@ import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from 
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { GenesysCloudWebrtcSdk } from '..';
+import { SessionManager } from './session-manager';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -36,8 +38,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     removed: []
   };
 
-  constructor (sdk, handler) {
-    super(sdk, handler);
+  debouncedEmitCallError: DebouncedFunc<(update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant) => void>;
+
+  constructor (sdk: GenesysCloudWebrtcSdk, sessionManager: SessionManager) {
+    super(sdk, sessionManager);
+    this.debouncedEmitCallError = debounce(this.emitCallError, 500, { leading: true });
   }
 
   shouldHandleSessionByJid (jid: string): boolean {
@@ -128,6 +133,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
       return this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, true);
     }
+
+    this.checkForCallErrors(update, participant, callState);
 
     /* update the conversation state */
     const conversationState: IStoredConversationState = {
@@ -244,6 +251,29 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       || call1.confined !== call2.confined
       || call1.held !== call2.held
       || call1.muted !== call2.muted;
+  }
+
+  checkForCallErrors (
+    update: ConversationUpdate,
+    participant: IConversationParticipantFromEvent,
+    callState: ICallStateFromParticipant
+  ) {
+    if (callState.errorInfo) {
+      this.debouncedEmitCallError(update, participant, callState);
+    }
+  }
+
+  private emitCallError (
+    update: ConversationUpdate,
+    participant: IConversationParticipantFromEvent,
+    callState: ICallStateFromParticipant
+  ) {
+    createAndEmitSdkError.call(
+      this.sdk, 
+      SdkErrorTypes.call, 
+      'Call error has occurred',
+      { errorInfo: callState.errorInfo, conversationId: update.id }
+    );
   }
 
   emitConversationEvent (event: SdkConversationEvents, conversation: IStoredConversationState, session: IExtendedMediaSession): void {
