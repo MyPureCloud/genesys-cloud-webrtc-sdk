@@ -191,11 +191,12 @@ Line Appearance will usually be **1** or **100**.
 For example:
 * If Line Appearance > 1 (ie. 100)
   * Each webrtc phone call will receive its own Webrtc Session. Meaning if there are
-  3 active webrtc phone calls, there will be 3 corresponding Webrtc session.
+  3 active webrtc phone calls, there will be 3 corresponding Webrtc sessions.
 * If Line Appearancee == 1
-  * Each webrtc phone call will share the active Webrtc Session. Meaning if there is
-  already an active phone call, any new phone calls will use the same webrtc session.
-  Remember that only one call can be active at a time.
+  * All conversations will be multiplexed on the same session reducing local resource use as well as
+    improving call connection times. Only the audio from the active conversation will be heard and sent.
+    For example, if you have an active call and you answer or place another call, the original call will be
+    put on hold and the new call will become the active conversation.
 
 ### Session Flows for Different Line Appearances
 

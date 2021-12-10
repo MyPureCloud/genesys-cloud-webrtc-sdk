@@ -720,7 +720,8 @@ isPersistentConnectionEnabled(): boolean;
 
 Params: none
 
-Returns: a boolean of if the station has persistent connection enabled
+Returns: a boolean, `true`, if the `station.webRtcPersistentEnabled === true`
+  and the `station.type === 'inin_webrtc_softphone'`
 
 #### `isConcurrentSoftphoneSessionsEnabled()`
 Check to see if the user's currently associated station has
@@ -736,7 +737,7 @@ isConcurrentSoftphoneSessionsEnabled(): boolean;
 
 Params: none
 
-Returns: a boolean of if the station has Line Appearance > 1
+Returns: a boolean, `true`, if `station.webRtcCallAppearances > 1`
 
 #### `setVideoMute()`
 Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
