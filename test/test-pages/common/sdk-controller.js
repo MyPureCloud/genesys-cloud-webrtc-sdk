@@ -89,6 +89,7 @@ function connectEventHandlers () {
   webrtcSdk.on('disconnected', disconnected);
   webrtcSdk.on('connected', connected);
   webrtcSdk.on('conversationUpdate', handleConversationUpdate);
+  webrtcSdk.on('station', handleStationUpdate);
 
   /* media related */
   webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
@@ -375,6 +376,50 @@ function renderSessions () {
   </tr>`
   });
   tableBody.innerHTML = html;
+}
+
+function handleStationUpdate(event) {
+  const stationEl = document.querySelector('#stations-element');
+  if (!event.station) {
+    return stationEl.innerHTML = `
+      <h5 class="no-station text-danger m-3">
+        (No Station)
+      </h5>`;
+  }
+
+  const {
+    id,
+    name,
+    status,
+    type,
+    webRtcPersistentEnabled,
+    webRtcCallAppearances,
+    webRtcForceTurn
+  } = event.station;
+
+  stationEl.innerHTML = `
+  <table class="table">
+    <thead>
+      <th scope="col">StationId</th>
+      <th scope="col">Name</th>
+      <th scope="col">Status</th>
+      <th scope="col">Type</th>
+      <th scope="col">Persistent Conn.</th>
+      <th scope="col">Line Appearance</th>
+      <th scope="col">Force TURN</th>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">${id}</th>
+        <td>${name}</td>
+        <td>${status}</td>
+        <td>${type}</td>
+        <td>${webRtcPersistentEnabled}</td>
+        <td>${webRtcCallAppearances}</td>
+        <td>${webRtcForceTurn}</td>
+      </tr>
+    </tbody>
+  </table>`;
 }
 
 function cancelPendingSession (params) {

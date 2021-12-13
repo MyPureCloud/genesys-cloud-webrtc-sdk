@@ -566,7 +566,7 @@ describe('acceptSession', () => {
 describe('endSession', () => {
   it('should call session.end', async () => {
     const session: any = new MockSession();
-    const promise = handler.endSession(session);
+    const promise = handler.endSession(session.conversationId, session);
     session.emit('terminated');
     await promise;
     expect(session.end).toHaveBeenCalled();
@@ -574,7 +574,7 @@ describe('endSession', () => {
 
   it('should call session.end with provided reason', async () => {
     const session: any = new MockSession();
-    const promise = handler.endSession(session, 'alternative-session');
+    const promise = handler.endSession(session.conversationId , session, 'alternative-session');
     session.emit('terminated');
     await promise;
     expect(session.end).toHaveBeenCalledWith('alternative-session');

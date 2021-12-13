@@ -319,6 +319,14 @@
       <li><a href="webpack/" class="" title="webpack"><span class="name">webpack</span></a></li>
     </ul>
   </div>
+  <script>
+    if (window.location.host === 'localhost:8443') {
+      const ul = document.querySelector('ul#files');
+      const li = document.createElement('li');
+      li.innerHTML = '<a href="dev/" class="" title="webpack"><span class="name" style="font-weight: bold;">Development</span></a>';
+      ul.appendChild(li);
+    }
+  </script>
   <script src="../../dist/genesys-cloud-webrtc-sdk.js"></script>
 </body>
 

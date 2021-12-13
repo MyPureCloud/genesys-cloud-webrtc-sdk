@@ -58,7 +58,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
   onTrackEnd (session: IExtendedMediaSession) {
     this.log('debug', 'Track ended');
     if (checkAllTracksHaveEnded(session._screenShareStream)) {
-      return this.endSession(session);
+      return this.endSession(session.conversationId, session);
     }
   }
 
@@ -97,7 +97,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
       await this.addMediaToSession(session, stream);
       await this.acceptSession(session, { conversationId: session.conversationId });
     } catch (err) {
-      await super.endSession(session);
+      await super.endSession(session.conversationId, session);
 
       /* attempt to clean up any streams that may have been created */
       try {

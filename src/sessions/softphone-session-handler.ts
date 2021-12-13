@@ -58,7 +58,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     const callState = this.getCallStateFromParticipant(participant);
     if (!callState) {
-      return this.log('debug', "user participant's call state not found on the conversation update", { update, participant }, true);
+      return this.log('debug', "user participant's call state not found on the conversation update. not processing", { update, participant }, true);
     }
 
     /* if we get here it means it was a softphone conversation event */
@@ -99,6 +99,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         });
       }
     }
+
     this.handleSoftphoneConversationUpdate(update, participant, callState, session);
   }
 
@@ -141,13 +142,10 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       mostRecentCallState: callState,
       mostRecentUserParticipant: participant,
       conversationUpdate: update,
-      conversationId: conversationId
+      conversationId: conversationId,
+      /* this is just a precaution – session for the conversation should be added in `this.acceptSession()` */
+      session: this.conversations[conversationId]?.session || lastConversationUpdate?.session
     };
-
-    /* this is just a precaution – session for the conversation should be added in `this.acceptSession()` */
-    if (lastConversationUpdate && !this.conversations[conversationId].session) {
-      conversationState.session = session;
-    }
 
     const previousCallState = this.getUsersCallStateFromConversationEvent(lastConversationUpdate?.conversationUpdate);
 
@@ -546,9 +544,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     });
   }
 
-  async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    const conversationId = session.conversationId;
-
+  async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     try {
       const participant = await this.getUserParticipantFromConversationId(conversationId);
 
@@ -582,7 +578,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       this.log('error', 'Failed to end session gracefully', { conversationId, sessionId: session.id, error });
       /* if LA > 1, just end the session */
       if (this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
-        return this.endSessionFallback(session, reason);
+        return this.endSessionFallback(conversationId, session, reason);
       }
       /* LA == 1, we can only end it if our current call count is 1 (because multiple calls could be using this session) */
       const otherActiveSessions = Object.values(this.conversations)
@@ -599,7 +595,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         this.log('warn', 'session has LineAppearance as 1 but no other active sessions. Will attempt to end session', {
           conversationId, sessionId: session.id, error
         });
-        return this.endSessionFallback(session, reason);
+        return this.endSessionFallback(conversationId, session, reason);
       }
 
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.http,
@@ -611,10 +607,10 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async endSessionFallback (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
+  async endSessionFallback (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     this.log('info', 'Attempting to end session directly', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType, reason });
     try {
-      await super.endSession(session, reason);
+      await super.endSession(conversationId, session, reason);
     } catch (error) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to end session directly', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, error });
     }

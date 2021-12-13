@@ -858,7 +858,7 @@ describe('endSession', () => {
 
     session.pc.getSenders = () => [{ track: track1 }, { track: track2 }, { track: null }];
 
-    await handler.endSession(session);
+    await handler.endSession(session.conversationId, session);
 
     expect(baseSpy).toHaveBeenCalled();
     expect(mockSdk._streamingConnection.notifications.unsubscribe).toHaveBeenCalled();
