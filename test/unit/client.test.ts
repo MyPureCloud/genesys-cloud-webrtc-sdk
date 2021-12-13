@@ -53,11 +53,11 @@ describe('Client', () => {
     constructSdk = (config?: ISdkConfig) => {
       /* if we have no config, then use some defaults */
       if (config === undefined) {
-        config = { logger: mockLogger, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
+        config = { logger: mockLogger as any, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
       }
       /* if we have `truthy`, make sure we always have the mock logger */
       else if (config) {
-        config = { logger: mockLogger, optOutOfTelemetry: true, ...config };
+        config = { logger: mockLogger as any, optOutOfTelemetry: true, ...config };
       }
 
       sdk = new GenesysCloudWebrtcSdk(config);

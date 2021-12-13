@@ -602,13 +602,13 @@ describe('handleConversationUpdate()', () => {
   it('should do nothing if no participant on the update', () => {
     update.participants = [];
     handler.handleConversationUpdate(update, []);
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith('user participant not found on the conversation update', update, true);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith('user participant not found on the conversation update', update, { skipServer: true });
   });
 
   it('should do nothing if no callState on the participant', () => {
     update.participants = update.participants.map(p => ({ ...p, calls: [] }));
     handler.handleConversationUpdate(update, []);
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith("user participant's call state not found on the conversation update", expect.any(Object), true);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith("user participant's call state not found on the conversation update", expect.any(Object), { skipServer: true });
   });
 
   it('should use the session on the previous conversationState', () => {
@@ -789,7 +789,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(mockSdk.logger.debug).toHaveBeenCalledWith(
       'received a conversation event for a conversation we are not responsible for. not processing',
       { update, callState },
-      true
+      { skipServer: true }
     );
   });
 

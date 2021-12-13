@@ -4,7 +4,8 @@ import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
 import { GenesysCloudWebrtcSdk } from './client';
 import { SdkErrorTypes, LogLevels } from './types/enums';
-import { IPendingSession, ISessionInfo, ILogger } from './types/interfaces';
+import { IPendingSession, ISessionInfo } from './types/interfaces';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 export class SdkError extends Error {
   type: SdkErrorTypes;
@@ -64,10 +65,7 @@ export const requestApiWithRetry = function (this: GenesysCloudWebrtcSdk, path: 
 
 export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): Promise<any> {
   opts = buildRequestApiOptions(this, opts);
-  return this._http.requestApi(path, opts as RequestApiOptions)
-    .catch((error) => {
-      throw this._http.formatRequestError(error);
-    });
+  return this._http.requestApi(path, opts as RequestApiOptions);
 };
 
 export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partial<RequestApiOptions> = {}): Partial<RequestApiOptions> {

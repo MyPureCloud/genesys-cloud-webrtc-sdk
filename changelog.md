@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
 
 ### BREAKING CHANGE
+* If you are providing a *logger*:
+    * the ILogger interface has changed. The last param for `log`, `debug`, `info`, `warn`, and `error` functions is no longer a simple boolean,
+    it is an object. Please refer to the ILogger type for https://github.com/purecloudlabs/genesys-cloud-client-logger.
 * [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
 * [PCM-1708](https://inindca.atlassian.net/browse/PCM-1708) – CDN now exports all SDK exports and not just the client.
 * Must use `conversationId`s when interacting with a conversation and/or webrtc-session. Most notable functions include (but are not limited to):
@@ -20,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Removed `address` from the `pendingSession` object emitted on `sdk.on('pendingSession', ...)`.
 
 ### Added
+* [PCM-1753](https://inindca.atlassian.net/browse/PCM-1753) – Add an option for log formatters
 * [PCM-1755](https://inindca.atlassian.net/browse/PCM-1755) Added call error handling for softphone which will be emitted as a sdkError event with a type of `call`
 * Added a static `VERSION` property
 * Added top level SDK events of `'station'`, `'concurrentSoftphoneSessionsEnabled'`, `'conversationUpdate'` (see docs for more details on these events).

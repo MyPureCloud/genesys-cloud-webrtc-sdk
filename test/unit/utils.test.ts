@@ -7,8 +7,8 @@ import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
 import { SdkErrorTypes, SessionTypes, SdkError } from '../../src/';
 import { MOCK_CUSTOMER_DATA } from '../mock-apis';
-import { ILogger } from '../../src';
 import { IPendingSession } from '../../src/types/interfaces';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 let sdk: GenesysCloudWebrtcSdk;
 const baseUriWithoutVersion = 'https://api.mypurecloud.com/api';
@@ -178,21 +178,6 @@ describe('requestApi', () => {
       host: 'mypurecloud.com',
       noAuthHeader: true
     });
-  });
-
-  it('should format HTTP request errors from streaming-client', async () => {
-    const authToken = 'abrakadabra';
-    const host = 'notreally.dca';
-    const method = 'put';
-
-    const formatSpy = jest.spyOn(sdk._http, 'formatRequestError');
-
-    try {
-      await utils.requestApi.call(sdk, '/somerandompath', { authToken, method, host });
-      fail('Should have thrown error.');
-    } catch (e) {
-      expect(formatSpy).toHaveBeenCalled();
-    }
   });
 });
 
