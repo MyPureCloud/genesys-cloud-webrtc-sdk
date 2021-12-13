@@ -53,12 +53,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     /* we will not have a user call participant if this is not a softphone conversation event */
     const participant = this.getUserParticipantFromConversationEvent(update);
     if (!participant) {
-      return this.log('debug', 'user participant not found on the conversation update', update, true);
+      return this.log('debug', 'user participant not found on the conversation update', update, { skipServer: true });
     }
 
     const callState = this.getCallStateFromParticipant(participant);
     if (!callState) {
-      return this.log('debug', "user participant's call state not found on the conversation update. not processing", { update, participant }, true);
+      return this.log('debug', "user participant's call state not found on the conversation update. not processing", { update, participant }, { skipServer: true });
     }
 
     /* if we get here it means it was a softphone conversation event */
@@ -132,7 +132,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     /* if we didn't have a previous update and this one is NOT in a pending state, that means we are not responsible for this conversation (another client handled it or we have already emitted the `sessionEnded` for it) */
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
-      return this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, true);
+      return this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, { skipServer: true });
     }
 
     this.checkForCallErrors(update, participant, callState);
@@ -237,7 +237,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (eventToEmit) {
-      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, session }, true);
+      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, session }, { skipServer: true });
       this.emitConversationEvent(eventToEmit, this.conversations[conversationId], session);
     }
   }
@@ -267,8 +267,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     callState: ICallStateFromParticipant
   ) {
     createAndEmitSdkError.call(
-      this.sdk, 
-      SdkErrorTypes.call, 
+      this.sdk,
+      SdkErrorTypes.call,
       'Call error has occurred',
       { errorInfo: callState.errorInfo, conversationId: update.id }
     );
@@ -293,7 +293,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     currentEmittedEvent.activeConversationId = this.determineActiveConversationId(session);
 
-    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, session }, true);
+    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, session }, { skipServer: true });
     this.lastEmittedSdkConversationEvent = currentEmittedEvent;
 
     this.sdk.emit('conversationUpdate', currentEmittedEvent);
@@ -558,7 +558,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               endedSession,
               conversationId,
               session
-            }, true);
+            }, { skipServer: true });
             this.sdk.off('sessionEnded', listener);
             return resolve(reason);
           } else {
@@ -566,7 +566,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               endedSession,
               conversationId,
               session
-            }, true);
+            }, { skipServer: true });
           }
         }
 

@@ -44,6 +44,17 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
     options.defaults.audioStream = audioStream;
     window._defaultAudioStream = audioStream;
 
+    // const formatter = (level, message, details, opts, next) => {
+    //   if (message.includes('propose')) {
+    //     message = 'decorated propose!!!'
+    //   } else {
+    //     message = `[decorated other] ${message}`
+    //   }
+  
+    //   next(level, message, details, opts);
+    // };
+    // options.logFormatters = [formatter];
+
     const audioLabel = audioStream.getAudioTracks()[0].label;
     utils.writeToLog(`Using default audioStream with device: ${audioLabel}`);
   }
