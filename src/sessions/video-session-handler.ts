@@ -409,9 +409,9 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async endSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
+  async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     await this.sdk._streamingConnection.notifications.unsubscribe(`v2.conversations.${session.conversationId}.media`);
-    await super.endSession(session, reason);
+    await super.endSession(conversationId, session, reason);
     session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 

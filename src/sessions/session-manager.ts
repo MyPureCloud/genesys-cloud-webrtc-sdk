@@ -321,7 +321,8 @@ export class SessionManager {
   }
 
   async endSession (params: IEndSessionRequest) {
-    if (!params.conversationId) {
+    const conversationId = params.conversationId;
+    if (!conversationId) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide a conversationId.');
     }
 
@@ -329,7 +330,7 @@ export class SessionManager {
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
 
-    return sessionHandler.endSession(session, params.reason);
+    return sessionHandler.endSession(conversationId, session, params.reason);
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {

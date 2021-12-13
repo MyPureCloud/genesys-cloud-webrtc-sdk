@@ -608,7 +608,7 @@ describe('handleConversationUpdate()', () => {
   it('should do nothing if no callState on the participant', () => {
     update.participants = update.participants.map(p => ({ ...p, calls: [] }));
     handler.handleConversationUpdate(update, []);
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith("user participant's call state not found on the conversation update", expect.any(Object), { skipServer: true });
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith("user participant's call state not found on the conversation update. not processing", expect.any(Object), { skipServer: true });
   });
 
   it('should use the session on the previous conversationState', () => {
@@ -894,22 +894,6 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(handler.conversations[update.id]).toBeTruthy();
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
-
-  // it('should not emit any events for conversationUpdates in a connected state when do not have a session', () => {
-  //   const { update, participant, callState, session, previousUpdate } = generateUpdate({
-  //     callState: CommunicationStates.connected,
-  //     previousCallState: { state: CommunicationStates.contacting }
-  //   });
-
-  //   session.conversationId = 'not-our-updates-convo-id';
-  //   handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
-
-  //   handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
-
-  //   expect(emitConversationEventSpy).not.toHaveBeenCalled();
-  //   expect(handler.conversations[update.id]).toBeFalsy();
-  //   expect(sdkEmitSpy).not.toHaveBeenCalled();
-  // });
 
   it('should not emit for conversationUpdates in a connected state when the previous call was not in a connectedState', () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
@@ -1549,7 +1533,7 @@ describe('endSession()', () => {
     jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
     jest.spyOn(handler, 'getUserParticipantFromConversationId' as any).mockResolvedValue({ id: participantId });
 
-    const promise = handler.endSession(session);
+    const promise = handler.endSession(session.conversationId, session);
     // need to wait for "sessionEnded" listener to wire up... don't know why
     await new Promise(resolve => setTimeout(resolve, 150));
 
@@ -1570,7 +1554,7 @@ describe('endSession()', () => {
     jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(null);
     jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
 
-    await handler.endSession(session);
+    await handler.endSession(session.conversationId, session);
 
     expect(fallbackSpy).toHaveBeenCalled();
   });
@@ -1597,7 +1581,7 @@ describe('endSession()', () => {
     session.conversationId = convoToEnd.conversationId;
     handler.conversations[convoToEnd.conversationId] = convoToEnd;
 
-    await handler.endSession(session);
+    await handler.endSession(session.conversationId, session);
 
     expect(fallbackSpy).toHaveBeenCalled();
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(
@@ -1640,7 +1624,7 @@ describe('endSession()', () => {
     handler.conversations[endedConvo.conversationId] = endedConvo;
 
     try {
-      await handler.endSession(session);
+      await handler.endSession(session.conversationId, session);
       fail('should have thrown');
     } catch (err) {
       expect(err).toEqual(new SdkError(SdkErrorTypes.http,
@@ -1662,7 +1646,7 @@ describe('endSessionFallback()', () => {
   it('should call supers endSession', async () => {
     const session: any = new MockSession();
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockResolvedValue();
-    await handler.endSessionFallback(session);
+    await handler.endSessionFallback(session.conversationId, session);
     expect(superSpy).toHaveBeenCalled();
   });
 
@@ -1670,7 +1654,7 @@ describe('endSessionFallback()', () => {
     const session: any = new MockSession();
     const error = new Error('fake');
     jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockRejectedValue(error);
-    await expect(handler.endSessionFallback(session)).rejects.toThrowError(/Failed to end session directly/);
+    await expect(handler.endSessionFallback(session.conversationId, session)).rejects.toThrowError(/Failed to end session directly/);
   });
 });
 
