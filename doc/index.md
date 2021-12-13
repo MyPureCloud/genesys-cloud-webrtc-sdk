@@ -421,6 +421,8 @@ When `true` all audio tracks created via the SDK
 #### `VERSION`
 Readonly `string` of the SDK version in use.
 
+This is also available as a `static` property: `GenesysCloudWebrtcSdk.VERSION`
+
 #### `logger`
 Logger used by the SDK. It will implement the `ILogger` interface. See [constructor](#constructor) for details on how to set the SDK logger and log level.
 
@@ -451,6 +453,26 @@ interface ILogger {
 #### `media`
 SDK Media helper instance. See [WebRTC Media] for API and usage.
 
+#### `station`
+The current authenticated user's associated Webrtc station. Note, this value will always be `null` unless
+  `SessionTypes.softphone` is passed into the SDK's `allowedSessionTypes: []` config option. Then, it will
+  be updated based on the user's associated station in real time. See [Events](#events) for the corresponding
+  `'station'` event and more information on subscribing to association changes.
+
+Available values: `IStation | null`.
+``` ts
+interface IStation {
+  id: string;
+  name: string;
+  status: 'ASSOCIATED' | 'AVAILABLE';
+  userId: string;
+  webRtcUserId: string;
+  type: 'inin_webrtc_softphone' | 'inin_remote';
+  webRtcPersistentEnabled: boolean;
+  webRtcForceTurn: boolean;
+  webRtcCallAppearances: number;
+}
+```
 --------
 
 ### Methods
@@ -693,6 +715,35 @@ Params:
 
 Returns: void
 
+#### `isPersistentConnectionEnabled()`
+Check to see if the user's currently associated station has
+persistent connection enabled.
+
+Declaration:
+``` ts
+isPersistentConnectionEnabled(): boolean;
+```
+
+Params: none
+
+Returns: a boolean, `true`, if the `station.webRtcPersistentEnabled === true`
+  and the `station.type === 'inin_webrtc_softphone'`
+
+#### `isConcurrentSoftphoneSessionsEnabled()`
+Check to see if the user's currently associated station has
+ Line Appearance > 1. See the corresponding [concurrentSoftphoneSessionsEnabled](#concurrentsoftphonesessionsenabled) event
+ under [Events](#events).
+
+For more information about Line Appearance, see [WebRTC SoftPhone].
+
+Declaration:
+``` ts
+isConcurrentSoftphoneSessionsEnabled(): boolean;
+```
+
+Params: none
+
+Returns: a boolean, `true`, if `station.webRtcCallAppearances > 1`
 
 #### `setVideoMute()`
 Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
@@ -759,6 +810,30 @@ Params:
     ```
 
 Returns: a promise that fullfils once the mute request has completed
+
+#### `setConversationHeld()`
+Set a conversation's hold state.
+
+> NOTE: only applicable for softphone conversations
+
+Declaration:
+``` ts
+setConversationHeld(heldOptions: IConversationHeldRequest): Promise<void>;
+```
+
+Params:
+* `heldOptions: IConversationHeldRequest` Required:
+    ``` ts
+    interface IConversationHeldRequest {
+      /** conversation id */
+      conversationId: string;
+      /** `true` to place on hold, `false` to take off hold */
+      held: boolean;
+    }
+    ```
+
+Returns: a promise that fullfils once the hold request has completed
+
 
 #### `setAccessToken()`
 
@@ -964,10 +1039,16 @@ or answer timeout
 
 Declaration:
 ``` ts
-sdk.on('cancelPendingSession', (sessionId: string) => { });
+sdk.on('cancelPendingSession', (event: ISessionIdAndConversationId) => { });
 ```
 Value of event:
-* `sessionId: string` – the id of the session proposed and canceled
+* `event: ISessionIdAndConversationId` – Note that `conversationId` is not guaranteed to be present.
+    ``` ts
+    interface ISessionIdAndConversationId {
+        sessionId?: string;
+        conversationId?: string;
+    }
+    ```
 
 
 #### `handledPendingSession`
@@ -976,10 +1057,16 @@ Emitted when another client belonging to this user
 
 Declaration:
 ``` ts
-sdk.on('handledPendingSession', (sessionId: string) => { });
+sdk.on('handledPendingSession', (event: ISessionIdAndConversationId) => { });
 ```
 Value of event:
-* `sessionId: string` – the id of the session proposed and handled
+* `event: ISessionIdAndConversationId` – Note that `conversationId` is not guaranteed to be present.
+    ``` ts
+    interface ISessionIdAndConversationId {
+        sessionId?: string;
+        conversationId?: string;
+    }
+    ```
 
 #### `sessionStarted`
 Emitted when negotiation has started; before the
@@ -1025,6 +1112,98 @@ Value of event:
     }
     ```
 
+#### `conversationUpdate`
+Emits when softphone conversations change. Some changes that trigger this event
+are, but not limited to:
+* new conversation started
+* conversation ended
+* participants state changed (mute, held, connection state, etc)
+
+> Note: this event will only be available for softphone conversations. Video
+conversations have their own session level events ([see video event docs](video.md#video-session-level-events)).
+
+Declaration:
+``` ts
+sdk.on('conversationUpdate', (event: ISdkConversationUpdateEvent) => { });
+```
+
+Value of event:
+* `event: ISdkConversationUpdateEvent`
+
+``` ts
+interface ISdkConversationUpdateEvent {
+  /**
+   * assumed conversationId of the activce conversation
+   */
+  activeConversationId: string;
+  /**
+   * All current softphone conversations
+   */
+  current: IStoredConversationState[];
+  /**
+   * Newly added softphone conversations
+   */
+  added: IStoredConversationState[];
+  /**
+   * Removed softphone conversations
+   */
+  removed: IStoredConversationState[];
+}
+
+interface IStoredConversationState {
+  /**
+   * Most recent conversation event received for this conversation
+   */
+  conversationUpdate: ConversationUpdate;
+  /**
+   * conversationId of this conversation
+   */
+  conversationId: string;
+  /**
+   * Webrtc session this conversation is using
+   */
+  session?: IExtendedMediaSession;
+  /**
+   * Most recent participant for the authenticated user
+   */
+  mostRecentUserParticipant?: IConversationParticipantFromEvent;
+  /**
+   * Most recent call start for the authenticated user
+   */
+  mostRecentCallState?: ICallStateFromParticipant;
+}
+```
+
+A few things to note about this event:
+1. `ISdkConversationUpdateEvent.activeConversationId` is not guaranteed to be accurate and sometimes it will be `''`.
+  This is rare, but usually this is seen when there are mutliple active calls all on hold.
+  As soon as one is taken off hold, this event will then be able to determine the correct active conversation ID.
+1. `IStoredConversationState.session` can be `null` because there are times when the conversation will not have a session
+  (for instance, when it is in the `removed` property). Also, depending on the
+  Line Appearance configured for the station, this session may be in use by
+  other conversations.
+1. Because of the previous point, the `session.conversationId` is very unreliable since
+  the session is reused. This ID can change very quickly and may not actually
+  be the conversation ID of the active Webrtc call. It is recommended to use
+  the conversation ID from the `IStoredConversationState` in conjunction with
+  the provided session.
+
+    ``` ts
+    // example:
+    let conversationState: IStoredConversationState; // assume this is already set
+
+    // use this ID
+    conversationState.conversationId;
+    // use this session
+    conversationState.session;
+
+    // do NOT rely on this ID
+    conversationState.session.conversationId;
+
+    // To know which conversationId is active on the session use
+    let event: ISdkConversationUpdateEvent; // assume this is already set
+    event.activeConversationId;
+    ```
 
 #### `sdkError`
 Emitted when a session has ended
@@ -1068,6 +1247,39 @@ sdk.on('disconnected', (info?: any) => { });
 ```
 Value of event:
 * `info?: any` – usually a string of `'Streaming API connection disconnected'`. This value should not be relied upon for anything other than logging.
+
+
+#### `station`
+Emitted when the authenticated user's Webrtc station association changes. Note, this event will only fire if
+  `SessionTypes.softphone` is passed into the SDK's `allowedSessionTypes: []` config option.
+
+The `sdk.station` property will be updated based on the events emitted from this event. If you need the current
+  station value, access this property directly on the SDK.
+
+Declaration:
+``` ts
+sdk.on('station', ({ action: 'Associated' | 'Disassociated', station: IStation | null }) => { });
+```
+Value of event:
+* `action: Associated` – if the user's Webrtc station was associated, the `station` will be the newly associated station.
+* `action: Disassociated` – if the user's Webrtc station was disassociated, the `station` will be `null`
+* `station: IStation` – if `action == 'Associated'`, this will be a webrtc station (see `IStation` interface above under [Properties](#properties)).
+
+
+#### `concurrentSoftphoneSessionsEnabled`
+Emitted when the authenicated user's Webrtc station is loaded. It will indicate if the Line Appearance is greater than 1.
+
+For more information about Line Appearance, see [WebRTC SoftPhone]. Also see the
+  corresponding [isConcurrentSoftphoneSessionsEnabled()](#isconcurrentsoftphonesessionsenabled) function
+  which will return the last value emitted on this event.
+
+Declaration:
+``` ts
+sdk.on('concurrentSoftphoneSessionsEnabled', (isEnabled: boolean) => { });
+```
+
+Value of event:
+* `isEnabled: boolean` – if the user's Webrtc station has a Line Appearance greater than 1.
 
 #### `trace`
 Emitted for trace, debug, log, warn, and error

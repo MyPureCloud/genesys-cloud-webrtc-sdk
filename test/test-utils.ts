@@ -71,7 +71,7 @@ export class SimpleMockSdk extends EventEmitter {
   setAudioMute = jest.fn();
   updateOutgoingMedia = jest.fn();
   isPersistentConnectionEnabled = jest.fn();
-  concurrentSoftphoneSessionsEnabled = jest.fn();
+  isConcurrentSoftphoneSessionsEnabled = jest.fn();
 }
 
 export class MockSender {

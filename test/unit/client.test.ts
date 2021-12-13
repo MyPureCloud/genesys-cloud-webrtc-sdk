@@ -422,7 +422,7 @@ describe('Client', () => {
     });
   });
 
-  describe('concurrentSoftphoneSessionsEnabled()', () => {
+  describe('isConcurrentSoftphoneSessionsEnabled()', () => {
     beforeEach(() => {
       sdk = constructSdk();
       sdk.station = {
@@ -431,17 +431,17 @@ describe('Client', () => {
     });
 
     it('should return "true" if station has lineCallAppearance > 1', () => {
-      expect(sdk.concurrentSoftphoneSessionsEnabled()).toBe(true);
+      expect(sdk.isConcurrentSoftphoneSessionsEnabled()).toBe(true);
     });
 
     it('should return "false" if station has lineCallAppearance === 1', () => {
       sdk.station.webRtcCallAppearances = 1;
-      expect(sdk.concurrentSoftphoneSessionsEnabled()).toBe(false);
+      expect(sdk.isConcurrentSoftphoneSessionsEnabled()).toBe(false);
     });
 
     it('should return "false" if there is no station', () => {
       delete sdk.station;
-      expect(sdk.concurrentSoftphoneSessionsEnabled()).toBe(false);
+      expect(sdk.isConcurrentSoftphoneSessionsEnabled()).toBe(false);
     });
   });
 

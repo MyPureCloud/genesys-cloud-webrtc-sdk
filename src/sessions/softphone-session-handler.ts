@@ -1,4 +1,4 @@
-import { pick } from 'lodash';
+import { pick, debounce, DebouncedFunc } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -21,6 +21,8 @@ import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from 
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { GenesysCloudWebrtcSdk } from '..';
+import { SessionManager } from './session-manager';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -36,8 +38,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     removed: []
   };
 
-  constructor (sdk, handler) {
-    super(sdk, handler);
+  debouncedEmitCallError: DebouncedFunc<(update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant) => void>;
+
+  constructor (sdk: GenesysCloudWebrtcSdk, sessionManager: SessionManager) {
+    super(sdk, sessionManager);
+    this.debouncedEmitCallError = debounce(this.emitCallError, 500, { leading: true });
   }
 
   shouldHandleSessionByJid (jid: string): boolean {
@@ -65,7 +70,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       session = lastConversationUpdate.session;
     }
     /* or, if LineAppearance is 1, use that session */
-    else if (!this.sdk.concurrentSoftphoneSessionsEnabled()) {
+    else if (!this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
       session = this.activeSession;
     }
     /* lastly, look through our sessions */
@@ -128,6 +133,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
       return this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, { skipServer: true });
     }
+
+    this.checkForCallErrors(update, participant, callState);
 
     /* update the conversation state */
     const conversationState: IStoredConversationState = {
@@ -244,6 +251,29 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       || call1.confined !== call2.confined
       || call1.held !== call2.held
       || call1.muted !== call2.muted;
+  }
+
+  checkForCallErrors (
+    update: ConversationUpdate,
+    participant: IConversationParticipantFromEvent,
+    callState: ICallStateFromParticipant
+  ) {
+    if (callState.errorInfo) {
+      this.debouncedEmitCallError(update, participant, callState);
+    }
+  }
+
+  private emitCallError (
+    update: ConversationUpdate,
+    participant: IConversationParticipantFromEvent,
+    callState: ICallStateFromParticipant
+  ) {
+    createAndEmitSdkError.call(
+      this.sdk, 
+      SdkErrorTypes.call, 
+      'Call error has occurred',
+      { errorInfo: callState.errorInfo, conversationId: update.id }
+    );
   }
 
   emitConversationEvent (event: SdkConversationEvents, conversation: IStoredConversationState, session: IExtendedMediaSession): void {
@@ -369,7 +399,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     const loggy = () => ({
       persistentConnectionSessionId: session.id,
       currentConversationId: session.conversationId,
-      concurrentSoftphoneSessionsEnabled: this.sdk.concurrentSoftphoneSessionsEnabled(),
+      isConcurrentSoftphoneSessionsEnabled: this.sdk.isConcurrentSoftphoneSessionsEnabled(),
       isPersistentConnectionEnabled: this.sdk.isPersistentConnectionEnabled(),
       otherActiveSession: this.sdk.sessionManager.getAllActiveSessions()
         .map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
@@ -401,7 +431,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    const lineAppearance1 = !this.sdk.concurrentSoftphoneSessionsEnabled();
+    const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
     /* if we have an active non-concurrent session, we can drop this accept on the floor */
     if (lineAppearance1 && this.hasActiveSession() && session.id === this.activeSession.id) {
       return this.log('debug',
@@ -551,7 +581,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     } catch (error) {
       this.log('error', 'Failed to end session gracefully', { conversationId, sessionId: session.id, error });
       /* if LA > 1, just end the session */
-      if (this.sdk.concurrentSoftphoneSessionsEnabled()) {
+      if (this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
         return this.endSessionFallback(session, reason);
       }
       /* LA == 1, we can only end it if our current call count is 1 (because multiple calls could be using this session) */

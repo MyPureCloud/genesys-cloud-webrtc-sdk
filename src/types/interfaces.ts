@@ -659,21 +659,53 @@ export interface ICallStateFromParticipant {
   held: boolean;
   direction: 'inbound' | 'outbound';
   provider: string;
+  errorInfo?: {
+    code: string;
+    message: string;
+    messageWithParams: string;
+    messageParams: { [key: string]: any }
+  }
 }
 
 export interface IStoredConversationState {
+  /**
+   * Most recent conversation event received for this conversation
+   */
   conversationUpdate: ConversationUpdate;
-  session?: IExtendedMediaSession;
+  /**
+   * conversationId of this conversation
+   */
   conversationId: string;
+  /**
+   * Webrtc session this conversation is using
+   */
+  session?: IExtendedMediaSession;
+  /**
+   * Most recent participant for the authenticated user
+   */
   mostRecentUserParticipant?: IConversationParticipantFromEvent;
+  /**
+   * Most recent call start for the authenticated user
+   */
   mostRecentCallState?: ICallStateFromParticipant;
 }
 
 export interface ISdkConversationUpdateEvent {
+  /**
+   * assumed conversationId of the activce conversation
+   */
   activeConversationId: string;
-  // perrsistentConnectionEnabled: boolean;
+  /**
+   * All current softphone conversations
+   */
   current: IStoredConversationState[];
+  /**
+   * Newly added softphone conversations
+   */
   added: IStoredConversationState[];
+  /**
+   * Removed softphone conversations
+   */
   removed: IStoredConversationState[];
 }
 
@@ -708,7 +740,7 @@ export interface ISessionMuteRequest {
 export interface IConversationHeldRequest {
   /** conversation id */
   conversationId: string;
-  /** `true` to mute, `false` to unmute using default device */
+  /** `true` to place on hold, `false` to take off hold */
   held: boolean;
 }
 

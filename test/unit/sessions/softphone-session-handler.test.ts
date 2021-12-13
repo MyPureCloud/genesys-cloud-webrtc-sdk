@@ -149,7 +149,7 @@ describe('acceptSession()', () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const session: any = new MockSession();
 
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
     handler.activeSession = session;
 
     await handler.acceptSession(session, {} as any);
@@ -171,7 +171,7 @@ describe('acceptSession()', () => {
     const mediaStream: MediaStream = new MockStream({ audio: true }) as any;
 
     /* LA > 1 */
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
     /* persistent connection ON */
     jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockImplementation();
@@ -189,7 +189,7 @@ describe('acceptSession()', () => {
     const mediaStream: MediaStream = new MockStream({ audio: true }) as any;
 
     /* LA == 1 */
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
     /* persistent connection OFF */
     jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(false);
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockImplementation();
@@ -210,7 +210,7 @@ describe('acceptSession()', () => {
     const mediaStream: MediaStream = new MockStream({ audio: true }) as any;
 
     /* LA == 1 */
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
     /* persistent connection OFF */
     jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(false);
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockImplementation();
@@ -632,7 +632,7 @@ describe('handleConversationUpdate()', () => {
   });
 
   it('should use the actice session if lineAppearance == 1', () => {
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
     handler.activeSession = session;
 
     handler.handleConversationUpdate(update, []);
@@ -645,7 +645,7 @@ describe('handleConversationUpdate()', () => {
   });
 
   it('should find the session from the passed in array of sessions', () => {
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
 
     handler.handleConversationUpdate(update, [session]);
     expect(handleSoftphoneConversationUpdateSpy).toHaveBeenCalledWith(
@@ -657,7 +657,7 @@ describe('handleConversationUpdate()', () => {
   });
 
   it('should do extra checks if it could not find session initially and persistent connection is enabled', () => {
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
     jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
 
     handler.activeSession = session;
@@ -686,7 +686,7 @@ describe('handleConversationUpdate()', () => {
   });
 
   it('should use no session if there is not one', () => {
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
     jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
 
     handler.conversations = {
@@ -1568,7 +1568,7 @@ describe('endSession()', () => {
     const session: any = new MockSession();
     const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
     jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(null);
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
 
     await handler.endSession(session);
 
@@ -1589,7 +1589,7 @@ describe('endSession()', () => {
 
     const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
     jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(null);
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
 
     const session: any = new MockSession();
     const convoToEnd = generateMockConversationState(CommunicationStates.connected, session);
@@ -1623,7 +1623,7 @@ describe('endSession()', () => {
 
     const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
     jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(error);
-    jest.spyOn(mockSdk, 'concurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
 
     const session: any = new MockSession();
 
@@ -2045,5 +2045,35 @@ describe('isEndedState()', () => {
 
     call.state = CommunicationStates.alerting;
     expect(isEndedState(call)).toBe(false);
+  });
+});
+
+describe('checkForCallErrors', () => {
+  it('should call debounce fn if call errorInfo', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: {
+        code: 'myerrorcode'
+      }
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should not call debounce fn if no call errorInfo', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: null
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).not.toHaveBeenCalled();
   });
 });
