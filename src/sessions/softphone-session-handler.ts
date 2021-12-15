@@ -137,8 +137,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     this.checkForCallErrors(update, participant, callState);
 
-// TODO: we aren't getting 'handledPendingSession' if: we are on a call, then place an outbound call. That outbound does not emit 'handledPendingSession'
-
     /* update the conversation state */
     const conversationState: IStoredConversationState = {
       mostRecentCallState: callState,
