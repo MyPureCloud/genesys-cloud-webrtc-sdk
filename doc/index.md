@@ -232,9 +232,7 @@ Available options passed in as an array:
 enum SessionTypes {
   softphone = "softphone",
   collaborateVideo = "collaborateVideo",
-  acdScreenShare = "screenShare",
-  screenRecording = "screenRecording", // Not yet supported
-  unknown = "unknown"
+  acdScreenShare = "screenShare"
 }
 ```
   example:
