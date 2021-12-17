@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * `sdk.setAudioMute({ conversationId: string, ...otherOptions })`
 * `sdk.on('cancelPendingSession')` & `sdk.on('handledPendingSession')` will be called with:
   `({ sessionId: string, conversationId: string }) => void`. `conversationId` is not guaranteed to be present.
-* Removed `address` from the `pendingSession` object emitted on `sdk.on('pendingSession', ...)`.
+* [PCM-1769](https://inindca.atlassian.net/browse/PCM-1769) – Removed `address` from the `pendingSession` object emitted on `sdk.on('pendingSession', ...)`.
+  Use `roomJid` now.
 
 ### Added
 * [PCM-1753](https://inindca.atlassian.net/browse/PCM-1753) – Add an option for log formatters

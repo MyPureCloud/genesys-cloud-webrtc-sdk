@@ -50,7 +50,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
     //   } else {
     //     message = `[decorated other] ${message}`
     //   }
-  
+
     //   next(level, message, details, opts);
     // };
     // options.logFormatters = [formatter];
@@ -235,7 +235,7 @@ function pendingSession (options) {
   let output = `${_getLogHeader('pendingSession')}
     id: ${JSON.stringify(options.id)}
     sessionType: ${JSON.stringify(options.sessionType)}
-    address: ${JSON.stringify(options.address)}
+    fromJid: ${JSON.stringify(options.fromJid)}
     conversationId: ${JSON.stringify(options.conversationId)}
     autoAnswer: ${JSON.stringify(options.autoAnswer)}
     `;
