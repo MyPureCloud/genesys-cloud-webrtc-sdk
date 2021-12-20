@@ -1031,18 +1031,19 @@ enum SessionTypes {
   unknown = "unknown"
 }
 ```
-* `id: string` – the unique Id for the session proposal; used to accept or
-     reject the proposal
-* `address: string` – the address of the caller
-* `conversationId: string` – id for the associated conversation object (used in
-            platform API requests)
+* `id: string` & `sessionId: string` – the unique Id for the session proposal; used to accept or reject the proposal
 * `autoAnswer: boolean` – whether or not the client should auto answer the session
   * `true` for all outbound calls
   * `false` for inbound calls, unless Auto Answer is configured for the user by an admin
      public api request and/or push notifications
+* `fromJid: string` – the jid that the session is coming from
+* `toJid: string` – the jid that the session is coming from
+* `conversationId: string` – id for the associated conversation object (used in platform API requests)
 * `sessionType: SessionTypes` – type of pending session. See [AllowedSessionTypes](#allowedsessiontypes) for a list of available values.
 * `originalRoomJid: string` – video specific alternate roomJid (for 1-to-1 video calls)
 * `fromUserId?: string` – Optional: the userId the call is coming from (for 1-to-1 video calls)
+* `accepted?: boolean` – is used for internal state tracking for sessions that have already attempted to accept
+* `roomJid?: string` – is the jid for the webrtc session room
 
 
 #### `cancelPendingSession`
