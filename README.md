@@ -13,7 +13,7 @@ services. Supported WebRTC Features:
 - WebRTC Screen Share (Unauthenticated User/Guest)
 - WebRTC Video (Authenticated Business User)
 
-Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/ 
+Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/
 - Demo requires Genesys Cloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
 
 Not yet supported:
@@ -26,7 +26,7 @@ Not yet supported:
 ### Installation
 
 ``` sh
-# npm 
+# npm
 npm install --save genesys-cloud-webrtc-sdk
 # yarn
 yarn genesys-cloud-webrtc-sdk
@@ -37,9 +37,9 @@ See [documentation][4] for usage and implementation details.
 ### Documentation
 
 Documentation is available in the [documentation][4] of this repository and on the Genesys Cloud Developer Center
-at [DeveloperCenter][1]. 
+at [DeveloperCenter][1].
 
-> Note: due to the constant development on the SDK, it is recommended to always reference the documentation in this repository as that will always be the most up-to-date information regarding the SDK. There can be delays in the updating of documentation on the Developer Center. 
+> Note: due to the constant development on the SDK, it is recommended to always reference the documentation in this repository as that will always be the most up-to-date information regarding the SDK. There can be delays in the updating of documentation on the Developer Center.
 
 ### Contributing
 
