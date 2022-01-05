@@ -235,7 +235,7 @@ not miss the necessary code for the migration.
 > Note: **Persistent connection** _with_ **Line Appearance > 1** is _not_ fully supported due to the imminent migration
 > to **Line Appearance == 1** as the default to Webrtc stations. It was taken into consideration and should work. However,
 > there may still be edge cases that will not be covered. Feel free to open bug reports of any found issues, but it is
-> not guaranteed they will be fix.
+> not guaranteed they will be fixed.
 
 
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
