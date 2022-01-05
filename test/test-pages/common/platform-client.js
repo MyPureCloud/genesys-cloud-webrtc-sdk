@@ -17,6 +17,25 @@ const persitentName = 'sdk_test';
     document.getElementById('auth-text').style.visibility = style;
   }
 
+  function signout () {
+    const environment = getInputValue('environment');
+    initClientEnvironment(environment);
+
+    const host = window.location.host;
+    let redirectUri = 'https://';
+
+    if (host === 'localhost:8443') {
+      redirectUri += host;
+    } else {
+      redirectUri += environment.uri;
+    }
+
+    redirectUri += window.location.pathname;
+    console.debug('Signing out with redirect of: ' + redirectUri);
+
+    client.logout(redirectUri);
+  }
+
   function authenticate () {
     const environment = getInputValue('environment');
     const clientId = window.environments[environment].clientId;
@@ -88,4 +107,5 @@ const persitentName = 'sdk_test';
     form.addEventListener('submit', addTokenToUrl);
   }
   document.getElementById('auth-button').addEventListener('click', authenticate);
+  document.getElementById('auth-logout').addEventListener('click', signout);
 })();
