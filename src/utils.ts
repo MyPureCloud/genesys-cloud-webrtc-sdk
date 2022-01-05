@@ -60,12 +60,16 @@ export const defaultConfigOption = function (
 
 export const requestApiWithRetry = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): RetryPromise<any> {
   opts = buildRequestApiOptions(this, opts);
-  return this._http.requestApiWithRetry(path, opts as RequestApiOptions);
+  const request = this._http.requestApiWithRetry(path, opts as RequestApiOptions);
+  request.promise.catch(e => createAndEmitSdkError.call(this, SdkErrorTypes.http, e.message, e));
+
+  return request;
 };
 
 export const requestApi = function (this: GenesysCloudWebrtcSdk, path: string, opts: Partial<RequestApiOptions> = {}): Promise<any> {
   opts = buildRequestApiOptions(this, opts);
-  return this._http.requestApi(path, opts as RequestApiOptions);
+  return this._http.requestApi(path, opts as RequestApiOptions)
+    .catch(e => { createAndEmitSdkError.call(this, SdkErrorTypes.http, e.message, e); throw e; });
 };
 
 export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partial<RequestApiOptions> = {}): Partial<RequestApiOptions> {

@@ -598,7 +598,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         return this.endSessionFallback(conversationId, session, reason);
       }
 
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.http,
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
         'Unable to end the session directly as a fallback because LineAppearance is 1 and there are other active conversations', {
         failedSession: { conversationId, sessionId: session.id },
         otherActiveSessions,
@@ -684,7 +684,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         { held: params.held }
       );
     } catch (error) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to set held state', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.call, 'Failed to set held state', {
         conversationId: session.conversationId,
         sessionId: session.id,
         sessionType: session.sessionType,

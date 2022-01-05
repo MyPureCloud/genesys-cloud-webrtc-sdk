@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * [PCM-1753](https://inindca.atlassian.net/browse/PCM-1753) – Add an option for log formatters
-* [PCM-1755](https://inindca.atlassian.net/browse/PCM-1755) Added call error handling for softphone which will be emitted as a sdkError event with a type of `call`
+* [PCM-1755](https://inindca.atlassian.net/browse/PCM-1755) – Added call error handling for softphone which will be emitted as a sdkError event with a type of `call`
 * Added a static `VERSION` property
 * Added top level SDK events of `'station'`, `'concurrentSoftphoneSessionsEnabled'`, `'conversationUpdate'` (see docs for more details on these events).
 * Loads station on initialization _if_ `SesstionTypes.softphone` is in allowed list. Sets response to `sdk.station` and emits on `station` event.
@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added functions `sdk.isPersistentConnectionEnabled()` and `sdk.isConcurrentSoftphoneSessionsEnabled()`
 
 ### Updated
+* [PCM-1653](https://inindca.atlassian.net/browse/PCM-1653) – ensure that all HTTP request errors emit on `sdk.on('sdkError', ...)`
 * Updated Demo App to use new events
 
 # [v6.1.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v6.1.7)

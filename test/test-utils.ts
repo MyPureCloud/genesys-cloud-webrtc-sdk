@@ -296,12 +296,14 @@ export function wait (milliseconds: number = 10): Promise<void> {
 
 export function createSessionInfo (): ISessionInfo {
   const roomJid = `${random()}@${random()}.com`;
+  const sessionId = random().toString();
 
   return {
     autoAnswer: true,
+    sessionId,
+    id: sessionId,
     conversationId: random().toString(),
     fromJid: roomJid,
-    sessionId: random().toString(),
     originalRoomJid: roomJid,
     toJid: '',
     sessionType: SessionTypes.softphone
