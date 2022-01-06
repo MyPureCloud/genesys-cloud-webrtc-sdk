@@ -20,6 +20,7 @@ import {
   IConversationHeldRequest
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -96,10 +97,10 @@ export class SessionManager {
     return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession });
   }
 
-  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
+  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
-      handler = this.sessionHandlers.find((handler) => handler.sessionType === params.sessionType);
+      handler = this.sessionHandlers.find((handler) => handler.sessionType == params.sessionType);
     } else {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
 

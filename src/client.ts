@@ -129,7 +129,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
-        allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
+        allowedSessionTypes: options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
 
         /* sdk defaults */
         defaults: {

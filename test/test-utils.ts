@@ -27,7 +27,7 @@ export class SimpleMockSdk extends EventEmitter {
     environment: 'mypurecloud.com',
     logLevel: 'debug',
     wsHost: 'wshost',
-    allowedSessionTypes: Object.values(SessionTypes),
+    allowedSessionTypes: [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
     defaults: {
       micAutoGainControl: true,
       micEchoCancellation: true,
@@ -294,8 +294,8 @@ export function wait (milliseconds: number = 10): Promise<void> {
   return new Promise(res => setTimeout(res, milliseconds));
 }
 
-export function createSessionInfo (): ISessionInfo {
-  const roomJid = `${random()}@${random()}.com`;
+export function createPendingSession (sessionType: SessionTypes = SessionTypes.softphone): IPendingSession {
+  const roomJid = sessionType === SessionTypes.acdScreenShare ? `acd-${random()}@org.com` : `${random()}@gjoll.com`;
   const sessionId = random().toString();
 
   return {
@@ -306,29 +306,6 @@ export function createSessionInfo (): ISessionInfo {
     fromJid: roomJid,
     originalRoomJid: roomJid,
     toJid: '',
-    sessionType: SessionTypes.softphone
+    sessionType
   };
-}
-
-export function createPendingSession (type: SessionTypes = SessionTypes.softphone): IPendingSession {
-  const sessionId = random();
-  const base = {
-    sessionId,
-    id: sessionId,
-    conversationId: random(),
-    autoAnswer: false,
-    sessionType: type
-  };
-
-  let specifics;
-  switch (type) {
-    case SessionTypes.acdScreenShare: {
-      specifics = { address: `acd-${random()}@org.com` };
-      break;
-    }
-    default: {
-      specifics = { address: `${random()}@gjoll.com` };
-    }
-  }
-  return Object.assign(base, specifics);
-}
+};

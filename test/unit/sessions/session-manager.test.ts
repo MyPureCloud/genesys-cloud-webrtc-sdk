@@ -1,6 +1,6 @@
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
-import { SimpleMockSdk, createPendingSession, MockSession, createSessionInfo, MockStream, MockTrack } from '../../test-utils';
+import { SimpleMockSdk, createPendingSession, MockSession, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
 import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
@@ -300,7 +300,7 @@ describe('onPropose', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    const sessionInfo = createSessionInfo();
+    const sessionInfo = createPendingSession();
     await sessionManager.onPropose(sessionInfo);
 
     expect(mockHandler.handlePropose).toHaveBeenCalled();
@@ -315,7 +315,7 @@ describe('onPropose', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    const sessionInfo = createSessionInfo();
+    const sessionInfo = createPendingSession();
 
     await sessionManager.onPropose(sessionInfo);
 
@@ -331,7 +331,7 @@ describe('onPropose', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    const sessionInfo = createSessionInfo();
+    const sessionInfo = createPendingSession();
 
     await sessionManager.onPropose(sessionInfo);
 
@@ -348,7 +348,7 @@ describe('proceedWithSession', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    const sessionInfo = createSessionInfo();
+    const sessionInfo = createPendingSession();
     await expect(sessionManager.proceedWithSession({ conversationId: sessionInfo.conversationId })).rejects.toThrowError(/Could not find a pendingSession/);
 
     expect(mockHandler.proceedWithSession).not.toHaveBeenCalled();
@@ -378,7 +378,7 @@ describe('rejectPendingSession', () => {
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    const sessionInfo = createSessionInfo();
+    const sessionInfo = createPendingSession();
     await expect(sessionManager.rejectPendingSession({ conversationId: sessionInfo.conversationId })).rejects.toThrowError(/Could not find a pendingSession/);
 
     expect(mockHandler.rejectPendingSession).not.toHaveBeenCalled();
