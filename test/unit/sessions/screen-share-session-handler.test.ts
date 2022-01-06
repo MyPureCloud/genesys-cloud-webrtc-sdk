@@ -34,6 +34,12 @@ describe('shouldHandleSessionByJid', () => {
   });
 });
 
+describe('handleConversationUpdate', () => {
+  it('should do nothing', () => {
+    handler.handleConversationUpdate({} as any, []);
+  });
+});
+
 describe('startSession', () => {
   let stream: MockStream;
   let jid: string;

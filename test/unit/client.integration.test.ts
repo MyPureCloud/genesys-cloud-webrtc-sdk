@@ -14,6 +14,7 @@ import {
 } from '../mock-apis';
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { mockGetStationApi } from '../mock-apis';
 
 let { ws } = require('../mock-apis');
 
@@ -51,27 +52,26 @@ describe('Client (integration)', () => {
   });
 
   describe('initialize()', () => {
-    it('fetches org and person details, sets up the streaming connection', async () => {
-      const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
+    it('fetches org and person details, sets up the streaming connection, and fetches the station', async () => {
+      const { getOrg, getUser, getChannel, sdk, notificationSubscription, getStation } = mockApis();
       await sdk.initialize();
 
       expect(sdk._streamingConnection).toBeTruthy();
-      sdk._config.optOutOfTelemetry = true;
 
       await disconnectSdk(sdk);
     }, 30000);
 
     it('should disconnect if initialize is called again', async () => {
-      const { getOrg, getUser, getChannel, sdk, notificationSubscription } = mockApis();
+      const { getOrg, getUser, getChannel, getStation, sdk, notificationSubscription } = mockApis();
       await sdk.initialize();
       expect(sdk._streamingConnection).toBeTruthy();
-      sdk._config.optOutOfTelemetry = true;
       expect(sdk.isInitialized).toBeTruthy();
       const disconnectSpy = jest.spyOn(sdk._streamingConnection, 'disconnect');
       mockGetOrgApi({ nockScope: getOrg });
       mockGetUserApi({ nockScope: getUser });
       mockGetChannelApi({ nockScope: getChannel });
       mockNotificationSubscription({ nockScope: notificationSubscription });
+      mockGetStationApi({ nockScope: getStation });
       const promise = new Promise<void>((resolve) => {
         sdk.once('disconnected', async () => {
           setupWss();
@@ -132,7 +132,7 @@ describe('Client (integration)', () => {
         await sdk.initialize({ securityCode: '12345' });
         fail();
       } catch (e) {
-        expect(e.type).toBe(SdkErrorTypes.http);
+        expect(e.type).toBe(SdkErrorTypes.initialization);
       }
     });
 
@@ -183,6 +183,18 @@ describe('Client (integration)', () => {
         expect(e.type).toBe(SdkErrorTypes.initialization);
       }
     }, 12 * 1000);
+
+    it('should not throw if fetching the station fails', async () => {
+      const { sdk } = mockApis({ failStation: true });
+      jest.spyOn(sdk, 'listenForStationEvents' as any).mockResolvedValue(undefined);
+
+      await sdk.initialize()
+
+      expect(sdk._streamingConnection).toBeTruthy();
+      jest.spyOn(sdk, 'listenForStationEvents' as any).mockRestore();
+
+      await disconnectSdk(sdk);
+    });
 
     it('sets up event proxies', async () => {
       const { sdk } = mockApis();

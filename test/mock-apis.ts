@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { MockStream, random } from './test-utils';
-import { GenesysCloudWebrtcSdk, ICustomerData, ISdkConfig } from '../src';
+import { GenesysCloudWebrtcSdk, ICustomerData, ISdkConfig, IPersonDetails, IStation } from '../src';
 
 declare var global: {
   window: any,
@@ -29,6 +29,7 @@ interface MockApiOptions {
   failSecurityCode?: boolean;
   failOrg?: boolean;
   failUser?: boolean;
+  failStation?: boolean;
   failConversationPatch?: boolean;
   failStreaming?: boolean;
   failLogs?: boolean;
@@ -55,6 +56,7 @@ interface MockApiReturns {
   getUser: nock.Scope;
   getConversation: nock.Scope;
   getChannel: nock.Scope;
+  getStation: nock.Scope;
   notificationSubscription: nock.Scope;
   getJwt: nock.Scope;
   sendLogs: nock.Scope;
@@ -85,10 +87,27 @@ const USER_ID = random();
 const PARTICIPANT_ID = random();
 const PARTICIPANT_ID_2 = random();
 
-const MOCK_USER = {
-  id: USER_ID,
-  chat: { jabberId: 'hubert.j.farnsworth@planetexpress.mypurecloud.com' }
+
+export const MOCK_STATION: IStation = {
+  id: 'luke-skywalker-123',
+  name: 'LukeSkywalker',
+  status: 'ASSOCIATED',
+  userId: USER_ID,
+  webRtcUserId: USER_ID,
+  type: 'inin_webrtc_softphone',
+  webRtcPersistentEnabled: false,
+  webRtcForceTurn: false,
+  webRtcCallAppearances: 100
 };
+
+export const MOCK_USER = {
+  id: USER_ID,
+  chat: { jabberId: 'hubert.j.farnsworth@planetexpress.mypurecloud.com' },
+  station: {
+    associatedStation: { id: MOCK_STATION.id }
+  }
+} as IPersonDetails;
+
 
 export const MOCK_CUSTOMER_DATA = {
   sourceCommunicationId: 'source-123567-1234',
@@ -164,7 +183,7 @@ export function mockGetOrgApi (params: MockSingleApiOptions): nock.Scope {
 }
 
 export function mockGetUserApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.get(`/api/v2/users/me`);
+  const intercept = params.nockScope.get(`/api/v2/users/me?expand=station`);
 
   if (params.shouldFail) {
     return intercept.reply(401);
@@ -179,6 +198,15 @@ export function mockGetChannelApi (params: MockSingleApiOptions): nock.Scope {
     return intercept.reply(401);
   }
   return intercept.reply(200, { id: 'somechannelid' });
+}
+
+export function mockGetStationApi (params: MockSingleApiOptions): nock.Scope {
+  const intercept = params.nockScope.get(`/api/v2/stations/${MOCK_STATION.id}`);
+
+  if (params.shouldFail) {
+    return intercept.reply(404);
+  }
+  return intercept.reply(200, MOCK_STATION);
 }
 
 export function mockNotificationSubscription (params: MockSingleApiOptions): nock.Scope {
@@ -205,6 +233,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     failSecurityCode,
     failOrg,
     failUser,
+    failStation,
     failConversationPatch,
     failStreaming,
     failLogs,
@@ -229,6 +258,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   let getOrg: nock.Scope;
   let getUser: nock.Scope;
   let getChannel: nock.Scope;
+  let getStation: nock.Scope;
   let notificationSubscription: nock.Scope;
 
   if (guestSdk) {
@@ -247,6 +277,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     getUser = mockGetUserApi({ nockScope: api, shouldFail: failUser });
     getChannel = mockGetChannelApi({ nockScope: api });
     notificationSubscription = mockNotificationSubscription({ nockScope: api });
+    getStation = mockGetStationApi({ nockScope: api, shouldFail: failStation });
   }
 
   const conversationsApi = nock('https://api.mypurecloud.com');
@@ -279,11 +310,10 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     organizationId: '4589546-12349vn4-2345',
     wsHost: failStreaming ? null : 'ws://localhost:1234',
     optOutOfTelemetry: true,
-    logger: { debug: jest.fn(), log: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }
+    logger: { debug: jest.fn(), log: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() } as any
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
   } as ISdkConfig;
 
-  const sdk = new GenesysCloudWebrtcSdk(sdkOpts);
 
   let sendLogs: nock.Scope;
   if (withLogs) {
@@ -297,12 +327,14 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
       sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
     }
   } else {
-    sdk._config.optOutOfTelemetry = true;
+    sdkOpts.optOutOfTelemetry = true;
   }
+
+  const sdk = new GenesysCloudWebrtcSdk(sdkOpts);
 
   setupWss({ guestSdk, failStreaming });
 
-  return { getOrg, getUser, getChannel, getConversation, getJwt, sendLogs, patchConversation, sdk, mockCustomerData, notificationSubscription, postConversation };
+  return { getOrg, getUser, getChannel, getStation, getConversation, getJwt, sendLogs, patchConversation, sdk, mockCustomerData, notificationSubscription, postConversation };
 }
 
 function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
@@ -383,7 +415,7 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
         const idRegexp = /id="(.*?)"/;
         const id = idRegexp.exec(msg)[1];
         send(`<iq xmlns="jabber:client" to="${MOCK_USER.chat.jabberId}" type="result" id="${id}"></iq>`);
-      } else if (msg.indexOf('<pubsub') !== -1){
+      } else if (msg.indexOf('<pubsub') !== -1) {
         const idRegexp = /id="(.*?)"/;
         const id = idRegexp.exec(msg)[1];
         send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}" type="result"><pubsub xmlns="http://jabber.org/protocol/pubsub">
