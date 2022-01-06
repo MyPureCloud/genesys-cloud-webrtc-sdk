@@ -28,6 +28,37 @@ To use the SDK with OAuth scopes, you will need the following scopes enabled:
  - notifications
 
 These can be set in Genesys Cloud > Admin > Integrations > OAuth > Scope.  Note that the scope options are not available when the "Grant Type" option is set to "Client Credentials"
+### Special Build Considerations
+
+The SDK uses some 3rd packages that rely on builtin node specific modules. The SDK does not bundle these into
+its standard esModule and commonjs builds (entry points `""` and `""` respectfully). It is expected that the consuming
+application will bundle and polyfill the necessary node modules. However, there are two SDK builds that will bundle and
+polyfill these modules.
+
+1. The CDN bundle will bundle and polyfill all necessary modules to be ready for in-browser use. Simply pull in the
+SDK via the CDN URL, and it will be available on the `window` object (see below for example usage).
+
+2. An ES Module build is pre-bundled with all dependencies and polyfills. This is not ideal as the final bundle size
+will be larger. However, some build tools may have issues when trying to bundle and polyfill the SDK. In order to
+opt-in to using this bundled ES Module build, add this to your build file (example provided is for `rollup`):
+
+    ``` js
+    // rollup.config.js
+    import resolve from '@rollup/plugin-node-resolve';
+
+    export default {
+      plugins: [
+        resolve({
+          mainFields: [
+            'es:bundle', // this will load the SDK es bundle – must be first
+            'module', // this can be which ever order is desired
+            'esnext',
+            'main'
+          ]
+        })
+      ]
+    };
+    ```
 
 --------
 

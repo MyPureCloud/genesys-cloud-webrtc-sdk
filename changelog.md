@@ -3,11 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...HEAD)
 
+# [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...v7.0.0)
 ### BREAKING CHANGE
 * If you are providing a *logger*:
-    * the ILogger interface has changed. The last param for `log`, `debug`, `info`, `warn`, and `error` functions is no longer a simple boolean,
+    * the `ILogger` interface has changed. The last param for `log`, `debug`, `info`, `warn`, and `error` functions is no longer a simple boolean,
     it is an object. Please refer to the ILogger type for https://github.com/purecloudlabs/genesys-cloud-client-logger.
 * [PCM-1742](https://inindca.atlassian.net/browse/PCM-1742) - Throws error and prevents session from starting if Streaming Client is not connected
 * [PCM-1708](https://inindca.atlassian.net/browse/PCM-1708) – CDN now exports all SDK exports and not just the client.
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [PCM-1764](https://inindca.atlassian.net/browse/PCM-1764) – updated webpack config to skip `amd` build which was polluting the global namespace with
 dependencies, namely lodash (`window._`).
+* [PCM-1773](https://inindca.atlassian.net/browse/PCM-1773) – add an `esModules` bundle for consumers to choose to use in builds. ([Initial bug report](https://developer.genesys.cloud/forum/t/issue-with-the-a-dependency-npm-package-for-the-sdk/11910))
 
 # [v6.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...v6.1.6)
 ### Changed
