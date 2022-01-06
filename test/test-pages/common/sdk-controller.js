@@ -50,7 +50,6 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
     //   } else {
     //     message = `[decorated other] ${message}`
     //   }
-
     //   next(level, message, details, opts);
     // };
     // options.logFormatters = [formatter];
@@ -68,18 +67,21 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
 
   if (!options.optOutOfTelemetry) {
     sdk.logger = sdk._config.logger = new GenesysCloudClientLogger({
-     accessToken: options.accessToken,
-     url: `https://api.${options.environment}/api/v2/diagnostics/trace`,
-     appVersion: 'dev',
-     logLevel: 'info',
-     logTopic: 'webrtc-demo-app',
-   });
- }
+      accessToken: options.accessToken,
+      url: `https://api.${options.environment}/api/v2/diagnostics/trace`,
+      appVersion: 'dev',
+      logLevel: 'info',
+      logTopic: 'webrtc-demo-app',
+    });
+  }
 
   connectEventHandlers();
   return webrtcSdk.initialize(initOptions)
     .then(() => {
       utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
+      window.s = sdk.sessionManager.sessionHandlers.find(f => f.sessionType === 'softphone');
+      renderUser(sdk._personDetails, sdk._orgDetails);
+      handleStationUpdate({ station: sdk.station });
     });
 }
 
@@ -249,6 +251,32 @@ function pendingSession (options) {
   utils.writeToLog(output);
 }
 
+function renderUser (user, org) {
+  const userEl = document.querySelector('#user-element');
+  if (!user || !org) {
+    return userEl.innerHTML = `
+      <h5 class="text-danger m-3">
+        (Unauthenticated User)
+      </h5>`;
+  }
+
+  userEl.innerHTML = `
+    <table class="table">
+      <thead>
+        <th scope="col">Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Org</th>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">${user.name}</th>
+          <th scope="row">${user.email}</th>
+          <td>${org.name}</td>
+        </tr>
+      </tbody>
+    </table>`;
+}
+
 function renderPendingSessions () {
   const parentNode = document.getElementById('pending-sessions');
   console.log('rendering pending sessions table', pendingSessions);
@@ -389,7 +417,7 @@ function renderSessions () {
   tableBody.innerHTML = html;
 }
 
-function handleStationUpdate(event) {
+function handleStationUpdate (event) {
   const stationEl = document.querySelector('#stations-element');
   if (!event.station) {
     return stationEl.innerHTML = `
@@ -399,7 +427,6 @@ function handleStationUpdate(event) {
   }
 
   const {
-    id,
     name,
     status,
     type,
@@ -411,7 +438,6 @@ function handleStationUpdate(event) {
   stationEl.innerHTML = `
   <table class="table">
     <thead>
-      <th scope="col">StationId</th>
       <th scope="col">Name</th>
       <th scope="col">Status</th>
       <th scope="col">Type</th>
@@ -421,8 +447,7 @@ function handleStationUpdate(event) {
     </thead>
     <tbody>
       <tr>
-        <th scope="row">${id}</th>
-        <td>${name}</td>
+        <td scope="row">${name}</td>
         <td>${status}</td>
         <td>${type}</td>
         <td>${webRtcPersistentEnabled}</td>

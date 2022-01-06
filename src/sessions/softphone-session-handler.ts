@@ -144,7 +144,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       conversationUpdate: update,
       conversationId: conversationId,
       /* this is just a precaution – session for the conversation should be added in `this.acceptSession()` */
-      session: this.conversations[conversationId]?.session || lastConversationUpdate?.session
+      /* this is possible if we have an active PC and do not have an active call (ie. we are going to 1 from 0) */
+      session: this.conversations[conversationId]?.session || lastConversationUpdate?.session || session
     };
 
     const previousCallState = this.getUsersCallStateFromConversationEvent(lastConversationUpdate?.conversationUpdate);
@@ -482,7 +483,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
     }
 
-    /* make sure we store the session with the conversation state */
+    /* make sure we store the session with the conversation state: this is used for LA > 1 _and_ for initial (ie. 1st) sessions */
     if (!this.conversations[session.conversationId]) {
       this.conversations[session.conversationId] = { session } as any;
     } else {
