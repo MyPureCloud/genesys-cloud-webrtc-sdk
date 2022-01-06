@@ -1,3 +1,5 @@
+export { SessionTypes } from 'genesys-cloud-streaming-client';
+
 export enum SdkErrorTypes {
   generic = 'generic',
   initialization = 'initialization',
@@ -10,12 +12,6 @@ export enum SdkErrorTypes {
 }
 
 export type LogLevels = 'log' | 'debug' | 'info' | 'warn' | 'error';
-
-export enum SessionTypes {
-  softphone = 'softphone',
-  collaborateVideo = 'collaborateVideo',
-  acdScreenShare = 'screenShare'
-}
 
 /**
  * https://developer.genesys.cloud/api/rest/v2/analytics/conversation_detail_model#overview
