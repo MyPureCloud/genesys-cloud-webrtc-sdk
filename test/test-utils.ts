@@ -300,10 +300,10 @@ export function createPendingSession (sessionType: SessionTypes = SessionTypes.s
 
   return {
     autoAnswer: true,
-    conversationId: random().toString(),
-    fromJid: roomJid,
     sessionId,
     id: sessionId,
+    conversationId: random().toString(),
+    fromJid: roomJid,
     originalRoomJid: roomJid,
     toJid: '',
     sessionType

@@ -239,7 +239,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
       this.log('error', 'Failed to request video session', err);
-      return Promise.reject(err);
+      throw err;
     }
   }
 
@@ -568,7 +568,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         return this.log('info', 'screen selection cancelled', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       }
 
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to start screen share', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to start screen share', {
         conversationId: session.conversationId,
         sessionId: session.id,
         error: err
@@ -638,7 +638,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       await requestApi.call(this.sdk, uri, { method, data });
       session.emit('pinnedParticipant', { participantId: participantId || null });
     } catch (err) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Request to pin video failed', {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Request to pin video failed', {
         conversationId: session.conversationId,
         sessionId: session.id,
         error: err

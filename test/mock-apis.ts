@@ -204,7 +204,7 @@ export function mockGetStationApi (params: MockSingleApiOptions): nock.Scope {
   const intercept = params.nockScope.get(`/api/v2/stations/${MOCK_STATION.id}`);
 
   if (params.shouldFail) {
-    return intercept.reply(400);
+    return intercept.reply(404);
   }
   return intercept.reply(200, MOCK_STATION);
 }

@@ -228,11 +228,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     try {
       await Promise.all(httpRequests);
-    } catch (err) {
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
-    }
 
-    try {
       await setupStreamingClient.call(this);
       await proxyStreamingClientEvents.call(this);
 
@@ -481,9 +477,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   async fetchUsersStation (): Promise<IStation> {
     if (!this._personDetails) {
-      await this.fetchAuthenticatedUser().catch((err) => {
-        throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
-      });
+      await this.fetchAuthenticatedUser();
     }
 
     const stationId = this._personDetails?.station?.associatedStation?.id;
@@ -492,9 +486,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
-    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise.catch((err) => {
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
-    });
+    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
     this.station = body;
     this.logger.info('Fetched user station', {
       userId: body.userId,
