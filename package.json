@@ -58,6 +58,7 @@
     "@babel/runtime": "^7.12.5",
     "@babel/runtime-corejs3": "^7.12.5",
     "backoff-web": "^1.0.1",
+    "broadcast-channel": "^4.9.0",
     "browserama": "^3.1.1",
     "core-js": "^3.7.0",
     "genesys-cloud-client-logger": "^4.0.0",
