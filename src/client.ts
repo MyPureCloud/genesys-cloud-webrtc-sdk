@@ -31,7 +31,6 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
-import { SdkHeadset } from './media/headset';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -84,7 +83,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   sessionManager: SessionManager;
   media: SdkMedia;
   station: IStation | null;
-  headset: SdkHeadset;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -377,7 +375,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     if (updateAudio) {
       this.logger.info('Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
-      this.headset.getAudioDevice(options.audioDeviceId);
       this._config.defaults.audioDeviceId = options.audioDeviceId;
     }
 
