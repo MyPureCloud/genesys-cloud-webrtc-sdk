@@ -31,6 +31,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
+import { SdkHeadset } from './media/headset';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -83,6 +84,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   sessionManager: SessionManager;
   media: SdkMedia;
   station: IStation | null;
+  headset: SdkHeadset;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -375,6 +377,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     if (updateAudio) {
       this.logger.info('Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
+      this.headset.getAudioDevice(options.audioDeviceId);
       this._config.defaults.audioDeviceId = options.audioDeviceId;
     }
 
@@ -554,6 +557,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
+    this.headset.toggleMute(muteOptions.mute);
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
@@ -588,6 +592,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    this.headset.answerIncomingCall(params.sessionId);
     await this.sessionManager.proceedWithSession(params);
   }
 
@@ -619,6 +624,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session has ended
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
+    this.headset.endCurrentCall(endOptions.sessionId);
     return this.sessionManager.endSession(endOptions);
   }
 

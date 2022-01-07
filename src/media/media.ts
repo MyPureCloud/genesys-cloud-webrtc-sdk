@@ -597,6 +597,16 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return Array.from(this.allMediaTracksCreated.values());
   }
 
+  getDeviceByIdAndType (deviceId, deviceType): MediaDeviceInfo {
+    if (deviceType === 'audioinput') {
+      return this.getState().audioDevices.filter(device => deviceId === device.deviceId)[0];
+    } else if (deviceType === 'videoInput') {
+      return this.getState().videoDevices.filter(device => deviceId === device.deviceId)[0];
+    } else {
+      return this.getState().outputDevices.filter(device => deviceId === device.deviceId)[0];
+    }
+  }
+
   /**
    * Look through the cached devices and match based on
    *  the passed in track's `kind` and `label`.
