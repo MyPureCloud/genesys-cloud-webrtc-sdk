@@ -960,6 +960,19 @@ Params:
 
 Returns: a promise that fullfils once the session has ended
 
+#### `forceTerminateSession()`
+Forcibly end a session by sessionId
+
+Declaration:
+``` ts
+forceTerminateSession(sessionId: string, reason?: JingleReasonCondition): Promise<void>;
+```
+Params:
+* `sessionId: string` id of the session you wish to terminate
+* `reason?: JingleReasonCondition` Optional: defaults to `success` The corresponding reason why the session is being terminated.
+
+Returns: a promise that fullfils onces the session is terminated
+
 #### `disconnect()`
 Disconnect the streaming connection
 

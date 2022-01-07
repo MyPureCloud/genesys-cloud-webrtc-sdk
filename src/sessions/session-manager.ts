@@ -21,6 +21,7 @@ import {
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
+import { Constants } from 'stanza';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -76,9 +77,9 @@ export class SessionManager {
   }
 
   getSession (params: ISessionIdAndConversationId): IExtendedMediaSession {
-    const softphoneHanlder = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+    const softphoneHandler = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
 
-    const session = Object.values(softphoneHanlder.conversations).find((c) => c.conversationId === params.conversationId)?.session
+    const session = Object.values(softphoneHandler.conversations).find((c) => c.conversationId === params.conversationId)?.session
       || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
 
     if (!session) {
@@ -332,6 +333,17 @@ export class SessionManager {
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
 
     return sessionHandler.endSession(conversationId, session, params.reason);
+  }
+
+  async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition) {
+    const session = this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.sid === sessionId);
+    
+    if (!session) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find session by sessionId', { sessionId });
+    }
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    return handler.forceEndSession(session, reason);
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {
