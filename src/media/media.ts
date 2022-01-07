@@ -597,7 +597,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return Array.from(this.allMediaTracksCreated.values());
   }
 
-  getDeviceByIdAndType (deviceId, deviceType): MediaDeviceInfo {
+  getDeviceByIdAndType (deviceId: string, deviceType: string): MediaDeviceInfo {
     if (deviceType === 'audioinput') {
       return this.getState().audioDevices.filter(device => deviceId === device.deviceId)[0];
     } else if (deviceType === 'videoinput') {
