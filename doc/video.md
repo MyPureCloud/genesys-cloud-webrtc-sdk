@@ -29,7 +29,7 @@ sdk.on('sessionStarted', function (session) => {
     sessionEventsToLog.forEach((eventName) => {
       session.on(eventName, (e) => console.info(eventName, e));
     });
-    sdk.acceptSession({ sessionId: session.id, audioElement, videoElement });
+    sdk.acceptSession({ conversationId: session.conversationId, audioElement, videoElement });
   }
 });
 

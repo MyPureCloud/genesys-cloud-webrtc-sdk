@@ -68,15 +68,27 @@ export class SessionManager {
   }
 
   getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
-    return this.pendingSessions[params.conversationId];
+    let session = this.pendingSessions[params.conversationId];
+    
+    if (params.sessionId && !session) {
+      session = Object.values(this.pendingSessions).find(session => session.sessionId === params.sessionId);
+    }
+    
+    return session;
   }
 
   removePendingSession (params: ISessionIdAndConversationId | IPendingSession) {
-    const conversationId = params.conversationId;
-    delete this.pendingSessions[conversationId];
+    const pendingSession = this.getPendingSession(params);
+
+    if (!pendingSession) {
+      this.sdk.logger.warn('failed to find pendingSession to remove', params);
+      return;
+    }
+
+    delete this.pendingSessions[pendingSession.conversationId];
   }
 
-  getSession (params: ISessionIdAndConversationId): IExtendedMediaSession {
+  getSession (params: { conversationId: string }): IExtendedMediaSession {
     const softphoneHandler = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
 
     const session = Object.values(softphoneHandler.conversations).find((c) => c.conversationId === params.conversationId)?.session
@@ -87,6 +99,10 @@ export class SessionManager {
     }
 
     return session;
+  }
+
+  getSessionBySessionId (sessionId: string) {
+    return this.getAllJingleSessions().find(s => s.sid === sessionId);
   }
 
   getAllActiveSessions (): IExtendedMediaSession[] {
@@ -138,7 +154,7 @@ export class SessionManager {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
-    const session = options.session || this.getSession({ sessionId: options.sessionId, conversationId: options.conversationId });
+    const session = options.session || this.getSession({ conversationId: options.conversationId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
     return handler.updateOutgoingMedia(session, options);
@@ -429,8 +445,8 @@ export class SessionManager {
 
     /* update the sessions */
     for (const [sessionId, mediaToUpdate] of updates) {
-      const opts: IUpdateOutgoingMedia = { sessionId };
-      const jingleSession = this.getSession({ sessionId: sessionId });
+      const jingleSession = this.getSessionBySessionId(sessionId)
+      const opts: IUpdateOutgoingMedia = { session: jingleSession };
       const handler = this.getSessionHandler({ jingleSession });
 
       /* if our video needs to be updated */

@@ -70,17 +70,17 @@ async function run () {
   const audioStream = await sdk.media.startMedia({ audio: micId });
 
   /* this is a mock session object. the real session would be attained through  the `sdk.on('sessionStarted', evt)` listener */
-  const sessionToAccept = { id: 'some-hash-id', ...restOfSessionObject };
+  const sessionToAccept = { conversationId: 'some-hash-id', ...restOfSessionObject };
 
   /* you can even accept a pending session with media you already have */
   sdk.acceptSession({
-    sessionId: sessionToAccept.id,
+    conversationId: sessionToAccept.conversationid,
     mediaStream: audioStream
   });
 
   /* OR you can even accept a pending session with a deviceId and the sdk will create the media */
   sdk.acceptSession({
-    sessionId: sessionToAccept.id,
+    conversationId: sessionToAccept.conversationid,
     audioDeviceId: micId,
   });
 }
@@ -709,14 +709,14 @@ interface IMediaRequestOptions {
 Interface for available options when requesting to update outgoing media.
 ``` ts
 interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
-  sessionId?: string;
+  conversationId?: string;
   session?: IExtendedMediaSession;
   stream?: MediaStream;
 }
 ```
 * See [ISdkMediaDeviceIds] for deviceId options
-* `sessionId?: string` – Optional: session id to update media for (this _OR_ `session` is required)
-* `session?: IExtendedMediaSession` – Optional: session to update media for (this _OR_ `sessionId` is required)
+* `conversationId?: string` – Optional: conversation id to update media for (this _OR_ `session` is required)
+* `session?: IExtendedMediaSession` – Optional: session to update media for (this _OR_ `conversationId` is required)
 * `stream?: MediaStream` – Optional: `MediaStream` to update the session with
 
 #### ISdkMediaDeviceIds

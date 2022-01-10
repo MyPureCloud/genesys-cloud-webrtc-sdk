@@ -317,7 +317,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   /**
    * Update outgoing media for a specified session
-   *  - `sessionId` _or_ `session` is required to find the session to update
+   *  - `conversationId` _or_ `session` is required to find the session to update
    *  - `stream`: if a stream is passed in, the session media will be
    *    updated to use the media on the stream. This supercedes deviceId(s)
    *    passed in.
@@ -581,26 +581,22 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Accept a pending session based on the passed in conversation or session ID.
-   * > NOTE: it is recommended to use the conversation ID to avoid conflicts
-   *  when using persistent connection
+   * Accept a pending session based on the passed in conversation ID.
    *
-   * @param params conversationId or sessionId of the pending session to accept
+   * @param params conversationId of the pending session to accept
    * @returns a promise that fullfils once the session accept goes out
    */
-  async acceptPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+  async acceptPendingSession (params: { conversationId: string }): Promise<void> {
     await this.sessionManager.proceedWithSession(params);
   }
 
   /**
-   * Reject a pending session based on the passed in conversation or session ID.
-   * > NOTE: it is recommended to use the conversation ID to avoid conflicts
-   *  when using persistent connection
+   * Reject a pending session based on the passed in conversation ID.
    *
-   * @param params conversationId or sessionId of the pending session to reject
+   * @param params conversationId of the pending session to reject
    * @returns a promise that fullfils once the session reject goes out
    */
-  async rejectPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+  async rejectPendingSession (params: { conversationId: string }): Promise<void> {
     await this.sessionManager.rejectPendingSession(params);
   }
 
@@ -615,8 +611,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * End an active session based on the session ID _or_ conversation ID (one is required)
-   * @param opts object with session ID _or_ conversation ID
+   * End an active session based on the conversation ID (one is required)
+   * @param opts object with conversation ID
    * @returns a promise that fullfils once the session has ended
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
