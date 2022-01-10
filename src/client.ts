@@ -31,6 +31,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
+import { Constants } from 'stanza';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -620,6 +621,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
     return this.sessionManager.endSession(endOptions);
+  }
+
+  /**
+   * End an active session based on the session ID
+   * @param sessionId session ID corresponding to the session you want to force terminate
+   * @param reason optional reason to terminate the session with. defaults to "success"
+   * @returns a promise that fullfils once the session has ended
+   */
+  async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition): Promise<void> {
+    return this.sessionManager.forceTerminateSession(sessionId, reason);
   }
 
   /**

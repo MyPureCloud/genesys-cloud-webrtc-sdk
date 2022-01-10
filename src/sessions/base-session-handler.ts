@@ -109,8 +109,8 @@ export default abstract class BaseSessionHandler {
     return session.accept();
   }
 
-  async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    this.log('info', 'ending session', { sessionId: session.id, conversationId, sessionConversationId: session.conversationId, reason, sessionType: session.sessionType });
+  async forceEndSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
+    this.log('info', 'ending session', { sessionId: session.id, sessionConversationId: session.conversationId, reason, sessionType: session.sessionType });
 
     return new Promise<void>((resolve) => {
       session.once('terminated', (reason) => {
@@ -118,6 +118,10 @@ export default abstract class BaseSessionHandler {
       });
       session.end(reason);
     });
+  }
+
+  async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
+    return this.forceEndSession(session, reason);
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {

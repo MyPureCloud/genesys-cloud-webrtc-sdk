@@ -266,6 +266,16 @@ describe('Client', () => {
     });
   });
 
+  describe('forceTerminateSession()', () => {
+    it('should proxy to sessionManager', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.forceTerminateSession.mockResolvedValue();
+      await sdk.forceTerminateSession('sessionId');
+      expect(sdk.sessionManager.forceTerminateSession).toBeCalledWith('sessionId', undefined);
+    });
+  });
+
   describe('fetchUsersStation()', () => {
     let station: IStation;
     let user: IPersonDetails;

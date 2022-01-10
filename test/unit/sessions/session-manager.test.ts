@@ -514,7 +514,7 @@ describe('acceptSession', () => {
 });
 
 describe('endSession', () => {
-  it('should call acceptSession for the session handler and set the sessionType on the session', async () => {
+  it('should call endSession on the session handler', async () => {
     const session: any = {};
 
     const mockHandler: any = {
@@ -531,6 +531,29 @@ describe('endSession', () => {
 
   it('should throw if no conversationId in params', async () => {
     await expect(sessionManager.endSession({ sessionId: 'not-good-enough' } as any)).rejects.toThrowError(/must provide a conversationId/);
+  });
+});
+
+describe('forceTerminateSession', () => {
+  it('should call forceTerminateSession on the session handler', async () => {
+    const session: any = { sid: 'mySessionId' };
+
+    const mockHandler: any = {
+      sessionType: SessionTypes.softphone,
+      endSession: jest.fn(),
+      forceEndSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([session]);
+
+    await sessionManager.forceTerminateSession('mySessionId');
+
+    expect(mockHandler.forceEndSession).toHaveBeenCalledWith(session, undefined);
+  });
+
+  it('should throw if session not found', async () => {
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([]);
+    await expect(sessionManager.forceTerminateSession('unknownSessionId')).rejects.toThrow();
   });
 });
 
