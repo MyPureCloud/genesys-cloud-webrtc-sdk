@@ -12,6 +12,8 @@ function fileReplace (fileName: string, placeholder: string, value: string) {
 /* build commonjs and esModules using tsc */
 Child('npm run build:cjs');
 Child('npm run build:es');
+/* build bundled esModules */
+Child('npm run build:rollup');
 /* build the bundled cdn version via webpack */
 Child('npm run build:cdn');
 

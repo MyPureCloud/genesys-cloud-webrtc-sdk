@@ -3,10 +3,9 @@ import utils from './utils';
 
 function initControls () {
   /* softphone */
+  document.getElementById('on-queue').addEventListener('click', () => sdkHandler.updateOnQueueStatus(true));
+  document.getElementById('off-queue').addEventListener('click', () => sdkHandler.updateOnQueueStatus(false));
   document.getElementById('outbound-call-start').addEventListener('click', sdkHandler.startSoftphoneSession);
-  document.getElementById('outbound-call-end').addEventListener('click', sdkHandler.endSession);
-  document.getElementById('answer-inbound-call').addEventListener('click', sdkHandler.answerCall);
-  document.getElementById('inbound-call-end').addEventListener('click', sdkHandler.endSession);
 
   document.getElementById('volume-input').addEventListener('blur', sdkHandler.changeVolume);
 
@@ -70,48 +69,6 @@ function parseDeviceDefaultOptions () {
   });
   console.log(options);
   return options;
-}
-
-/*
-adhoc-878d4f0a-a882-4fe4-87ec-e2605e3a69ca@conference.test-valve-1ym37mj1kao.orgspan.com
-*/
-function initDevices () {
-  window.navigator.mediaDevices.enumerateDevices()
-    .then(devices => {
-      const video = [];
-      const audio = [];
-      const output = [];
-
-      devices.forEach((device) => {
-        switch (device.kind) {
-          case 'videoinput': {
-            video.push(device);
-            break;
-          }
-          case 'audioinput': {
-            audio.push(device);
-            break;
-          }
-          case 'audiooutput': {
-            output.push(device);
-            break;
-          }
-        }
-      });
-
-      const addOptions = (elId, options, skipSysDefault = false) => {
-        const element = document.querySelector('select#' + elId);
-        let innerHtml = skipSysDefault ? '' : '<option value="">System Default</option>';
-        const newOpts = options.map(opt => `<option value="${opt.deviceId}">${opt.label}</option>`);
-        innerHtml += newOpts.join('\n');
-        element.innerHTML = innerHtml;
-      };
-
-      addOptions('audio-devices', audio);
-      addOptions('video-devices', video);
-      addOptions('output-devices', output, true);
-    })
-    .catch(e => utils.writeToLog(e));
 }
 
 function setAppControlVisiblity (visible) {

@@ -5,13 +5,14 @@ import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/e
 import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
-import { IExtendedMediaSession } from '../../../src';
+import { IExtendedMediaSession, ConversationUpdate } from '../../../src';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
   shouldHandleSessionByJid (jid: string): boolean {
     return false;
   }
+  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) { }
 }
 
 let handler: TestableBaseSessionHandler;
@@ -38,13 +39,19 @@ describe('startSession', () => {
 
 describe('setVideoMute', () => {
   it('should throw by default', async () => {
-    await expect(handler.setVideoMute({} as any, { sessionId: '1', mute: true })).rejects.toThrowError(/not supported/);
+    await expect(handler.setVideoMute({} as any, { conversationId: '1', mute: true })).rejects.toThrowError(/not supported/);
   });
 });
 
 describe('setAudioMute', () => {
   it('should throw by default', async () => {
-    await expect(handler.setAudioMute({} as any, { sessionId: '1', mute: true })).rejects.toThrowError(/not supported/);
+    await expect(handler.setAudioMute({} as any, { conversationId: '1', mute: true })).rejects.toThrowError(/not supported/);
+  });
+});
+
+describe('setConversationHeld', () => {
+  it('should throw by default', async () => {
+    await expect(handler.setConversationHeld({} as any, { conversationId: '1', held: true })).rejects.toThrowError(/not supported/);
   });
 });
 
@@ -271,7 +278,7 @@ describe('updateOutgoingMedia()', () => {
 
     /* expect audio track to change */
     expect(getTrackType(session, 'audio')).toEqual(newAudioTrack);
-    expect(mockSdk.setAudioMute).toHaveBeenCalledWith({ sessionId: session.id, mute: true, unmuteDeviceId: null });
+    expect(mockSdk.setAudioMute).toHaveBeenCalledWith({ conversationId: session.conversationId, mute: true, unmuteDeviceId: null });
   });
 
   it('should keep the _outboundStream in sync', async () => {
@@ -517,13 +524,13 @@ describe('onSessionTerminated', () => {
 describe('acceptSession', () => {
   it('should call session.accept', async () => {
     const session: any = new MockSession();
-    await handler.acceptSession(session, { sessionId: session.id });
+    await handler.acceptSession(session, { conversationId: session.conversationId });
     expect(session.accept).toHaveBeenCalled();
   });
 
   it('should log correctly', async () => {
     const session: any = new MockSession();
-    const params = { sessionId: session.id };
+    const params = { conversationId: session.conversationId };
     const logSpy = jest.spyOn(handler, 'log' as any);
 
     await handler.acceptSession(session, params);
@@ -546,20 +553,29 @@ describe('acceptSession', () => {
     jest.spyOn(mockSdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: true } as any);
 
     /* with no sdk default output deviceId */
-    await handler.acceptSession(session, { sessionId: session.id });
+    await handler.acceptSession(session, { conversationId: session.conversationId });
     expect(audio.setSinkId).toHaveBeenCalledWith('');
 
     /* with sdk default output deviceId */
     mockSdk._config.defaults.outputDeviceId = 'output-device-id';
-    await handler.acceptSession(session, { sessionId: session.id });
+    await handler.acceptSession(session, { conversationId: session.conversationId });
     expect(audio.setSinkId).toHaveBeenCalledWith(mockSdk._config.defaults.outputDeviceId);
   });
 });
 
 describe('endSession', () => {
+  it('should forceEndSession', async () => {
+    const session: any = new MockSession();
+    const spy = jest.spyOn(handler, 'forceEndSession').mockReturnValue(Promise.resolve());
+    await handler.endSession(session.conversationId, session);
+    expect(spy).toHaveBeenCalled();
+  });
+});
+
+describe('forceEndSession', () => {
   it('should call session.end', async () => {
     const session: any = new MockSession();
-    const promise = handler.endSession(session);
+    const promise = handler.forceEndSession(session);
     session.emit('terminated');
     await promise;
     expect(session.end).toHaveBeenCalled();
@@ -567,7 +583,7 @@ describe('endSession', () => {
 
   it('should call session.end with provided reason', async () => {
     const session: any = new MockSession();
-    const promise = handler.endSession(session, 'alternative-session');
+    const promise = handler.forceEndSession(session, 'alternative-session');
     session.emit('terminated');
     await promise;
     expect(session.end).toHaveBeenCalledWith('alternative-session');

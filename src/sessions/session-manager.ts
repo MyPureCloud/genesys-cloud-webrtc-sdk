@@ -15,9 +15,13 @@ import {
   IUpdateOutgoingMedia,
   IStartVideoSessionParams,
   IExtendedMediaSession,
-  IStartSoftphoneSessionParams
+  IStartSoftphoneSessionParams,
+  ISessionIdAndConversationId,
+  IConversationHeldRequest
 } from '../types/interfaces';
-import { ConversationUpdate } from '../types/conversation-update';
+import { ConversationUpdate } from '../conversations/conversation-update';
+import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
+import { Constants } from 'stanza';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -27,7 +31,8 @@ const sessionHandlersToConfigure: any[] = [
 
 export class SessionManager {
   sessionHandlers: BaseSessionHandler[];
-  pendingSessions: { [sessionId: string]: IPendingSession } = {};
+  /* use conversationId to index to account for persistent connections */
+  pendingSessions: { [conversationId: string]: IPendingSession } = {};
 
   constructor (private sdk: GenesysCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
@@ -52,36 +57,30 @@ export class SessionManager {
   }
 
   handleConversationUpdate (update: ConversationUpdate) {
-    // only handle a conversation update if we can associate it with a session
-    const sessions = Object.values(this.jingle.sessions);
-    (sessions as any).forEach((session: IExtendedMediaSession) => {
-      if (session.conversationId === update.id) {
-        const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    const sessions = this.getAllJingleSessions();
 
-        if (handler.disabled) {
-          return;
-        }
-
-        handler.handleConversationUpdate(session, update);
-      }
-    });
+    /* let each enabled handler process updates */
+    this.sessionHandlers
+      .filter(handler => !handler.disabled)
+      .forEach(handler =>
+        handler.handleConversationUpdate(update, sessions.filter(s => s.sessionType === handler.sessionType))
+      );
   }
 
-  getPendingSession (sessionId: string): IPendingSession | undefined {
-    return this.pendingSessions[sessionId];
+  getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
+    return this.pendingSessions[params.conversationId];
   }
 
-  removePendingSession (sessionId: string) {
-    delete this.pendingSessions[sessionId];
+  removePendingSession (params: ISessionIdAndConversationId | IPendingSession) {
+    const conversationId = params.conversationId;
+    delete this.pendingSessions[conversationId];
   }
 
-  getSession (params: { sessionId?: string, conversationId?: string }): IExtendedMediaSession {
-    let session: IExtendedMediaSession;
-    if (params.sessionId) {
-      session = this.jingle.sessions[params.sessionId] as IExtendedMediaSession;
-    } else {
-      session = (Object.values(this.jingle.sessions) as IExtendedMediaSession[]).find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
-    }
+  getSession (params: ISessionIdAndConversationId): IExtendedMediaSession {
+    const softphoneHandler = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+
+    const session = Object.values(softphoneHandler.conversations).find((c) => c.conversationId === params.conversationId)?.session
+      || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
 
     if (!session) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
@@ -99,10 +98,10 @@ export class SessionManager {
     return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession });
   }
 
-  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes, jingleSession?: any }): BaseSessionHandler {
+  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType) {
-      handler = this.sessionHandlers.find((handler) => handler.sessionType === params.sessionType);
+      handler = this.sessionHandlers.find((handler) => handler.sessionType == params.sessionType);
     } else {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
 
@@ -121,6 +120,9 @@ export class SessionManager {
   }
 
   async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartSoftphoneSessionParams): Promise<any> {
+    if (!this.sdk.connected) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
+    }
     const handler = this.getSessionHandler({ sessionType: startSessionParams.sessionType });
 
     if (handler.disabled) {
@@ -136,7 +138,7 @@ export class SessionManager {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
-    const session = options.session || this.getSession({ sessionId: options.sessionId });
+    const session = options.session || this.getSession({ sessionId: options.sessionId, conversationId: options.conversationId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
     return handler.updateOutgoingMedia(session, options);
@@ -215,7 +217,7 @@ export class SessionManager {
 
     logPendingSession(this.sdk.logger, 'onPendingSession', sessionInfo);
 
-    const existingSession = this.getPendingSession(sessionInfo.sessionId);
+    const existingSession = this.getPendingSession(sessionInfo);
 
     if (existingSession) {
       logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
@@ -224,24 +226,62 @@ export class SessionManager {
 
     const pendingSession: IPendingSession = {
       id: sessionInfo.sessionId,
+      sessionId: sessionInfo.sessionId,
       autoAnswer: sessionInfo.autoAnswer,
-      address: sessionInfo.fromJid,
       conversationId: sessionInfo.conversationId,
       sessionType: handler.sessionType,
       originalRoomJid: sessionInfo.originalRoomJid,
-      fromUserId: sessionInfo.fromUserId
+      fromUserId: sessionInfo.fromUserId,
+      toJid: sessionInfo.toJid,
+      fromJid: sessionInfo.fromJid
     };
 
-    this.pendingSessions[pendingSession.id] = pendingSession;
+    this.pendingSessions[pendingSession.conversationId] = pendingSession;
 
     await handler.handlePropose(pendingSession);
   }
 
-  async proceedWithSession (sessionId: string): Promise<void> {
-    const pendingSession = this.getPendingSession(sessionId);
+  /**
+   * If we get this event from streaming-client, that means the session was
+   *  canceled. We no longer care if it was a LA of 1 session or not
+   *  because streaming-client will only emit events for actual sessions
+   *  and not our psuedo-events we emit for LA of 1 conversation
+   *  events.
+   * @param sessionId session id canceled by streaming client
+   */
+  onCancelPendingSession (sessionId: string, conversationId?: string): void {
+    const pendingSession = this.getPendingSession({ sessionId, conversationId });
+    if (!pendingSession) {
+      return;
+    }
+
+    this.sdk.emit('cancelPendingSession', { sessionId, conversationId: pendingSession.conversationId });
+    this.removePendingSession(pendingSession);
+  }
+
+  /**
+   * If we get this event from streaming-client, that means the session was
+   *  canceled. We no longer care if it was a LA of 1 session or not
+   *  because streaming-client will only emit events for actual sessions
+   *  and not our psuedo-events we emit for LA of 1 conversation
+   *  events.
+   * @param sessionId session id canceled by streaming client
+   */
+  onHandledPendingSession (sessionId: string, conversationId?: string): void {
+    const pendingSession = this.getPendingSession({ sessionId, conversationId });
+    if (!pendingSession) {
+      return;
+    }
+
+    this.sdk.emit('handledPendingSession', { sessionId, conversationId: pendingSession.conversationId });
+    this.removePendingSession(pendingSession);
+  }
+
+  async proceedWithSession (params: ISessionIdAndConversationId): Promise<void> {
+    const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { params });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -249,11 +289,11 @@ export class SessionManager {
     await sessionHandler.proceedWithSession(pendingSession);
   }
 
-  async rejectPendingSession (sessionId: string): Promise<void> {
-    const pendingSession = this.getPendingSession(sessionId);
+  async rejectPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { sessionId });
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession', { params });
     }
 
     const sessionHandler = this.getSessionHandler({ sessionType: pendingSession.sessionType });
@@ -273,39 +313,60 @@ export class SessionManager {
   }
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
-    if (!params || !params.sessionId) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A sessionId is required for acceptSession');
+    if (!params || !params.conversationId) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A conversationId is required for acceptSession');
     }
 
-    const session = this.getSession({ sessionId: params.sessionId });
+    const session = this.getSession({ conversationId: params.conversationId });
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }
 
   async endSession (params: IEndSessionRequest) {
-    if (!params.sessionId && !params.conversationId) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide session id or conversationId.');
+    const conversationId = params.conversationId;
+    if (!conversationId) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to end session: must provide a conversationId.');
     }
 
     const session = this.getSession(params);
 
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
-    return sessionHandler.endSession(session, params.reason);
+
+    return sessionHandler.endSession(conversationId, session, params.reason);
+  }
+
+  async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition) {
+    const session = this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.sid === sessionId);
+    
+    if (!session) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find session by sessionId', { sessionId });
+    }
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    return handler.forceEndSession(session, reason);
   }
 
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ sessionId: params.sessionId });
+    const session = this.getSession({ conversationId: params.conversationId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setVideoMute(session, params);
   }
 
   async setAudioMute (params: ISessionMuteRequest): Promise<void> {
-    const session = this.getSession({ sessionId: params.sessionId });
+    const session = this.getSession({ conversationId: params.conversationId });
 
     const handler = this.getSessionHandler({ sessionType: session.sessionType });
     await handler.setAudioMute(session, params);
   }
+
+  async setConversationHeld (params: IConversationHeldRequest): Promise<void> {
+    const session = this.getSession({ conversationId: params.conversationId });
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    await handler.setConversationHeld(session, params);
+  }
+
   async validateOutgoingMediaTracks () {
     const sessions = this.getAllActiveSessions();
     const { videoDevices, audioDevices, outputDevices, hasOutputDeviceSupport } = this.sdk.media.getState();
@@ -381,7 +442,7 @@ export class SessionManager {
           this.log('warn', 'no available video devices to switch to. setting video to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'video', sessionType: jingleSession.sessionType });
           promises.push(
-            handler.setVideoMute(jingleSession, { mute: true, sessionId: jingleSession.id })
+            handler.setVideoMute(jingleSession, { mute: true, conversationId: jingleSession.conversationId })
           );
         }
       }
@@ -394,7 +455,7 @@ export class SessionManager {
           this.log('warn', 'no available audio devices to switch to. setting audio to mute for session',
             { conversationId: jingleSession.conversationId, sessionId, kind: 'audio', sessionType: jingleSession.sessionType });
           promises.push(
-            handler.setAudioMute(jingleSession, { mute: true, sessionId })
+            handler.setAudioMute(jingleSession, { mute: true, conversationId: jingleSession.conversationId })
           );
 
           const senders = handler.getSendersByTrackType(jingleSession, 'audio')

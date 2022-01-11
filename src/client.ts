@@ -16,7 +16,11 @@ import {
   IMediaSettings,
   isSecurityCode,
   isCustomerData,
-  IStartSoftphoneSessionParams
+  IStartSoftphoneSessionParams,
+  IOrgDetails,
+  IStation,
+  ISessionIdAndConversationId,
+  IConversationHeldRequest
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -27,6 +31,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
+import { Constants } from 'stanza';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -39,6 +44,9 @@ const ENVIRONMENTS = [
   'euw2.pure.cloud',
   'apne2.pure.cloud'
 ];
+
+const DISASSOCIATED_EVENT = 'Disassociated';
+const ASSOCIATED_EVENT = 'Associated';
 
 /**
  * Validate SDK construct options.
@@ -75,11 +83,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   logger: Logger;
   sessionManager: SessionManager;
   media: SdkMedia;
+  station: IStation | null;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
   _http: HttpClient;
-  _orgDetails: any;
+  _orgDetails: IOrgDetails;
   _personDetails: IPersonDetails;
   _clientId: string;
   _customerData: ICustomerData;
@@ -121,7 +130,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
-        allowedSessionTypes: options.allowedSessionTypes || Object.values(SessionTypes),
+        allowedSessionTypes: options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
 
         /* sdk defaults */
         defaults: {
@@ -138,10 +147,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       }
     };
 
-    this._orgDetails = { id: options.organizationId };
-    this._config.logger = this.logger;
+    this._orgDetails = { id: options.organizationId } as IOrgDetails;
 
-    setupLogging.call(this, options.logger);
+    setupLogging.call(this, options.logger || console);
+
+    this._config.logger = this.logger;
     this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
     this.media = new SdkMedia(this);
@@ -149,8 +159,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
     this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
-    this.on('cancelPendingSession', (sessionId: string) => this.logger.info('cancelPendingSession', { sessionId }));
-    this.on('handledPendingSession', (sessionId: string) => this.logger.info('handledPendingSession', { sessionId }));
+    this.on('cancelPendingSession', (ids: ISessionIdAndConversationId) => this.logger.info('cancelPendingSession', ids));
+    this.on('handledPendingSession', (ids: ISessionIdAndConversationId) => this.logger.info('handledPendingSession', ids));
     this.on('sdkError', (error) => {
       /* this prints it more readable in the console */
       this.logger.error('sdkError', {
@@ -210,17 +220,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       httpRequests.push(guestPromise);
     } else {
-      const getOrg = requestApiWithRetry.call(this, '/organizations/me').promise
-        .then(({ body }) => {
-          this._orgDetails = body;
-          this.logger.debug('Fetched organization details', body, true); // don't log PII
-        });
-
-      const getPerson = requestApiWithRetry.call(this, '/users/me').promise
-        .then(({ body }) => {
-          this._personDetails = body;
-          this.logger.debug('Fetched person details', body, true); // don't log PII
-        });
+      const getOrg = this.fetchOrganization();
+      const getPerson = this.fetchAuthenticatedUser();
 
       httpRequests.push(getOrg);
       httpRequests.push(getPerson);
@@ -228,13 +229,23 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     try {
       await Promise.all(httpRequests);
-    } catch (err) {
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.http, err.message, err);
-    }
 
-    try {
       await setupStreamingClient.call(this);
       await proxyStreamingClientEvents.call(this);
+
+      /* if we are allowing softphone calls, we need station information */
+      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone) && !this.isGuest) {
+        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
+        const stationReq = this.fetchUsersStation()
+          .catch((err) => {
+            // these errors shouldn't halt initialization
+            this.logger.warn('error fetching users station', err);
+          });
+        const stationSub = this.listenForStationEvents();
+
+        await Promise.all([stationReq, stationSub]);
+      }
+
       this.emit('ready');
     } catch (err) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
@@ -447,6 +458,74 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this.sessionManager?.updateAudioVolume(volume);
   }
 
+  async fetchOrganization (): Promise<IOrgDetails> {
+    return requestApiWithRetry.call(this, '/organizations/me').promise
+      .then(({ body }) => {
+        this._orgDetails = body;
+        this.logger.debug('Fetched organization details', body, { skipServer: true }); // don't log PII
+        return body;
+      });
+  }
+
+  async fetchAuthenticatedUser (): Promise<IPersonDetails> {
+    return requestApiWithRetry.call(this, '/users/me?expand=station').promise
+      .then(({ body }) => {
+        this._personDetails = body;
+        this.logger.debug('Fetched person details', body, { skipServer: true }); // don't log PII
+        return body;
+      });
+  }
+
+  async fetchUsersStation (): Promise<IStation> {
+    if (!this._personDetails) {
+      await this.fetchAuthenticatedUser();
+    }
+
+    const stationId = this._personDetails?.station?.associatedStation?.id;
+    if (!stationId) {
+      const error = new Error('User does not have an associated station');
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
+    }
+
+    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
+    this.station = body;
+    this.logger.info('Fetched user station', {
+      userId: body.userId,
+      type: body.type,
+      webRtcPersistentEnabled: body.webRtcPersistentEnabled,
+      webRtcForceTurn: body.webRtcForceTurn,
+      webRtcCallAppearances: body.webRtcCallAppearances,
+    });
+    this.emit('concurrentSoftphoneSessionsEnabled', this.isConcurrentSoftphoneSessionsEnabled());
+    this.emit('station', { action: 'Associated', station: body });
+    return body;
+  }
+
+  /**
+   * Check to see if the user's currently associated station has
+   *  persistent connection enabled.
+   *
+   * @returns if the station has persistent connection enabled
+   */
+  isPersistentConnectionEnabled (): boolean {
+    const station = this.station;
+    return !!(
+      station &&
+      station.webRtcPersistentEnabled &&
+      station.type === 'inin_webrtc_softphone'
+    );
+  }
+
+  /**
+   * Check to see if the user's currently associated station has
+   *  Line Appearance > 1.
+   *
+   * @returns if the station has Line Appearance > 1
+   */
+  isConcurrentSoftphoneSessionsEnabled (): boolean {
+    return this.station?.webRtcCallAppearances > 1;
+  }
+
   /**
    * Mutes/Unmutes video/camera for a session and updates the conversation accordingly.
    * Will fail if the session is not found.
@@ -480,6 +559,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
+   * Set a conversation's hold state.
+   *
+   * > NOTE: only applicable for softphone conversations
+   *
+   * @param heldOptions conversationId and desired held state
+   */
+  async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
+    await this.sessionManager.setConversationHeld(heldOptions);
+  }
+
+  /**
    * Set the accessToken the sdk uses to authenticate
    *  to the API.
    * @param token new access token
@@ -491,23 +581,27 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Accept a pending session based on the passed in ID.
+   * Accept a pending session based on the passed in conversation or session ID.
+   * > NOTE: it is recommended to use the conversation ID to avoid conflicts
+   *  when using persistent connection
    *
-   * @param sessionId id of the pending session to accept
+   * @param params conversationId or sessionId of the pending session to accept
    * @returns a promise that fullfils once the session accept goes out
    */
-  async acceptPendingSession (sessionId: string): Promise<void> {
-    await this.sessionManager.proceedWithSession(sessionId);
+  async acceptPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    await this.sessionManager.proceedWithSession(params);
   }
 
   /**
-   * Reject a pending session based on the passed in ID.
+   * Reject a pending session based on the passed in conversation or session ID.
+   * > NOTE: it is recommended to use the conversation ID to avoid conflicts
+   *  when using persistent connection
    *
-   * @param sessionId id of the pending session to reject
+   * @param params conversationId or sessionId of the pending session to reject
    * @returns a promise that fullfils once the session reject goes out
    */
-  async rejectPendingSession (sessionId: string): Promise<void> {
-    await this.sessionManager.rejectPendingSession(sessionId);
+  async rejectPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+    await this.sessionManager.rejectPendingSession(params);
   }
 
   /**
@@ -527,6 +621,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
     return this.sessionManager.endSession(endOptions);
+  }
+
+  /**
+   * End an active session based on the session ID
+   * @param sessionId session ID corresponding to the session you want to force terminate
+   * @param reason optional reason to terminate the session with. defaults to "success"
+   * @returns a promise that fullfils once the session has ended
+   */
+  async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition): Promise<void> {
+    return this.sessionManager.forceTerminateSession(sessionId, reason);
   }
 
   /**
@@ -606,6 +710,29 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         remove(track);
       });
     });
+  }
+
+  private listenForStationEvents () {
+    return this._streamingConnection._notifications.subscribe(
+      `v2.users.${this._personDetails.id}.station`,
+      (event) => {
+        if (event.metadata.action === DISASSOCIATED_EVENT) {
+          this.logger.info('station disassociated', {
+            stationId: this.station?.id
+          });
+          this.station = null;
+          this.emit('station', { action: 'Disassociated', station: null });
+        } else if (event.metadata.action === ASSOCIATED_EVENT) {
+          this.logger.info('station associated. fetching station', {
+            stationId: event.eventBody.associatedStation.id
+          });
+
+          this._personDetails.station = event.eventBody;
+          // we emit the associated station after it is loaded
+          return this.fetchUsersStation();
+        }
+      }
+    );
   }
 
   /**

@@ -1,13 +1,14 @@
 import nock = require('nock');
 import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
-import { parseJwt } from 'genesys-cloud-streaming-client';
+import { parseJwt, ISessionInfo } from 'genesys-cloud-streaming-client';
 
 import { SimpleMockSdk } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
-import { SdkErrorTypes } from '../../src/types/enums';
-import { SdkError } from '../../src/utils';
+import { SdkErrorTypes, SessionTypes, SdkError } from '../../src/';
 import { MOCK_CUSTOMER_DATA } from '../mock-apis';
+import { IPendingSession } from '../../src/types/interfaces';
+import { ILogger } from 'genesys-cloud-client-logger';
 
 let sdk: GenesysCloudWebrtcSdk;
 const baseUriWithoutVersion = 'https://api.mypurecloud.com/api';
@@ -21,7 +22,7 @@ describe('SdkError', () => {
   it('should create with defaults', () => {
     const sdkError = new SdkError(null, 'erroring');
     expect(sdkError.name).toBe('Error');
-    expect(sdkError.type).toBe('generic');
+    expect(sdkError.type).toBe(SdkErrorTypes.generic);
     expect(sdkError.message).toBe('erroring');
     expect(sdkError.details).toBe(undefined);
   });
@@ -178,21 +179,6 @@ describe('requestApi', () => {
       noAuthHeader: true
     });
   });
-
-  it('should format HTTP request errors from streaming-client', async () => {
-    const authToken = 'abrakadabra';
-    const host = 'notreally.dca';
-    const method = 'put';
-
-    const formatSpy = jest.spyOn(sdk._http, 'formatRequestError');
-
-    try {
-      await utils.requestApi.call(sdk, '/somerandompath', { authToken, method, host });
-      fail('Should have thrown error.');
-    } catch (e) {
-      expect(formatSpy).toHaveBeenCalled();
-    }
-  });
 });
 
 describe('buildRequestApiOptions', () => {
@@ -295,9 +281,35 @@ describe('jid utils', () => {
   });
 });
 
-describe('SdkError', () => {
-  it('should handle default type', () => {
-    const error = new utils.SdkError(undefined, 'test');
-    expect(error.type).toEqual(SdkErrorTypes.generic);
+describe('logPendingSession()', () => {
+  it('should add sessionType if a pending session', () => {
+    const logger: ILogger = { debug: jest.fn() } as any;
+    const loggyMessage = 'How can cows jump over the moon?';
+    const pendingSession: IPendingSession = {
+      sessionId: 'sessId',
+      autoAnswer: false,
+      conversationId: 'walkie-talkie',
+      fromUserId: 'user-abc',
+      sessionType: SessionTypes.collaborateVideo
+    } as any;
+
+    utils.logPendingSession(logger, loggyMessage, pendingSession, 'debug');
+
+    expect(logger.debug).toHaveBeenCalledWith(loggyMessage, pendingSession);
+  });
+
+  it('should not add sessionType if not a pending session', () => {
+    const logger: ILogger = { debug: jest.fn() } as any;
+    const loggyMessage = 'What does the fox say';
+    const pendingSession: ISessionInfo = {
+      sessionId: 'sessId',
+      autoAnswer: false,
+      conversationId: 'walkie-talkie',
+      fromUserId: 'user-abc'
+    } as any;
+
+    utils.logPendingSession(logger, loggyMessage, pendingSession, 'debug');
+
+    expect(logger.debug).toHaveBeenCalledWith(loggyMessage, pendingSession);
   });
 });

@@ -1,4 +1,4 @@
-import { CommunicationStates } from './enums';
+import { IConversationParticipantFromEvent } from '../types/interfaces';
 
 export class ConversationUpdate {
   id: string;
@@ -25,7 +25,8 @@ export class ConversationUpdate {
         confined: call.confined,
         held: call.held,
         direction: call.direction,
-        provider: call.provider
+        provider: call.provider,
+        errorInfo: call.errorInfo
       })) : [];
 
       return {
@@ -37,31 +38,4 @@ export class ConversationUpdate {
       };
     });
   }
-}
-export interface IConversationParticipantFromEvent {
-  id: string;
-  purpose: string;
-  userId: string;
-  videos: Array<IParticipantVideo>;
-  calls: Array<IParticipantCall>;
-}
-
-export interface IParticipantVideo {
-  context: string;
-  audioMuted: boolean;
-  videoMuted: boolean;
-  id: string;
-  state: CommunicationStates;
-  peerCount: number;
-  sharingScreen: boolean;
-}
-
-export interface IParticipantCall {
-  id: string;
-  state: CommunicationStates;
-  muted: boolean;
-  confined: boolean;
-  held: boolean;
-  direction: 'inbound' | 'outbound';
-  provider: string;
 }

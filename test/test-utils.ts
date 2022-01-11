@@ -27,7 +27,7 @@ export class SimpleMockSdk extends EventEmitter {
     environment: 'mypurecloud.com',
     logLevel: 'debug',
     wsHost: 'wshost',
-    allowedSessionTypes: Object.values(SessionTypes),
+    allowedSessionTypes: [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
     defaults: {
       micAutoGainControl: true,
       micEchoCancellation: true,
@@ -63,10 +63,15 @@ export class SimpleMockSdk extends EventEmitter {
     }
   };
   sessionManager = {
-    validateOutgoingMediaTracks: jest.fn()
+    validateOutgoingMediaTracks: jest.fn(),
+    getAllActiveSessions: jest.fn().mockReturnValue([]),
+    pendingSessions: {},
+    aaid: random().toString()
   };
   setAudioMute = jest.fn();
   updateOutgoingMedia = jest.fn();
+  isPersistentConnectionEnabled = jest.fn();
+  isConcurrentSoftphoneSessionsEnabled = jest.fn();
 }
 
 export class MockSender {
@@ -138,9 +143,10 @@ class MockPC extends EventTarget {
 export class MockSession extends EventEmitter {
   streams: MockStream[] = [];
   tracks: MockTrack[] = [];
-  id: any;
+  id: string;
   sid = random().toString();
   conversationId = random().toString();
+  originalRoomJid = random().toString() + '@organization.com';
   pc = new MockPC(this);
   _statsGatherer: any;
   _outboundStream: any;
@@ -288,35 +294,18 @@ export function wait (milliseconds: number = 10): Promise<void> {
   return new Promise(res => setTimeout(res, milliseconds));
 }
 
-export function createSessionInfo (): ISessionInfo {
-  const roomJid = `${random()}@${random()}.com`;
+export function createPendingSession (sessionType: SessionTypes = SessionTypes.softphone): IPendingSession {
+  const roomJid = sessionType === SessionTypes.acdScreenShare ? `acd-${random()}@org.com` : `${random()}@gjoll.com`;
+  const sessionId = random().toString();
 
   return {
     autoAnswer: true,
+    sessionId,
+    id: sessionId,
     conversationId: random().toString(),
     fromJid: roomJid,
-    sessionId: random().toString(),
-    originalRoomJid: roomJid
+    originalRoomJid: roomJid,
+    toJid: '',
+    sessionType
   };
-}
-
-export function createPendingSession (type: SessionTypes = SessionTypes.softphone): IPendingSession {
-  const base = {
-    id: random(),
-    conversationId: random(),
-    autoAnswer: false,
-    sessionType: type
-  };
-
-  let specifics;
-  switch (type) {
-    case SessionTypes.acdScreenShare: {
-      specifics = { address: `acd-${random()}@org.com` };
-      break;
-    }
-    default: {
-      specifics = { address: `${random()}@gjoll.com` };
-    }
-  }
-  return Object.assign(base, specifics);
-}
+};

@@ -8,22 +8,36 @@ import {
   random
 } from '../../test-utils';
 import {
-  getMockConversation,
   createNock,
-  mockGetConversationApi,
   PARTICIPANT_ID,
-  USER_ID,
-  mockPatchConversationApi,
   mockPostConversationApi
 } from '../../mock-apis';
-import { GenesysCloudWebrtcSdk } from '../../../src/client';
+import {
+  GenesysCloudWebrtcSdk,
+  SessionTypes,
+  ConversationUpdate,
+  IAcceptSessionRequest,
+  ICallStateFromParticipant,
+  IUpdateOutgoingMedia,
+  CommunicationStates,
+  IConversationParticipantFromEvent,
+  IPersonDetails,
+  IExtendedMediaSession,
+  IStoredConversationState,
+  ISdkConversationUpdateEvent,
+  IConversationParticipant,
+  IConversationHeldRequest,
+  SdkErrorTypes,
+  IPendingSession,
+  JingleReasons,
+  ISessionMuteRequest
+} from '../../../src';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import { SessionTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
-import { IAcceptSessionRequest, ISessionAndConversationIds, IUpdateOutgoingMedia } from '../../../src/types/interfaces';
+import { SdkError } from '../../../src/utils';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -40,7 +54,7 @@ beforeEach(() => {
   handler = new SoftphoneSessionHandler(mockSdk, mockSessionManager);
 });
 
-describe('shouldHandleSessionByJid', () => {
+describe('shouldHandleSessionByJid()', () => {
   it('should rely on isSoftphoneJid', () => {
     jest.spyOn(utils, 'isSoftphoneJid').mockReturnValueOnce(false).mockReturnValueOnce(true);
     expect(handler.shouldHandleSessionByJid('sdlkf')).toBeFalsy();
@@ -48,7 +62,7 @@ describe('shouldHandleSessionByJid', () => {
   });
 });
 
-describe('handlePropose', () => {
+describe('handlePropose()', () => {
   it('should emit pending session and proceed immediately if autoAnswer', async () => {
     const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
     const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
@@ -104,7 +118,7 @@ describe('handlePropose', () => {
   });
 });
 
-describe('handleSessionInit', () => {
+describe('handleSessionInit()', () => {
   it('should call super\'s init and accept immediately', async () => {
     const superInit = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit');
     const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
@@ -130,7 +144,88 @@ describe('handleSessionInit', () => {
   });
 });
 
-describe('acceptSession', () => {
+describe('acceptSession()', () => {
+  it('should drop it on the floor if we have an activeSession with lineAppearance of 1', async () => {
+    const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
+    const session: any = new MockSession();
+
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    handler.activeSession = session;
+
+    await handler.acceptSession(session, {} as any);
+
+    expect(acceptSpy).not.toHaveBeenCalled();
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
+      '`acceptSession` called with an active session and LineAppearance of 1. no further action needed. session will automatically accept',
+      {
+        conversationId: session.conversationId,
+        sessionId: session.id
+      },
+      undefined
+    );
+  });
+
+  it('should set the currentActiveSession if we have persistent connection', async () => {
+    const session: any = new MockSession();
+    const audioElement = {} as HTMLMediaElement;
+    const mediaStream: MediaStream = new MockStream({ audio: true }) as any;
+
+    /* LA > 1 */
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    /* persistent connection ON */
+    jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockImplementation();
+    jest.spyOn(BaseSessionHandler.prototype, 'addMediaToSession').mockImplementation();
+    const setCurrentSessionSpy = jest.spyOn(handler, 'setCurrentSession' as any);
+
+    await handler.acceptSession(session, { audioElement, mediaStream, conversationId: session.conversationId });
+
+    expect(setCurrentSessionSpy).toHaveBeenCalledWith(session);
+  });
+
+  it('should set the currentActiveSession if we have lineAppearance of 1', async () => {
+    const session: IExtendedMediaSession = new MockSession() as any;
+    const audioElement = {} as HTMLMediaElement;
+    const mediaStream: MediaStream = new MockStream({ audio: true }) as any;
+
+    /* LA == 1 */
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    /* persistent connection OFF */
+    jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(false);
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockImplementation();
+    jest.spyOn(BaseSessionHandler.prototype, 'addMediaToSession').mockImplementation();
+
+    const setCurrentSessionSpy = jest.spyOn(handler, 'setCurrentSession' as any);
+
+    handler.conversations[session.conversationId] = {} as any;
+
+    await handler.acceptSession(session, { audioElement, mediaStream, conversationId: session.conversationId });
+
+    expect(setCurrentSessionSpy).toHaveBeenCalledWith(session);
+  });
+
+  it('should not set cucrrentActiveSession if we already have an activeSession', async () => {
+    const session: IExtendedMediaSession = new MockSession() as any;
+    const audioElement = {} as HTMLMediaElement;
+    const mediaStream: MediaStream = new MockStream({ audio: true }) as any;
+
+    /* LA == 1 */
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    /* persistent connection OFF */
+    jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(false);
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockImplementation();
+    jest.spyOn(BaseSessionHandler.prototype, 'addMediaToSession').mockImplementation();
+
+    const setCurrentSessionSpy = jest.spyOn(handler, 'setCurrentSession' as any);
+
+    handler.conversations[session.conversationId] = {} as any;
+    handler.activeSession = new MockSession() as any;
+
+    await handler.acceptSession(session, { audioElement, mediaStream, conversationId: session.conversationId });
+
+    expect(setCurrentSessionSpy).not.toHaveBeenCalled();
+  });
+
   it('should add media using provided stream and element then accept session', async () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const attachSpy = jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
@@ -146,11 +241,11 @@ describe('acceptSession', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      sessionId: session.sid,
+      conversationId: session.conversationId,
       audioElement: element as any,
       mediaStream: mockOutgoingStream as any
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -181,9 +276,9 @@ describe('acceptSession', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      sessionId: session.sid
+      conversationId: session.conversationId
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -213,9 +308,9 @@ describe('acceptSession', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      sessionId: session.sid
+      conversationId: session.conversationId
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -238,11 +333,11 @@ describe('acceptSession', () => {
     const volume = mockSdk._config.defaults.audioVolume = 67;
 
     const params: IAcceptSessionRequest = {
-      sessionId: session.sid,
+      conversationId: session.conversationId,
       audioElement: element as any,
       mediaStream: new MockStream() as any
     };
-    const ids: ISessionAndConversationIds = {
+    const ids = {
       sessionId: session.id,
       conversationId: session.conversationId
     };
@@ -276,7 +371,7 @@ describe('acceptSession', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      sessionId: session.sid
+      conversationId: session.conversationId
     };
 
     await handler.acceptSession(session, params);
@@ -304,7 +399,7 @@ describe('acceptSession', () => {
     session.streams = [mockIncomingStream];
 
     const params: IAcceptSessionRequest = {
-      sessionId: session.sid
+      conversationId: session.conversationId
     };
 
     await handler.acceptSession(session, params);
@@ -318,192 +413,1240 @@ describe('acceptSession', () => {
   });
 });
 
-describe('getParticipantForSession', () => {
-  it('should throw if participant is not found', async () => {
-    const response = getMockConversation();
-    response.participants = [];
-    const scope = createNock();
-    const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
-    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, response });
+describe('proceedWithSession()', () => {
+  let pendingSession: IPendingSession;
+  let patchPhoneCallSpy: jest.SpyInstance;
+  let proceedWithSessionSpy: jest.SpyInstance;
+  let getUserParticipantFromConversationEventSpy: jest.SpyInstance;
+  let fetchUserParticipantFromConversationIdSpy: jest.SpyInstance;
 
-    await expect(handler.getParticipantForSession(session)).rejects.toThrowError(/Failed to find a participant/);
-    expect(getConversation.isDone()).toBeTruthy();
-  });
-
-  it('should not request participant if cached locally', async () => {
-    jest.spyOn(utils, 'requestApi');
-
-    const mockParticipant = {};
-    const session = {
-      pcParticipant: mockParticipant
+  beforeEach(() => {
+    const sessionId = random().toString();
+    pendingSession = {
+      id: sessionId,
+      sessionType: SessionTypes.softphone,
+      sessionId,
+      autoAnswer: true,
+      toJid: 'someone-else',
+      fromJid: 'maybe-me',
+      conversationId: random().toString(),
     };
 
-    expect(await handler.getParticipantForSession(session as any)).toBe(mockParticipant);
+    patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
+    proceedWithSessionSpy = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockResolvedValue(null);
+    getUserParticipantFromConversationEventSpy = jest.spyOn(handler, 'getUserParticipantFromConversationEvent')
+      .mockReturnValue(null);
+    fetchUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'fetchUserParticipantFromConversationId' as any)
+      .mockResolvedValue(null)
+  });
 
-    expect(utils.requestApi).not.toHaveBeenCalled();
+  it('should proxy call through if we do not have an active session', async () => {
+    await handler.proceedWithSession(pendingSession);
+
+    expect(proceedWithSessionSpy).toHaveBeenCalledWith(pendingSession);
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
+  });
+
+  it('should proxy call through if the session id does not match our activeSession', async () => {
+    handler.activeSession = new MockSession() as any;
+
+    await handler.proceedWithSession(pendingSession);
+
+    expect(proceedWithSessionSpy).toHaveBeenCalledWith(pendingSession);
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
+  });
+
+  it('should patch the phone call with the participant from the conversationState', async () => {
+    const participant = { id: 'gazer-beam' };
+    getUserParticipantFromConversationEventSpy.mockReturnValue(participant);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession.id = pendingSession.id;
+    handler.conversations[pendingSession.conversationId] = { conversationUpdate: {} } as any;
+
+    await handler.proceedWithSession(pendingSession);
+
+    expect(proceedWithSessionSpy).not.toHaveBeenCalled();
+    expect(patchPhoneCallSpy).toHaveBeenCalledWith(
+      pendingSession.conversationId,
+      participant.id,
+      { state: CommunicationStates.connected }
+    );
+  });
+
+  it('should load the participant and then patch the phone call', async () => {
+    const participant = { id: 'gazer-beam' };
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(participant);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession.id = pendingSession.id;
+
+    await handler.proceedWithSession(pendingSession);
+
+    expect(proceedWithSessionSpy).not.toHaveBeenCalled();
+    expect(patchPhoneCallSpy).toHaveBeenCalledWith(
+      pendingSession.conversationId,
+      participant.id,
+      { state: CommunicationStates.connected }
+    );
   });
 });
 
-describe('endSession', () => {
+describe('rejectPendingSession()', () => {
+  let pendingSession: IPendingSession;
+  let patchPhoneCallSpy: jest.SpyInstance;
+  let rejectPendingSessionSpy: jest.SpyInstance;
+  let getUserParticipantFromConversationEventSpy: jest.SpyInstance;
+  let fetchUserParticipantFromConversationIdSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    const sessionId = random().toString();
+    pendingSession = {
+      id: sessionId,
+      sessionType: SessionTypes.softphone,
+      sessionId,
+      autoAnswer: true,
+      toJid: 'someone-else',
+      fromJid: 'maybe-me',
+      conversationId: random().toString(),
+    };
+
+    patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
+    rejectPendingSessionSpy = jest.spyOn(BaseSessionHandler.prototype, 'rejectPendingSession').mockResolvedValue(null);
+    getUserParticipantFromConversationEventSpy = jest.spyOn(handler, 'getUserParticipantFromConversationEvent')
+      .mockReturnValue(null);
+    fetchUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'fetchUserParticipantFromConversationId' as any)
+      .mockResolvedValue(null)
+  });
+
+  it('should proxy call through if we do not have an active session', async () => {
+    await handler.rejectPendingSession(pendingSession);
+
+    expect(rejectPendingSessionSpy).toHaveBeenCalledWith(pendingSession);
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
+  });
+
+  it('should patch the phone call with the participant from the conversationState', async () => {
+    const participant = { id: 'gazer-beam' };
+    getUserParticipantFromConversationEventSpy.mockReturnValue(participant);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession.id = pendingSession.id;
+    handler.conversations[pendingSession.conversationId] = { conversationUpdate: {} } as any;
+
+    await handler.rejectPendingSession(pendingSession);
+
+    expect(rejectPendingSessionSpy).not.toHaveBeenCalled();
+    expect(patchPhoneCallSpy).toHaveBeenCalledWith(
+      pendingSession.conversationId,
+      participant.id,
+      { state: CommunicationStates.disconnected }
+    );
+  });
+
+  it('should load the participant and then patch the phone call', async () => {
+    const participant = { id: 'gazer-beam' };
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(participant);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession.id = pendingSession.id;
+
+    await handler.rejectPendingSession(pendingSession);
+
+    expect(rejectPendingSessionSpy).not.toHaveBeenCalled();
+    expect(patchPhoneCallSpy).toHaveBeenCalledWith(
+      pendingSession.conversationId,
+      participant.id,
+      { state: CommunicationStates.disconnected }
+    );
+  });
+});
+
+describe('handleConversationUpdate()', () => {
+  const userId = 'our-agent-user';
+  const conversationId = 'convo-id';
+  let session: IExtendedMediaSession;
+  let update: ConversationUpdate;
+  let participant: IConversationParticipantFromEvent;
+  let callState: ICallStateFromParticipant;
+  let handleSoftphoneConversationUpdateSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    callState = {
+      id: 'call-id',
+      state: CommunicationStates.contacting,
+      muted: false,
+      confined: false,
+      held: false,
+      direction: 'outbound',
+      provider: 'provider'
+    };
+    participant = {
+      id: 'participants-1',
+      purpose: 'agent',
+      userId,
+      calls: [callState],
+      videos: []
+    };
+    update = new ConversationUpdate({
+      id: conversationId,
+      participants: [participant]
+    });
+
+    session = new MockSession() as any;
+    session.conversationId = update.id;
+    mockSdk._personDetails = { id: userId } as IPersonDetails;
+    handleSoftphoneConversationUpdateSpy = jest.spyOn(handler, 'handleSoftphoneConversationUpdate').mockImplementation();
+  });
+
+  it('should do nothing if no participant on the update', () => {
+    update.participants = [];
+    handler.handleConversationUpdate(update, []);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith('user participant not found on the conversation update', update, { skipServer: true });
+  });
+
+  it('should do nothing if no callState on the participant', () => {
+    update.participants = update.participants.map(p => ({ ...p, calls: [] }));
+    handler.handleConversationUpdate(update, []);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith("user participant's call state not found on the conversation update. not processing", expect.any(Object), { skipServer: true });
+  });
+
+  it('should use the session on the previous conversationState', () => {
+    handler.conversations = {
+      [update.id]: {
+        session,
+        conversationUpdate: update,
+        conversationId: update.id,
+        mostRecentUserParticipant: participant,
+        mostRecentCallState: callState
+      }
+    };
+
+    handler.handleConversationUpdate(update, []);
+    expect(handleSoftphoneConversationUpdateSpy).toHaveBeenCalledWith(
+      update,
+      participant,
+      callState,
+      session
+    );
+  });
+
+  it('should use the actice session if lineAppearance == 1', () => {
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+    handler.activeSession = session;
+
+    handler.handleConversationUpdate(update, []);
+    expect(handleSoftphoneConversationUpdateSpy).toHaveBeenCalledWith(
+      update,
+      participant,
+      callState,
+      session
+    );
+  });
+
+  it('should find the session from the passed in array of sessions', () => {
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+
+    handler.handleConversationUpdate(update, [session]);
+    expect(handleSoftphoneConversationUpdateSpy).toHaveBeenCalledWith(
+      update,
+      participant,
+      callState,
+      session
+    );
+  });
+
+  it('should do extra checks if it could not find session initially and persistent connection is enabled', () => {
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
+
+    handler.activeSession = session;
+    handler.conversations = {
+      [update.id]: {
+        // session,
+        conversationUpdate: update,
+        conversationId: update.id,
+        mostRecentUserParticipant: participant,
+        mostRecentCallState: callState
+      }
+    };
+
+    handler.handleConversationUpdate(update, []);
+    expect(handleSoftphoneConversationUpdateSpy).toHaveBeenCalledWith(
+      update,
+      participant,
+      callState,
+      session
+    );
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'we have an active session that is not in use by another conversation. using that session',
+      expect.any(Object),
+      undefined
+    );
+  });
+
+  it('should use no session if there is not one', () => {
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
+
+    handler.conversations = {
+      [update.id]: {
+        conversationUpdate: update,
+        conversationId: update.id,
+        mostRecentUserParticipant: participant,
+        mostRecentCallState: callState
+      }
+    };
+
+    handler.handleConversationUpdate(update, []);
+    expect(handleSoftphoneConversationUpdateSpy).toHaveBeenCalledWith(
+      update,
+      participant,
+      callState,
+      undefined
+    );
+  });
+});
+
+describe('handleSoftphoneConversationUpdate()', () => {
+  interface ReturnedState {
+    update?: ConversationUpdate;
+    participant?: IConversationParticipantFromEvent;
+    callState?: ICallStateFromParticipant;
+    session?: IExtendedMediaSession;
+    previousUpdate?: ConversationUpdate;
+  }
+
+  interface RequestState {
+    callState?: CommunicationStates;
+    session?: IExtendedMediaSession;
+    previousCallState?: Partial<ICallStateFromParticipant>;
+  }
+
+  const generateUpdate = (reqState: RequestState = {}): ReturnedState => {
+    const state = reqState.callState || CommunicationStates.contacting;
+    const session: IExtendedMediaSession = reqState.session || new MockSession() as any;
+
+    const callState = {
+      id: 'call-id',
+      state,
+      muted: false,
+      confined: false,
+      held: false,
+      direction: 'outbound',
+      provider: 'provider'
+    } as ICallStateFromParticipant;
+
+    const participant = {
+      id: 'participants-1',
+      purpose: 'agent',
+      userId,
+      calls: [callState],
+      videos: []
+    } as IConversationParticipantFromEvent;
+
+    const update = new ConversationUpdate({
+      id: session.conversationId,
+      participants: [participant]
+    });
+
+    let previousUpdate: ConversationUpdate;
+    if (reqState.previousCallState) {
+      const previousCallState = { ...callState, ...reqState.previousCallState };
+      const previousParticipant = { ...participant, calls: [previousCallState] };
+      previousUpdate = new ConversationUpdate({
+        id: session.id,
+        participants: [previousParticipant]
+      });
+    }
+
+    return {
+      update,
+      participant,
+      callState,
+      session,
+      previousUpdate
+    };
+  };
+
+  const userId = 'martian-manhunter';
+  const userJid = 'martians-like-to-talk-too@mars.com';
+  let emitConversationEventSpy: jest.SpyInstance;
+  let sdkEmitSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockSdk._personDetails = { id: userId, chat: { jabberId: userJid } } as IPersonDetails;
+    emitConversationEventSpy = jest.spyOn(handler, 'emitConversationEvent')
+      .mockImplementation();
+    sdkEmitSpy = jest.spyOn(mockSdk, 'emit').mockImplementation();
+  });
+
+  it('should return void if it is a non-pending session that this client did not answer it', () => {
+    const { update, participant, callState, session } = generateUpdate({ callState: CommunicationStates.connected });
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
+      'received a conversation event for a conversation we are not responsible for. not processing',
+      { update, callState },
+      { skipServer: true }
+    );
+  });
+
+  it('should return void if the call state did not change for our user', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: {}
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
+      'conversation update received but state is unchanged. ignoring',
+      {
+        conversationId: update.id,
+        previousCallState: callState,
+        callState,
+        sessionType: handler.sessionType
+      },
+      undefined
+    );
+  });
+
+  it('should emit an update if our users state changed, but not their communication state', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { muted: true }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'updated',
+      handler.conversations[update.id],
+      session
+    );
+  });
+
+  it('should emit a pending session if we already have an active session', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    const expectedPendingSession: IPendingSession = {
+      id: session.id,
+      sessionId: session.id,
+      autoAnswer: callState.direction === 'outbound', // Not always accurate. If inbound auto answer, we don't know about it from convo evt
+      conversationId: update.id,
+      sessionType: handler.sessionType,
+      originalRoomJid: session.originalRoomJid,
+      fromUserId: session.fromUserId,
+      fromJid: session.peerID,
+      toJid: userJid
+    }
+
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(sdkEmitSpy).toHaveBeenCalledWith(
+      'pendingSession',
+      expectedPendingSession
+    );
+    expect(mockSessionManager.pendingSessions[update.id]).toEqual(expectedPendingSession);
+  });
+
+  it('should not emit a pending session if we do not have an active session', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(sdkEmitSpy).not.toHaveBeenCalledWith(
+      'pendingSession',
+      expect.any(Object)
+    );
+  });
+
+  it('should not emit "sessionStarted" for conversationUpdates in a connected state when the session was accepted by the normal session-accept', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    session.conversationId = 'not-our-updates-convo-id';
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'added',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not emit for conversationUpdates in a connected state when the previous call was not in a connectedState', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'added',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not emit for conversationUpdates that we do not have a session for', () => {
+    const { update, participant, callState, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
+
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit "updated" event if we did not have a previous call but have a connection call now', () => {
+    const { session, update, participant, callState } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = {} as any; // this would never really happen
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'updated',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit "sessionStarted" if we have an active session and we have not already emitted one', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'added',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).toHaveBeenCalledWith(
+      'sessionStarted',
+      session
+    );
+  });
+
+  it('should handle pending sessions we rejected', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+    const onCancelPendingSessionSpy = jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(
+      session.id,
+      update.id
+    );
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should delete conversationState, not emit an event, and not cancelPendingSession if session does not match active session', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+    const onCancelPendingSessionSpy = jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+
+    /* 1st: we don't pass in a session */
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
+
+    expect(onCancelPendingSessionSpy).not.toHaveBeenCalled();
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+
+    /* 2nd: our session does not match our current active session */
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(onCancelPendingSessionSpy).not.toHaveBeenCalled();
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should filter out duplicate ended events', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.terminated
+    });
+
+    /* mimic that we already received a "disconnect" callState event */
+    expect(handler.conversations[update.id]).toBeFalsy();
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit removed event if we were responsible for the call', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.connected }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'removed',
+      handler.conversations[update.id],
+      session
+    );
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit removed event and "sessionEnded" if we had an activeSession', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.connected }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'removed',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).toHaveBeenCalledWith(
+      'sessionEnded',
+      session,
+      { condition: JingleReasons.success }
+    );
+  });
+
+  it('should emit "updated" if we are in and ended state but did not have a previous callState', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.disconnected
+    });
+
+    handler.conversations[update.id] = {} as any; // should never happen
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should emit "updated" if we have an unknown communicationState', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.hold,
+      previousCallState: { state: CommunicationStates.connected }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'updated',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+  });
+});
+
+describe('diffConversationCallStates()', () => {
+  let call1: ICallStateFromParticipant;
+  let call2: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    call1 = {
+      state: CommunicationStates.connected,
+      confined: false,
+      held: false,
+      muted: false,
+      direction: 'inbound',
+      provider: 'anything',
+      id: 'something'
+    };
+    call2 = { ...call1 };
+  });
+
+  it('should return "false" if the call states are not different', () => {
+    expect(handler.diffConversationCallStates(call1, call2)).toBe(false);
+  });
+
+  it('should return "true" if one call state is missing', () => {
+    expect(handler.diffConversationCallStates(undefined, call2)).toBe(true);
+    expect(handler.diffConversationCallStates(call1, undefined)).toBe(true);
+  });
+
+  it('should return "true" if the state is different', () => {
+    call2.state = CommunicationStates.disconnected;
+    expect(handler.diffConversationCallStates(call1, call2)).toBe(true);
+  });
+
+  it('should return "true" if the confined is different', () => {
+    call2.confined = true;
+    expect(handler.diffConversationCallStates(call1, call2)).toBe(true);
+  });
+
+  it('should return "true" if the held is different', () => {
+    call2.held = true;
+    expect(handler.diffConversationCallStates(call1, call2)).toBe(true);
+  });
+
+  it('should return "true" if the muted is different', () => {
+    call2.muted = true;
+    expect(handler.diffConversationCallStates(call1, call2)).toBe(true);
+  });
+});
+
+describe('emitConversationEvent()', () => {
+  const activeConvoId = 'activity-is-good';
+  let conversationState: IStoredConversationState;
+  let expectedEvent: ISdkConversationUpdateEvent;
+
+  beforeEach(() => {
+    conversationState = {
+      conversationId: 'convo-id',
+      session: undefined,
+      conversationUpdate: new ConversationUpdate({ participants: [] }),
+      mostRecentUserParticipant: undefined,
+      mostRecentCallState: undefined
+    };
+    expectedEvent = {
+      added: [],
+      removed: [],
+      current: [],
+      activeConversationId: activeConvoId
+    };
+    jest.spyOn(handler, 'determineActiveConversationId').mockReturnValue(activeConvoId);
+  });
+
+  it('should emit added conversations', () => {
+    mockSdk.on('conversationUpdate', event => {
+      expect(event).toEqual(expectedEvent);
+    });
+
+    expectedEvent.added.push(conversationState);
+    handler.emitConversationEvent('added', conversationState, undefined);
+  });
+
+  it('should emit removed conversations', () => {
+    mockSdk.on('conversationUpdate', event => {
+      expect(event).toEqual(expectedEvent);
+    });
+
+    expectedEvent.removed.push(conversationState);
+    handler.emitConversationEvent('removed', conversationState, undefined);
+  });
+
+  it('should emit updated conversations', () => {
+    mockSdk.on('conversationUpdate', event => {
+      expect(event).toEqual(expectedEvent);
+    });
+
+    handler.conversations[conversationState.conversationId] = conversationState;
+    expectedEvent.current.push(conversationState);
+    handler.emitConversationEvent('updated', conversationState, undefined);
+  });
+});
+
+describe('determineActiveConversationId()', () => {
+  let connectedCall: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    connectedCall = {
+      state: CommunicationStates.connected,
+      confined: false,
+      held: false,
+      muted: false,
+      direction: 'inbound',
+      provider: 'anything',
+      id: 'something'
+    };
+  });
+
+  it('should use activeSessionId if no current conversationStates', () => {
+    handler.activeSession = { conversationId: 'friends' } as IExtendedMediaSession;
+    expect(handler.determineActiveConversationId()).toBe(handler.activeSession.conversationId);
+  });
+
+  it('should use passed in sessionId if no current conversationStates and no activeSession', () => {
+    const session = { conversationId: 'friends' } as IExtendedMediaSession;
+    expect(handler.determineActiveConversationId(session)).toBe(session.conversationId);
+  });
+
+  it('should return empty string if no activeSession or passed in session', () => {
+    expect(handler.determineActiveConversationId(undefined)).toBe('');
+  });
+
+  it('should return the conversationId if there is only one conversationState', () => {
+    const conversationId = 'tom-and-jerry';
+    handler.conversations = {
+      [conversationId]: { conversationId } as IStoredConversationState
+    };
+    expect(handler.determineActiveConversationId()).toBe(conversationId);
+  });
+
+  it('should use the first connected call', () => {
+    const conversationId = 'pacman';
+    handler.conversations = {
+      ['hungry-ghost']: {
+        conversationId: 'ghosty',
+        mostRecentCallState: { ...connectedCall, state: CommunicationStates.alerting }
+      } as IStoredConversationState,
+      [conversationId]: {
+        conversationId,
+        mostRecentCallState: connectedCall
+      } as IStoredConversationState
+    };
+
+    expect(handler.determineActiveConversationId()).toBe(conversationId);
+  });
+
+  it('should use the first non-held call if there are multiple connected calls', () => {
+    const conversationId = 'big-bird';
+    handler.conversations = {
+      oscar: {
+        conversationId: 'oscar',
+        mostRecentCallState: { ...connectedCall, held: true }
+      } as IStoredConversationState,
+      [conversationId]: {
+        conversationId,
+        mostRecentCallState: connectedCall
+      } as IStoredConversationState
+    };
+
+    expect(handler.determineActiveConversationId()).toBe(conversationId);
+  });
+
+  it('should return the conversationId on the passed in session if there are multiple calls on hold', () => {
+    handler.conversations = {
+      bert: {
+        conversationId: 'bert',
+        mostRecentCallState: { ...connectedCall, held: true }
+      } as IStoredConversationState,
+      ernie: {
+        conversationId: 'ernie',
+        mostRecentCallState: { ...connectedCall, held: true }
+      } as IStoredConversationState
+    };
+    const session = { conversationId: 'sesame-street' } as IExtendedMediaSession;
+
+    expect(handler.determineActiveConversationId(session)).toBe(session.conversationId);
+  });
+
+  it('should return the conversationId on the passed in session if there are no connectedCalls', () => {
+    handler.conversations = {
+      count: {
+        conversationId: 'count',
+        mostRecentCallState: { ...connectedCall, state: CommunicationStates.disconnected }
+      } as IStoredConversationState,
+      ocsar: {
+        conversationId: 'ocsar',
+        mostRecentCallState: { ...connectedCall, state: CommunicationStates.terminated }
+      } as IStoredConversationState
+    };
+    const session = { conversationId: 'sesame-street' } as IExtendedMediaSession;
+
+    expect(handler.determineActiveConversationId(session)).toBe(session.conversationId);
+  });
+
+  it('should return an emtpy string if there are no conversations', () => {
+    handler.conversations = {
+      bert: {
+        conversationId: 'bert',
+        mostRecentCallState: { ...connectedCall, held: true }
+      } as IStoredConversationState,
+      ernie: {
+        conversationId: 'ernie',
+        mostRecentCallState: { ...connectedCall, held: true }
+      } as IStoredConversationState
+    };
+
+    expect(handler.determineActiveConversationId()).toBe('');
+  });
+});
+
+describe('getUsersCallStateFromConversationEvent()', () => {
+  let converversationUpdate: ConversationUpdate;
+  let getUserParticipantFromConversationEventSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    getUserParticipantFromConversationEventSpy = jest.spyOn(handler, 'getUserParticipantFromConversationEvent')
+      .mockImplementation();
+    jest.spyOn(handler, 'getCallStateFromParticipant')
+      .mockImplementation();
+
+    converversationUpdate = new ConversationUpdate({ participants: [] });
+  });
+
+  it('should use passed in state', () => {
+    handler.getUsersCallStateFromConversationEvent(converversationUpdate, CommunicationStates.alerting);
+
+    expect(getUserParticipantFromConversationEventSpy).toHaveBeenCalledWith(converversationUpdate, CommunicationStates.alerting);
+  });
+
+  it('should use default connected state', () => {
+    handler.getUsersCallStateFromConversationEvent(converversationUpdate);
+
+    expect(getUserParticipantFromConversationEventSpy).toHaveBeenCalledWith(converversationUpdate, CommunicationStates.connected);
+  });
+});
+
+describe('getUserParticipantFromConversationEvent()', () => {
+  const conversationId = 'call-home-to-asgard';
+  const userId = 'loki';
+  let converversationUpdate: ConversationUpdate;
+  let participant1: IConversationParticipantFromEvent;
+  let participant2: IConversationParticipantFromEvent;
+  let call: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    mockSdk._personDetails = { id: userId } as IPersonDetails;
+
+    participant1 = {
+      id: 'party#1',
+      purpose: 'totalk',
+      userId,
+      videos: [],
+      calls: []
+    };
+
+    participant2 = {
+      id: 'party#2',
+      purpose: 'tolisten',
+      userId,
+      videos: [],
+      calls: []
+    };
+
+    converversationUpdate = new ConversationUpdate({ id: conversationId, participants: [participant1, participant2] });
+
+    call = {
+      state: CommunicationStates.connected,
+      confined: false,
+      held: false,
+      muted: false,
+      direction: 'inbound',
+      provider: 'anything',
+      id: 'something'
+    };
+  });
+
+  it('should return void if no update', () => {
+    expect(handler.getUserParticipantFromConversationEvent(undefined)).toBe(undefined);
+  });
+
+  it('should return void if no participant found with the auth userId', () => {
+    converversationUpdate.participants = [{ ...participant2, userId: 'not-loki' }];
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toBe(undefined);
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith('user not found on conversation as a participant', { conversationId }, undefined);
+  });
+
+  it('should return the participant that matches the auth userId', () => {
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant1);
+  });
+
+  it('should return the participant that has call in the desired state', () => {
+    /* setup our user to have multiple participants with different call states */
+    participant1.userId = userId;
+    participant1.calls = [{ ...call }];
+    participant2.userId = userId;
+    participant2.calls = [{ ...call, state: CommunicationStates.alerting }];
+    converversationUpdate.participants = [participant1, participant2];
+
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.alerting)).toEqual(participant2);
+  });
+
+  it('should return the first participant with calls', () => {
+    participant1.userId = userId;
+    participant1.calls = [];
+    participant2.userId = userId;
+    participant2.calls = [call];
+    converversationUpdate.participants = [participant1, participant2];
+
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
+  });
+
+  it('should return the first participant if there are no calls on any of them', () => {
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant1);
+  });
+});
+
+describe('getCallStateFromParticipant()', () => {
+  let participant: IConversationParticipantFromEvent;
+  let call: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    call = {
+      state: CommunicationStates.connected,
+      confined: false,
+      held: false,
+      muted: false,
+      direction: 'inbound',
+      provider: 'anything',
+      id: 'something'
+    };
+
+    participant = {
+      id: 'super-smash-party',
+      purpose: 'smash',
+      userId: 'hulk',
+      videos: [],
+      calls: []
+    };
+  });
+
+  it('should return void if there is no participant', () => {
+    expect(handler.getCallStateFromParticipant(null as any)).toBe(undefined);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
+      'no call found on participant',
+      { userId: undefined, participantId: undefined },
+      undefined
+    );
+  });
+
+  it('should return void if no calls on the user', () => {
+    expect(handler.getCallStateFromParticipant(participant)).toBe(undefined);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(
+      'no call found on participant',
+      { userId: participant.userId, participantId: participant.id },
+      undefined
+    );
+  });
+
+  it('should return the call if there is only one', () => {
+    participant.calls = [call];
+    expect(handler.getCallStateFromParticipant(participant)).toBe(call);
+  });
+
+  it('should return the non-ended call if there is only one', () => {
+    participant.calls = [
+      { ...call, state: CommunicationStates.terminated },
+      call
+    ];
+    expect(handler.getCallStateFromParticipant(participant)).toBe(call);
+  });
+
+  it('should should return the last call in the array', () => {
+    participant.calls = [
+      { ...call },
+      call
+    ];
+    expect(handler.getCallStateFromParticipant(participant)).toBe(call);
+  });
+});
+
+describe('setCurrentSession()', () => {
+  it('should set the activeSession and add terminated listeners', () => {
+    const session: IExtendedMediaSession = new MockSession() as any;
+
+    handler['setCurrentSession'](session);
+
+    expect(handler.activeSession).toBe(session);
+
+    session.emit('terminated', { condition: 'success' });
+
+    expect(handler.activeSession).toBe(null);
+  });
+
+  it('should switch to another session if current session terminates and persistent connection is enabled', () => {
+    const session1: IExtendedMediaSession = new MockSession() as any;
+    const session2: IExtendedMediaSession = new MockSession() as any;
+
+    handler['setCurrentSession'](session1);
+    expect(handler.activeSession).toBe(session1);
+
+    jest.spyOn(mockSdk.sessionManager, 'getAllActiveSessions').mockReturnValue([session2]);
+    jest.spyOn(mockSdk, 'isPersistentConnectionEnabled').mockReturnValue(true);
+
+    session1.emit('terminated', { condition: 'success' });
+
+    expect(handler.activeSession).toBe(session2);
+  });
+});
+
+describe('endSession()', () => {
   it('should fetch conversation and patch participant', async () => {
     const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
     const participantId = PARTICIPANT_ID;
-    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
+    const offSpy = jest.spyOn(mockSdk, 'off');
 
-    mockSdk._personDetails = {
-      id: USER_ID
-    } as any;
+    jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
+    jest.spyOn(handler, 'getUserParticipantFromConversationId' as any).mockResolvedValue({ id: participantId });
 
-    const scope = createNock();
-    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
-    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
+    const promise = handler.endSession(session.conversationId, session);
+    // need to wait for "sessionEnded" listener to wire up... don't know why
+    await new Promise(resolve => setTimeout(resolve, 150));
 
-    const promise = handler.endSession(session);
-    // need to wait for requests to "process" before triggering session terminate
-    await new Promise(resolve => setTimeout(resolve, 50));
-    session.emit('terminated');
+    /* mock a sessionEnded event for a different session */
+    mockSdk.emit('sessionEnded', new MockSession() as any, { condition: 'success' });
+    expect(offSpy).not.toHaveBeenCalled();
+
+    /* now our session ends */
+    mockSdk.emit('sessionEnded', session, { condition: 'success' });
     await promise;
 
-    expect(getConversation.isDone()).toBeTruthy();
-    expect(patchConversation.isDone()).toBeTruthy();
-    expect(session.end).not.toHaveBeenCalled();
-    expect(superSpy).not.toHaveBeenCalled();
+    expect(offSpy).toHaveBeenCalledWith('sessionEnded', expect.any(Function));
   });
 
-  it('should fetch conversation and patch the connected participant in the case of multiple participants with the same userId', async () => {
+  it('should call the fallback if session end fails with LA > 1', async () => {
     const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
-    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
+    const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+    jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(null);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
 
-    mockSdk._personDetails = {
-      id: USER_ID
-    } as any;
+    await handler.endSession(session.conversationId, session);
 
-    const scope = createNock();
-
-    const conversation = getMockConversation();
-    const extraParticipant = { ...conversation.participants[0] };
-    extraParticipant.id = 'expected';
-    conversation.participants[0].state = 'terminated';
-    conversation.participants.push(extraParticipant);
-
-    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, response: conversation });
-    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId: 'expected' });
-
-    const promise = handler.endSession(session);
-    // need to wait for requests to "process" before triggering session terminate
-    await new Promise(resolve => setTimeout(resolve, 50));
-    session.emit('terminated');
-    await promise;
-
-    expect(getConversation.isDone()).toBeTruthy();
-    expect(patchConversation.isDone()).toBeTruthy();
-    expect(session.end).not.toHaveBeenCalled();
-    expect(superSpy).not.toHaveBeenCalled();
+    expect(fallbackSpy).toHaveBeenCalled();
   });
 
-  it('should fetch conversation and throw if multiple participants with the same userId are connected', async () => {
+  it('should call the fallback if session end fails with LA == 1 but not other active conversations', async () => {
+    const generateMockConversationState = (state: CommunicationStates, session: any): IStoredConversationState => {
+      const conversationId = random().toString();
+      return {
+        conversationId,
+        session,
+        conversationUpdate: {} as any,
+        mostRecentUserParticipant: {} as any,
+        mostRecentCallState: { state } as any
+      }
+    };
+
+    const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+    jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(null);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+
     const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
-    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
+    const convoToEnd = generateMockConversationState(CommunicationStates.connected, session);
 
-    mockSdk._personDetails = {
-      id: USER_ID
-    } as any;
+    session.conversationId = convoToEnd.conversationId;
+    handler.conversations[convoToEnd.conversationId] = convoToEnd;
 
-    const scope = createNock();
+    await handler.endSession(session.conversationId, session);
 
-    const conversation = getMockConversation();
-    const extraParticipant = { ...conversation.participants[0] };
-    extraParticipant.id = 'expected';
-    conversation.participants.push(extraParticipant);
-
-    mockGetConversationApi({ nockScope: scope, conversationId, response: conversation });
-    mockPatchConversationApi({ nockScope: scope, conversationId, participantId: 'expected' });
-
-    handler.endSessionFallback = jest.fn().mockResolvedValue(null);
-
-    await handler.endSession(session);
-    expect(handler.endSessionFallback).toHaveBeenCalled();
+    expect(fallbackSpy).toHaveBeenCalled();
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      'session has LineAppearance as 1 but no other active sessions. Will attempt to end session', {
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      error: null
+    }, undefined);
   });
 
-  it('should manually end the session if fetch conversation fails', async () => {
+  it('should not call the fallback if the session end fails and we have an active session', async () => {
+    const generateMockConversationState = (state: CommunicationStates, session: any): IStoredConversationState => {
+      const conversationId = random().toString();
+      return {
+        conversationId,
+        session,
+        conversationUpdate: {} as any,
+        mostRecentUserParticipant: {} as any,
+        mostRecentCallState: { state } as any
+      }
+    };
+    const error = new Error('Arnold was Mr. Freeze once... o_O');
+
+    const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+    jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(error);
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+
     const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
 
-    mockSdk._personDetails = {
-      id: USER_ID
-    } as any;
+    const convoToEnd = generateMockConversationState(CommunicationStates.connected, session);
+    const pendingConvo = generateMockConversationState(CommunicationStates.alerting, undefined);
+    const connectedConvo = generateMockConversationState(CommunicationStates.connected, session);
+    const endedConvo = generateMockConversationState(CommunicationStates.terminated, undefined);
 
-    const scope = createNock();
-    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId, shouldFail: true });
+    session.conversationId = convoToEnd.conversationId;
 
-    jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+    handler.conversations[convoToEnd.conversationId] = convoToEnd;
+    handler.conversations[pendingConvo.conversationId] = pendingConvo;
+    handler.conversations[connectedConvo.conversationId] = connectedConvo;
+    handler.conversations[endedConvo.conversationId] = endedConvo;
 
-    await handler.endSession(session);
-    expect(getConversation.isDone()).toBeTruthy();
-    expect(handler.endSessionFallback).toHaveBeenCalled();
-    expect(session.end).not.toHaveBeenCalled();
+    try {
+      await handler.endSession(session.conversationId, session);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err).toEqual(new SdkError(SdkErrorTypes.http,
+        'Unable to end the session directly as a fallback because LineAppearance is 1 and there are other active conversations', {
+        failedSession: { conversationId: convoToEnd.conversationId, sessionId: session.id },
+        otherActiveSessions: [pendingConvo, connectedConvo].map(convo => ({
+          conversationId: convo.conversationId,
+          sessionId: convo.session?.id
+        })),
+        error
+      }));
+    }
+
+    expect(fallbackSpy).not.toHaveBeenCalled();
   });
-
-  it('should manually end the session if the patch fails', async () => {
-    const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
-    const participantId = PARTICIPANT_ID;
-
-    mockSdk._personDetails = {
-      id: USER_ID
-    } as any;
-
-    const scope = createNock();
-    const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
-    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
-
-    jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
-
-    await handler.endSession(session);
-    expect(getConversation.isDone()).toBeTruthy();
-    expect(patchConversation.isDone()).toBeTruthy();
-    expect(handler.endSessionFallback).toHaveBeenCalled();
-    expect(session.end).not.toHaveBeenCalled();
-  });
-
-  // fit('should call the fallback if session end fails', async () => {
-  //   const session: any = new MockSession();
-  //   const conversationId = session.conversationId = random();
-  //   const participantId = PARTICIPANT_ID;
-  //   const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession');
-  //   const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
-
-  //   mockSdk._personDetails = {
-  //     id: USER_ID
-  //   } as any;
-
-  //   const scope = createNock();
-  //   const getConversation = mockGetConversationApi({ nockScope: scope, conversationId });
-  //   const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
-
-  //   const promise = handler.endSession(session);
-  //   // need to wait for requests to "process" before triggering session terminate
-  //   await new Promise(resolve => setTimeout(resolve, 10));
-  //   session.emit('error', 'fake error');
-  //   await promise;
-
-  //   expect(getConversation.isDone()).toBeTruthy();
-  //   expect(patchConversation.isDone()).toBeTruthy();
-  //   expect(session.end).not.toHaveBeenCalled();
-  //   expect(superSpy).not.toHaveBeenCalled();
-  //   expect(fallbackSpy).toHaveBeenCalled();
-  // });
 });
 
-describe('endSessionFallback', () => {
+describe('endSessionFallback()', () => {
   it('should call supers endSession', async () => {
     const session: any = new MockSession();
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockResolvedValue();
-    await handler.endSessionFallback(session);
+    await handler.endSessionFallback(session.conversationId, session);
     expect(superSpy).toHaveBeenCalled();
   });
 
@@ -511,37 +1654,60 @@ describe('endSessionFallback', () => {
     const session: any = new MockSession();
     const error = new Error('fake');
     jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockRejectedValue(error);
-    await expect(handler.endSessionFallback(session)).rejects.toThrowError(/Failed to end session directly/);
+    await expect(handler.endSessionFallback(session.conversationId, session)).rejects.toThrowError(/Failed to end session directly/);
   });
 });
 
-describe('setAudioMute', () => {
-  it('should patch a mute for the participant', async () => {
-    const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
-    const participantId = PARTICIPANT_ID;
-    const scope = createNock();
+describe('setAudioMute()', () => {
+  let session: IExtendedMediaSession;
+  let conversationId: string;
+  let userParticipant: IConversationParticipantFromEvent;
+  let getUserParticipantFromConversationIdSpy: jest.SpyInstance;
+  let patchPhoneCallSpy: jest.SpyInstance;
 
-    jest.spyOn(handler, 'getParticipantForSession').mockResolvedValue({ id: participantId } as any);
-
-    const patchConversation = mockPatchConversationApi({ nockScope: scope, conversationId, participantId });
-
-    await handler.setAudioMute(session, { sessionId: session.id, mute: true });
-
-    expect(patchConversation.isDone).toBeTruthy();
+  beforeEach(() => {
+    session = new MockSession() as any;
+    conversationId = session.conversationId;
+    userParticipant = { id: 'abraham' } as any;
+    getUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'getUserParticipantFromConversationId' as any)
+      .mockResolvedValue(userParticipant);
+    patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any)
+      .mockResolvedValue(null);
   });
 
-  it('should log failure', async () => {
-    const session: any = new MockSession();
-    const conversationId = session.conversationId = random();
-    const participantId = PARTICIPANT_ID;
-    const scope = createNock();
+  it('should fetch the participant and patch the phone call', async () => {
+    const params: ISessionMuteRequest = { conversationId, mute: true };
 
-    jest.spyOn(handler, 'getParticipantForSession').mockResolvedValue({ id: participantId } as any);
+    await handler.setAudioMute(session, params);
 
-    mockPatchConversationApi({ nockScope: scope, conversationId, participantId, shouldFail: true });
+    expect(getUserParticipantFromConversationIdSpy).toHaveBeenCalledWith(params.conversationId);
+    expect(patchPhoneCallSpy).toHaveBeenCalledWith(
+      params.conversationId,
+      userParticipant.id,
+      { muted: params.mute }
+    );
+  });
 
-    await expect(handler.setAudioMute(session, { sessionId: session.id, mute: true })).rejects.toThrowError(/Failed to set audioMute/);
+  it('should throw if there are errors', async () => {
+    const params: ISessionMuteRequest = { mute: true };
+    const error = new Error('Bad Request');
+
+    patchPhoneCallSpy.mockRejectedValue(error);
+
+    try {
+      await handler.setAudioMute(session, params);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err).toEqual(new SdkError(
+        SdkErrorTypes.generic,
+        'Failed to set audioMute', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        sessionType: session.sessionType,
+        params,
+        error
+      }));
+    }
   });
 });
 
@@ -598,5 +1764,300 @@ describe('startSession', () => {
     let response = { id: undefined, selfUri: undefined };
     await expect(handler.startSession(opts as any)).resolves.toEqual(response);
     expect(postConversation.isDone()).toBeTruthy();
+  });
+});
+
+describe('fetchUserParticipantFromConversationId()', () => {
+  const conversationId = 'really-fun-conversation';
+  const userId = 'link';
+  let requestApiSpy: jest.SpyInstance;
+  let getUserParticipantFromConversationEventSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    requestApiSpy = jest.spyOn(utils, 'requestApi');
+    getUserParticipantFromConversationEventSpy = jest.spyOn(handler, 'getUserParticipantFromConversationEvent').mockImplementation();
+  });
+
+  it('should fetch and map user participant', async () => {
+    const expectedParticipant: IConversationParticipant = {
+      id: 'super-smash-bros',
+      purpose: 'to-find-zelda',
+      userId,
+      confined: false,
+      muted: false,
+      direction: 'inbound',
+      address: 'Outset Island',
+      state: CommunicationStates.connected.toString()
+    } as any;
+
+    requestApiSpy.mockResolvedValue({
+      body: {
+        participants: [{
+          ...expectedParticipant, user: {
+            id: userId
+          }, extra: 'props'
+        }]
+      }
+    });
+
+    await handler.fetchUserParticipantFromConversationId(conversationId);
+
+    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/calls/${conversationId}`);
+    expect(getUserParticipantFromConversationEventSpy)
+      .toBeCalledWith({ participants: [expectedParticipant] }, CommunicationStates.connected);
+  });
+
+  it('should not map if the body is empty', async () => {
+    requestApiSpy.mockResolvedValue({});
+
+    await handler.fetchUserParticipantFromConversationId(conversationId);
+
+    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/calls/${conversationId}`);
+    expect(getUserParticipantFromConversationEventSpy)
+      .toBeCalledWith(undefined, CommunicationStates.connected);
+  });
+
+  it('should not map if the body does not have a participants array', async () => {
+    requestApiSpy.mockResolvedValue({ body: {} });
+
+    await handler.fetchUserParticipantFromConversationId(conversationId);
+
+    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/calls/${conversationId}`);
+    expect(getUserParticipantFromConversationEventSpy)
+      .toBeCalledWith({}, CommunicationStates.connected);
+  });
+});
+
+describe('getUserParticipantFromConversationId()', () => {
+  const conversationId = 'talking-about-water-sports';
+  let fetchUserParticipantFromConversationIdSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    fetchUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'fetchUserParticipantFromConversationId');
+  });
+
+  it('should use the particpant from the most recent conversationUpdate', async () => {
+    const participant: IConversationParticipantFromEvent = {
+      id: 'aqua-man',
+      purpose: 'to-swim-with-the-fishies',
+      userId: 'aquatic-dude',
+      videos: [],
+      calls: []
+    };
+    handler.conversations = {
+      [conversationId]: {
+        mostRecentUserParticipant: participant
+      } as any
+    };
+
+    expect(await handler['getUserParticipantFromConversationId'](conversationId)).toBe(participant);
+  });
+
+  it('should fetch the participant from the API', async () => {
+    const participant: IConversationParticipantFromEvent = {
+      id: 'aqua-man',
+      purpose: 'to-swim-with-the-fishies',
+      userId: 'aquatic-dude',
+      videos: [],
+      calls: []
+    };
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(participant);
+
+    expect(await handler['getUserParticipantFromConversationId'](conversationId)).toBe(participant);
+  });
+
+  it('should throw if no participant is found', async () => {
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
+
+    try {
+      await handler['getUserParticipantFromConversationId'](conversationId);
+      fail('it should have thrown');
+    } catch (error) {
+      expect(error.message).toBe('participant not found for converstionId');
+    }
+  });
+});
+
+describe('setConversationHeld()', () => {
+  let session: IExtendedMediaSession;
+  let conversationId: string;
+  let userParticipant: IConversationParticipantFromEvent;
+  let getUserParticipantFromConversationIdSpy: jest.SpyInstance;
+  let patchPhoneCallSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    session = new MockSession() as any;
+    conversationId = session.conversationId;
+    userParticipant = { id: 'abraham' } as any;
+    getUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'getUserParticipantFromConversationId' as any)
+      .mockResolvedValue(userParticipant);
+    patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any)
+      .mockResolvedValue(null);
+  });
+
+  it('should fetch the participant and patch the phone call', async () => {
+    const params: IConversationHeldRequest = { conversationId, held: true };
+
+    await handler.setConversationHeld(session, params);
+
+    expect(getUserParticipantFromConversationIdSpy).toHaveBeenCalledWith(params.conversationId);
+    expect(patchPhoneCallSpy).toHaveBeenCalledWith(
+      params.conversationId,
+      userParticipant.id,
+      { held: params.held }
+    );
+  });
+
+  it('should throw if there are errors', async () => {
+    const params: IConversationHeldRequest = { conversationId, held: true };
+    const error = new Error('Bad Request');
+
+    patchPhoneCallSpy.mockRejectedValue(error);
+
+    try {
+      await handler.setConversationHeld(session, params);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err).toEqual(new SdkError(
+        SdkErrorTypes.generic,
+        'Failed to set held state', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        sessionType: session.sessionType,
+        params,
+        error
+      }));
+    }
+  });
+});
+
+describe('patchPhoneCall()', () => {
+  it('should patch a phone call', async () => {
+    const conversationId = 'talking-buddies';
+    const participantId = 'riddler';
+    const body = {
+      state: CommunicationStates.connected
+    };
+
+    const requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+
+    await handler['patchPhoneCall'](conversationId, participantId, body);
+
+    expect(requestApiSpy).toHaveBeenCalledWith(
+      `/conversations/calls/${conversationId}/participants/${participantId}`, {
+      method: 'patch',
+      data: JSON.stringify(body)
+    });
+  });
+});
+
+describe('isPendingState()', () => {
+  let isPendingState: typeof handler['isPendingState'];
+  let call: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    isPendingState = handler['isPendingState'].bind(handler);
+    call = {} as any;
+  });
+
+  it('should return "true" for pending states', () => {
+    call.state = CommunicationStates.alerting;
+    expect(isPendingState(call)).toBe(true);
+
+    call.state = CommunicationStates.contacting;
+    expect(isPendingState(call)).toBe(true);
+  });
+
+  it('should return "false" for non-pending states', () => {
+    expect(isPendingState(undefined)).toBe(false);
+
+    expect(isPendingState({} as any)).toBe(false);
+
+    call.state = CommunicationStates.dialing;
+    expect(isPendingState(call)).toBe(false);
+  });
+});
+
+describe('isConnectedState()', () => {
+  let isConnectedState: typeof handler['isConnectedState'];
+  let call: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    isConnectedState = handler['isConnectedState'].bind(handler);
+    call = {} as any;
+  });
+
+  it('should return "true" for connected states', () => {
+    call.state = CommunicationStates.dialing;
+    expect(isConnectedState(call)).toBe(true);
+
+    call.state = CommunicationStates.connected;
+    expect(isConnectedState(call)).toBe(true);
+  });
+
+  it('should return "false" for non-connected states', () => {
+    expect(isConnectedState(undefined)).toBe(false);
+
+    expect(isConnectedState({} as any)).toBe(false);
+
+    call.state = CommunicationStates.alerting;
+    expect(isConnectedState(call)).toBe(false);
+  });
+});
+
+describe('isEndedState()', () => {
+  let isEndedState: typeof handler['isEndedState'];
+  let call: ICallStateFromParticipant;
+
+  beforeEach(() => {
+    isEndedState = handler['isEndedState'].bind(handler);
+    call = {} as any;
+  });
+
+  it('should return "true" for ended states', () => {
+    call.state = CommunicationStates.disconnected;
+    expect(isEndedState(call)).toBe(true);
+
+    call.state = CommunicationStates.terminated;
+    expect(isEndedState(call)).toBe(true);
+  });
+
+  it('should return "false" for non-ended states', () => {
+    expect(isEndedState(undefined)).toBe(false);
+
+    expect(isEndedState({} as any)).toBe(false);
+
+    call.state = CommunicationStates.alerting;
+    expect(isEndedState(call)).toBe(false);
+  });
+});
+
+describe('checkForCallErrors', () => {
+  it('should call debounce fn if call errorInfo', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: {
+        code: 'myerrorcode'
+      }
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should not call debounce fn if no call errorInfo', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: null
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).not.toHaveBeenCalled();
   });
 });
