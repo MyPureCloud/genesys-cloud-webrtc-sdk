@@ -12,7 +12,7 @@ webappPipeline {
     }
     buildType = { (env.BRANCH_NAME == 'master' || env.BRANCH_NAME.startsWith('release/')) ? 'MAINLINE' : 'FEATURE' }
     publishPackage = { 'prod' }
-    testJob = 'spigot-tests-webrtcsdk'
+    testJob = null
 
     buildStep = {
         sh('''
