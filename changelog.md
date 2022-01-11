@@ -3,7 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...HEAD)
+
+# [v6.1.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v6.1.7)
+
+### Changed
+* [PCM-1787](https://inindca.atlassian.net/browse/PCM-1787) – CDN exports to **MAJOR** and **EXACT** versions. There will be _no_ more "latest" version to use. Examples:
+  * `{rootUrl}/webrtc-sdk/v6/genesys-cloud-webrtc-sdk.js` <- this URL will always load the _latest for that **major** version_.
+  * `{rootUrl}/webrtc-sdk/v6.1.7/genesys-cloud-webrtc-sdk.js` <- this will only ever load the specified version.
+> Note: the current version (v6.1.6) deployed at `{rootUrl}/webrtc-sdk/genesys-cloud-webrtc-sdk.js` will remain at this location. But this will no longer update to newer versions.
 # [v6.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...v6.1.6)
 ### Changed
 * Errors are now logged remotely

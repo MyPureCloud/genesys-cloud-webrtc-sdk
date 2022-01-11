@@ -57,13 +57,17 @@ sdk.initialize().then(() => {
 });
 ```
 
-You can also access the latest version (or a specific version) via the CDN. Example
+You can also access the latest major version (or a specific version) via the CDN. Example:
+
+> NOTE: since v6.1.7, you must specify at least the **desired major version**. The current version (v6.1.6),
+> which is deployed at `{rootUrl}/webrtc-sdk/genesys-cloud-webrtc-sdk.js`, will remain at this location.
+> However, it will no longer update to newer versions. If using this "latest" URL, please update to at least a major version URL.
 
 ```html
-<!-- latest version -->
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
+<!-- latest release of a major version -->
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/v6/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
 <!-- or specified version -->
-<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/4.0.1/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/webrtc-sdk/v6.1.7/genesys-cloud-webrtc-sdk.bundle.min.js"></script>
 
 <!-- then access the sdk via the window object -->
 <script>
