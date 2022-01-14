@@ -46,7 +46,7 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
         });
 
         if (!options.manual) {
-          await sdk.acceptSession({ sessionId: session.id, videoElement, audioElement });
+          await sdk.acceptSession({ conversationId: session.conversationId, videoElement, audioElement });
         }
 
         clearTimeout(timer);
@@ -86,7 +86,7 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
     if (options.sdkDisconnect) {
       logger.log('disconnecting via the SDK with session', session.id);
       await testUtils.timeout(testUtils.getConfig().callDelay);
-      await sdk.endSession({ sessionId: session.id });
+      await sdk.endSession({ conversationId: session.conversationId });
     }
     if (options.waitForDisconnect) {
       logger.log('Waiting for the session to go disconnected');

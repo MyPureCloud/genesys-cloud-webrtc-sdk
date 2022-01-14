@@ -1689,7 +1689,7 @@ describe('setAudioMute()', () => {
   });
 
   it('should throw if there are errors', async () => {
-    const params: ISessionMuteRequest = { mute: true };
+    const params: ISessionMuteRequest = { conversationId: null, mute: true };
     const error = new Error('Bad Request');
 
     patchPhoneCallSpy.mockRejectedValue(error);
