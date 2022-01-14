@@ -21,6 +21,7 @@ import {
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
+import { Constants } from 'stanza';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -67,18 +68,30 @@ export class SessionManager {
   }
 
   getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
-    return this.pendingSessions[params.conversationId];
+    let session = this.pendingSessions[params.conversationId];
+    
+    if (params.sessionId && !session) {
+      session = Object.values(this.pendingSessions).find(session => session.sessionId === params.sessionId);
+    }
+    
+    return session;
   }
 
   removePendingSession (params: ISessionIdAndConversationId | IPendingSession) {
-    const conversationId = params.conversationId;
-    delete this.pendingSessions[conversationId];
+    const pendingSession = this.getPendingSession(params);
+
+    if (!pendingSession) {
+      this.sdk.logger.warn('failed to find pendingSession to remove', params);
+      return;
+    }
+
+    delete this.pendingSessions[pendingSession.conversationId];
   }
 
-  getSession (params: ISessionIdAndConversationId): IExtendedMediaSession {
-    const softphoneHanlder = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+  getSession (params: { conversationId: string }): IExtendedMediaSession {
+    const softphoneHandler = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
 
-    const session = Object.values(softphoneHanlder.conversations).find((c) => c.conversationId === params.conversationId)?.session
+    const session = Object.values(softphoneHandler.conversations).find((c) => c.conversationId === params.conversationId)?.session
       || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
 
     if (!session) {
@@ -86,6 +99,10 @@ export class SessionManager {
     }
 
     return session;
+  }
+
+  getSessionBySessionId (sessionId: string) {
+    return this.getAllJingleSessions().find(s => s.sid === sessionId);
   }
 
   getAllActiveSessions (): IExtendedMediaSession[] {
@@ -137,7 +154,7 @@ export class SessionManager {
    * @param options for updating outgoing media
    */
   async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
-    const session = options.session || this.getSession({ sessionId: options.sessionId, conversationId: options.conversationId });
+    const session = options.session || this.getSession({ conversationId: options.conversationId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
     return handler.updateOutgoingMedia(session, options);
@@ -334,6 +351,17 @@ export class SessionManager {
     return sessionHandler.endSession(conversationId, session, params.reason);
   }
 
+  async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition) {
+    const session = this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.sid === sessionId);
+    
+    if (!session) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find session by sessionId', { sessionId });
+    }
+
+    const handler = this.getSessionHandler({ sessionType: session.sessionType });
+    return handler.forceEndSession(session, reason);
+  }
+
   async setVideoMute (params: ISessionMuteRequest): Promise<void> {
     const session = this.getSession({ conversationId: params.conversationId });
 
@@ -417,8 +445,8 @@ export class SessionManager {
 
     /* update the sessions */
     for (const [sessionId, mediaToUpdate] of updates) {
-      const opts: IUpdateOutgoingMedia = { sessionId };
-      const jingleSession = this.getSession({ sessionId: sessionId });
+      const jingleSession = this.getSessionBySessionId(sessionId)
+      const opts: IUpdateOutgoingMedia = { session: jingleSession };
       const handler = this.getSessionHandler({ jingleSession });
 
       /* if our video needs to be updated */

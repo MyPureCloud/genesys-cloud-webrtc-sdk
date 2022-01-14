@@ -180,7 +180,7 @@ WebSocket Host.
 Auto connect incoming softphone sessions (ie. sessions
 coming from `sdk.on('sessionStarted', (evt))`. If set
 to `false`, the session will need to be manually accepted
-using `sdk.acceptSession({ sessionId })`.
+using `sdk.acceptSession({ conversationId })`.
 
 #### `jidResource`
 `jidResource?: string;` Optional: default `undefined`
@@ -610,7 +610,8 @@ Returns: a promise that fullfils once the output deviceId has been updated
 
 #### `updateOutgoingMedia()`
 Update outgoing media for a specified session
- - `sessionId` _or_ `session` is required to find the session to update
+ - `conversationId?`: required if not providing a session. conversationId for which the media should be updated.
+ - `session?`: required if not providing a conversationId. session for which the media should be updated
  - `stream`: if a stream is passed in, the session media will be
    updated to use the media on the stream. This supercedes deviceId(s)
     passed in
@@ -621,6 +622,7 @@ Update outgoing media for a specified session
        to the passed in deviceId
 
 > Note: this does not update the SDK default device(s)
+> Note 2: if multiple conversations are sharing a session the media for all those conversations will be updated, not just the provided conversationId
 
 Declaration:
 ``` ts
@@ -632,7 +634,7 @@ Params:
     ``` ts
     interface IUpdateOutgoingMedia {
       session?: IExtendedMediaSession;
-      sessionId?: string;
+      conversationId?: string;
       stream?: MediaStream;
       videoDeviceId?: string | boolean | null;
       audioDeviceId?: string | boolean | null;
@@ -796,12 +798,12 @@ Params:
   * Basic interface
     ``` ts
     interface ISessionMuteRequest {
-        sessionId: string;
+        conversationId: string;
         mute: boolean;
         unmuteDeviceId?: string | boolean | null;
     }
     ```
-  * `sessionId: string` Required: session id to for which perform the action
+  * `conversationId: string` Required: conversation id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
   * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting,
     `true` for sdk default, `null` for system default,
@@ -826,7 +828,7 @@ setAudioMute(muteOptions: ISessionMuteRequest): Promise<void>;
 
 Params:
 * `muteOptions: ISessionMuteRequest` Required:
-  * `sessionId: string` Required: session id to for which perform the action
+  * `conversationId: string` Required: conversation id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
   * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting,
     `true` for sdk default, `null` for system default,
@@ -834,7 +836,7 @@ Params:
   * Basic interface:
     ``` ts
       interface ISessionMuteRequest {
-          sessionId: string;
+          conversationId: string;
           mute: boolean;
           unmuteDeviceId?: string | boolean | null;
       }
@@ -885,10 +887,10 @@ Accept a pending session based on the passed in ID.
 
 Declaration:
 ``` ts
-acceptPendingSession(sessionId: string): Promise<void>;
+acceptPendingSession(params: { conversationId: string }): Promise<void>;
 ```
 Params:
-* `sessionId: string` Required: id of the pending session to accept
+* `conversationId: string` Required: id of the pending conversation to accept
 
 Returns: a promise that fullfils once the session accept goes out
 
@@ -897,10 +899,10 @@ Reject a pending session based on the passed in ID.
 
 Declaration:
 ``` ts
-rejectPendingSession(sessionId: string): Promise<void>;
+rejectPendingSession(params: { conversationId: string }): Promise<void>;
 ```
 Params:
-* `sessionId: string` Required: id of the session to reject
+* `conversationId: string` Required: id of the conversation to reject
 
 Returns: a promise that fullfils once the session reject goes out
 
@@ -916,7 +918,7 @@ Params:
   * Basic interface:
     ``` ts
     interface IAcceptSessionRequest {
-      sessionId: string;
+      conversationId: string;
       mediaStream?: MediaStream;
       audioElement?: HTMLAudioElement;
       videoElement?: HTMLVideoElement;
@@ -924,7 +926,7 @@ Params:
       audioDeviceId?: string | boolean | null;
     }
     ```
-  * `sessionId: string` Required: id of the session to accept
+  * `conversationId: string` Required: id of the conversation to accept
   * `mediaStream?: MediaStream` Optional: media stream to use on the session. If this is
     provided, no media will be requested.
   * `audioElement?: HTMLAudioElement` Optional: audio element to attach incoming audio to
@@ -949,16 +951,27 @@ Params:
   * Basic interface:
     ``` ts
     interface IEndSessionRequest {
-      sessionId?: string;
-      conversationId?: string;
+      conversationId: string;
       reason?: JingleReason;
     }
     ```
-  * `sessionId?: string` Optional: id of the session to end. At least `sessionId` _or_ `conversationId` must be provided.
-  * `conversation?: string` Optional: conversation id of the session to end. At least `sessionId` _or_ `conversationId` must be provided.
+  * `conversationId: string` conversation id of the session to end.
   * `reason?: JingleReason` Optional: defaults to `success`. This is for internal usage and should not be provided in custom applications.
 
 Returns: a promise that fullfils once the session has ended
+
+#### `forceTerminateSession()`
+Forcibly end a session by sessionId
+
+Declaration:
+``` ts
+forceTerminateSession(sessionId: string, reason?: JingleReasonCondition): Promise<void>;
+```
+Params:
+* `sessionId: string` id of the session you wish to terminate
+* `reason?: JingleReasonCondition` Optional: defaults to `success` The corresponding reason why the session is being terminated.
+
+Returns: a promise that fullfils onces the session is terminated
 
 #### `disconnect()`
 Disconnect the streaming connection

@@ -68,7 +68,7 @@ export interface ISdkConfig {
    * Auto connect incoming softphone sessions (ie. sessions
    *  coming from `sdk.on('sessionStarted', (evt))`. If set
    *  to `false`, the session will need to be manually accepted
-   *  using `sdk.acceptSession({ sessionId })`.
+   *  using `sdk.acceptSession({ conversationId })`.
    *
    * Optional: default `true`.
    */
@@ -540,17 +540,12 @@ export interface ISdkMediaDeviceIds {
 export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
   conversationId?: string;
   /** session id (this _OR_ `session` is required) */
-  sessionId?: string;
-  /** session (this _OR_ `sessionId` is required) */
   session?: IExtendedMediaSession;
   /** stream with desired media */
   stream?: MediaStream;
 }
 
 export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
-  /** id of the session to accept */
-  // sessionId: string;
-
   conversationId: string;
 
   /**
@@ -567,7 +562,6 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 }
 
 export interface IEndSessionRequest {
-  sessionId?: string;
   conversationId: string;
   reason?: Constants.JingleReasonCondition;
 }
@@ -719,13 +713,9 @@ export interface IStartVideoSessionParams extends IStartSessionParams {
   inviteeJid?: string;
 }
 
-/**
- * id: sessionId
- * mute: update the conversation's mute status to match this value
- */
 export interface ISessionMuteRequest {
   /** conversation id */
-  conversationId?: string;
+  conversationId: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */

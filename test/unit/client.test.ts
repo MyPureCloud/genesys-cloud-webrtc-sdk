@@ -266,6 +266,16 @@ describe('Client', () => {
     });
   });
 
+  describe('forceTerminateSession()', () => {
+    it('should proxy to sessionManager', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.forceTerminateSession.mockResolvedValue();
+      await sdk.forceTerminateSession('sessionId');
+      expect(sdk.sessionManager.forceTerminateSession).toBeCalledWith('sessionId', undefined);
+    });
+  });
+
   describe('fetchUsersStation()', () => {
     let station: IStation;
     let user: IPersonDetails;
@@ -504,7 +514,7 @@ describe('Client', () => {
     it('should call through to sessionManager if called with media stream', async () => {
       sdk = constructSdk();
       const options: IUpdateOutgoingMedia = {
-        sessionId: 'session-id',
+        conversationId: 'convo-id',
         session: {} as IExtendedMediaSession,
         stream: {} as MediaStream
       };
@@ -518,7 +528,7 @@ describe('Client', () => {
     it('should call through to sessionManager if called with a valid audio device id', async () => {
       sdk = constructSdk();
       const options: IUpdateOutgoingMedia = {
-        sessionId: 'session-id',
+        conversationId: 'convo-id',
         session: {} as IExtendedMediaSession,
         audioDeviceId: true
       };
@@ -543,7 +553,7 @@ describe('Client', () => {
     it('should call through to sessionManager if called with a valid video device id', async () => {
       sdk = constructSdk();
       const options: IUpdateOutgoingMedia = {
-        sessionId: 'session-id',
+        conversationId: 'conversation-id',
         session: {} as IExtendedMediaSession,
         videoDeviceId: true
       };
@@ -701,7 +711,7 @@ describe('Client', () => {
       sdk = constructSdk();
       sessionManagerMock.setAudioMute.mockResolvedValue();
 
-      const params = { sessionId: '5512551', mute: true };
+      const params = { conversationId: '5512551', mute: true };
 
       await sdk.setAudioMute(params);
       expect(sdk.sessionManager.setAudioMute).toBeCalledWith(params);
@@ -714,7 +724,7 @@ describe('Client', () => {
 
       sessionManagerMock.setVideoMute.mockResolvedValue();
 
-      const params = { sessionId: '5512551', mute: true };
+      const params = { conversationId: '5512551', mute: true };
 
       await sdk.setVideoMute(params);
       expect(sdk.sessionManager.setVideoMute).toBeCalledWith(params);

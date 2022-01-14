@@ -49,7 +49,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
           // As soon as a call is requested, accept the propose
           sdk.on('pendingSession', async function (options) {
             conversationId = options.conversationId;
-            await sdk.acceptPendingSession(options.id);
+            await sdk.acceptPendingSession({ conversationId });
           });
         }
       }
@@ -63,7 +63,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
         });
 
         if (options.manual) {
-          await sdk.acceptSession({ sessionId: session.id });
+          await sdk.acceptSession({ conversationId: session.conversationId });
         }
 
         resolve(session);
@@ -124,7 +124,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     if (options.sdkDisconnect) {
       logger.log('disconnecting via the SDK with session', session.id);
       await testUtils.timeout(testUtils.getConfig().callDelay);
-      await sdk.endSession({ sessionId: session.id });
+      await sdk.endSession({ conversationId: session.conversationId });
     }
     if (options.waitForDisconnect) {
       logger.log('Waiting for the session to go disconnected');

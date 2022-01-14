@@ -44,6 +44,16 @@ describe('getPendingSession()', () => {
     expect(sessionManager.getPendingSession({ conversationId: pendingSession1.conversationId })).toBe(pendingSession1);
     expect(sessionManager.getPendingSession({ conversationId: pendingSession2.conversationId })).toBe(pendingSession2);
   });
+
+  it('should fallback to sessionId', () => {
+    const pendingSession1 = createPendingSession();
+    const pendingSession2 = createPendingSession();
+
+    sessionManager.pendingSessions[pendingSession1.conversationId] = pendingSession1;
+    sessionManager.pendingSessions[pendingSession2.conversationId] = pendingSession2;
+
+    expect(sessionManager.getPendingSession({ conversationId: 'non-existent', sessionId: pendingSession2.sessionId })).toBe(pendingSession2);
+  });
 });
 
 describe('handleConversationUpdate', () => {
@@ -176,7 +186,15 @@ describe('getSession', () => {
   });
 
   it('should throw is no session is found', () => {
-    expect(() => sessionManager.getSession({ sessionId: 'fakeId' })).toThrowError(/Unable to find session/);
+    expect(() => sessionManager.getSession({ conversationId: 'fakeId' })).toThrowError(/Unable to find session/);
+  });
+});
+
+describe('getSessionBySessionId', () => {
+  it('should find session by sessionId', () => {
+    const sessions = [ { sid: 'session1' }, { sid: 'session2' } ];
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue(sessions as any);
+    expect(sessionManager.getSessionBySessionId('session2')).toBe(sessions[1]);
   });
 });
 
@@ -193,6 +211,13 @@ describe('removePendingSession()', () => {
 
     expect(Object.values(sessionManager.pendingSessions).length).toBe(1);
     expect(sessionManager.pendingSessions[pendingSession1.conversationId]).toBeUndefined();
+  });
+
+  it('should warn if a session is not found', () => {
+    const spy = jest.spyOn(sessionManager['sdk'].logger, 'warn');
+
+    sessionManager.removePendingSession({ conversationId: 'non-existent' });
+    expect(spy).toHaveBeenCalled();
   });
 });
 
@@ -514,7 +539,7 @@ describe('acceptSession', () => {
 });
 
 describe('endSession', () => {
-  it('should call acceptSession for the session handler and set the sessionType on the session', async () => {
+  it('should call endSession on the session handler', async () => {
     const session: any = {};
 
     const mockHandler: any = {
@@ -534,6 +559,29 @@ describe('endSession', () => {
   });
 });
 
+describe('forceTerminateSession', () => {
+  it('should call forceTerminateSession on the session handler', async () => {
+    const session: any = { sid: 'mySessionId' };
+
+    const mockHandler: any = {
+      sessionType: SessionTypes.softphone,
+      endSession: jest.fn(),
+      forceEndSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([session]);
+
+    await sessionManager.forceTerminateSession('mySessionId');
+
+    expect(mockHandler.forceEndSession).toHaveBeenCalledWith(session, undefined);
+  });
+
+  it('should throw if session not found', async () => {
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([]);
+    await expect(sessionManager.forceTerminateSession('unknownSessionId')).rejects.toThrow();
+  });
+});
+
 describe('setVideoMute', () => {
   it('should proxy to handler', async () => {
     const spy = jest.fn();
@@ -543,7 +591,7 @@ describe('setVideoMute', () => {
     const fakeSession = {} as any;
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
 
-    const params = { sessionId: '1', mute: true };
+    const params = { conversationId: '1', mute: true };
     await sessionManager.setVideoMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
@@ -559,7 +607,7 @@ describe('setAudioMute', () => {
     const fakeSession = {} as any;
     jest.spyOn(sessionManager, 'getSession').mockReturnValue(fakeSession);
 
-    const params = { sessionId: '1', mute: true };
+    const params = { conversationId: '1', mute: true };
     await sessionManager.setAudioMute(params);
 
     expect(spy).toHaveBeenCalledWith(fakeSession, params);
@@ -611,7 +659,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should find the session by id and call the handler to updateOutgoingMedia', async () => {
     const session = {} as any;
-    const options: IUpdateOutgoingMedia = { sessionId: 'abc123', videoDeviceId: 'deviceId' };
+    const options: IUpdateOutgoingMedia = { conversationId: 'abc123', videoDeviceId: 'deviceId' };
 
     const getSessionSpy = jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
     const mockSessionHandler = { updateOutgoingMedia: jest.fn() };
@@ -619,7 +667,7 @@ describe('updateOutgoingMedia()', () => {
 
     await sessionManager.updateOutgoingMedia(options);
 
-    expect(getSessionSpy).toHaveBeenCalledWith({ sessionId: 'abc123' });
+    expect(getSessionSpy).toHaveBeenCalledWith({ conversationId: 'abc123' });
     expect(getSessionHandlerSpy).toHaveBeenCalledWith({ jingleSession: session });
     expect(mockSessionHandler.updateOutgoingMedia).toHaveBeenCalledWith(session, options);
   });
@@ -725,7 +773,7 @@ describe('validateOutgoingMediaTracks()', () => {
   let testDevices: MediaDeviceInfo[];
   let mediaState: ISdkMediaState;
   let mockGetAllSessions: jest.SpyInstance<IExtendedMediaSession[]>;
-  let mockGetSession: jest.SpyInstance<IExtendedMediaSession>;
+  let mockGetSessionById: jest.SpyInstance<IExtendedMediaSession>;
   let mockGetSessionHandler: jest.SpyInstance<BaseSessionHandler>;
   let setMediaStateDevices: typeof mockSdk.media['setDevices'];
 
@@ -756,7 +804,7 @@ describe('validateOutgoingMediaTracks()', () => {
     setMediaStateDevices(testDevices);
     mediaState = mockSdk.media.getState();
 
-    mockGetSession = jest.spyOn(sessionManager, 'getSession').mockImplementation(({ sessionId: id }) => sessions.find(s => s.id === id));
+    mockGetSessionById = jest.spyOn(sessionManager, 'getSessionBySessionId').mockImplementation((id) => sessions.find(s => s.id === id));
     mockGetSessionHandler = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
   });
 
@@ -806,6 +854,7 @@ describe('validateOutgoingMediaTracks()', () => {
     setMediaStateDevices(newDevices);
 
     mockSdk.logger.warn['mockReset']();
+    Object.defineProperty(sessionManager, 'jingle', { get: () => ({ sessions: {} })})
     await sessionManager.validateOutgoingMediaTracks();
 
     /* logs correctly */
@@ -819,10 +868,10 @@ describe('validateOutgoingMediaTracks()', () => {
     );
 
     /* updates with the new devices */
-    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, sessionId: session.id });
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, session });
 
     /* other generic mocks called */
-    expect(mockGetSession).toBeCalled();
+    expect(mockGetSessionById).toBeCalled();
     expect(mockGetSessionHandler).toBeCalled();
   });
 
@@ -852,7 +901,7 @@ describe('validateOutgoingMediaTracks()', () => {
     );
 
     /* updates with the new devices */
-    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, sessionId: session.id });
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, session });
   });
 
   it('should mute the media type if there is no device to switch to', async () => {
