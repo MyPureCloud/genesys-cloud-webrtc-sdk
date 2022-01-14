@@ -6,7 +6,8 @@ export default {
   input: 'dist/es/index.js',
   output: {
     file: 'dist/es/index.bundle.js',
-    format: 'es'
+    format: 'es',
+    inlineDynamicImports: true
   },
   global: {
     process: 'process-fast'
