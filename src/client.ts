@@ -590,7 +590,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param params conversationId of the pending session to accept
    * @returns a promise that fullfils once the session accept goes out
    */
-  async acceptPendingSession (params: { conversationId: string }): Promise<void> {
+  async acceptPendingSession (params: { conversationId: string, fromHeadset?: boolean }): Promise<void> {
+    !params.fromHeadset && this.headset.answerIncomingCall(params.conversationId);
     await this.sessionManager.proceedWithSession(params);
   }
 
