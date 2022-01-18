@@ -1,7 +1,6 @@
 const webpack = require('webpack');
 const path = require('path');
 const version = require('./package.json').version;
-
 const versionDir = `dist/v${version}`;
 const majorVersion = version.split('.')[0];
 const majorVersionDir = `dist/v${majorVersion}`;
