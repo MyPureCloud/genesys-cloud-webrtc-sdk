@@ -1,5 +1,5 @@
 const platformClient = require('platformClient');
-const WebrtcSdk = window.GenesysCloudWebrtcSdk;
+const WebrtcSdk = window.GenesysCloudWebrtcSdk.default;
 
 const client = platformClient.ApiClient.instance;
 client.setPersistSettings(true, 'uber_test');

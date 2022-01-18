@@ -102,7 +102,10 @@ You can also access the latest major version (or a specific version) via the CDN
 
 <!-- then access the sdk via the window object -->
 <script>
-  const sdk = new window.GenesysCloudWebrtcSdk(...); // same usage as above
+  /* in v7, all files are exported under the `window.GenesysCloudWebrtcSdk` */
+  const sdk = new window.GenesysCloudWebrtcSdk.GenesysCloudWebrtcSdk({...}); // same usage as above
+  /* OR – these are the same export of the SDK Client class */
+  const sdk = new window.GenesysCloudWebrtcSdk.default({...});
 </script>
 ```
 
