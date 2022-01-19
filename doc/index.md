@@ -17,6 +17,7 @@
 - [WebRTC SoftPhone]
 - [WebRTC Screen Share]
 - [WebRTC Video Conferencing]
+- [WebRTC Screen Recording]
 - [WebRTC Media] (media, devices, and permissions support)
 
 ### App Authorization
@@ -116,6 +117,7 @@ interface ISdkConfig {
     organizationId?: string;
     wsHost?: string;
     autoConnectSessions?: boolean;
+    autoAcceptPendingScreenRecordingRequests?: boolean;
     jidResource?: string;
     disableAutoAnswer?: boolean;
     logLevel?: LogLevels;
@@ -181,6 +183,13 @@ Auto connect incoming softphone sessions (ie. sessions
 coming from `sdk.on('sessionStarted', (evt))`. If set
 to `false`, the session will need to be manually accepted
 using `sdk.acceptSession({ conversationId })`.
+
+#### `autoAcceptPendingScreenRecordingRequests`
+`autoAcceptPendingScreenRecordingRequests?: boolean;` Optional: default `true`
+
+If true, incoming proposes for screen recording sessions will be accepted immediately
+and no `pendingSession` event will be emitted. The consumer will still have to react to
+`sessionStarted` in order to add screen media and then call `sdk.acceptSession(...)`.
 
 #### `jidResource`
 `jidResource?: string;` Optional: default `undefined`
@@ -1387,18 +1396,23 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
   active: boolean;
   sessionType: SessionTypes;
   pc: RTCPeerConnection;
-
+  originalRoomJid: string;
+  
   get state(): string;
   get connectionState(): string;
 
   /**
-   * video session related props/functions
-   * Note: these are not guaranteed to exist on all sessions.
-   * See `WebRTC Video Conferencing` for more details
+   * general media properties
    */
-  originalRoomJid: string;
   videoMuted?: boolean;
   audioMuted?: boolean;
+}
+```
+
+Some session types have an expanded set of properties such as CollaborateVideo sessions:
+
+``` ts
+interface VideoMediaSession extends IExtendedMediaSession {
   fromUserId?: string;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;
@@ -1601,6 +1615,7 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [WebRTC SoftPhone]: softphone.md
 [WebRTC Screen Share]: screenshare.md
 [WebRTC Video Conferencing]: video.md
+[WebRTC Screen Recording]: screen-recording.md
 [WebRTC Media]: media.md
 
 [ISdkMediaDeviceIds]: media.md#isdkmediadeviceids

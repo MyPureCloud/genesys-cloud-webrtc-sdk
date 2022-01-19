@@ -17,22 +17,26 @@ import {
   IExtendedMediaSession,
   IStartSoftphoneSessionParams,
   ISessionIdAndConversationId,
-  IConversationHeldRequest
+  IConversationHeldRequest,
+  IPendingSessionActionParams,
+  VideoMediaSession
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
 import { Constants } from 'stanza';
+import ScreenRecordingSessionHandler from './screen-recording-session-handler';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
   VideoSessionHandler,
-  ScreenShareSessionHandler
+  ScreenShareSessionHandler,
+  ScreenRecordingSessionHandler
 ];
 
 export class SessionManager {
   sessionHandlers: BaseSessionHandler[];
   /* use conversationId to index to account for persistent connections */
-  pendingSessions: { [conversationId: string]: IPendingSession } = {};
+  pendingSessions: IPendingSession[] = [];
 
   constructor (private sdk: GenesysCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
@@ -67,13 +71,22 @@ export class SessionManager {
       );
   }
 
-  getPendingSession (params: ISessionIdAndConversationId): IPendingSession | undefined {
-    let session = this.pendingSessions[params.conversationId];
-    
-    if (params.sessionId && !session) {
-      session = Object.values(this.pendingSessions).find(session => session.sessionId === params.sessionId);
-    }
-    
+  getPendingSession (params: { conversationId?: string, sessionId?: string, sessionType?: SessionTypes | SessionTypesAsStrings }): IPendingSession | undefined {
+    const session = this.pendingSessions
+      .find(s => {
+        // if sessionId is provided use that exclusively
+        if (params.sessionId) {
+          return s.id === params.sessionId;
+        }
+
+        let matchesSessionType = true;
+        if (params.sessionType) {
+          matchesSessionType = s.sessionType === params.sessionType;
+        }
+
+        return matchesSessionType && s.conversationId === params.conversationId
+      });
+
     return session;
   }
 
@@ -85,14 +98,34 @@ export class SessionManager {
       return;
     }
 
-    delete this.pendingSessions[pendingSession.conversationId];
+    this.pendingSessions = this.pendingSessions.filter(s => s !== pendingSession);
   }
 
-  getSession (params: { conversationId: string }): IExtendedMediaSession {
-    const softphoneHandler = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+  getSession (params: { conversationId: string, sessionType?: SessionTypes, searchScreenRecordingSessions?: boolean }): IExtendedMediaSession {
+    
+    let sessionTypesToSearch: SessionTypes[];
 
-    const session = Object.values(softphoneHandler.conversations).find((c) => c.conversationId === params.conversationId)?.session
-      || this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.conversationId === params.conversationId);
+    if (params.sessionType) {
+      sessionTypesToSearch = [params.sessionType];
+    } else {
+      const sessionTypes = { ...SessionTypes };
+      
+      if (!params.searchScreenRecordingSessions) {
+        delete sessionTypes[SessionTypes.screenRecording]
+      }
+
+      sessionTypesToSearch = Object.values(sessionTypes);
+    }
+
+    let session = this.getAllJingleSessions()
+      .find((s: IExtendedMediaSession) => sessionTypesToSearch.includes(s.sessionType) && s.conversationId === params.conversationId);
+
+    // search fake/shared softphone sessions
+    if (!session && sessionTypesToSearch.includes(SessionTypes.softphone)) {
+      const softphoneHandler = this.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
+
+      session = Object.values(softphoneHandler.conversations).find((c) => c.conversationId === params.conversationId)?.session;
+    }
 
     if (!session) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Unable to find session', params);
@@ -252,7 +285,7 @@ export class SessionManager {
       fromJid: sessionInfo.fromJid
     };
 
-    this.pendingSessions[pendingSession.conversationId] = pendingSession;
+    this.pendingSessions.push(pendingSession);
 
     await handler.handlePropose(pendingSession);
   }
@@ -293,7 +326,7 @@ export class SessionManager {
     this.removePendingSession(pendingSession);
   }
 
-  async proceedWithSession (params: ISessionIdAndConversationId): Promise<void> {
+  async proceedWithSession (params: IPendingSessionActionParams): Promise<void> {
     const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
@@ -305,7 +338,7 @@ export class SessionManager {
     await sessionHandler.proceedWithSession(pendingSession);
   }
 
-  async rejectPendingSession (params: ISessionIdAndConversationId): Promise<void> {
+  async rejectPendingSession (params: IPendingSessionActionParams): Promise<void> {
     const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
@@ -333,7 +366,7 @@ export class SessionManager {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A conversationId is required for acceptSession');
     }
 
-    const session = this.getSession({ conversationId: params.conversationId });
+    const session = this.getSession({ conversationId: params.conversationId, sessionType: params.sessionType, searchScreenRecordingSessions: true });
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }
@@ -395,8 +428,8 @@ export class SessionManager {
     for (const session of sessions) {
       const trackIdsToIgnore: string[] = [];
       /* if we have a video session with a screenShareStream */
-      if (session._screenShareStream) {
-        trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
+      if ((session as VideoMediaSession)._screenShareStream) {
+        trackIdsToIgnore.push(...(session as VideoMediaSession)._screenShareStream.getTracks().map((track) => track.id));
       }
 
       session.pc.getSenders()
