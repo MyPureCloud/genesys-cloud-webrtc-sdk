@@ -24,7 +24,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     // }
     // sdk = await testUtils.getNewSdkConnection();
 
-    sdk = new (window as any).GenesysCloudWebrtcSdk({
+    sdk = new (window as any).GenesysCloudWebrtcSdk.default({
       environment: config.envHost,
       organizationId: context.org.id,
       logLevel: 'debug',

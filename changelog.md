@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...HEAD)
 
-# [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v7.0.0)
+# [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...v7.0.0)
 ### BREAKING CHANGE
 * If you are providing a *logger*:
     * the `ILogger` interface has changed. The last param for `log`, `debug`, `info`, `warn`, and `error` functions is no longer a simple boolean,
@@ -42,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [PCM-1764](https://inindca.atlassian.net/browse/PCM-1764) – updated webpack config to skip `amd` build which was polluting the global namespace with
 dependencies, namely lodash (`window._`).
 * [PCM-1773](https://inindca.atlassian.net/browse/PCM-1773) – add an `esModules` bundle for consumers to choose to use in builds. ([Initial bug report](https://developer.genesys.cloud/forum/t/issue-with-the-a-dependency-npm-package-for-the-sdk/11910))
+
+# [v6.1.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.6...v6.1.7)
+
+### Changed
+* [PCM-1787](https://inindca.atlassian.net/browse/PCM-1787) – CDN exports to **MAJOR** and **EXACT** versions. There will be _no_ more "latest" version to use. Examples:
+  * `{rootUrl}/webrtc-sdk/v6/genesys-cloud-webrtc-sdk.js` <- this URL will always load the _latest for that **major** version_.
+  * `{rootUrl}/webrtc-sdk/v6.1.7/genesys-cloud-webrtc-sdk.js` <- this will only ever load the specified version.
+> Note: the current version (v6.1.6) deployed at `{rootUrl}/webrtc-sdk/genesys-cloud-webrtc-sdk.js` will remain at this location. But this will no longer update to newer versions.
 
 # [v6.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.5...v6.1.6)
 ### Changed

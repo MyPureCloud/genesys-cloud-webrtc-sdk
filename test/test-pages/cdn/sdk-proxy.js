@@ -1,5 +1,5 @@
 export function getSdk () {
-  return window.GenesysCloudWebrtcSdk;
+  return window.GenesysCloudWebrtcSdk.default;
 }
 
 export let GenesysCloudWebrtcSdk = null;

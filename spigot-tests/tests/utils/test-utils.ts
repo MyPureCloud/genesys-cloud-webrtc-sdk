@@ -235,6 +235,13 @@ function initializeLogging () {
   const { appVersion, appName, envHost } = getConfig();
   const { authToken } = getContext();
 
+  // logger = console as any;
+  // logger.config = {
+  //   appName,
+  //   appVersion,
+  //   accessToken: 'fake',
+  //   url: 'no.com'
+  // };
   logger = new Logger({
     accessToken: authToken,
     url: `https://api.${envHost}/api/v2/diagnostics/trace`,
@@ -285,7 +292,7 @@ export function createConnection (authToken?: string, jwt?: string) {
 export async function getNewSdkConnection () {
   const config = getConfig();
 
-  const newSdk = new (window as any).GenesysCloudWebrtcSdk({
+  const newSdk = new (window as any).GenesysCloudWebrtcSdk.default({
     environment: config.envHost,
     accessToken: getAuthToken(),
     logLevel: 'info',
@@ -533,7 +540,7 @@ export async function validateAudioStats (session: any) {
         assert.ok(localTrack.bytes, 'local track has bytes count');
         assert.ok(remoteTrack.bytes, 'remote track has bytes count');
         logger.info('validateAudioStats succeeded', { stats, sessionId: session.sid });
-      } catch (e) {
+      } catch (e: any) {
         logger.warn('stats validation failed', { message: e.message, stats });
         return;
       }
@@ -566,7 +573,7 @@ export async function validateVideoStats (session: any) {
         // can't assert on packetloss because it might not have occurred
         session.off('stats', handleStats);
         logger.info('validateVideoStats succeeded', { stats, sessionId: session.sid });
-      } catch (e) {
+      } catch (e: any) {
         logger.warn('stats validation failed', { message: e.message, stats });
         return;
       }

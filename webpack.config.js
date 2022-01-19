@@ -1,5 +1,9 @@
 const webpack = require('webpack');
 const path = require('path');
+const version = require('./package.json').version;
+const versionDir = `dist/v${version}`;
+const majorVersion = version.split('.')[0];
+const majorVersionDir = `dist/v${majorVersion}`;
 
 /* used for copying to non `.bundle` filenames (see `scripts/build.ts`) */
 const fileNames = {
@@ -74,7 +78,7 @@ module.exports = (env) => {
     },
     devtool: 'source-map',
     output: {
-      path: path.resolve(__dirname, 'dist'),
+      path: path.resolve(__dirname, versionDir),
       filename,
       library: 'GenesysCloudWebrtcSdk',
       libraryTarget: 'umd'
@@ -102,3 +106,7 @@ module.exports = (env) => {
 };
 
 module.exports.fileNames = fileNames;
+module.exports.version = version;
+module.exports.versionDir = versionDir;
+module.exports.majorVersion = majorVersion;
+module.exports.majorVersionDir = majorVersionDir;
