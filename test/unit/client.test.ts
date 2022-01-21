@@ -174,6 +174,38 @@ describe('Client', () => {
     });
   });
 
+  describe('isScreenRecordingSession', () => {
+    beforeEach(() => {
+      sdk = constructSdk();
+    });
+
+    it('should be true', () => {
+      expect(sdk.isScreenRecordingSession({ sessionType: SessionTypes.screenRecording } as any)).toBeTruthy();
+    });
+
+    it('should be false', () => {
+      expect(sdk.isScreenRecordingSession({ sessionType: SessionTypes.acdScreenShare } as any)).toBeFalsy();
+      expect(sdk.isScreenRecordingSession({ sessionType: SessionTypes.softphone } as any)).toBeFalsy();
+      expect(sdk.isScreenRecordingSession({ sessionType: SessionTypes.collaborateVideo } as any)).toBeFalsy();
+    });
+  });
+
+  describe('isVideoSession', () => {
+    beforeEach(() => {
+      sdk = constructSdk();
+    });
+    
+    it('should be true', () => {
+      expect(sdk.isVideoSession({ sessionType: SessionTypes.collaborateVideo } as any)).toBeTruthy();
+    });
+
+    it('should be false', () => {
+      expect(sdk.isVideoSession({ sessionType: SessionTypes.acdScreenShare } as any)).toBeFalsy();
+      expect(sdk.isVideoSession({ sessionType: SessionTypes.softphone } as any)).toBeFalsy();
+      expect(sdk.isVideoSession({ sessionType: SessionTypes.screenRecording } as any)).toBeFalsy();
+    });
+  });
+
   describe('startVideoConference()', () => {
     it('should call session manager to start screenshare', async () => {
       sdk = constructSdk();

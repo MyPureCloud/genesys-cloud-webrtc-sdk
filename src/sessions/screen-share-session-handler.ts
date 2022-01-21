@@ -1,11 +1,12 @@
 import { parseJwt } from 'genesys-cloud-streaming-client';
 
 import BaseSessionHandler from './base-session-handler';
-import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia } from '../types/interfaces';
+import { IPendingSession, IStartSessionParams, IExtendedMediaSession, IUpdateOutgoingMedia, VideoMediaSession } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { checkAllTracksHaveEnded } from '../media/media-utils';
 import { createAndEmitSdkError, isAcdJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { JingleReason } from '..';
 
 export default class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;
@@ -55,14 +56,14 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     await this.proceedWithSession(pendingSession);
   }
 
-  onTrackEnd (session: IExtendedMediaSession) {
+  onTrackEnd (session: VideoMediaSession) {
     this.log('debug', 'Track ended');
     if (checkAllTracksHaveEnded(session._screenShareStream)) {
       return this.endSession(session.conversationId, session);
     }
   }
 
-  async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
+  async handleSessionInit (session: VideoMediaSession): Promise<void> {
     try {
       await super.handleSessionInit(session);
 

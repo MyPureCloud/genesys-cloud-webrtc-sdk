@@ -75,6 +75,14 @@ export interface ISdkConfig {
   autoConnectSessions?: boolean;
 
   /**
+   * If a propose for a screen recording is received *and* this client is configured to handle screen recording
+   *   sessions, automatically call `acceptPendingSession()` for this request.
+   *
+   * Optional: default `false`.
+   */
+   autoAcceptPendingScreenRecordingRequests?: boolean;
+
+  /**
    * The identifier that will go into the full jid. The jid will be constructed as {usersBareJid}/{jidResource}
    * This is helpful for identifying specific clients and considered advanced usage.
    */
@@ -352,6 +360,17 @@ export interface ISdkConfig {
  * defaultAudioStream is the outgoing mediaStream for softphone calls. If not provided, one will be created during `acceptSession`. the sdk will not clean up provided streams
  */
 
+export interface IPendingSessionActionParams {
+  conversationId: string;
+
+  /**
+   * If you are using screen recording and softphone, you should use this since screen recordings have the same conversationId
+   * as softphone sessions.
+   */
+  sessionType?: SessionTypes;
+  fromHeadset?: boolean
+}
+
 /**
  * Interface for defining the SDK's contract for requesting media.
  */
@@ -547,6 +566,12 @@ export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
 
 export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   conversationId: string;
+
+  /** 
+   * this is optional, however if you have the sdk configured for screen recording
+   * you will want to specify this since the sessions share a conversationId.
+   */
+  sessionType?: SessionTypes;
 
   /**
    * media stream to use on the session. if this is
@@ -754,17 +779,25 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   active: boolean;
   videoMuted?: boolean;
   audioMuted?: boolean;
-  fromUserId?: string;
   pcParticipant?: IConversationParticipant;
+  _screenShareStream?: MediaStream;
+  _outboundStream?: MediaStream;
+  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
+}
+
+export interface VideoMediaSession extends IExtendedMediaSession {
+  fromUserId?: string;
+  sessionType: SessionTypes.collaborateVideo;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;
   pinParticipantVideo?: (participantId: string) => Promise<void>;
   _resurrectVideoOnScreenShareEnd?: boolean;
-  _outboundStream?: MediaStream;
-  _screenShareStream?: MediaStream;
-  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
   _lastParticipantsUpdate?: IParticipantsUpdate;
   _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
+}
+
+export interface ScreenRecordingMediaSession extends IExtendedMediaSession {
+  sessionType: SessionTypes.screenRecording;
 }
 
 export interface SubscriptionEvent {

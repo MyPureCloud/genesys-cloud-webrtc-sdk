@@ -20,7 +20,11 @@ import {
   IOrgDetails,
   IStation,
   ISessionIdAndConversationId,
-  IConversationHeldRequest
+  IConversationHeldRequest,
+  IPendingSessionActionParams,
+  IExtendedMediaSession,
+  ScreenRecordingMediaSession,
+  VideoMediaSession
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -129,6 +133,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       /* set defaults */
       ...{
         autoConnectSessions: options.autoConnectSessions !== false, // default true
+        autoAcceptPendingScreenRecordingRequests: !!options.autoAcceptPendingScreenRecordingRequests,
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
@@ -253,6 +258,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     } catch (err) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
     }
+  }
+
+  isScreenRecordingSession (session: IExtendedMediaSession): session is ScreenRecordingMediaSession {
+    return session.sessionType === SessionTypes.screenRecording;
+  }
+
+  isVideoSession (session: IExtendedMediaSession): session is VideoMediaSession {
+    return session.sessionType === SessionTypes.collaborateVideo;
   }
 
   /**
@@ -590,8 +603,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param params conversationId of the pending session to accept
    * @returns a promise that fullfils once the session accept goes out
    */
-  async acceptPendingSession (params: { conversationId: string, fromHeadset?: boolean }): Promise<void> {
-    !params.fromHeadset && this.headset.answerIncomingCall(params.conversationId);
+  async acceptPendingSession (params: IPendingSessionActionParams): Promise<void> {
     await this.sessionManager.proceedWithSession(params);
   }
 
@@ -601,7 +613,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param params conversationId of the pending session to reject
    * @returns a promise that fullfils once the session reject goes out
    */
-  async rejectPendingSession (params: { conversationId: string }): Promise<void> {
+  async rejectPendingSession (params: IPendingSessionActionParams): Promise<void> {
     await this.sessionManager.rejectPendingSession(params);
   }
 

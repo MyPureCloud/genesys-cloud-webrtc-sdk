@@ -8,7 +8,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
-import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant } from '../../../src/types/interfaces';
+import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession } from '../../../src/types/interfaces';
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
 import { ConversationUpdate } from '../../../src/';
 
@@ -553,7 +553,7 @@ describe('handlePropose', () => {
 describe('handleSessionInit', () => {
   it('should decorate the session', async () => {
     const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit').mockResolvedValue(null);
-    const session: IExtendedMediaSession = {} as any;
+    const session: VideoMediaSession = {} as any;
 
     await handler.handleSessionInit(session);
 
@@ -569,7 +569,7 @@ describe('acceptSession', () => {
   let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLAudioElement>;
   let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
   let initialMutesSpy: jest.SpyInstance<Promise<any>>; /* keep this spy */
-  let session: IExtendedMediaSession;
+  let session: VideoMediaSession;
   let media: MediaStream;
 
   beforeEach(() => {
@@ -868,7 +868,7 @@ describe('endSession', () => {
 });
 
 describe('setVideoMute', () => {
-  let session: IExtendedMediaSession;
+  let session: VideoMediaSession;
 
   beforeEach(() => {
     jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue(null);
@@ -1142,7 +1142,7 @@ describe('startScreenShare', () => {
   let displayMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
   let videoMuteSpy: jest.SpyInstance<Promise<void>>;
   let addReplaceTrackToSession: jest.SpyInstance<Promise<any>>;
-  let session: IExtendedMediaSession;
+  let session: VideoMediaSession;
 
   beforeEach(() => {
     displayMediaSpy = jest.spyOn(mockSdk.media, 'startDisplayMedia').mockResolvedValue(new MockStream({ video: true }) as any);

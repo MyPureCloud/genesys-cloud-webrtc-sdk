@@ -12,7 +12,8 @@ import {
   ISpeakersUpdate,
   IConversationParticipant,
   IMediaRequestOptions,
-  IStartVideoSessionParams
+  IStartVideoSessionParams,
+  VideoMediaSession
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
@@ -79,13 +80,13 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     };
   }
 
-  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) {
+  handleConversationUpdate (update: ConversationUpdate, sessions: VideoMediaSession[]) {
     sessions
       .filter(s => s.conversationId === update.id)
       .forEach(session => this.handleConversationUpdateForSession(update, session));
   }
 
-  handleConversationUpdateForSession (conversationUpdate: ConversationUpdate, session: IExtendedMediaSession): void {
+  handleConversationUpdateForSession (conversationUpdate: ConversationUpdate, session: VideoMediaSession): void {
     session.pcParticipant = this.findLocalParticipantInConversationUpdate(conversationUpdate);
 
     const activeVideoParticipants: IParticipantUpdate[] = conversationUpdate.participants
@@ -127,7 +128,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     session.emit('participantsUpdate', update);
   }
 
-  updateParticipantsOnScreen (session: IExtendedMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
+  updateParticipantsOnScreen (session: VideoMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
     const incomingVideoTrackIds = session.pc.getReceivers()
       .filter((receiver) => receiver.track && receiver.track.kind === 'video')
       .map((receiver) => receiver.track.id);
@@ -269,7 +270,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     await super.handlePropose(pendingSession);
   }
 
-  async handleSessionInit (session: IExtendedMediaSession): Promise<any> {
+  async handleSessionInit (session: VideoMediaSession): Promise<any> {
     session.startScreenShare = this.startScreenShare.bind(this, session);
     session.stopScreenShare = this.stopScreenShare.bind(this, session);
     session.pinParticipantVideo = this.pinParticipantVideo.bind(this, session);
@@ -277,7 +278,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return super.handleSessionInit(session);
   }
 
-  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: VideoMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
@@ -539,12 +540,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  handleMediaChangeEvent (session: IExtendedMediaSession, event: IMediaChangeEvent): void {
+  handleMediaChangeEvent (session: VideoMediaSession, event: IMediaChangeEvent): void {
     this.updateParticipantsOnScreen(session, event);
     this.updateSpeakers(session, event);
   }
 
-  async startScreenShare (session: IExtendedMediaSession): Promise<void> {
+  async startScreenShare (session: VideoMediaSession): Promise<void> {
     session._resurrectVideoOnScreenShareEnd = !session.videoMuted;
     try {
       this.log('info', 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
@@ -576,7 +577,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async stopScreenShare (session: IExtendedMediaSession): Promise<void> {
+  async stopScreenShare (session: VideoMediaSession): Promise<void> {
     if (!session._screenShareStream) {
       this.log('error', 'No screen share stream to stop', { conversationId: session.conversationId, sessionId: session.id });
       return;
