@@ -192,7 +192,7 @@ to `false`, the session will need to be manually accepted
 using `sdk.acceptSession({ conversationId })`.
 
 #### `autoAcceptPendingScreenRecordingRequests`
-`autoAcceptPendingScreenRecordingRequests?: boolean;` Optional: default `true`
+`autoAcceptPendingScreenRecordingRequests?: boolean;` Optional: default `false`
 
 If true, incoming proposes for screen recording sessions will be accepted immediately
 and no `pendingSession` event will be emitted. The consumer will still have to react to

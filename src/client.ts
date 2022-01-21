@@ -131,7 +131,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       /* set defaults */
       ...{
         autoConnectSessions: options.autoConnectSessions !== false, // default true
-        autoAcceptPendingScreenRecordingRequests: options.autoAcceptPendingScreenRecordingRequests !== false, // default true
+        autoAcceptPendingScreenRecordingRequests: !!options.autoAcceptPendingScreenRecordingRequests,
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false

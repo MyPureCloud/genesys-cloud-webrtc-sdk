@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Use `roomJid` now.
 
 ### Added
+* [PCM-1387](https://inindca.atlassian.net/browse/PCM-1387) - Add the ability to do screen recordings
 * [PCM-1784](https://inindca.atlassian.net/browse/PCM-1784) – Add a function to be able to forcibly terminate sessions by sessionId
 * [PCM-1753](https://inindca.atlassian.net/browse/PCM-1753) – Add an option for log formatters
 * [PCM-1755](https://inindca.atlassian.net/browse/PCM-1755) – Added call error handling for softphone which will be emitted as a sdkError event with a type of `call`
