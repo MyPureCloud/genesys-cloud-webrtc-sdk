@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState, VideoMediaSession } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -30,16 +30,26 @@ describe('allowedSessionTypes', () => {
     sessionManager.sessionHandlers.forEach((handler) => {
       expect(handler.disabled).toEqual(handler.sessionType !== SessionTypes.collaborateVideo);
     });
-    expect.assertions(3);
+    expect.assertions(4);
   });
 });
 
 describe('getPendingSession()', () => {
+  it('should find session by conversationId and sessionType', () => {
+    const pendingSession1 = createPendingSession();
+    pendingSession1.sessionType = SessionTypes.screenRecording;
+
+    const pendingSession2 = { ...pendingSession1, sessionType: SessionTypes.softphone };
+
+    sessionManager.pendingSessions = [ pendingSession1, pendingSession2 ];
+
+    expect(sessionManager.getPendingSession({ conversationId: pendingSession1.conversationId, sessionType: SessionTypes.softphone })).toBe(pendingSession2);
+  });
+
   it('should find session by conversationId', () => {
     const pendingSession1 = createPendingSession();
     const pendingSession2 = createPendingSession();
-    sessionManager.pendingSessions[pendingSession1.conversationId] = pendingSession1;
-    sessionManager.pendingSessions[pendingSession2.conversationId] = pendingSession2;
+    sessionManager.pendingSessions = [pendingSession1, pendingSession2];
 
     expect(sessionManager.getPendingSession({ conversationId: pendingSession1.conversationId })).toBe(pendingSession1);
     expect(sessionManager.getPendingSession({ conversationId: pendingSession2.conversationId })).toBe(pendingSession2);
@@ -48,9 +58,7 @@ describe('getPendingSession()', () => {
   it('should fallback to sessionId', () => {
     const pendingSession1 = createPendingSession();
     const pendingSession2 = createPendingSession();
-
-    sessionManager.pendingSessions[pendingSession1.conversationId] = pendingSession1;
-    sessionManager.pendingSessions[pendingSession2.conversationId] = pendingSession2;
+    sessionManager.pendingSessions = [pendingSession1, pendingSession2];
 
     expect(sessionManager.getPendingSession({ conversationId: 'non-existent', sessionId: pendingSession2.sessionId })).toBe(pendingSession2);
   });
@@ -134,13 +142,61 @@ describe('getSession', () => {
   let sessionsObj: any;
 
   beforeEach(() => {
-    session1 = new MockSession();
-    session2 = new MockSession();
+    session1 = new MockSession(SessionTypes.softphone);
+    session2 = new MockSession(SessionTypes.softphone);
 
     sessionsObj = { [session1.sid]: session1, [session2.sid]: session2 };
     mockSdk._streamingConnection._webrtcSessions.jingleJs = {
       sessions: sessionsObj
     } as any;
+  });
+
+  it('should get session by sessionType and conversationId', () => {
+    const session1 = {
+      sessionTypes: SessionTypes.screenRecording,
+      conversationId: 'convo1'
+    };
+
+    const session2 = {
+      sessionType: SessionTypes.acdScreenShare,
+      conversationId: 'convo1'
+    };
+
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([session1, session2] as any);
+
+    expect(sessionManager.getSession({ conversationId: 'convo1', sessionType: SessionTypes.acdScreenShare })).toBe(session2);
+  });
+
+  it('should ignore screen recording session', () => {
+    const session1 = {
+      sessionTypes: SessionTypes.screenRecording,
+      conversationId: 'convo1'
+    };
+
+    const session2 = {
+      sessionType: SessionTypes.acdScreenShare,
+      conversationId: 'convo1'
+    };
+
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([session1, session2] as any);
+
+    expect(sessionManager.getSession({ conversationId: 'convo1' })).toBe(session2);
+  });
+
+  it('should not ignore screen recording session', () => {
+    const session1 = {
+      sessionType: SessionTypes.screenRecording,
+      conversationId: 'convo1'
+    };
+
+    const session2 = {
+      sessionType: SessionTypes.acdScreenShare,
+      conversationId: 'convo1'
+    };
+
+    jest.spyOn(sessionManager, 'getAllJingleSessions').mockReturnValue([session1, session2] as any);
+
+    expect(sessionManager.getSession({ conversationId: 'convo1', searchScreenRecordingSessions: true })).toBe(session1);
   });
 
   it('should get softphone session by conversationStates', () => {
@@ -202,10 +258,7 @@ describe('removePendingSession()', () => {
   it('should remove pending session by conversationId', () => {
     const pendingSession1 = createPendingSession();
     const pendingSession2 = createPendingSession();
-    sessionManager.pendingSessions[pendingSession1.conversationId] = pendingSession1;
-    sessionManager.pendingSessions[pendingSession2.conversationId] = pendingSession2;
-
-    expect(Object.values(sessionManager.pendingSessions).length).toBe(2);
+    sessionManager.pendingSessions = [ pendingSession1, pendingSession2 ];
 
     sessionManager.removePendingSession({ conversationId: pendingSession1.conversationId });
 
@@ -329,7 +382,7 @@ describe('onPropose', () => {
     await sessionManager.onPropose(sessionInfo);
 
     expect(mockHandler.handlePropose).toHaveBeenCalled();
-    expect(sessionManager.pendingSessions[sessionInfo.conversationId]).toBeTruthy();
+    expect(sessionManager.pendingSessions.find(s => s.conversationId === sessionInfo.conversationId)).toBeTruthy();
   });
 
   it('should ignore if pendingSession already exists', async () => {
@@ -467,7 +520,7 @@ describe('onCancelPendingSession()', () => {
   it('should emit and remove pending session', () => {
     const pendingSession = createPendingSession();
 
-    sessionManager.pendingSessions[pendingSession.conversationId] = pendingSession;
+    sessionManager.pendingSessions = [pendingSession];
 
     mockSdk.on('cancelPendingSession', ({ sessionId, conversationId }) => {
       // not an async event
@@ -490,7 +543,7 @@ describe('onHandledPendingSession()', () => {
   it('should emit and remove pending session', () => {
     const pendingSession = createPendingSession();
 
-    sessionManager.pendingSessions[pendingSession.conversationId] = pendingSession;
+    sessionManager.pendingSessions = [pendingSession];
 
     mockSdk.on('handledPendingSession', ({ sessionId, conversationId }) => {
       // not an async event
@@ -813,7 +866,7 @@ describe('validateOutgoingMediaTracks()', () => {
     const mockTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const session = sessions[0];
 
-    session._screenShareStream = screenShareStream as any;
+    (session as VideoMediaSession)._screenShareStream = screenShareStream as any;
     session.pc['_addSender'](mockTrack); /* this is a mock PC */
 
     await sessionManager.validateOutgoingMediaTracks();
