@@ -78,7 +78,7 @@ export interface ISdkConfig {
    * If a propose for a screen recording is received *and* this client is configured to handle screen recording
    *   sessions, automatically call `acceptPendingSession()` for this request.
    *
-   * Optional: default `true`.
+   * Optional: default `false`.
    */
    autoAcceptPendingScreenRecordingRequests?: boolean;
 
