@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...HEAD)
+* [PCM-1795](https://inindca.atlassian.net/browse/PCM-1795) – Do not request media when `sdk.updateDefaultDevices({ updateActiveSessions: true, ... })`
+  is called and the session is already using the requested deviceId.
 
 # [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...v7.0.0)
 ### BREAKING CHANGE

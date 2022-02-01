@@ -637,8 +637,11 @@ Update outgoing media for a specified session
    - `string`: the sdk will attempt to update the `video|audio` media
        to the passed in deviceId
 
-> Note: this does not update the SDK default device(s)
+> Note 1: this does not update the SDK default device(s)
+
 > Note 2: if multiple conversations are sharing a session the media for all those conversations will be updated, not just the provided conversationId
+
+> Note 3: if the requested device is _already in use_ by the session, the media will not be re-requested.
 
 Declaration:
 ``` ts
@@ -671,6 +674,8 @@ Update the default device(s) for the sdk.
 If `updateActiveSessions` is `true`, any active sessions will
 have their outgoing media devices updated and/or the output
 deviceId updated.
+
+> Note, if the requested device is _already in use_ by the session, the media will not be re-requested.
 
 If `updateActiveSessions` is `false`, only the sdk defaults will be updated and
 active sessions' media devices will not be touched.
@@ -1404,7 +1409,7 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
   sessionType: SessionTypes;
   pc: RTCPeerConnection;
   originalRoomJid: string;
-  
+
   get state(): string;
   get connectionState(): string;
 

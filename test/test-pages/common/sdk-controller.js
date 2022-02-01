@@ -6,7 +6,7 @@ import utils from './utils';
 let videoOpts;
 let webrtcSdk;
 let conversationsApi;
-let currentSessionId;
+let currentConversationId;
 let pendingSessions = [];
 let conversationUpdatesToRender = {
   conversations: {},
@@ -488,14 +488,15 @@ async function sessionStarted (session) {
   let output = `${_getLogHeader('sessionStarted')}
     conversationId: ${session.conversationId}
     sessionId: ${session.sid}`;
-
   // conversationUpdatesToRender.push(session);
   // renderSessions();
   utils.writeToLog(output);
 
   if (session.sessionType === 'collaborateVideo') {
+    currentConversationId = session.conversationId;
     const audioElement = document.getElementById('vid-audio');
     const videoElement = document.getElementById('vid-video');
+    const vanityVideoElement = document.getElementById('vanity-view');
     session.once('incomingMedia', () => {
       const element = document.getElementById('waiting-for-media');
       element.classList.add('hidden');
@@ -528,15 +529,17 @@ async function sessionStarted (session) {
         utils.writeToLog(JSON.stringify({ eventName, details: e }, null, 2));
       });
     });
-    webrtcSdk.acceptSession({ sessionId: session.id, audioElement, videoElement, mediaStream });
+    webrtcSdk.acceptSession({ conversationId: session.conversationId, audioElement, videoElement, mediaStream });
+
+    session.once('incomingMedia', () => {
+      vanityVideoElement.autoplay = true;
+      vanityVideoElement.volume = 0;
+      vanityVideoElement.srcObject = session._outboundStream;
+    });
   }
 }
 
 function updateOutgoingMediaDevices (type = 'both'/* 'video' | 'audio' | 'both' */) {
-  if (!currentSessionId) {
-    utils.writeToLog('No active session');
-    return;
-  }
   let audioDeviceId;
   let videoDeviceId;
 
@@ -552,7 +555,7 @@ function updateOutgoingMediaDevices (type = 'both'/* 'video' | 'audio' | 'both' 
   //   ? document.querySelector('select#video-devices').value || true
   //   : false;
 
-  webrtcSdk.updateOutgoingMedia({ sessionId: currentSessionId, videoDeviceId, audioDeviceId });
+  webrtcSdk.updateOutgoingMedia({ conversationId: currentConversationId, videoDeviceId, audioDeviceId });
 }
 
 function updateOutputMediaDevice () {
@@ -600,7 +603,7 @@ function sessionEnded (session, reason) {
     isSessionStillActive: ${session.active}
     reason: ${JSON.stringify(reason, null, 2)}`;
 
-  currentSessionId = null;
+  currentConversationId = null;
   utils.writeToLog(output);
 }
 
@@ -680,7 +683,7 @@ async function startVideoConference ({ noAudio, noVideo, mediaStream, useConstra
   videoOpts = { video: !noVideo, audio: !noAudio, mediaStream, videoResolution };
 
   if (answerPendingSession) {
-    webrtcSdk.acceptPendingSession(currentSessionId);
+    webrtcSdk.acceptPendingSession({ conversationId: currentConversationId });
   } else {
     const roomJid = getInputValue('video-jid');
     if (!roomJid) {
@@ -702,11 +705,11 @@ async function startVideoConference ({ noAudio, noVideo, mediaStream, useConstra
 }
 
 function setVideoMute (mute) {
-  webrtcSdk.setVideoMute({ sessionId: currentSessionId, mute });
+  webrtcSdk.setVideoMute({ conversationId: currentConversationId, mute });
 }
 
 function setAudioMute (mute) {
-  webrtcSdk.setAudioMute({ sessionId: currentSessionId, mute });
+  webrtcSdk.setAudioMute({ conversationId: currentConversationId, mute });
 }
 
 function startScreenShare () {
@@ -715,6 +718,10 @@ function startScreenShare () {
 
 function stopScreenShare () {
   currentSession.stopScreenShare();
+}
+
+function endSession () {
+  webrtcSdk.endSession({ conversationId: currentConversationId });
 }
 
 function pinParticipantVideo () {
@@ -766,5 +773,6 @@ export default {
   disconnectSdk,
   initWebrtcSDK,
   pinParticipantVideo,
-  updateOnQueueStatus
+  updateOnQueueStatus,
+  endSession
 };

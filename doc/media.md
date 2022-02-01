@@ -400,12 +400,15 @@ Returns: an array of all active media tracks
 created by the sdk
 
 #### `findCachedDeviceByTrackLabel()`
+Deprecated. Used `findCachedDeviceByTrackLabelAndKind()` instead.
+
+#### `findCachedDeviceByTrackLabelAndKind()`
 Look through the cached devices and match based on
  the passed in track's `kind` and `label`.
 
 Declaration:
 ``` ts
-findCachedDeviceByTrackLabel(track?: MediaStreamTrack): MediaDeviceInfo | undefined;
+findCachedDeviceByTrackLabelAndKind(track?: MediaStreamTrack): MediaDeviceInfo | undefined;
 ```
 
 Params:
@@ -425,6 +428,34 @@ findCachedOutputDeviceById(id?: string): MediaDeviceInfo | undefined;
 
 Params:
 * `id?: string` – Optional: output deviceId
+
+Returns: the found device or `undefined` if the device could not be found.
+
+#### `findCachedVideoDeviceById()`
+Look through the cached video devices and match based on
+ the passed in video deviceId.
+
+Declaration:
+``` ts
+findCachedVideoDeviceById(id?: string): MediaDeviceInfo | undefined;
+```
+
+Params:
+* `id?: string` – Optional: video deviceId
+
+Returns: the found device or `undefined` if the device could not be found.
+
+#### `findCachedAudioDeviceById()`
+Look through the cached audio devices and match based on
+ the passed in audio deviceId.
+
+Declaration:
+``` ts
+findCachedAudioDeviceById(id?: string): MediaDeviceInfo | undefined;
+```
+
+Params:
+* `id?: string` – Optional: audio deviceId
 
 Returns: the found device or `undefined` if the device could not be found.
 
