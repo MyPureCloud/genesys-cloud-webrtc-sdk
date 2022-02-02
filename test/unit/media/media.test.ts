@@ -44,7 +44,6 @@ let navigatorMediaDevicesMock: {
 };
 
 describe('SdkMedia', () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
     sdk = new SimpleMockSdk() as any;
@@ -215,7 +214,7 @@ describe('SdkMedia', () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: false, cameraPermissionsRequested: false });
       const expectedLogDetails = {
-        mediaReqOptions: { video: true, audio: true, session: undefined, retryOnFailure: true },
+        mediaReqOptions: { video: true, audio: true, session: false, retryOnFailure: true, uuid: expect.any(String) },
         retryOnFailure: true,
         conversationId: undefined,
         sessionId: undefined,
@@ -233,6 +232,7 @@ describe('SdkMedia', () => {
 
       expect(sdk.logger.info).toHaveBeenCalledWith('calling sdk.media.startMedia()', {
         ...expectedLogDetails,
+        mediaReqOptions: { ...expectedLogDetails.mediaReqOptions, session: true },
         sessionId: session.id,
         conversationId: session.conversationId
       });
@@ -242,6 +242,7 @@ describe('SdkMedia', () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: false, cameraPermissionsRequested: false });
       const requestOptions: IMediaRequestOptions = { audio: true, video: true };
+      const expectedReqOptions = { ...requestOptions, retryOnFailure: true, uuid: expect.any(String) };
 
       /* setup our mocks */
       const mockAudioStream = new MockStream({ audio: true });
@@ -252,8 +253,8 @@ describe('SdkMedia', () => {
 
       const stream = await sdkMedia.startMedia(requestOptions);
 
-      expect(requestMediaPermissionsSpy).toHaveBeenNthCalledWith(1, 'audio', true, requestOptions);
-      expect(requestMediaPermissionsSpy).toHaveBeenNthCalledWith(2, 'video', true, requestOptions);
+      expect(requestMediaPermissionsSpy).toHaveBeenNthCalledWith(1, 'audio', true, expectedReqOptions);
+      expect(requestMediaPermissionsSpy).toHaveBeenNthCalledWith(2, 'video', true, expectedReqOptions);
       expect(startSingleMediaSpy).not.toHaveBeenCalled();
       expect(stream.getTracks()).toEqual([
         mockAudioStream.getTracks()[0],
@@ -264,7 +265,7 @@ describe('SdkMedia', () => {
     it('should startSingleMedia for `audio` & `video` if already requested permissions', async () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: true, cameraPermissionsRequested: true });
-      const requestOptions: IMediaRequestOptions = { audio: null, video: null, retryOnFailure: false };
+      const requestOptions: IMediaRequestOptions = { audio: null, video: null, retryOnFailure: false, uuid: 'kitty-hawk' };
 
       /* setup our mocks */
       const mockAudioStream = new MockStream({ audio: true });
@@ -287,7 +288,7 @@ describe('SdkMedia', () => {
     it('should only request audio and return the stream', async () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: true, cameraPermissionsRequested: true });
-      const requestOptions: IMediaRequestOptions = { audio: true, video: false };
+      const requestOptions: IMediaRequestOptions = { audio: true, video: false, uuid: 'something-unique', retryOnFailure: true };
 
       /* setup our mocks */
       const mockAudioStream = new MockStream({ audio: true });
@@ -306,7 +307,7 @@ describe('SdkMedia', () => {
     it('should only request video and return the stream', async () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: true, cameraPermissionsRequested: true });
-      const requestOptions: IMediaRequestOptions = { audio: false, video: true };
+      const requestOptions: IMediaRequestOptions = { audio: false, video: true, uuid: 'something-unique', retryOnFailure: false };
 
       /* setup our mocks */
       const mockVideoStream = new MockStream({ video: true });
@@ -325,7 +326,7 @@ describe('SdkMedia', () => {
     it('should throw an error after `video` is requested if `audio` failed and both media types were requested', async () => {
       /* reset the media state */
       sdkMedia['setPermissions']({ micPermissionsRequested: true, cameraPermissionsRequested: true });
-      const requestOptions: IMediaRequestOptions = { audio: null, video: null };
+      const requestOptions: IMediaRequestOptions = { audio: null, video: null, uuid: 'something-hidden', retryOnFailure: true };
       const error = new Error('Permission Denied');
 
       /* setup our mocks */
@@ -398,7 +399,7 @@ describe('SdkMedia', () => {
         await sdkMedia.startMedia(requestOptions);
         fail('should have thrown');
       } catch (e) {
-        expect(startSingleMediaSpy).toHaveBeenCalledWith('none', { retryOnFailure: false });
+        expect(startSingleMediaSpy).toHaveBeenCalledWith('none', { retryOnFailure: false, uuid: expect.any(String) });
         expect(e).toBe(error);
       }
     });
@@ -465,6 +466,7 @@ describe('SdkMedia', () => {
           video: false,
           session: undefined,
           retryOnFailure: true,
+          uuid: expect.any(String)
         },
         sessionId: undefined,
         conversationId: undefined,
@@ -489,7 +491,7 @@ describe('SdkMedia', () => {
 
       expect(enumerateDevicesSpy).toHaveBeenCalledTimes(2);
       expect(startSingleMediaSpy).toHaveBeenCalledTimes(1);
-      expect(startSingleMediaSpy).toHaveBeenNthCalledWith(1, 'audio', { audio: true, video: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenNthCalledWith(1, 'audio', { audio: true, video: false, retryOnFailure: true, uuid: expect.any(String) });
     });
 
     it('should always request the desired media type and never with the opposite media type', async () => {
@@ -497,58 +499,58 @@ describe('SdkMedia', () => {
       /* if `false` */
       let reqOptions: IMediaRequestOptions = { audio: false, video: true };
       await sdkMedia.requestMediaPermissions('audio', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: true, video: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: true, video: false, retryOnFailure: true, uuid: expect.any(String) });
 
       /* if `undefined` */
       reqOptions.audio = undefined;
       await sdkMedia.requestMediaPermissions('audio', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: true, video: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: true, video: false, retryOnFailure: true, uuid: expect.any(String) });
 
       /* if with deviceId */
       reqOptions.audio = 'deviceId';
       await sdkMedia.requestMediaPermissions('audio', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: reqOptions.audio, video: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: reqOptions.audio, video: false, retryOnFailure: true, uuid: expect.any(String) });
 
       /* VIDEO */
       /* if `false` */
       reqOptions = { video: false, audio: true };
       await sdkMedia.requestMediaPermissions('video', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('video', { video: true, audio: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('video', { video: true, audio: false, retryOnFailure: true, uuid: expect.any(String) });
 
       /* if `undefined` */
       reqOptions.video = undefined;
       await sdkMedia.requestMediaPermissions('video', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('video', { video: true, audio: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('video', { video: true, audio: false, retryOnFailure: true, uuid: expect.any(String) });
 
       /* if with deviceId */
       reqOptions.video = 'deviceId';
       await sdkMedia.requestMediaPermissions('video', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('video', { video: reqOptions.video, audio: false, retryOnFailure: true });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('video', { video: reqOptions.video, audio: false, retryOnFailure: true, uuid: expect.any(String) });
     });
 
     it('should always request both media types if `both` was requested', async () => {
       /* if `false` */
       const reqOptions: IMediaRequestOptions = { audio: false, video: false };
       await sdkMedia.requestMediaPermissions('both', false, reqOptions);
-      expect(startMediaSpy).toHaveBeenCalledWith({ audio: true, video: true, retryOnFailure: true });
+      expect(startMediaSpy).toHaveBeenCalledWith({ audio: true, video: true, retryOnFailure: true, uuid: expect.any(String) });
 
       /* if `undefined` */
       reqOptions.audio = undefined;
       reqOptions.video = undefined;
       await sdkMedia.requestMediaPermissions('both', false, reqOptions);
-      expect(startMediaSpy).toHaveBeenCalledWith({ audio: true, video: true, retryOnFailure: true });
+      expect(startMediaSpy).toHaveBeenCalledWith({ audio: true, video: true, retryOnFailure: true, uuid: expect.any(String) });
 
       /* if with deviceId */
       reqOptions.audio = 'audio-deviceId';
       reqOptions.video = 'video-deviceId';
       await sdkMedia.requestMediaPermissions('both', false, reqOptions);
-      expect(startMediaSpy).toHaveBeenCalledWith({ audio: true, video: true, retryOnFailure: true });
+      expect(startMediaSpy).toHaveBeenCalledWith({ audio: true, video: true, retryOnFailure: true, uuid: expect.any(String) });
     });
 
     it('should use `retryOnFailure` option if passed in', async () => {
       let reqOptions: IMediaRequestOptions = { audio: true, video: false, retryOnFailure: false };
       await sdkMedia.requestMediaPermissions('audio', false, reqOptions);
-      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: true, video: false, retryOnFailure: false });
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', { audio: true, video: false, retryOnFailure: false, uuid: expect.any(String) });
     });
 
     it('should return the media if `preserveMedia` was `true`', async () => {
@@ -746,29 +748,39 @@ describe('SdkMedia', () => {
     });
   });
 
-  describe('findCachedDeviceByTrackLabel()', () => {
+  describe('findCachedDeviceByTrackLabelAndKind()', () => {
     beforeEach(() => {
       sdkMedia['setDevices'](mockedDevices);
     });
 
     it('should return `undefined` if there is no track', () => {
-      expect(sdkMedia.findCachedDeviceByTrackLabel()).toBe(undefined);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind()).toBe(undefined);
     });
 
     it('should find the available video & audio device depending on the track kind', async () => {
       const videoTrack = new MockTrack('video', mockVideoDevice1.label);
       const audioTrack = new MockTrack('audio', mockAudioDevice1.label);
 
-      expect(sdkMedia.findCachedDeviceByTrackLabel(videoTrack as any as MediaStreamTrack)).toEqual(mockVideoDevice1);
-      expect(sdkMedia.findCachedDeviceByTrackLabel(audioTrack as any as MediaStreamTrack)).toEqual(mockAudioDevice1);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(videoTrack as any as MediaStreamTrack)).toEqual(mockVideoDevice1);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toEqual(mockAudioDevice1);
     });
 
     it('should return `unefined` if it cannot find the track by label in available devices', async () => {
       const videoTrack = new MockTrack('video', 'A video device that does not exist');
       const audioTrack = new MockTrack('audio', 'An audio device that does not exist');
 
-      expect(sdkMedia.findCachedDeviceByTrackLabel(videoTrack as any as MediaStreamTrack)).toBe(undefined);
-      expect(sdkMedia.findCachedDeviceByTrackLabel(audioTrack as any as MediaStreamTrack)).toBe(undefined);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(videoTrack as any as MediaStreamTrack)).toBe(undefined);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toBe(undefined);
+    });
+  });
+
+  describe('findCachedDeviceByTrackLabel()', () => {
+    it('should call to findCachedDeviceByTrackLabelAndKind()', () => {
+      const videoTrack = new MockTrack('video');
+      jest.spyOn(sdkMedia, 'findCachedDeviceByTrackLabelAndKind').mockImplementation();
+
+      sdkMedia.findCachedDeviceByTrackLabel(videoTrack as any as MediaStreamTrack);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind).toHaveBeenCalledWith(videoTrack);
     });
   });
 
@@ -788,6 +800,50 @@ describe('SdkMedia', () => {
 
     it('should return `true` if a device is found in the cache', () => {
       expect(sdkMedia.doesDeviceExistInCache(mockOutputDevice1)).toBe(true);
+    });
+  });
+
+  describe('findCachedVideoDeviceById()', () => {
+    beforeEach(() => {
+      sdkMedia['setDevices'](mockedDevices);
+    });
+
+    it('should return `undefined` if there is id passed in', () => {
+      expect(sdkMedia.findCachedVideoDeviceById()).toBe(undefined);
+    });
+
+    it('should return the found output device', async () => {
+      const deviceIdToFind = mockVideoDevice2.deviceId;
+
+      expect(sdkMedia.findCachedVideoDeviceById(deviceIdToFind)).toEqual(mockVideoDevice2);
+    });
+
+    it('should return `undefined` if the output device cannot be found', async () => {
+      const deviceIdToFind = 'output123';
+
+      expect(sdkMedia.findCachedVideoDeviceById(deviceIdToFind)).toBe(undefined);
+    });
+  });
+
+  describe('findCachedAudioDeviceById()', () => {
+    beforeEach(() => {
+      sdkMedia['setDevices'](mockedDevices);
+    });
+
+    it('should return `undefined` if there is id passed in', () => {
+      expect(sdkMedia.findCachedAudioDeviceById()).toBe(undefined);
+    });
+
+    it('should return the found output device', async () => {
+      const deviceIdToFind = mockAudioDevice1.deviceId;
+
+      expect(sdkMedia.findCachedAudioDeviceById(deviceIdToFind)).toEqual(mockAudioDevice1);
+    });
+
+    it('should return `undefined` if the output device cannot be found', async () => {
+      const deviceIdToFind = 'output123';
+
+      expect(sdkMedia.findCachedAudioDeviceById(deviceIdToFind)).toBe(undefined);
     });
   });
 

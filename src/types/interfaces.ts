@@ -457,6 +457,16 @@ export interface IMediaRequestOptions {
    *    request will be thrown.
    */
   preserveMediaIfOneTypeFails?: boolean;
+
+  /**
+   * Option to pass in a uniqueID to be able to tie the media request
+   *  with the actual getUserMedia (gUM) request made to the browser.
+   *  See notes on `sdk.media.on('gumRequest', evt)` event.
+   *
+   * Note: if no uuid is passed in the SDK will create one and use it
+   *  for the request.
+   */
+  uuid?: string | number;
 }
 
 /**
@@ -566,7 +576,7 @@ export interface IUpdateOutgoingMedia extends ISdkMediaDeviceIds {
 export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   conversationId: string;
 
-  /** 
+  /**
    * this is optional, however if you have the sdk configured for screen recording
    * you will want to specify this since the sessions share a conversationId.
    */
@@ -942,9 +952,24 @@ export interface SdkMediaEvents {
    *  depending on the outcome of the `getUserMedia()` request
    */
   permissions: SdkMediaStateWithType;
+
+  /**
+   * Event when the SDK makes a request to `navigator.mediaDevices.getUserMedia()`
+   *  (gUM). Many browsers only allow requests to `gUM()` when the window is in
+   *  focus. Use this event to monitor when media is requested to ensure that the
+   *  window is in focus so the media request will complete.
+   *
+   * Note: if requesting both media types at the same time (`audio & video`), the
+   *  SDK will make _two_ separate `gUM()` requests – one for each media type
+   *  (see notes on `sdk.media.startMedia()`). This event will emit for _each_
+   *  `gUM()` request. For this reason, it is recommended to utilize the
+   *  `uuid` field of the `interface IMediaRequestOptions` to help track which
+   *  `gUM()` requests were made by your application (see docs for `IMediaRequestOptions#uuid`).
+   */
+  gumRequest: ISdkGumRequest;
 }
 
-export type SdkMediaEventTypes = keyof Omit<SdkMediaEvents, 'audioTrackVolume'>;
+export type SdkMediaEventTypes = keyof Omit<SdkMediaEvents, 'audioTrackVolume' | 'gumRequest'>;
 
 export type SdkMediaStateWithType = ISdkMediaState & {
   eventType: SdkMediaEventTypes;
@@ -952,6 +977,7 @@ export type SdkMediaStateWithType = ISdkMediaState & {
 
 export type MicVolumeEvent = Parameters<SdkMediaEvents['audioTrackVolume']>[0];
 
+export type SdkMediaTypesToRequest = 'audio' | 'video' | 'none';
 export interface ISdkMediaState {
   /** list of all available devices */
   devices: MediaDeviceInfo[];
@@ -982,6 +1008,29 @@ export interface ISdkMediaState {
   micPermissionsRequested: boolean;
   /** if permissions have been requested by the sdk */
   cameraPermissionsRequested: boolean;
+}
+
+/**
+ * Event emitted when a `getUserMedia()` (gUM) request is made
+ *  to the browser.
+ */
+export interface ISdkGumRequest {
+  /**
+   * The returned promise from the browser's
+   *  `getUserMedia()` (gUM) request
+   */
+  gumPromise: Promise<MediaStream>;
+
+  /**
+   * The requested options passed to the SDK
+   */
+  mediaRequestOptions: IMediaRequestOptions;
+
+  /**
+   * The actual media constraints used to make the
+   *  `getUserMedia()` (gUM) request.
+   */
+  constraints: MediaStreamConstraints;
 }
 
 export interface IStartSoftphoneSessionParams extends IStartSessionParams {

@@ -6,6 +6,7 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
 import { IExtendedMediaSession, ConversationUpdate } from '../../../src';
+import { v4 } from 'uuid';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
@@ -175,21 +176,21 @@ describe('updateOutgoingMedia()', () => {
 
     /* video only */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: null, audioDeviceId: undefined });
-    expect(startMediaSpy).toBeCalledWith({ video: null, audio: undefined, session });
+    expect(startMediaSpy).toBeCalledWith({ video: null, audio: false, session });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
     /* audio only */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: undefined, audioDeviceId: null });
-    expect(startMediaSpy).toBeCalledWith({ video: undefined, audio: null, session });
+    expect(startMediaSpy).toBeCalledWith({ video: false, audio: null, session });
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: videoDeviceId, audioDeviceId: undefined });
-    expect(startMediaSpy).toBeCalledWith({ video: videoDeviceId, audio: undefined, session });
+    expect(startMediaSpy).toBeCalledWith({ video: videoDeviceId, audio: false, session });
     startMediaSpy.mockReset();
     startMediaSpy.mockResolvedValue(stream as any);
 
     /* audio only */
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: undefined, audioDeviceId: audioDeviceId });
-    expect(startMediaSpy).toBeCalledWith({ video: undefined, audio: audioDeviceId, session });
+    expect(startMediaSpy).toBeCalledWith({ video: false, audio: audioDeviceId, session });
 
   });
 
@@ -219,6 +220,34 @@ describe('updateOutgoingMedia()', () => {
     expect(session.getTracks()).toEqual(stream.getTracks());
     expect(session._screenShareStream.getVideoTracks()[0].id).toBe(trackIdToIgnore);
     expect(screenShareTrackSpy).toHaveBeenCalled();
+  });
+
+  it('should skip any audio tracks when requesting the same device', async () => {
+    const session = new MockSession();
+    session._outboundStream = new MockStream();
+    const existingTrack = new MockTrack('audio', 'Mic #1')
+    session.pc._addSender(existingTrack);
+
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(undefined);
+    const device = { deviceId: v4(), label: existingTrack.label, kind: 'audioinput' };
+    mockSdk.media['setDevices']([device as any]);
+
+    await handler.updateOutgoingMedia(session as any, { videoDeviceId: false, audioDeviceId: device.deviceId });
+    expect(mockSdk.media.startMedia).not.toHaveBeenCalled();
+  });
+
+  it('should skip any video tracks when requesting the same device', async () => {
+    const session = new MockSession();
+    session._outboundStream = new MockStream();
+    const existingTrack = new MockTrack('video', 'Camera #1')
+    session.pc._addSender(existingTrack);
+
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(undefined);
+    const device = { deviceId: v4(), label: existingTrack.label, kind: 'videoinput' };
+    mockSdk.media['setDevices']([device as any]);
+
+    await handler.updateOutgoingMedia(session as any, { videoDeviceId: device.deviceId, audioDeviceId: false });
+    expect(mockSdk.media.startMedia).not.toHaveBeenCalled();
   });
 
   it('should skip tracks for "kinds" that were not requested to be updated', async () => {
@@ -306,6 +335,7 @@ describe('updateOutgoingMedia()', () => {
 
   it('should catch `NotAllowedError`s, update mute states, and throw the error', async () => {
     const session = new MockSession();
+    // session._outboundStream = new MediaStream();
     const mockError = { name: 'NotAllowedError' };
     const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockRejectedValue(mockError);
 
@@ -330,6 +360,7 @@ describe('updateOutgoingMedia()', () => {
     }
 
     session.mute.mockReset();
+    startMediaSpy.mockClear();
 
     /* `NotAllowedError` error if updating only video  */
     try {
@@ -337,7 +368,7 @@ describe('updateOutgoingMedia()', () => {
       fail('should have thrown');
     } catch (e) {
       /* was called and threw */
-      expect(startMediaSpy).toBeCalledWith({ video: true, audio: undefined, session });
+      expect(startMediaSpy).toBeCalledWith({ video: true, audio: false, session });
       expect(e).toEqual(mockError);
       /* sent session mutes */
       expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
@@ -345,6 +376,7 @@ describe('updateOutgoingMedia()', () => {
     }
 
     session.mute.mockReset();
+    startMediaSpy.mockClear();
 
     /* `NotAllowedError` error if updating only audio  */
     try {
@@ -352,7 +384,7 @@ describe('updateOutgoingMedia()', () => {
       fail('should have thrown');
     } catch (e) {
       /* was called and threw */
-      expect(startMediaSpy).toBeCalledWith({ video: undefined, audio: true, session });
+      expect(startMediaSpy).toBeCalledWith({ video: false, audio: true, session });
       expect(e).toEqual(mockError);
       /* sent session mutes */
       expect(session.mute).toHaveBeenCalledWith(mockSdk._personDetails.id, 'audio');
@@ -361,6 +393,7 @@ describe('updateOutgoingMedia()', () => {
 
     session.mute.mockReset();
     startMediaSpy.mockRejectedValue({ name: 'SomeOtherError' });
+
     /* Some other error */
     try {
       await handler.updateOutgoingMedia(session as any, { videoDeviceId: true, audioDeviceId: true });
