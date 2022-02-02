@@ -608,6 +608,13 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
+   * @deprecated use `sdk.media.findCachedDeviceByTrackLabelAndKind(track)`
+   */
+  findCachedDeviceByTrackLabel (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
+    return this.findCachedDeviceByTrackLabelAndKind(track);
+  }
+
+  /**
    * Look through the cached devices and match based on
    *  the passed in track's `kind` and `label`.
    *
@@ -615,11 +622,35 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * @returns the found device or `undefined` if the
    *  device could not be found.
    */
-  findCachedDeviceByTrackLabel (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
+  findCachedDeviceByTrackLabelAndKind (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
     if (!track) return;
     return this.getDevices().find(d =>
-      d.label === track.label && `${d.kind.substr(0, 5)}` === track.kind
+      d.label === track.label && `${d.kind.substring(0, 5)}` === track.kind.substring(0, 5)
     );
+  }
+
+  /**
+   * Look through the cached video devices and match based on
+   *  the passed in video deviceId.
+   *
+   * @param id video deviceId
+   * @returns the found device or `undefined` if the
+   *  device could not be found.
+   */
+  findCachedVideoDeviceById (id?: string): MediaDeviceInfo | undefined {
+    return this.getVideoDevices().find(d => d.deviceId === id);
+  }
+
+  /**
+   * Look through the cached audio devices and match based on
+   *  the passed in audio deviceId.
+   *
+   * @param id audio deviceId
+   * @returns the found device or `undefined` if the
+   *  device could not be found.
+   */
+  findCachedAudioDeviceById (id?: string): MediaDeviceInfo | undefined {
+    return this.getAudioDevices().find(d => d.deviceId === id);
   }
 
   /**
@@ -631,7 +662,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *  device could not be found.
    */
   findCachedOutputDeviceById (id?: string): MediaDeviceInfo | undefined {
-    return this.getState().outputDevices.find(d => d.deviceId === id);
+    return this.getOutputDevices().find(d => d.deviceId === id);
   }
 
   /**
@@ -1171,11 +1202,17 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         this.sdk.logger.debug('stopping track from track.stop()', track);
         remove();
         stopTrack();
+        /* reset function to prevent multiple log msgs if stop() is called more than once */
+        track.stop = stopTrack;
       };
-      track.addEventListener('ended', () => {
+
+      const onEnded = () => {
         this.sdk.logger.debug('stopping track from track.onended', track);
         remove();
-      });
+        track.removeEventListener('ended', onEnded);
+      }
+
+      track.addEventListener('ended', onEnded);
     });
   }
 }

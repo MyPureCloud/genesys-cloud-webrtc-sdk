@@ -193,6 +193,10 @@ export class MockTrack {
     this._listeners.push({ event, callback });
   }
 
+  removeEventListener (event: string, callback: Function) {
+    this._listeners = this._listeners.filter(l => l.event === event && l.callback !== callback);
+  }
+
   _mockTrackEnded () {
     this.stop();
     this._listeners

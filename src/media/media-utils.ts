@@ -192,10 +192,10 @@ export function logDeviceChange (
       and we will use that track for logging. Otherwise, we will look up the device */
     currentVideoDevice: devicesChange.fromVideoTrack
       ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromVideoTrack.label }
-      : sdk.media.findCachedDeviceByTrackLabel(currentVideoTrack),
+      : sdk.media.findCachedDeviceByTrackLabelAndKind(currentVideoTrack),
     currentAudioDevice: devicesChange.fromAudioTrack
       ? { deviceId: undefined, groupId: undefined, label: devicesChange.fromAudioTrack.label }
-      : sdk.media.findCachedDeviceByTrackLabel(currentAudioTrack),
+      : sdk.media.findCachedDeviceByTrackLabelAndKind(currentAudioTrack),
     currentOutputDevice: sdk.media.findCachedOutputDeviceById(currentOutputDeviceId),
 
     /* current tracks */
@@ -203,8 +203,8 @@ export function logDeviceChange (
     currentAudioTrack,
 
     /* the device being switched to */
-    newVideoDevice: sdk.media.findCachedDeviceByTrackLabel(devicesChange.toVideoTrack),
-    newAudioDevice: sdk.media.findCachedDeviceByTrackLabel(devicesChange.toAudioTrack),
+    newVideoDevice: sdk.media.findCachedDeviceByTrackLabelAndKind(devicesChange.toVideoTrack),
+    newAudioDevice: sdk.media.findCachedDeviceByTrackLabelAndKind(devicesChange.toAudioTrack),
     newOutputDevice: sdk.media.findCachedOutputDeviceById(devicesChange.requestedOutputDeviceId),
 
     /* the track being switched to */

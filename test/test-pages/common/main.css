@@ -101,6 +101,11 @@ video {
   width: auto;
 }
 
+video#vanity-view {
+  max-height: 200px;
+  width: auto;
+}
+
 .fs-med {
   font-size: medium;
 }

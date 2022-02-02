@@ -340,7 +340,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *    - `string`: the sdk will attempt to update the `video|audio` media
    *        to the passed in deviceId
    *
-   * Note: this does not update the SDK default device(s)
+   * Note: this does not update the SDK default device(s). Also, if the requested
+   *  device is _already in use_ by the session, the media will not be re-requested.
    *
    * @param updateOptions device(s) to update
    *
@@ -367,7 +368,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * If `updateActiveSessions` is `true`, any active sessions will
    *  have their outgoing media devices updated and/or the output
-   *  deviceId updated.
+   *  deviceId updated. Note, if the requested device is
+   *  _already in use_ by the session, the media will not be re-requested.
    *
    * Else, only the sdk defaults will be updated and active sessions'
    * media devices will not be touched.

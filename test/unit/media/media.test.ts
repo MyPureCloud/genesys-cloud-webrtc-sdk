@@ -748,29 +748,39 @@ describe('SdkMedia', () => {
     });
   });
 
-  describe('findCachedDeviceByTrackLabel()', () => {
+  describe('findCachedDeviceByTrackLabelAndKind()', () => {
     beforeEach(() => {
       sdkMedia['setDevices'](mockedDevices);
     });
 
     it('should return `undefined` if there is no track', () => {
-      expect(sdkMedia.findCachedDeviceByTrackLabel()).toBe(undefined);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind()).toBe(undefined);
     });
 
     it('should find the available video & audio device depending on the track kind', async () => {
       const videoTrack = new MockTrack('video', mockVideoDevice1.label);
       const audioTrack = new MockTrack('audio', mockAudioDevice1.label);
 
-      expect(sdkMedia.findCachedDeviceByTrackLabel(videoTrack as any as MediaStreamTrack)).toEqual(mockVideoDevice1);
-      expect(sdkMedia.findCachedDeviceByTrackLabel(audioTrack as any as MediaStreamTrack)).toEqual(mockAudioDevice1);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(videoTrack as any as MediaStreamTrack)).toEqual(mockVideoDevice1);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toEqual(mockAudioDevice1);
     });
 
     it('should return `unefined` if it cannot find the track by label in available devices', async () => {
       const videoTrack = new MockTrack('video', 'A video device that does not exist');
       const audioTrack = new MockTrack('audio', 'An audio device that does not exist');
 
-      expect(sdkMedia.findCachedDeviceByTrackLabel(videoTrack as any as MediaStreamTrack)).toBe(undefined);
-      expect(sdkMedia.findCachedDeviceByTrackLabel(audioTrack as any as MediaStreamTrack)).toBe(undefined);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(videoTrack as any as MediaStreamTrack)).toBe(undefined);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toBe(undefined);
+    });
+  });
+
+  describe('findCachedDeviceByTrackLabel()', () => {
+    it('should call to findCachedDeviceByTrackLabelAndKind()', () => {
+      const videoTrack = new MockTrack('video');
+      jest.spyOn(sdkMedia, 'findCachedDeviceByTrackLabelAndKind').mockImplementation();
+
+      sdkMedia.findCachedDeviceByTrackLabel(videoTrack as any as MediaStreamTrack);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind).toHaveBeenCalledWith(videoTrack);
     });
   });
 
@@ -790,6 +800,50 @@ describe('SdkMedia', () => {
 
     it('should return `true` if a device is found in the cache', () => {
       expect(sdkMedia.doesDeviceExistInCache(mockOutputDevice1)).toBe(true);
+    });
+  });
+
+  describe('findCachedVideoDeviceById()', () => {
+    beforeEach(() => {
+      sdkMedia['setDevices'](mockedDevices);
+    });
+
+    it('should return `undefined` if there is id passed in', () => {
+      expect(sdkMedia.findCachedVideoDeviceById()).toBe(undefined);
+    });
+
+    it('should return the found output device', async () => {
+      const deviceIdToFind = mockVideoDevice2.deviceId;
+
+      expect(sdkMedia.findCachedVideoDeviceById(deviceIdToFind)).toEqual(mockVideoDevice2);
+    });
+
+    it('should return `undefined` if the output device cannot be found', async () => {
+      const deviceIdToFind = 'output123';
+
+      expect(sdkMedia.findCachedVideoDeviceById(deviceIdToFind)).toBe(undefined);
+    });
+  });
+
+  describe('findCachedAudioDeviceById()', () => {
+    beforeEach(() => {
+      sdkMedia['setDevices'](mockedDevices);
+    });
+
+    it('should return `undefined` if there is id passed in', () => {
+      expect(sdkMedia.findCachedAudioDeviceById()).toBe(undefined);
+    });
+
+    it('should return the found output device', async () => {
+      const deviceIdToFind = mockAudioDevice1.deviceId;
+
+      expect(sdkMedia.findCachedAudioDeviceById(deviceIdToFind)).toEqual(mockAudioDevice1);
+    });
+
+    it('should return `undefined` if the output device cannot be found', async () => {
+      const deviceIdToFind = 'output123';
+
+      expect(sdkMedia.findCachedAudioDeviceById(deviceIdToFind)).toBe(undefined);
     });
   });
 
