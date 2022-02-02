@@ -108,7 +108,7 @@ export const isPeerVideoJid = function (jid: string) {
 };
 
 export const isVideoJid = function (jid: string): boolean {
-  return jid && !!jid.match(/@conference/) && !isAcdJid(jid);
+  return jid && !!jid.match(/@conference/) && !isAcdJid(jid) && !isScreenRecordingJid(jid);
 };
 
 export const logPendingSession = function (
