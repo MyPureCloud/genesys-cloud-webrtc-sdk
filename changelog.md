@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...HEAD)
 
+### Added
+* [PCM-1794](https://inindca.atlassian.net/browse/PCM-1794) – added `sdk.media.on('gumRequest' evt)` to notify consumers when the SDK makes a request to the
+  `widow.navigator.mediaDevices.getUserMedia()` API. This helps consumers to react appropriately to handle browsers that will only fulfil `gUM()` requests
+  if the window is in focus.
 # [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...v7.0.0)
 ### BREAKING CHANGE
 * If you are providing a *logger*:
