@@ -107,6 +107,7 @@ function connectEventHandlers () {
   /* media related */
   webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
   webrtcSdk.media.on('state', handleMediaStateChanges);
+  webrtcSdk.media.on('gumRequest', handleGumRequest);
 }
 
 function requestMicPermissions () {
@@ -149,6 +150,10 @@ function getCurrentMediaState () {
     addOptions('video-devices', state.videoDevices);
     addOptions('output-devices', state.outputDevices, true);
   }
+}
+
+function handleGumRequest (request) {
+  console.log('gumRequest', request);
 }
 
 function handleMediaStateChanges (state) {

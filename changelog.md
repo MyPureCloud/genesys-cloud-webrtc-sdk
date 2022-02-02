@@ -4,12 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...HEAD)
+### Fixed
+* [PCM-1802](https://inindca.atlassian.net/browse/PCM-1802) - Fix screen recording sessions being characterized as collaborate video sessions.
 * [PCM-1795](https://inindca.atlassian.net/browse/PCM-1795) – Do not request media when `sdk.updateDefaultDevices({ updateActiveSessions: true, ... })`
   is called and the session is already using the requested deviceId.
 * [PCM-1798](https://inindca.atlassian.net/browse/PCM-1798) – Added logic to video session to check sure we received an initial conversation
   event from hawk. This fixes the issue where sometimes joining a video session happens before we subscribe and receive the initial conversation
     event from hawk – which leaves an empty list of participants in the session.
 
+### Added
+* [PCM-1794](https://inindca.atlassian.net/browse/PCM-1794) – added `sdk.media.on('gumRequest' evt)` to notify consumers when the SDK makes a request to the
+  `widow.navigator.mediaDevices.getUserMedia()` API. This helps consumers to react appropriately to handle browsers that will only fulfil `gUM()` requests
+  if the window is in focus.
 # [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...v7.0.0)
 ### BREAKING CHANGE
 * If you are providing a *logger*:

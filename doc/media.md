@@ -608,7 +608,6 @@ For example, when calling through to
  2. for `hasMicPermissions` changing to `true` or `false`
   depending on the outcome of the `getUserMedia()` request
 
-
 > Note: in some browsers, permissions are not always guaranteed even after
 using [requestMediaPermissions()](#requestmediapermissions) to gain permissions. See [Firefox Behavior] for more details.
 It is recommended to use this event to watch for changes
@@ -621,6 +620,48 @@ sdk.media.on('permissions', (state: SdkMediaStateWithType) => { /* evt.eventType
 
 Value of event:
 * See [SdkMediaStateWithType]
+
+#### `gumRequest`
+Event when the SDK makes a request to `navigator.mediaDevices.getUserMedia()`
+(gUM). Many browsers only allow requests to `gUM()` when the window is in
+focus. Use this event to monitor when media is requested to ensure that the
+window is in focus so the media request will complete.
+
+> Note: if requesting both media types at the same time (`audio & video`), the
+  SDK will make _two_ separate `gUM()` requests – one for each media type
+  (see notes on `sdk.media.startMedia()`). This event will emit for _each_
+  `gUM()` request. For this reason, it is recommended to utilize the
+  `uuid` field of the `interface` [IMediaRequestOptions] to help track which
+  `gUM()` requests were made by your application (see docs for `IMediaRequestOptions#uuid`).
+
+Declaration:
+``` ts
+sdk.media.on('gumRequest', (request: ISdkGumRequest) => { });
+```
+
+Value of event:
+``` ts
+interface ISdkGumRequest {
+  /**
+   * The returned promise from the browser's
+   *  `getUserMedia()` (gUM) request
+   */
+  gumPromise: Promise<MediaStream>;
+
+  /**
+   * The requested options passed to the SDK
+   */
+  mediaRequestOptions: IMediaRequestOptions;
+
+  /**
+   * The actual media constraints used to make the
+   *  `getUserMedia()` (gUM) request.
+   */
+  constraints: MediaStreamConstraints;
+}
+```
+
+
 
 --------
 
@@ -698,6 +739,7 @@ interface IMediaRequestOptions {
   session?: IExtendedMediaSession;
   retryOnFailure?: boolean;
   preserveMediaIfOneTypeFails?: boolean;
+  uuid?: string | number;
 }
 ```
 * `audio?: string | boolean | null` – Optional: value for how to request audio media
@@ -736,6 +778,11 @@ interface IMediaRequestOptions {
       2. If using this flag, you may need to verify what tracks are received on the returned stream because it is not guaranteed
         that the stream will contain both types of media.
       3. If _both_ types of media fail, the error for the audio stream request will be thrown.
+* `uuid?: string | number;` – Optional: Option to pass in a uniqueID to be able to tie the media request
+   with the actual getUserMedia (gUM) request made to the browser.
+   See notes on the `sdk.media.on('gumRequest', evt)` event.
+   * Note: if no uuid is passed in the SDK will create one and use it for the request.
+
 #### IUpdateOutgoingMedia
 Interface for available options when requesting to update outgoing media.
 ``` ts
