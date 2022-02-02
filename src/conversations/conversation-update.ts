@@ -7,7 +7,7 @@ export class ConversationUpdate {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types */
   constructor (rawUpdate: any) {
     this.id = rawUpdate.id;
-    this.participants = rawUpdate.participants.map((p) => {
+    this.participants = !rawUpdate.participants ? [] : rawUpdate.participants.map((p) => {
       const videos = p.videos ? p.videos.map((video) => ({
         context: video.context,
         audioMuted: video.audioMuted,
@@ -33,6 +33,11 @@ export class ConversationUpdate {
         id: p.id,
         purpose: p.purpose,
         userId: p.userId,
+        address: p.address,
+        state: p.state,
+        direction: p.direction,
+        muted: p.muted,
+        confined: p.confined,
         videos,
         calls
       };

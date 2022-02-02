@@ -1787,22 +1787,24 @@ describe('fetchUserParticipantFromConversationId()', () => {
       muted: false,
       direction: 'inbound',
       address: 'Outset Island',
-      state: CommunicationStates.connected.toString()
+      state: CommunicationStates.connected.toString(),
+      calls: [],
+      videos: []
     } as any;
 
     requestApiSpy.mockResolvedValue({
       body: {
         participants: [{
-          ...expectedParticipant, user: {
-            id: userId
-          }, extra: 'props'
+          ...expectedParticipant,
+          extra: 'props',
+          user: { id: userId }
         }]
       }
     });
 
     await handler.fetchUserParticipantFromConversationId(conversationId);
 
-    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/calls/${conversationId}`);
+    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/${conversationId}`);
     expect(getUserParticipantFromConversationEventSpy)
       .toBeCalledWith({ participants: [expectedParticipant] }, CommunicationStates.connected);
   });
@@ -1812,7 +1814,7 @@ describe('fetchUserParticipantFromConversationId()', () => {
 
     await handler.fetchUserParticipantFromConversationId(conversationId);
 
-    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/calls/${conversationId}`);
+    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/${conversationId}`);
     expect(getUserParticipantFromConversationEventSpy)
       .toBeCalledWith(undefined, CommunicationStates.connected);
   });
@@ -1822,9 +1824,9 @@ describe('fetchUserParticipantFromConversationId()', () => {
 
     await handler.fetchUserParticipantFromConversationId(conversationId);
 
-    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/calls/${conversationId}`);
+    expect(requestApiSpy).toHaveBeenCalledWith(`/conversations/${conversationId}`);
     expect(getUserParticipantFromConversationEventSpy)
-      .toBeCalledWith({}, CommunicationStates.connected);
+      .toBeCalledWith(new ConversationUpdate({}), CommunicationStates.connected);
   });
 });
 

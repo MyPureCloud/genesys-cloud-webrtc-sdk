@@ -5,7 +5,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, logPendingSession } from '../utils';
+import { createAndEmitSdkError, logPendingSession, requestApi } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
@@ -467,5 +467,12 @@ export default abstract class BaseSessionHandler {
     }
 
     tracks.forEach(t => t.stop());
+  }
+
+  async fetchConversationStateFromApi (conversationId: string): Promise<ConversationUpdate> {
+    const { body } = await requestApi.call(this.sdk, `/conversations/${conversationId}`);
+    if (body) {
+      return new ConversationUpdate(body);
+    }
   }
 }

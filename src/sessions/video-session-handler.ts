@@ -359,6 +359,31 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     await this.setInitialMuteStates(session);
 
     logDeviceChange(this.sdk, session, 'sessionStarted');
+    /* if we haven't received a conversation event in .5 sec, we need to go fetch one */
+    setTimeout(this.checkInitialConversationParticipants.bind(this, session), 500);
+  }
+
+  async checkInitialConversationParticipants (session: VideoMediaSession) {
+    /* if we already received a conversation event, we don't have to fetch the current state */
+    if (session.pcParticipant) {
+      return;
+    }
+
+    const { conversationId, id: sessionId } = session;
+
+    this.log('info',
+      'have not received a conversation event for newly started video session. fetching from API',
+      { conversationId, sessionId }
+    );
+
+    const update = await this.fetchConversationStateFromApi(conversationId);
+
+    /* if we received a conversation event while fetching the current state, we don't need to do anything */
+    if (session.pcParticipant) {
+      return;
+    }
+
+    this.handleConversationUpdateForSession(update, session);
   }
 
   async setInitialMuteStates (session: IExtendedMediaSession): Promise<void> {

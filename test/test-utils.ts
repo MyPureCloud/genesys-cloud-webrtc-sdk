@@ -148,6 +148,7 @@ export class MockSession extends EventEmitter {
   conversationId = random().toString();
   originalRoomJid = random().toString() + '@organization.com';
   pc = new MockPC(this);
+  pcParticipant: any;
   _statsGatherer: any;
   _outboundStream: any;
   _screenShareStream: MockStream;
