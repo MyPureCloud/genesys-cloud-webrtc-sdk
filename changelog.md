@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [PCM-1802](https://inindca.atlassian.net/browse/PCM-1802) - Fix screen recording sessions being characterized as collaborate video sessions.
 * [PCM-1795](https://inindca.atlassian.net/browse/PCM-1795) – Do not request media when `sdk.updateDefaultDevices({ updateActiveSessions: true, ... })`
   is called and the session is already using the requested deviceId.
+* [PCM-1798](https://inindca.atlassian.net/browse/PCM-1798) – Added logic to video session to check to make sure we received an initial conversation
+  event from hawk. This fixes the issue where sometimes joining a video session happens before we subscribe and receive the initial conversation
+    event from hawk – which leaves an empty list of participants in the session.
 
 ### Added
 * [PCM-1794](https://inindca.atlassian.net/browse/PCM-1794) – added `sdk.media.on('gumRequest' evt)` to notify consumers when the SDK makes a request to the

@@ -618,15 +618,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async fetchUserParticipantFromConversationId (conversationId: string): Promise<IConversationParticipantFromEvent> {
-    const { body } = await requestApi.call(this.sdk, `/conversations/calls/${conversationId}`);
-
-    if (body && body.participants) {
-      body.participants = body.participants.map((p: any) => {
-        const participant: IConversationParticipant = pick(p, ['id', 'address', 'purpose', 'state', 'direction', 'muted', 'confined']);
-        participant.userId = p.user && p.user.id;
-        return participant;
-      });
-    }
+    const body = await this.fetchConversationStateFromApi(conversationId);
 
     return this.getUserParticipantFromConversationEvent(body, CommunicationStates.connected);
   }

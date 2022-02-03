@@ -698,6 +698,50 @@ describe('acceptSession', () => {
   });
 });
 
+describe('checkInitialConversationParticipants', () => {
+  let handleConversationUpdateForSessionSpy: jest.SpyInstance;
+  let fetchConversationStateFromApiSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    handleConversationUpdateForSessionSpy = jest.spyOn(handler, 'handleConversationUpdateForSession').mockImplementation();
+    fetchConversationStateFromApiSpy = jest.spyOn(handler, 'fetchConversationStateFromApi').mockResolvedValue({} as any);
+  });
+
+  it('should do nothing if pcParticipant is present', async () => {
+    const session = new MockSession();
+    session.pcParticipant = {} as any;
+
+    await handler.checkInitialConversationParticipants(session as any);
+
+    expect(fetchConversationStateFromApiSpy).not.toHaveBeenCalled();
+    expect(handleConversationUpdateForSessionSpy).not.toHaveBeenCalled();
+  });
+
+  it('should do nothing if pcParticipant is present after fetching conversation from API', async () => {
+    const session = new MockSession();
+
+    const promise = handler.checkInitialConversationParticipants(session as any);
+
+    /* simulate receiving update before fetch completes */
+    session.pcParticipant = {} as any;
+    await promise;
+
+    expect(fetchConversationStateFromApiSpy).toHaveBeenCalledWith(session.conversationId);
+    expect(handleConversationUpdateForSessionSpy).not.toHaveBeenCalled();
+  });
+
+  it('should fetch conversation from API and pass on to emit event', async () => {
+    const session = new MockSession();
+    const returnedUpdate = new ConversationUpdate({ id: session.conversationId });
+    fetchConversationStateFromApiSpy.mockResolvedValue(returnedUpdate);
+
+    await handler.checkInitialConversationParticipants(session as any);
+
+    expect(fetchConversationStateFromApiSpy).toHaveBeenCalledWith(session.conversationId);
+    expect(handleConversationUpdateForSessionSpy).toHaveBeenCalledWith(returnedUpdate, session);
+  });
+});
+
 describe('setInitialMuteStates', () => {
   let session: IExtendedMediaSession;
   let audioSender;

@@ -270,12 +270,14 @@ function renderUser (user, org) {
       <thead>
         <th scope="col">Name</th>
         <th scope="col">Email</th>
+        <th scope="col">ID</th>
         <th scope="col">Org</th>
       </thead>
       <tbody>
         <tr>
-          <th scope="row">${user.name}</th>
           <th scope="row">${user.email}</th>
+          <th >${user.name}</th>
+          <td>${user.id}</td>
           <td>${org.name}</td>
         </tr>
       </tbody>
