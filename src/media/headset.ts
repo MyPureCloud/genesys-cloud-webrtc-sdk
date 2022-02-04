@@ -25,19 +25,13 @@ export class SdkHeadset {
     }
 
     webHidPairing(payload): void {
-        console.log('testing testing');
         console.log('payload => ', payload);
         payload.body.callback();
         // payload.webHidPairing();
     }
 
-    incomingCallRing(pendingCalls) {
-        console.log('ringing for incoming call', pendingCalls);
-        const callInfo = {
-            conversationId: pendingCalls[pendingCalls.length - 1].conversationId,
-            contactName: pendingCalls[pendingCalls.length - 1].userName
-        }
-        this.headsetLibrary.incomingCall(callInfo, pendingCalls.length > 1);
+    incomingCallRing(callInfo: { conversationId: string, contactName: string }, hasOtherActiveCalls) {
+        this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
     }
 
     endCurrentCall(currentCallId: string) {
@@ -51,12 +45,10 @@ export class SdkHeadset {
     }
 
     answerIncomingCall(currentCallId: string) {
-        console.log('answered call', currentCallId);
         this.headsetLibrary.answerCall(currentCallId);
     }
 
     toggleMute(isMuted: boolean) {
-        console.log('toggle mute', isMuted);
         this.headsetLibrary.setMute(isMuted);
     }
 

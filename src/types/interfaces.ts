@@ -368,6 +368,7 @@ export interface IPendingSessionActionParams {
    * as softphone sessions.
    */
   sessionType?: SessionTypes;
+  /** boolean to show if the event needs to pass along to the headset */
   fromHeadset?: boolean
 }
 
@@ -589,6 +590,7 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 export interface IEndSessionRequest {
   conversationId: string;
   reason?: Constants.JingleReasonCondition;
+  fromHeadset?: boolean;
 }
 
 /**
@@ -743,6 +745,8 @@ export interface ISessionMuteRequest {
   conversationId: string;
   /** `true` to mute, `false` to unmute using default device */
   mute: boolean;
+  /** boolean to show if the event needs to pass along to the headset */
+  fromHeadset?: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
   unmuteDeviceId?: string | boolean | null;
 }
@@ -752,6 +756,8 @@ export interface IConversationHeldRequest {
   conversationId: string;
   /** `true` to place on hold, `false` to take off hold */
   held: boolean;
+  /** boolean to show if the event needs to pass along to the headset */
+  fromHeadset?: boolean;
 }
 
 /**
