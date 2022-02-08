@@ -157,9 +157,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     setupLogging.call(this, options.logger || console);
 
     this._config.logger = this.logger;
-    this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
     this.media = new SdkMedia(this);
+    this.setDefaultAudioStream(this._config.defaults.audioStream);
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
@@ -303,6 +303,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     } else {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }
+  }
+
+  /**
+   * Start a softphone session with the given peer or peers.
+   *  `initialize()` must be called first.
+   *
+   * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
+   */
+  async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
+    (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
+    return this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
   }
 
   /**
@@ -596,6 +607,18 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
+   * Set the sdk default audioStream. This will call
+   *  through to `sdk.media.setDefaultAudioStream(stream);`
+   *
+   * Calling with a falsy value will clear out sdk default.
+   *
+   * @param stream media stream to use
+   */
+  setDefaultAudioStream (stream?: MediaStream): void {
+    this.media.setDefaultAudioStream(stream);
+  }
+
+  /**
    * Accept a pending session based on the passed in conversation ID.
    *
    * @param params conversationId of the pending session to accept
@@ -687,42 +710,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     await this.disconnect();
   }
 
-  /**
-   * Monitor the config.defaults.audioStream audio tracks
-   *  to listen for when they end. Once they end, remove the stream
-   *  from the defaults config.
-   *
-   * Does nothing if no stream was passed in.
-   *
-   * @param stream default audio stream
-   */
-  private trackDefaultAudioStream (stream?: MediaStream): void {
-    if (!stream) return;
-
-    stream.getAudioTracks().forEach(track => {
-      const stopTrack = track.stop.bind(track);
-
-      const remove = (track: MediaStreamTrack) => {
-        stream.removeTrack(track);
-
-        if (!stream.getAudioTracks().length) {
-          this._config.defaults.audioStream = null;
-        }
-      };
-
-      track.stop = () => {
-        this.logger.warn('stopping defaults.audioStream track from track.stop(). removing from sdk.defauls', track);
-        remove(track);
-        stopTrack();
-      };
-
-      track.addEventListener('ended', _evt => {
-        this.logger.warn('stopping defaults.audioStream track from track.onended. removing from sdk.defauls', track);
-        remove(track);
-      });
-    });
-  }
-
   private listenForStationEvents () {
     return this._streamingConnection._notifications.subscribe(
       `v2.users.${this._personDetails.id}.station`,
@@ -744,17 +731,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         }
       }
     );
-  }
-
-  /**
-   * Start a softphone session with the given peer or peers.
-   *  `initialize()` must be called first.
-   *
-   * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
-   */
-  async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
-    (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
-    return this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
   }
 }
 

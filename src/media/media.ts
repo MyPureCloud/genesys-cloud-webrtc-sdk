@@ -31,6 +31,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private audioTracksBeingMonitored: { [trackId: string]: any } = {};
   private allMediaTracksCreated = new Map<string, MediaStreamTrack>();
   private onDeviceChangeListenerRef: any;
+  /* stream or track id and function to remove listeners */
+  private defaultsBeingMonitored = new Map<string, (() => void)>();
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super();
@@ -448,6 +450,29 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     this.trackMedia(stream);
     return stream;
+  }
+
+  /**
+   * Set the sdk default audioStream.
+   *
+   * Calling with a falsy value will clear out sdk default.
+   *
+   * @param stream media stream to use
+   */
+  setDefaultAudioStream (stream?: MediaStream): void {
+    /* if we are nulling our the default */
+    if (!stream) {
+      return this.removeDefaultAudioStreamAndListeners();
+    }
+
+    /* if we aren't changing to a new stream, we don't need to setup listeners again */
+    if (stream === this.sdk._config.defaults.audioStream) {
+      return;
+    }
+
+    this.setupDefaultMediaStreamListeners(stream);
+
+    this.sdk._config.defaults.audioStream = stream;
   }
 
   /**
@@ -957,6 +982,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       d2.label === d1.label
     );
   }
+
   private async handleDeviceChange () {
     this.sdk.logger.debug('devices changed');
     /* refresh devices in the cache with the new devices */
@@ -964,24 +990,6 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return this.sdk.sessionManager.validateOutgoingMediaTracks();
   }
 
-  /**
-   * Left finsihing this function. Here is what we talked about:
-   *
-   * startMedia will always request 1 media type at a time. If permissions have not been
-   *  requested yet, it will call to `requestMediaPermissions()` (which will in turn call here)
-   *  or it will call through to here (startSingleMedia).
-   * Either way, it will concat the media tracks into a single stream and return it.
-   *
-   * If `startMedia` was called with both media types and only 1 fails, stop() the successful
-   *  media type and throw the error.
-   *
-   * `startSingleMedia` needs to implement retry attempts in this order:
-   *  - failed for permissions, throw (don't retry)
-   *  - if retry is off, throw
-   *  - failed for deviceId not found, try sdk default
-   *  - sdk deviceId not found (or there was no default), try system default
-   *  - if all those failed _or_ retry was turned off, throw
-   */
   /**
    * This function will request gUM one media type at a time. It has the
    *  following behavior:
@@ -1214,5 +1222,106 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
       track.addEventListener('ended', onEnded);
     });
+  }
+
+  private setupDefaultMediaStreamListeners (stream: MediaStream): void {
+    const origAddTrack = stream.addTrack.bind(stream);
+    const origRemoveTrack = stream.removeTrack.bind(stream);
+
+    const addtrackListener = (evt: MediaStreamTrackEvent) => {
+      if (evt.track.kind === 'audio') {
+        this.setupDefaultMediaTrackListeners(stream, evt.track);
+      }
+    };
+    const removetrackListener = (evt: MediaStreamTrackEvent) => {
+      this.removeDefaultAudioMediaTrackListeners(evt.track.id);
+    };
+
+    const removeStreamListeners = () => {
+      stream.addTrack = origAddTrack;
+      stream.removeTrack = origRemoveTrack;
+      stream.removeEventListener('addtrack', addtrackListener);
+      stream.removeEventListener('removetrack', removetrackListener);
+      this.defaultsBeingMonitored.delete(stream.id);
+    };
+
+    stream.addEventListener('addtrack', addtrackListener);
+    stream.addEventListener('removetrack', removetrackListener);
+    stream.addTrack = (track: MediaStreamTrack) => {
+      if (track.kind === 'audio') {
+        this.setupDefaultMediaTrackListeners(stream, track);
+      }
+      origAddTrack(track);
+    };
+    stream.removeTrack = (track: MediaStreamTrack) => {
+      this.removeDefaultAudioMediaTrackListeners(track.id);
+      origRemoveTrack(track);
+    };
+
+    this.defaultsBeingMonitored.set(stream.id, removeStreamListeners);
+
+    /* setup listeners on existing tracks */
+    stream.getAudioTracks()
+      .forEach(t => this.setupDefaultMediaTrackListeners(stream, t));
+  }
+
+  private removeDefaultAudioStreamAndListeners (): void {
+    const defaultStream = this.sdk._config.defaults.audioStream;
+
+    if (!defaultStream) return;
+
+    defaultStream.getAudioTracks()
+      .forEach(t => this.removeDefaultAudioMediaTrackListeners(t.id));
+
+    const removeFn = this.defaultsBeingMonitored.get(defaultStream.id);
+    if (removeFn) {
+      removeFn();
+    }
+
+    this.sdk._config.defaults.audioStream = null;
+  }
+
+  private setupDefaultMediaTrackListeners (stream: MediaStream, track: MediaStreamTrack): void {
+    const origStop = track.stop.bind(track);
+
+    const endedListener = (_) => {
+      this.sdk.logger.warn('stopping defaults.audioStream track from track.onended. removing from default stream', track);
+      stopAndRemoveTrack(track);
+    };
+
+    const removeListeners = () => {
+      track.stop = origStop;
+      track.removeEventListener('ended', endedListener);
+      this.defaultsBeingMonitored.delete(track.id);
+    };
+
+    const stopAndRemoveTrack = (track: MediaStreamTrack) => {
+      /* stop track and remove from the stream */
+      origStop();
+      stream.removeTrack(track);
+
+      removeListeners();
+
+      const remainActiveAudioTracks = stream.getAudioTracks().filter(t => t.readyState === 'live');
+      if (!remainActiveAudioTracks.length) {
+        this.sdk.logger.warn('defaults.audioStream has no active audio tracks. removing from sdk.defauls', track);
+        this.setDefaultAudioStream(null);
+      }
+    };
+
+    track.addEventListener('ended', endedListener);
+    track.stop = () => {
+      this.sdk.logger.warn('stopping defaults.audioStream track from track.stop(). removing from default stream', track);
+      stopAndRemoveTrack(track);
+    };
+
+    this.defaultsBeingMonitored.set(track.id, removeListeners);
+  }
+
+  private removeDefaultAudioMediaTrackListeners (trackId: string): void {
+    const removeFn = this.defaultsBeingMonitored.get(trackId);
+    if (removeFn) {
+      removeFn();
+    }
   }
 }

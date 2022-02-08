@@ -748,6 +748,44 @@ describe('SdkMedia', () => {
     });
   });
 
+  describe('setDefaultAudioStream()', () => {
+    let removeDefaultAudioStreamAndListenersSpy: jest.SpyInstance;
+    let setupDefaultMediaStreamListenersSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      removeDefaultAudioStreamAndListenersSpy = jest.spyOn(sdkMedia, 'removeDefaultAudioStreamAndListeners' as any).mockImplementation();
+      setupDefaultMediaStreamListenersSpy = jest.spyOn(sdkMedia, 'setupDefaultMediaStreamListeners' as any).mockImplementation();
+    });
+
+    it('should remove existing stream if null was passed in', () => {
+      sdkMedia.setDefaultAudioStream();
+      expect(removeDefaultAudioStreamAndListenersSpy).toHaveBeenCalled();
+      expect(setupDefaultMediaStreamListenersSpy).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing if setting to the same default stream', () => {
+      const stream = new MockStream() as any as MediaStream;
+      sdk._config.defaults.audioStream = stream;
+
+      sdkMedia.setDefaultAudioStream(stream);
+
+      expect(removeDefaultAudioStreamAndListenersSpy).not.toHaveBeenCalled();
+      expect(setupDefaultMediaStreamListenersSpy).not.toHaveBeenCalled();
+    });
+
+    it('should setup listeners on the stream and tracks and set the default sdk config', () => {
+      const stream = new MockStream(true) as any as MediaStream;
+
+      expect(sdk._config.defaults.audioStream).toBeFalsy();
+
+      sdkMedia.setDefaultAudioStream(stream);
+
+      expect(removeDefaultAudioStreamAndListenersSpy).not.toHaveBeenCalled();
+      expect(setupDefaultMediaStreamListenersSpy).toHaveBeenCalledWith(stream);
+      expect(sdk._config.defaults.audioStream).toBe(stream);
+    });
+  });
+
   describe('findCachedDeviceByTrackLabelAndKind()', () => {
     beforeEach(() => {
       sdkMedia['setDevices'](mockedDevices);
@@ -1898,6 +1936,223 @@ describe('SdkMedia', () => {
     it('should return `false` for any other errors', () => {
       const error = new Error('Device not found');
       expect(isPermissionsErrorFn(error)).toBe(false);
+    });
+  });
+
+  describe('setupDefaultMediaStreamListeners()', () => {
+    let setupDefaultMediaTrackListenersSpy: jest.SpyInstance;
+    let removeDefaultAudioMediaTrackListenersSpy: jest.SpyInstance;
+    let stream: MediaStream;
+
+    beforeEach(() => {
+      setupDefaultMediaTrackListenersSpy = jest.spyOn(sdkMedia, 'setupDefaultMediaTrackListeners' as any).mockImplementation();
+      removeDefaultAudioMediaTrackListenersSpy = jest.spyOn(sdkMedia, 'removeDefaultAudioMediaTrackListeners' as any).mockImplementation();
+
+      stream = new MockStream({ audio: true }) as any;
+    });
+
+    it('should setup default listeners that react to only "audio" tracks', () => {
+      jest.spyOn(stream, 'addEventListener');
+
+      sdkMedia['setupDefaultMediaStreamListeners'](stream);
+
+      expect(stream.addEventListener).toHaveBeenCalledWith('addtrack', expect.any(Function));
+      expect(stream.addEventListener).toHaveBeenCalledWith('removetrack', expect.any(Function));
+
+      /* simulate an audio track being added */
+      const audioTrack = new MockTrack('audio');
+      (stream as any as MockStream)._mockTrackAdded(audioTrack);
+      expect(setupDefaultMediaTrackListenersSpy).toHaveBeenCalledWith(stream, audioTrack);
+
+      /* simulate an video track being added */
+      const videoTrack = new MockTrack('video');
+      (stream as any as MockStream)._mockTrackAdded(videoTrack);
+      expect(setupDefaultMediaTrackListenersSpy).not.toHaveBeenCalledWith(stream, videoTrack);
+
+      /* simulate tracks removed (track.kind does not matter) */
+      (stream as any as MockStream)._mockTrackRemoved(audioTrack);
+      (stream as any as MockStream)._mockTrackRemoved(videoTrack);
+
+      expect(removeDefaultAudioMediaTrackListenersSpy).toHaveBeenCalledWith(audioTrack.id);
+      expect(removeDefaultAudioMediaTrackListenersSpy).toHaveBeenCalledWith(videoTrack.id);
+    });
+
+    it('should override functions to react to only "audio" tracks and call through to original function', () => {
+      const origAddTrack = jest.spyOn(stream, 'addTrack');
+      const origRemoveTrack = jest.spyOn(stream, 'removeTrack');
+
+      sdkMedia['setupDefaultMediaStreamListeners'](stream);
+
+      /* simulate an audio track being added */
+      const audioTrack = new MockTrack('audio') as any as MediaStreamTrack;
+      stream.addTrack(audioTrack);
+      expect(setupDefaultMediaTrackListenersSpy).toHaveBeenCalledWith(stream, audioTrack);
+      expect(origAddTrack).toHaveBeenCalledWith(audioTrack);
+
+      /* simulate an video track being added */
+      const videoTrack = new MockTrack('video') as any as MediaStreamTrack;
+      stream.addTrack(videoTrack);
+      expect(setupDefaultMediaTrackListenersSpy).not.toHaveBeenCalledWith(stream, videoTrack);
+      expect(origAddTrack).toHaveBeenCalledWith(videoTrack);
+
+      /* simulate tracks removed (track.kind does not matter) */
+      stream.removeTrack(audioTrack);
+      stream.removeTrack(videoTrack);
+
+      expect(removeDefaultAudioMediaTrackListenersSpy).toHaveBeenCalledWith(audioTrack.id);
+      expect(removeDefaultAudioMediaTrackListenersSpy).toHaveBeenCalledWith(videoTrack.id);
+      expect(origRemoveTrack).toHaveBeenCalledWith(audioTrack);
+      expect(origRemoveTrack).toHaveBeenCalledWith(videoTrack);
+    });
+
+    it('should reset overridden functions, remove listeners, and stop tracking stream', () => {
+      jest.spyOn(stream, 'removeEventListener');
+
+      const origAddTrack = stream.addTrack;
+      const origRemoveTrack = stream.removeTrack;
+
+      sdkMedia['setupDefaultMediaStreamListeners'](stream);
+
+      expect(origAddTrack).not.toBe(stream.addTrack);
+      expect(origRemoveTrack).not.toBe(stream.removeTrack);
+
+      const overriddenAddTrack = stream.addTrack;
+      const overriddenRemoveTrack = stream.removeTrack;
+
+      /* call the reset function */
+      const resetFn = sdkMedia['defaultsBeingMonitored'].get(stream.id);
+      resetFn();
+
+      /* remove listeners */
+      expect(stream.removeEventListener).toHaveBeenCalledWith('addtrack', expect.any(Function));
+      expect(stream.removeEventListener).toHaveBeenCalledWith('removetrack', expect.any(Function));
+
+      /* reset functions */
+      expect(stream.addTrack).not.toBe(overriddenAddTrack);
+      expect(stream.removeTrack).not.toBe(overriddenRemoveTrack);
+    });
+
+    it('should setup listeners for existing tracks on the passed in stream', () => {
+      stream = new MockStream(true) as any;
+
+      sdkMedia['setupDefaultMediaStreamListeners'](stream);
+
+      stream.getAudioTracks().forEach(t => expect(setupDefaultMediaTrackListenersSpy).toHaveBeenCalledWith(stream, t));
+      stream.getVideoTracks().forEach(t => expect(setupDefaultMediaTrackListenersSpy).not.toHaveBeenCalledWith(stream, t));
+    });
+  });
+
+  describe('removeDefaultAudioStreamAndListeners()', () => {
+    let removeDefaultAudioMediaTrackListenersSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      removeDefaultAudioMediaTrackListenersSpy = jest.spyOn(sdkMedia, 'removeDefaultAudioMediaTrackListeners' as any).mockImplementation();
+    });
+
+    it('should do nothing if no default audio stream is found', () => {
+      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      sdkMedia['removeDefaultAudioStreamAndListeners']();
+      expect(sdk._config.defaults.audioStream).toBeFalsy();
+    });
+
+    it('should remove default listeners on audio tracks and clear out sdk default', () => {
+      const stream = new MockStream({ audio: true }) as any as MediaStream;
+      sdk._config.defaults.audioStream = stream;
+
+      expect(sdk._config.defaults.audioStream).toBe(stream);
+
+      sdkMedia['removeDefaultAudioStreamAndListeners']();
+
+      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      stream.getAudioTracks().forEach(t => expect(removeDefaultAudioMediaTrackListenersSpy).toHaveBeenCalledWith(t.id));
+    });
+
+    it('should call the remove function to stop tracking media stream', () => {
+      const mockRemoveFn = jest.fn();
+      const stream = new MockStream({ audio: true }) as any as MediaStream;
+      sdk._config.defaults.audioStream = stream;
+      sdkMedia['defaultsBeingMonitored'].set(stream.id, mockRemoveFn);
+
+      expect(sdk._config.defaults.audioStream).toBe(stream);
+
+      sdkMedia['removeDefaultAudioStreamAndListeners']();
+
+      expect(mockRemoveFn).toHaveBeenCalled();
+    });
+
+  });
+
+  describe('setupDefaultMediaTrackListeners()', () => {
+    let stream: MediaStream;
+    let audioTrack: MockTrack;
+
+    beforeEach(() => {
+      stream = new MockStream({ audio: true }) as any;
+      audioTrack = stream.getAudioTracks()[0] as any;
+    });
+
+    it('should setup default listeners that react to only "audio" tracks', () => {
+      /* it is unlikely we have two audio tracks, but need two for testing */
+      const secondAudioTrack = new MockTrack('audio');
+      const videoTrack = new MockTrack('video');
+      stream.addTrack(secondAudioTrack as any);
+      stream.addTrack(videoTrack as any); // having an active video track should not affect this function
+
+      jest.spyOn(audioTrack, 'addEventListener');
+      jest.spyOn(audioTrack, 'removeEventListener');
+      jest.spyOn(videoTrack, 'removeEventListener');
+      jest.spyOn(secondAudioTrack, 'removeEventListener');
+
+      /* this function will call `setupDefaultMediaTrackListeners` for all audio tracks */
+      sdkMedia.setDefaultAudioStream(stream);
+
+      expect(audioTrack.addEventListener).toHaveBeenCalledWith('ended', expect.any(Function));
+
+      /* simulate an audio track 'ended' event */
+      audioTrack._mockTrackEnded();
+
+      /* should remove listener, remove track from stream, and NOT remove the default stream */
+      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(audioTrack.removeEventListener).toHaveBeenCalledWith('ended', expect.any(Function));
+      expect(stream.getAudioTracks()).toEqual([secondAudioTrack]);
+
+      /* ending video track should do nothing */
+      videoTrack._mockTrackEnded();
+      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(videoTrack.removeEventListener).not.toHaveBeenCalled();
+      expect(stream.getAudioTracks()).toEqual([secondAudioTrack]);
+
+      /* should remove track from stream and reset default since there are no more active audio tracks */
+      secondAudioTrack._mockTrackEnded();
+      expect(secondAudioTrack.removeEventListener).toHaveBeenCalledWith('ended', expect.any(Function));
+      expect(sdk._config.defaults.audioStream).toBeFalsy();
+    });
+
+    it('should override functions to react to only "audio" tracks and call through to original function', () => {
+      const origStop = jest.spyOn(audioTrack, 'stop');
+
+      expect(audioTrack.stop).toBe(origStop);
+
+      /* this function will call `setupDefaultMediaTrackListeners` for all audio tracks */
+      sdkMedia.setDefaultAudioStream(stream);
+      expect(audioTrack.stop).not.toBe(origStop);
+
+      const overriddenStop = audioTrack.stop;
+
+      audioTrack.stop();
+      expect(audioTrack.stop).not.toBe(overriddenStop);
+    });
+  });
+
+  describe('removeDefaultAudioMediaTrackListeners()', () => {
+    it('should call remove function for track', () => {
+      const removeFn = jest.fn();
+      const track = new MockTrack('audio');
+
+      sdkMedia['defaultsBeingMonitored'].set(track.id, removeFn);
+
+      sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
+      expect(removeFn).toHaveBeenCalled();
     });
   });
 });

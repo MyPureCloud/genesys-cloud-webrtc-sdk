@@ -903,6 +903,20 @@ Params:
 
 Returns: void
 
+#### `setDefaultAudioStream()`
+Set the sdk default audioStream. Calling with a falsy value will clear out sdk default.
+This will call through to `sdk.media.setDefaultAudioStream(stream);`
+
+Declaration:
+``` ts
+setDefaultAudioStream(stream?: MediaStream): void;
+```
+
+Params:
+* `stream: MediaStream` – (Optional) media stream to use
+
+Returns: void
+
 #### `acceptPendingSession()`
 Accept a pending session based on the passed in ID.
 
