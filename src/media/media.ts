@@ -1302,8 +1302,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
       removeListeners();
 
-      const remainActiveAudioTracks = stream.getAudioTracks().filter(t => t.readyState === 'live');
-      if (!remainActiveAudioTracks.length) {
+      const remainingActiveAudioTracks = stream.getAudioTracks().filter(t => t.readyState === 'live');
+      if (!remainingActiveAudioTracks.length) {
         this.sdk.logger.warn('defaults.audioStream has no active audio tracks. removing from sdk.defauls', track);
         this.setDefaultAudioStream(null);
       }
