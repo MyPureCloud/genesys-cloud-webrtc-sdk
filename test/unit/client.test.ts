@@ -136,8 +136,7 @@ describe('Client', () => {
     });
 
     it('sets up options when provided and track default audioStream', () => {
-      const trackDefaultAudioStreamSpy = jest.spyOn(GenesysCloudWebrtcSdk.prototype, 'trackDefaultAudioStream' as any)
-        .mockImplementation();
+      const setDefaultAudioStreamSpy = jest.spyOn(GenesysCloudWebrtcSdk.prototype, 'setDefaultAudioStream').mockImplementation();
       const mockStream = {};
       const sdk = constructSdk({
         accessToken: '1234',
@@ -154,7 +153,7 @@ describe('Client', () => {
       expect(sdk._config.environment).toBe('mypurecloud.ie');
       expect(sdk._config.autoConnectSessions).toBe(false);
       expect(sdk.isGuest).toBe(false);
-      expect(trackDefaultAudioStreamSpy).toHaveBeenCalledWith(mockStream);
+      expect(setDefaultAudioStreamSpy).toHaveBeenCalledWith(mockStream);
     });
 
     it('sets up listeners for canceled and handled sessions', () => {
@@ -194,7 +193,7 @@ describe('Client', () => {
     beforeEach(() => {
       sdk = constructSdk();
     });
-    
+
     it('should be true', () => {
       expect(sdk.isVideoSession({ sessionType: SessionTypes.collaborateVideo } as any)).toBeTruthy();
     });
@@ -781,6 +780,17 @@ describe('Client', () => {
     });
   });
 
+  describe('setDefaultAudioStream()', () => {
+    it('should call through to media.setDefaultAudioStream()', () => {
+      sdk = constructSdk();
+      const spy = jest.spyOn(sdk.media, 'setDefaultAudioStream');
+      const media = new MockStream() as any as MediaStream;
+
+      sdk.setDefaultAudioStream(media);
+      expect(spy).toHaveBeenCalledWith(media);
+    });
+  });
+
   describe('destroy()', () => {
     it('should log, end all sessions, remove listeners, destory media, and disconnect ws', async () => {
       sdk = constructSdk();
@@ -808,61 +818,6 @@ describe('Client', () => {
       expect(sdk.removeAllListeners).toHaveBeenCalled();
       expect(sdk.media.destroy).toHaveBeenCalled();
       expect(sdk.disconnect).toHaveBeenCalled();
-    });
-  });
-
-  describe('trackDefaultAudioStream()', () => {
-    let trackDefaultAudioStreamFn: typeof GenesysCloudWebrtcSdk.prototype['trackDefaultAudioStream'];
-    let mockTrack: MediaStreamTrack;
-    let mockSteam: MediaStream;
-
-    beforeEach(() => {
-      mockTrack = new MockTrack('audio') as any as MediaStreamTrack;
-      mockSteam = new MockStream([mockTrack] as any) as any as MediaStream;
-      sdk = constructSdk({
-        accessToken: 'access-granted',
-        environment: 'mypurecloud.com',
-        defaults: {
-          audioStream: mockSteam
-        }
-      });
-      trackDefaultAudioStreamFn = sdk['trackDefaultAudioStream'].bind(sdk);
-    });
-
-    it('should do nothing if no stream is passed in', () => {
-      expect(trackDefaultAudioStreamFn(null)).toBeFalsy();
-    });
-
-    it('should not clear the audioStream if audioTracks are present', () => {
-      mockSteam.getAudioTracks = jest.fn().mockReturnValue([{ label: 'notTest', stop: jest.fn(), addEventListener: jest.fn() }]);
-      trackDefaultAudioStreamFn(mockSteam);
-      mockTrack.stop();
-      expect(sdk._config.defaults.audioStream).not.toEqual(null);
-    })
-
-    it('should remove sdk.defaults.audioStream when track is stopped via `track.stop()`', () => {
-      trackDefaultAudioStreamFn(sdk._config.defaults.audioStream);
-
-      mockTrack.stop();
-
-      expect(sdk._config.defaults.audioStream).toBe(null);
-      expect(sdk.logger.warn).toHaveBeenCalledWith(
-        'stopping defaults.audioStream track from track.stop(). removing from sdk.defauls',
-        mockTrack
-      );
-    });
-
-    it('should remove sdk.defaults.audioStream when track is ended via the `ended` event', () => {
-      trackDefaultAudioStreamFn(sdk._config.defaults.audioStream);
-
-      /* stop the track via `ended` */
-      (mockTrack as any as MockTrack)._mockTrackEnded();
-
-      expect(sdk._config.defaults.audioStream).toBe(null);
-      expect(sdk.logger.warn).toHaveBeenCalledWith(
-        'stopping defaults.audioStream track from track.onended. removing from sdk.defauls',
-        mockTrack
-      );
     });
   });
 

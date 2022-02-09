@@ -278,6 +278,18 @@ Params: none
 
 Returns: a promise containing a `MediaStream` with the requested screen media
 
+#### `setDefaultAudioStream()`
+Set the sdk default audioStream. Calling with a falsy value will clear out sdk default.
+
+Declaration:
+``` ts
+setDefaultAudioStream(stream?: MediaStream): void;
+```
+
+Params:
+* `stream: MediaStream` – (Optional) media stream to use
+
+Returns: void
 
 #### `getValidDeviceId()`
 Look for a valid deviceId in the cached media devices

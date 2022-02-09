@@ -177,19 +177,8 @@ export class MockSession extends EventEmitter {
   }
 }
 
-export class MockTrack {
+export class MockEventer {
   _listeners: { event: string, callback: Function }[] = [];
-  readyState = 'live';
-  id = random();
-  kind = 'video';
-  label: string;
-  enabled = true;
-  muted = false;
-  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
-    this.kind = kind;
-    this.label = label || '';
-  }
-
   addEventListener (event: string, callback: Function) {
     this._listeners.push({ event, callback });
   }
@@ -198,11 +187,29 @@ export class MockTrack {
     this._listeners = this._listeners.filter(l => l.event === event && l.callback !== callback);
   }
 
-  _mockTrackEnded () {
-    this.stop();
+  _fireListeners (event: string, payload?: any) {
     this._listeners
-      .filter(l => l.event === 'ended')
-      .forEach(l => l.callback());
+      .filter(l => l.event === event)
+      .forEach(l => l.callback(payload));
+  }
+}
+
+export class MockTrack extends MockEventer {
+  readyState = 'live';
+  id = random();
+  kind = 'video';
+  label: string;
+  enabled = true;
+  muted = false;
+  constructor (kind: 'video' | 'audio' = 'video', label?: string) {
+    super();
+    this.kind = kind;
+    this.label = label || '';
+  }
+
+  _mockTrackEnded () {
+    this.readyState = 'ended';
+    this._fireListeners('ended');
   }
 
   stop = jest.fn().mockImplementation(() => this.readyState = 'ended');
@@ -210,11 +217,12 @@ export class MockTrack {
   applyConstraints = jest.fn();
 }
 
-export class MockStream {
+export class MockStream extends MockEventer {
   constructor (options:
     Array<MockTrack> |
     { video?: boolean, audio?: boolean } |
     boolean = false) {
+    super();
     /* if true, add both types of media tracks */
     if (options === true) {
       this._tracks.push(new MockTrack('video'));
@@ -249,6 +257,19 @@ export class MockStream {
   removeTrack (track: MockTrack): void {
     const index = this._tracks.findIndex(t => t.id === track.id);
     this._tracks.splice(index, 1);
+  }
+
+  _mockTrackAdded (track: MockTrack) {
+    this._tracks.push(track);
+    this._fireListeners('addtrack', { track });
+  }
+
+  _mockTrackRemoved (track: MockTrack) {
+    const index = this._tracks.findIndex(t => t.id === track.id);
+    this._tracks.splice(index, 1);
+    if (index >= 0) {
+      this._fireListeners('removetrack', { track });
+    }
   }
 }
 
