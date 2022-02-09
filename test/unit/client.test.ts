@@ -8,7 +8,7 @@ import StreamingClient from 'genesys-cloud-streaming-client';
 import { ILogger } from 'genesys-cloud-client-logger';
 
 import { SessionManager } from '../../src/sessions/session-manager';
-import { MockTrack, MockStream, MockSession, random } from '../test-utils';
+import { MockStream, MockSession, random } from '../test-utils';
 import {
   GenesysCloudWebrtcSdk,
   ICustomerData,
@@ -321,7 +321,7 @@ describe('Client', () => {
           jabberId: 'bat.com',
         },
         station: {
-          associatedStation: { id: stationId } as any
+          effectiveStation: { id: stationId } as any
         }
       };
       station = {
@@ -391,13 +391,13 @@ describe('Client', () => {
       expect(fetchAuthenticatedUserSpy).toHaveBeenCalled();
     });
 
-    it('should throw if the user does not have an associated station', async () => {
+    it('should throw if the user does not have an effective station', async () => {
       const expectThrow = async () => {
         try {
           await sdk.fetchUsersStation();
           fail('should have throw');
         } catch (e) {
-          expect(e.message).toBe('User does not have an associated station');
+          expect(e.message).toBe('User does not have an effective station');
         }
       };
 

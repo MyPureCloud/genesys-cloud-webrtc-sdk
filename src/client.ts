@@ -507,9 +507,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       await this.fetchAuthenticatedUser();
     }
 
-    const stationId = this._personDetails?.station?.associatedStation?.id;
+    const stationId = this._personDetails?.station?.effectiveStation?.id;
     if (!stationId) {
-      const error = new Error('User does not have an associated station');
+      const error = new Error('User does not have an effective station');
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
@@ -528,7 +528,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Check to see if the user's currently associated station has
+   * Check to see if the user's currently effective station has
    *  persistent connection enabled.
    *
    * @returns if the station has persistent connection enabled
@@ -543,7 +543,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Check to see if the user's currently associated station has
+   * Check to see if the user's currently effective station has
    *  Line Appearance > 1.
    *
    * @returns if the station has Line Appearance > 1
@@ -726,7 +726,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           });
 
           this._personDetails.station = event.eventBody;
-          // we emit the associated station after it is loaded
+          // we emit the effectiveStation station after it is loaded
           return this.fetchUsersStation();
         }
       }
