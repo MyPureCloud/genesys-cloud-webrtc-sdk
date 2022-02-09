@@ -110,6 +110,30 @@ describe('requestApiWithRetry', () => {
 
     expect(httpSpy).toHaveBeenCalled();
   });
+
+  it('should emit any errors thrown', async () => {
+    const error = new Error('This request ruptured. Good luck fixing it.');
+    const sdkError = new SdkError(SdkErrorTypes.http, error.message, error);
+
+    const waitForErrorToEmit = new Promise<void>((res, rej) => {
+      sdk.on('sdkError', (sdkErr) => {
+        expect(sdkErr).toEqual(sdkError);
+        res();
+      });
+      setTimeout(rej, 1000);
+    });
+
+    jest.spyOn(sdk._http, 'requestApiWithRetry').mockReturnValue({ promise: Promise.reject(error) } as any);
+
+    try {
+      await utils.requestApiWithRetry.call(sdk, '/doo').promise;
+      fail('it should have thrown');
+    } catch (error) {
+      expect(error).toEqual(error);
+    }
+
+    await waitForErrorToEmit;
+  });
 });
 
 describe('requestApi', () => {

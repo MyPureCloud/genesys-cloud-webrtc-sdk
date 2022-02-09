@@ -501,9 +501,9 @@ interface ILogger {
 SDK Media helper instance. See [WebRTC Media] for API and usage.
 
 #### `station`
-The current authenticated user's associated Webrtc station. Note, this value will always be `null` unless
+The current authenticated user's effective Webrtc station. Note, this value will always be `null` unless
   `SessionTypes.softphone` is passed into the SDK's `allowedSessionTypes: []` config option. Then, it will
-  be updated based on the user's associated station in real time. See [Events](#events) for the corresponding
+  be updated based on the user's effective station in real time. See [Events](#events) for the corresponding
   `'station'` event and more information on subscribing to association changes.
 
 Available values: `IStation | null`.
@@ -770,7 +770,7 @@ Params:
 Returns: void
 
 #### `isPersistentConnectionEnabled()`
-Check to see if the user's currently associated station has
+Check to see if the user's currently effective station has
 persistent connection enabled.
 
 Declaration:
@@ -784,7 +784,7 @@ Returns: a boolean, `true`, if the `station.webRtcPersistentEnabled === true`
   and the `station.type === 'inin_webrtc_softphone'`
 
 #### `isConcurrentSoftphoneSessionsEnabled()`
-Check to see if the user's currently associated station has
+Check to see if the user's currently effective station has
  Line Appearance > 1. See the corresponding [concurrentSoftphoneSessionsEnabled](#concurrentsoftphonesessionsenabled) event
  under [Events](#events).
 

@@ -610,9 +610,11 @@ export interface IPersonDetails {
     jabberId: string;
   };
   station?: {
-    associatedStation?: IStation;
+    /* use this one */
     effectiveStation?: IStation;
+    associatedStation?: IStation;
     lastAssociatedStation?: IStation;
+    defaultStation?: IStation;
   }
 }
 
