@@ -2,6 +2,8 @@ import groovy.json.JsonBuilder
 
 @Library('pipeline-library@COMUI-857') _
 
+// TODO: delete me I am a change made in fake-master. I should merge back correctly.
+
 def MAIN_BRANCH = 'fake-master' // TODO: change back to 'master'
 def DEVELOP_BRANCH = 'PCM-1790' // TODO: change back to 'develop'
 
