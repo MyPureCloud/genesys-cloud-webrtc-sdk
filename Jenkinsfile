@@ -2,10 +2,8 @@ import groovy.json.JsonBuilder
 
 @Library('pipeline-library@COMUI-857') _
 
-// TODO: delete me I am a change made in fake-master. I should merge back correctly.
-
-def MAIN_BRANCH = 'fake-master' // TODO: change back to 'master'
-def DEVELOP_BRANCH = 'PCM-1790' // TODO: change back to 'develop'
+def MAIN_BRANCH = 'master'
+def DEVELOP_BRANCH = 'develop'
 
 def isMain = {
   env.BRANCH_NAME == MAIN_BRANCH
@@ -105,8 +103,6 @@ webappPipeline {
 
         // if not MAIN branch, then we need to adjust the verion in the package.json
         if (!isMain()) {
-          // TODO: find out how to get this from the pipeline
-
           // load the package.json version
           def packageJson = readJSON(file: packageJsonPath)
           def featureBranch = env.BRANCH_NAME
@@ -152,7 +148,7 @@ webappPipeline {
                         tag: tag, // optional
                         useArtifactoryRepo: false, // optional, default `true`
                         version: version, // optional, default is version in package.json
-                        dryRun: true // dry run the publish, default `false`
+                        dryRun: false // dry run the publish, default `false`
                     ])
                 }
             }
@@ -162,7 +158,7 @@ webappPipeline {
             stage('Tag commit and merge main branch back into develop branch') {
                 script {
                     gitFunctions.tagCommit(
-                      "v${version}-testing-DELETE-ME",
+                      "v${version}",
                       gitFunctions.getCurrentCommit(),
                       false
                     )
