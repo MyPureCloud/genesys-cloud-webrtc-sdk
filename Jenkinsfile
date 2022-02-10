@@ -23,10 +23,27 @@ def getBuildType = {
     : 'FEATURE'
 }
 
+def testSpigotByEnv = { environment, version ->
+   stage("Spigot test '${environment}'") {
+        script {
+            println("Scheduling spigot test for: { env: '${environment}', branch: '${version}'")
+            build(job: 'spigot-tests-webrtcsdk-entry',
+                    parameters: [
+                        string(name: 'ENVIRONMENT', value: environment),
+                        string(name: 'BRANCH_TO_TEST', value: version)
+                    ],
+                    propagate: true,
+                    wait: true // wait for the test job to finish
+            )
+        }
+    }
+}
+def hasRunSpigotTests = false
+
 webappPipeline {
     projectName = 'developercenter-cdn/webrtc-sdk'
     team = 'Genesys Client Media (WebRTC)'
-    mailer = 'purecloud-client-media@genesys.com'
+    mailer = 'genesyscloud-client-media@genesys.com'
     chatGroupId = '763fcc91-e530-4ed7-b318-03f525a077f6'
 
     nodeVersion = '14.x'
@@ -37,10 +54,20 @@ webappPipeline {
         readJSON(file: 'dist/manifest.json')
     }
 
-    testJob = 'no-tests'
-    // testJob = 'spigot-tests-webrtcsdk'
+    testJob = 'no-tests' // see buildStep to spigot tests
 
     ciTests = {
+        println("""
+========= BUILD VARIABLES =========
+ENVIRONMENT  : ${env.ENVIRONMENT}
+BUILD_NUMBER : ${env.BUILD_NUMBER}
+BUILD_ID     : ${env.BUILD_ID}
+BRANCH_NAME  : ${env.BRANCH_NAME}
+APP_NAME     : ${env.APP_NAME}
+VERSION      : ${env.VERSION}
+===================================
+      """)
+
       sh("""
         npm i -g npm@7
         npm ci
@@ -55,6 +82,14 @@ webappPipeline {
             npm run build
             npm run build:sample
         """)
+
+        // run spigot tests on release/ branches
+        if (isRelease() && !hasRunSpigotTests) {
+          testSpigotByEnv('dev', env.VERSION);
+          testSpigotByEnv('test', env.VERSION);
+          testSpigotByEnv('prod', env.VERSION);
+          hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
+        }
     }
 
     deployConfig = [
@@ -84,14 +119,6 @@ webappPipeline {
             # echo "=== Printing dist/package.json ==="
             # cat ./dist/package.json
         """)
-
-        println("=== Printing params ===")
-        println("ENVIRONMENT  : ${env.ENVIRONMENT}")
-        println("BUILD_NUMBER : ${env.BUILD_NUMBER}")
-        println("BUILD_ID     : ${env.BUILD_ID}")
-        println("BRANCH_NAME  : ${env.BRANCH_NAME}")
-        println("APP_NAME     : ${env.APP_NAME}")
-        println("VERSION      : ${env.VERSION}")
 
         // NOTE: this version only applies to the npm version published and NOT the cdn publish url/version
         def version = env.VERSION
