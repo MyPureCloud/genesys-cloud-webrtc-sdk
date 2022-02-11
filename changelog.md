@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.1.0...HEAD)
+
+# [v7.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.0.0...v7.1.0)
 ### Fixed
 * [PCM-1802](https://inindca.atlassian.net/browse/PCM-1802) - Fix screen recording sessions being characterized as collaborate video sessions.
 * [PCM-1795](https://inindca.atlassian.net/browse/PCM-1795) – Do not request media when `sdk.updateDefaultDevices({ updateActiveSessions: true, ... })`
@@ -20,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if the window is in focus.
 * [PCM-1797](https://inindca.atlassian.net/browse/PCM-1797) – added `sdk.setDefaultAudioStream(stream)` and `sdk.media.setDefaultAudioStream(stream)` (same function)
   to allow changing the sdk default audio stream.
+
+### Maintenance
+* [PCM-1790](https://inindca.atlassian.net/browse/PCM-1790) – switched over to use new pipeline.
 
 # [v7.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v6.1.7...v7.0.0)
 ### BREAKING CHANGE
