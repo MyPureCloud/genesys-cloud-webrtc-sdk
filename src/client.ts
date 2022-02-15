@@ -140,6 +140,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
+          audioStream: undefined, // we set this below (with tracking)
           micAutoGainControl: defaultConfigOption(defaultsOptions.micAutoGainControl, true),
           micEchoCancellation: defaultConfigOption(defaultsOptions.micEchoCancellation, true),
           micNoiseSuppression: defaultConfigOption(defaultsOptions.micNoiseSuppression, true),
@@ -159,7 +160,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
-    this.setDefaultAudioStream(this._config.defaults.audioStream);
+    this.setDefaultAudioStream(defaultsOptions.audioStream);
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers

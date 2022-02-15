@@ -758,6 +758,7 @@ describe('SdkMedia', () => {
     });
 
     it('should remove existing stream if null was passed in', () => {
+      sdk._config.defaults.audioStream = new MockStream() as any;
       sdkMedia.setDefaultAudioStream();
       expect(removeDefaultAudioStreamAndListenersSpy).toHaveBeenCalled();
       expect(setupDefaultMediaStreamListenersSpy).not.toHaveBeenCalled();
@@ -780,7 +781,7 @@ describe('SdkMedia', () => {
 
       sdkMedia.setDefaultAudioStream(stream);
 
-      expect(removeDefaultAudioStreamAndListenersSpy).not.toHaveBeenCalled();
+      expect(removeDefaultAudioStreamAndListenersSpy).toHaveBeenCalled();
       expect(setupDefaultMediaStreamListenersSpy).toHaveBeenCalledWith(stream);
       expect(sdk._config.defaults.audioStream).toBe(stream);
     });
