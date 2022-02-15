@@ -54,6 +54,15 @@ webappPipeline {
         readJSON(file: 'dist/manifest.json')
     }
 
+    deployConfig = [
+      dev : 'always',
+      test : 'always',
+      prod : 'always',
+      'fedramp-use2-core': 'always'
+    ]
+
+    autoSubmitCm = true
+
     testJob = 'no-tests' // see buildStep to spigot tests
 
     ciTests = {
@@ -91,13 +100,6 @@ VERSION      : ${env.VERSION}
           hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
         }
     }
-
-    deployConfig = [
-      dev : 'always',
-      test : 'always',
-      prod : 'always',
-      'fedramp-use2-core': 'always'
-    ]
 
     onSuccess = {
        sh("""

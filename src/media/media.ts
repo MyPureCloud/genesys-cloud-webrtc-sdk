@@ -460,14 +460,17 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * @param stream media stream to use
    */
   setDefaultAudioStream (stream?: MediaStream): void {
-    /* if we are nulling our the default */
-    if (!stream) {
-      return this.removeDefaultAudioStreamAndListeners();
-    }
-
     /* if we aren't changing to a new stream, we don't need to setup listeners again */
     if (stream === this.sdk._config.defaults.audioStream) {
       return;
+    }
+
+    /* clean up any existing default streams */
+    this.removeDefaultAudioStreamAndListeners();
+
+    /* if we aren't setting to a new stream */
+    if (!stream) {
+       return;
     }
 
     this.setupDefaultMediaStreamListeners(stream);
