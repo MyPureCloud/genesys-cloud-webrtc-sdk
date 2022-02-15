@@ -1,22 +1,16 @@
 import { Observable } from 'rxjs';
 import { SdkMedia } from "..";
-import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
+import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation} from 'softphone-vendor-headsets';
 
 export class SdkHeadset {
     private media: SdkMedia;
     private headsetLibrary: HeadsetService;
-    headsetEvents: Observable<ConsumedHeadsetEvents>
+    headsetEvents: Observable<ConsumedHeadsetEvents>;
 
     constructor(media) {
         this.media = media;
         this.headsetLibrary = HeadsetService.getInstance({ logger: console });
         this.headsetEvents = this.headsetLibrary.getHeadSetEventsSubject().asObservable();
-
-        this.headsetLibrary.headsetEvents$.subscribe((value) => {
-            if (value.event === 'webHidPermissionRequested') {
-                this.webHidPairing(value.payload);
-            }
-        })
     }
 
     getAudioDevice(newMicId: string): void {
@@ -24,11 +18,35 @@ export class SdkHeadset {
         this.headsetLibrary.activeMicChange(completeDeviceInfo.label.toLowerCase());
     }
 
-    webHidPairing(payload): void {
-        console.log('payload => ', payload);
-        payload.body.callback();
-        // payload.webHidPairing();
+    getCurrentSelectedImplementation(): VendorImplementation {
+        return this.headsetLibrary.selectedImplementation;
     }
+
+    getConnectionStatus(): string {
+        return this.headsetLibrary.connectionStatus;
+    }
+
+    showRetry(): boolean {
+        const selectedImplementation = this.getCurrentSelectedImplementation();
+        if (selectedImplementation.disableRetry) {
+            return false;
+        }
+
+        return selectedImplementation
+            && !selectedImplementation.isConnected
+            && ! selectedImplementation.isConnecting;
+    }
+
+    retryConnection(micLabel): void {
+        const selectedImplementation = this.getCurrentSelectedImplementation();
+        selectedImplementation.connect(micLabel.toLowerCase());
+    }
+
+    // webHidPairing(payload): void {
+    //     console.log('payload => ', payload);
+    //     // payload.body.callback();
+    //     // payload.webHidPairing();
+    // }
 
     incomingCallRing(callInfo: { conversationId: string, contactName: string }, hasOtherActiveCalls) {
         this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
