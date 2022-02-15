@@ -42,12 +42,6 @@ export class SdkHeadset {
         selectedImplementation.connect(micLabel.toLowerCase());
     }
 
-    // webHidPairing(payload): void {
-    //     console.log('payload => ', payload);
-    //     // payload.body.callback();
-    //     // payload.webHidPairing();
-    // }
-
     incomingCallRing(callInfo: { conversationId: string, contactName: string }, hasOtherActiveCalls) {
         this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
     }
