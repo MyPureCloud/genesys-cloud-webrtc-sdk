@@ -5,7 +5,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, logPendingSession } from '../utils';
+import { createAndEmitSdkError, logPendingSession, requestApi } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
@@ -171,26 +171,59 @@ export default abstract class BaseSessionHandler {
       });
     }
 
-    const updateVideo = (options.stream || options.videoDeviceId !== undefined) && !session.videoMuted;
-    const updateAudio = options.stream || options.audioDeviceId !== undefined;
-    let stream: MediaStream = options.stream;
-
     const outboundStream = session._outboundStream;
     const destroyMediaPromises: Promise<any>[] = [];
-    const trackIdsToIgnore = [];
-    const trackKindsToIgnore = [];
+    const trackIdsToIgnore: string[] = [];
+    const trackKindsToIgnore: string[] = [];
+    const senderTracks = session.pc.getSenders()
+      .filter(s => s.track && s.track.readyState === 'live' && !s.track.muted)
+      .map(s => s.track);
 
-    /* if we have a video session */
-    if (session._screenShareStream) {
-      trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
-    }
+
+    let updateVideo = options.videoDeviceId !== undefined && options.videoDeviceId !== false && !session.videoMuted;
+    let updateAudio = options.audioDeviceId !== undefined && options.audioDeviceId !== false;
+    let stream: MediaStream = options.stream;
+
+    /* make sure we don't request the same media that is already active on the session */
+    senderTracks.forEach(track => {
+      const deviceInUseByTrack = this.sdk.media.findCachedDeviceByTrackLabelAndKind(track);
+
+      if (updateAudio && track.kind.substring(0, 5) === 'audio' && deviceInUseByTrack?.deviceId === options.audioDeviceId) {
+        this.log('info',
+          'Request to update existing media on session with the same deviceId that is already in use. Not requesting same media', {
+          options,
+          conversationId: session.conversationId,
+          sessionId: session.id,
+          trackInUse: { kind: track.kind, label: track.label },
+          deviceInUseByTrack
+        });
+        updateAudio = false;
+      }
+
+      if (updateVideo && track.kind.substring(0, 5) === 'video' && deviceInUseByTrack?.deviceId === options.videoDeviceId) {
+        this.log('info',
+          'Request to update existing media on session with the same deviceId that is already in use. Not requesting same media', {
+          options,
+          conversationId: session.conversationId,
+          sessionId: session.id,
+          trackInUse: { kind: track.kind, label: track.label },
+          deviceInUseByTrack
+        });
+        updateVideo = false;
+      }
+    });
 
     /*
       if we aren't updating a media type, leave the existing track(s) alone
       also true if our video is on mute, we don't need to touch it
     */
-    if (!updateAudio) trackKindsToIgnore.push('audio');
-    if (!updateVideo) trackKindsToIgnore.push('video');
+    if (options.stream || !updateAudio) trackKindsToIgnore.push('audio');
+    if (options.stream || !updateVideo) trackKindsToIgnore.push('video');
+
+    /* if we have a video session */
+    if (session._screenShareStream) {
+      trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
+    }
 
     const senders = session.pc.getSenders()
       .filter((sender) =>
@@ -222,14 +255,13 @@ export default abstract class BaseSessionHandler {
     await Promise.all(destroyMediaPromises);
 
     const newStartMediaContraints = {
-      audio: options.audioDeviceId,
-      /* if video is muted, we don't want to request it */
-      video: !session.videoMuted && options.videoDeviceId,
+      audio: updateAudio && options.audioDeviceId,
+      video: updateVideo && options.videoDeviceId,
       session
     };
 
     /* Allow null because it is the system default. If false or undefined, do not request media. */
-    if (!stream && (newStartMediaContraints.audio || newStartMediaContraints.video) || (newStartMediaContraints.audio === null || newStartMediaContraints.video === null)) {
+    if (!stream && (updateAudio || updateVideo)) {
       try {
         stream = await this.sdk.media.startMedia(newStartMediaContraints);
       } catch (e) {
@@ -262,6 +294,7 @@ export default abstract class BaseSessionHandler {
         throw e;
       }
     }
+
     /* If new media is not started, stream is undefined and there are no tracks. */
     if (stream) {
       /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
@@ -434,5 +467,12 @@ export default abstract class BaseSessionHandler {
     }
 
     tracks.forEach(t => t.stop());
+  }
+
+  async fetchConversationStateFromApi (conversationId: string): Promise<ConversationUpdate> {
+    const { body } = await requestApi.call(this.sdk, `/conversations/${conversationId}`);
+    if (body) {
+      return new ConversationUpdate(body);
+    }
   }
 }

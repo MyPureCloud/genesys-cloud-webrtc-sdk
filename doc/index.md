@@ -501,9 +501,9 @@ interface ILogger {
 SDK Media helper instance. See [WebRTC Media] for API and usage.
 
 #### `station`
-The current authenticated user's associated Webrtc station. Note, this value will always be `null` unless
+The current authenticated user's effective Webrtc station. Note, this value will always be `null` unless
   `SessionTypes.softphone` is passed into the SDK's `allowedSessionTypes: []` config option. Then, it will
-  be updated based on the user's associated station in real time. See [Events](#events) for the corresponding
+  be updated based on the user's effective station in real time. See [Events](#events) for the corresponding
   `'station'` event and more information on subscribing to association changes.
 
 Available values: `IStation | null`.
@@ -637,8 +637,11 @@ Update outgoing media for a specified session
    - `string`: the sdk will attempt to update the `video|audio` media
        to the passed in deviceId
 
-> Note: this does not update the SDK default device(s)
+> Note 1: this does not update the SDK default device(s)
+
 > Note 2: if multiple conversations are sharing a session the media for all those conversations will be updated, not just the provided conversationId
+
+> Note 3: if the requested device is _already in use_ by the session, the media will not be re-requested.
 
 Declaration:
 ``` ts
@@ -671,6 +674,8 @@ Update the default device(s) for the sdk.
 If `updateActiveSessions` is `true`, any active sessions will
 have their outgoing media devices updated and/or the output
 deviceId updated.
+
+> Note, if the requested device is _already in use_ by the session, the media will not be re-requested.
 
 If `updateActiveSessions` is `false`, only the sdk defaults will be updated and
 active sessions' media devices will not be touched.
@@ -765,7 +770,7 @@ Params:
 Returns: void
 
 #### `isPersistentConnectionEnabled()`
-Check to see if the user's currently associated station has
+Check to see if the user's currently effective station has
 persistent connection enabled.
 
 Declaration:
@@ -779,7 +784,7 @@ Returns: a boolean, `true`, if the `station.webRtcPersistentEnabled === true`
   and the `station.type === 'inin_webrtc_softphone'`
 
 #### `isConcurrentSoftphoneSessionsEnabled()`
-Check to see if the user's currently associated station has
+Check to see if the user's currently effective station has
  Line Appearance > 1. See the corresponding [concurrentSoftphoneSessionsEnabled](#concurrentsoftphonesessionsenabled) event
  under [Events](#events).
 
@@ -895,6 +900,20 @@ setAccessToken(token: string): void;
 
 Params:
 * `token: string` Required: new access token
+
+Returns: void
+
+#### `setDefaultAudioStream()`
+Set the sdk default audioStream. Calling with a falsy value will clear out sdk default.
+This will call through to `sdk.media.setDefaultAudioStream(stream);`
+
+Declaration:
+``` ts
+setDefaultAudioStream(stream?: MediaStream): void;
+```
+
+Params:
+* `stream: MediaStream` – (Optional) media stream to use
 
 Returns: void
 
@@ -1404,7 +1423,7 @@ interface IExtendedMediaSession extends GenesysCloudMediaSession {
   sessionType: SessionTypes;
   pc: RTCPeerConnection;
   originalRoomJid: string;
-  
+
   get state(): string;
   get connectionState(): string;
 

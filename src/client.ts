@@ -142,6 +142,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
+          audioStream: undefined, // we set this below (with tracking)
           micAutoGainControl: defaultConfigOption(defaultsOptions.micAutoGainControl, true),
           micEchoCancellation: defaultConfigOption(defaultsOptions.micEchoCancellation, true),
           micNoiseSuppression: defaultConfigOption(defaultsOptions.micNoiseSuppression, true),
@@ -159,10 +160,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     setupLogging.call(this, options.logger || console);
 
     this._config.logger = this.logger;
-    this.trackDefaultAudioStream(this._config.defaults.audioStream);
 
     this.media = new SdkMedia(this);
     this.headset = new SdkHeadset(this.media);
+    this.setDefaultAudioStream(defaultsOptions.audioStream);
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
@@ -309,6 +310,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
+   * Start a softphone session with the given peer or peers.
+   *  `initialize()` must be called first.
+   *
+   * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
+   */
+  async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
+    (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
+    return this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+  }
+
+  /**
    * Update the output device for all incoming audio
    *
    *  NOTES:
@@ -343,7 +355,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *    - `string`: the sdk will attempt to update the `video|audio` media
    *        to the passed in deviceId
    *
-   * Note: this does not update the SDK default device(s)
+   * Note: this does not update the SDK default device(s). Also, if the requested
+   *  device is _already in use_ by the session, the media will not be re-requested.
    *
    * @param updateOptions device(s) to update
    *
@@ -370,7 +383,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * If `updateActiveSessions` is `true`, any active sessions will
    *  have their outgoing media devices updated and/or the output
-   *  deviceId updated.
+   *  deviceId updated. Note, if the requested device is
+   *  _already in use_ by the session, the media will not be re-requested.
    *
    * Else, only the sdk defaults will be updated and active sessions'
    * media devices will not be touched.
@@ -498,9 +512,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       await this.fetchAuthenticatedUser();
     }
 
-    const stationId = this._personDetails?.station?.associatedStation?.id;
+    const stationId = this._personDetails?.station?.effectiveStation?.id;
     if (!stationId) {
-      const error = new Error('User does not have an associated station');
+      const error = new Error('User does not have an effective station');
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
@@ -519,7 +533,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Check to see if the user's currently associated station has
+   * Check to see if the user's currently effective station has
    *  persistent connection enabled.
    *
    * @returns if the station has persistent connection enabled
@@ -534,7 +548,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Check to see if the user's currently associated station has
+   * Check to see if the user's currently effective station has
    *  Line Appearance > 1.
    *
    * @returns if the station has Line Appearance > 1
@@ -597,6 +611,18 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   setAccessToken (token: string): void {
     this._config.accessToken = token;
+  }
+
+  /**
+   * Set the sdk default audioStream. This will call
+   *  through to `sdk.media.setDefaultAudioStream(stream);`
+   *
+   * Calling with a falsy value will clear out sdk default.
+   *
+   * @param stream media stream to use
+   */
+  setDefaultAudioStream (stream?: MediaStream): void {
+    this.media.setDefaultAudioStream(stream);
   }
 
   /**
@@ -694,42 +720,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     await this.disconnect();
   }
 
-  /**
-   * Monitor the config.defaults.audioStream audio tracks
-   *  to listen for when they end. Once they end, remove the stream
-   *  from the defaults config.
-   *
-   * Does nothing if no stream was passed in.
-   *
-   * @param stream default audio stream
-   */
-  private trackDefaultAudioStream (stream?: MediaStream): void {
-    if (!stream) return;
-
-    stream.getAudioTracks().forEach(track => {
-      const stopTrack = track.stop.bind(track);
-
-      const remove = (track: MediaStreamTrack) => {
-        stream.removeTrack(track);
-
-        if (!stream.getAudioTracks().length) {
-          this._config.defaults.audioStream = null;
-        }
-      };
-
-      track.stop = () => {
-        this.logger.warn('stopping defaults.audioStream track from track.stop(). removing from sdk.defauls', track);
-        remove(track);
-        stopTrack();
-      };
-
-      track.addEventListener('ended', _evt => {
-        this.logger.warn('stopping defaults.audioStream track from track.onended. removing from sdk.defauls', track);
-        remove(track);
-      });
-    });
-  }
-
   private listenForStationEvents () {
     return this._streamingConnection._notifications.subscribe(
       `v2.users.${this._personDetails.id}.station`,
@@ -746,22 +736,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           });
 
           this._personDetails.station = event.eventBody;
-          // we emit the associated station after it is loaded
+          // we emit the effectiveStation station after it is loaded
           return this.fetchUsersStation();
         }
       }
     );
-  }
-
-  /**
-   * Start a softphone session with the given peer or peers.
-   *  `initialize()` must be called first.
-   *
-   * @param softphoneParams participant information for initiating a softphone session. See IStartSoftphoneSessionParams for more details.
-   */
-  async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
-    (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
-    return this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
   }
 }
 

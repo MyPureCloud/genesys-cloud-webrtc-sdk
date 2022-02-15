@@ -128,7 +128,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       session.pcParticipant = participant as any;
     }
 
-    this.log('debug', 'about to process conversation event', { session, update, lastConversationUpdate, callState });
+    this.log('debug', 'about to process conversation event', { sessionId: session?.id, update, lastConversationUpdate, callState });
 
     /* if we didn't have a previous update and this one is NOT in a pending state, that means we are not responsible for this conversation (another client handled it or we have already emitted the `sessionEnded` for it) */
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
@@ -499,9 +499,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return super.proceedWithSession(pendingSession);
     }
 
-    this.log('info', 'proceeding with proposed session via HTTP request', {
-      conversationId: pendingSession.conversationId,
-      sessionId: pendingSession.id
+    this.log('info', '`proceedWithSession` called with an active session and LA == 1. sending proceed via HTTP request', {
+      sessionId: pendingSession.id,
+      conversationId: pendingSession.conversationId
     });
 
     let participant = this.getUserParticipantFromConversationEvent(
@@ -511,12 +511,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (!participant) {
       participant = await this.fetchUserParticipantFromConversationId(pendingSession.conversationId);
     }
-
-    // const participant = await this.getParticipantForSession(pendingSession);
-    this.log('info', '`acceptSession` called with an active persistent connection. accepting via HTTP request', {
-      sessionId: pendingSession.id,
-      conversationId: pendingSession.conversationId
-    });
 
     return this.patchPhoneCall(pendingSession.conversationId, participant.id, {
       state: CommunicationStates.connected
@@ -618,15 +612,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async fetchUserParticipantFromConversationId (conversationId: string): Promise<IConversationParticipantFromEvent> {
-    const { body } = await requestApi.call(this.sdk, `/conversations/calls/${conversationId}`);
-
-    if (body && body.participants) {
-      body.participants = body.participants.map((p: any) => {
-        const participant: IConversationParticipant = pick(p, ['id', 'address', 'purpose', 'state', 'direction', 'muted', 'confined']);
-        participant.userId = p.user && p.user.id;
-        return participant;
-      });
-    }
+    const body = await this.fetchConversationStateFromApi(conversationId);
 
     return this.getUserParticipantFromConversationEvent(body, CommunicationStates.connected);
   }
