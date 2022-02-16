@@ -46,6 +46,10 @@ export class SdkHeadset {
         this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
     }
 
+    outgoingCall(callInfo: { conversationId: string, contactName: string }) {
+        this.headsetLibrary.outgoingCall(callInfo);
+    }
+
     endCurrentCall(currentCallId: string) {
         if (currentCallId) {
             this.headsetLibrary.endCall(currentCallId);
