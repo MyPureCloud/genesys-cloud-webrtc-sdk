@@ -328,6 +328,7 @@ function renderPendingSessions () {
 function handleConversationUpdate (event) {
   console.debug('received `conversationUpdate` event', event);
   conversationUpdatesToRender.activeConversationId = event.activeConversationId;
+  currentConversationId = event.activeConversationId;
   event.current.forEach(convoEvt => {
     conversationUpdatesToRender.conversations[convoEvt.conversationId] = convoEvt;
   });
