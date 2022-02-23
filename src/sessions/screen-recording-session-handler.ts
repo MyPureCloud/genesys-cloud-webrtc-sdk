@@ -42,10 +42,15 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
     session._outboundStream = mediaStream;
 
-    for (const track of mediaStream.getTracks()) {
-      this.sdk.logger.info('Adding screen track to session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
-      await session.addTrack(track);
-    }
+    let addMediaPromise: Promise<any> = Promise.resolve();
+    mediaStream.getTracks().forEach((track) => {
+      addMediaPromise = addMediaPromise.then(() => {
+        this.sdk.logger.info('Adding screen track to session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
+        return session.pc.addTrack(track);
+      });
+    });
+
+    await addMediaPromise;
 
     return super.acceptSession(session, params);
   }
