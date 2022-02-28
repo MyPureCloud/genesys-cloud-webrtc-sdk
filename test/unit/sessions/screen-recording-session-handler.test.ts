@@ -69,8 +69,12 @@ describe('handlePropose', () => {
 describe('acceptSession', () => {
   it('should add _outboundStream to session and add each track', async () => {
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
+    const addSpy = jest.fn();
+
     const session = {
-      addTrack: jest.fn()
+      pc: {
+        addTrack: addSpy.mockResolvedValue(null)
+      }
     };
 
     const media = new MockStream();
@@ -80,7 +84,7 @@ describe('acceptSession', () => {
 
     await handler.acceptSession(session as any, { mediaStream: media } as any);
 
-    expect(session.addTrack).toHaveBeenCalledTimes(3);
+    expect(addSpy).toHaveBeenCalledTimes(3);
     expect((session as any)._outboundStream).toBe(media);
     expect(superSpy).toHaveBeenCalled();
   });
