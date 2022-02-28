@@ -2156,4 +2156,31 @@ describe('SdkMedia', () => {
       expect(removeFn).toHaveBeenCalled();
     });
   });
+
+  describe('getDeviceByIdAndType()', () => {
+    it('should return the proper device with supplied ID and type (audioinput)', async () => {
+      navigatorMediaDevicesMock.enumerateDevices.mockResolvedValue(mockedDevices);
+
+      await sdkMedia.enumerateDevices();
+
+      const returnedDevice = sdkMedia.getDeviceByIdAndType('mockAudioDevice1', 'audioinput');
+      expect(returnedDevice).toStrictEqual(mockedDevices[2]);
+    })
+    it('should return the proper device with supplied ID and type (videoinput)', async () => {
+      navigatorMediaDevicesMock.enumerateDevices.mockResolvedValue(mockedDevices);
+
+      await sdkMedia.enumerateDevices();
+
+      const returnedDevice = sdkMedia.getDeviceByIdAndType('mockVideoDevice1', 'videoinput');
+      expect(returnedDevice).toStrictEqual(mockedDevices[0]);
+    })
+    it('should return the proper device with supplied ID and type (other)', async () => {
+      navigatorMediaDevicesMock.enumerateDevices.mockResolvedValue(mockedDevices);
+
+      await sdkMedia.enumerateDevices();
+
+      const returnedDevice = sdkMedia.getDeviceByIdAndType('mockOutputDevice1', 'audiooutput');
+      expect(returnedDevice).toStrictEqual(mockedDevices[4]);
+    })
+  })
 });

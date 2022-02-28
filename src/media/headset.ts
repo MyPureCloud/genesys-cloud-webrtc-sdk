@@ -10,7 +10,7 @@ export class SdkHeadset {
     constructor(media) {
         this.media = media;
         this.headsetLibrary = HeadsetService.getInstance({ logger: console });
-        this.headsetEvents = this.headsetLibrary.getHeadSetEventsSubject().asObservable();
+        this.headsetEvents = this.headsetLibrary.headsetEvents$;
     }
 
     getAudioDevice(newMicId: string): void {
@@ -20,10 +20,6 @@ export class SdkHeadset {
 
     getCurrentSelectedImplementation(): VendorImplementation {
         return this.headsetLibrary.selectedImplementation;
-    }
-
-    getConnectionStatus(): string {
-        return this.headsetLibrary.connectionStatus;
     }
 
     showRetry(): boolean {
