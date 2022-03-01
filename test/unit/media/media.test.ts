@@ -2155,6 +2155,14 @@ describe('SdkMedia', () => {
       sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
       expect(removeFn).toHaveBeenCalled();
     });
+    // it('should skip calling the removeFn if one isnt found for the passed in id', () => {
+    //   const removeFn = jest.fn();
+    //   const track = new MockTrack('audio');
+    //   sdkMedia['defaultsBeingMonitored'].set(track.id, undefined);
+
+    //   sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
+    //   expect(removeFn).not.toHaveBeenCalled();
+    // });
   });
 
   describe('getDeviceByIdAndType()', () => {
@@ -2162,26 +2170,26 @@ describe('SdkMedia', () => {
       jest.clearAllMocks();
     })
     it('should return the proper device with supplied ID and type (audioinput)', async () => {
-      navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
+      // navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
 
-      await sdkMedia.enumerateDevices();
-
+      // await sdkMedia.enumerateDevices();
+      jest.spyOn(sdkMedia, 'getAudioDevices').mockReturnValueOnce([mockAudioDevice1, mockAudioDevice2]);
       const returnedDevice = sdkMedia.getDeviceByIdAndType('mockAudioDevice1', 'audioinput');
       expect(returnedDevice).toStrictEqual(mockedDevices[2]);
     });
     it('should return the proper device with supplied ID and type (videoinput)', async () => {
-      navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
+      // navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
 
-      await sdkMedia.enumerateDevices();
-
+      // await sdkMedia.enumerateDevices();
+      jest.spyOn(sdkMedia, 'getVideoDevices').mockReturnValueOnce([mockVideoDevice1, mockVideoDevice2]);
       const returnedDevice = sdkMedia.getDeviceByIdAndType('mockVideoDevice1', 'videoinput');
       expect(returnedDevice).toStrictEqual(mockedDevices[0]);
     });
     it('should return the proper device with supplied ID and type (other)', async () => {
-      navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
+      // navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
 
-      await sdkMedia.enumerateDevices();
-
+      // await sdkMedia.enumerateDevices();
+      jest.spyOn(sdkMedia, 'getOutputDevices').mockReturnValueOnce([mockOutputDevice1, mockOutputDevice2]);
       const returnedDevice = sdkMedia.getDeviceByIdAndType('mockOutputDevice1', 'audiooutput');
       expect(returnedDevice).toStrictEqual(mockedDevices[4]);
     })
