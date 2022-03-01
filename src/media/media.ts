@@ -636,23 +636,6 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Returns the device that matches the passed in deviceId
-   * and deviceType
-   *
-   * @param deviceId ID of device in question
-   * @param deviceType device type audioinput | videoinput | audiooutput | etc.
-   * @returns the device that matches the deviceId and type
-   */
-  getDeviceByIdAndType (deviceId: string, deviceType: string): MediaDeviceInfo {
-    if (deviceType === 'audioinput') {
-      return this.getAudioDevices().filter(device => deviceId === device.deviceId)[0];
-    } else if (deviceType === 'videoinput') {
-      return this.getVideoDevices().filter(device => deviceId === device.deviceId)[0];
-    }
-    return this.getOutputDevices().filter(device => deviceId === device.deviceId)[0];
-  }
-
-  /**
    * @deprecated use `sdk.media.findCachedDeviceByTrackLabelAndKind(track)`
    */
   findCachedDeviceByTrackLabel (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
@@ -708,6 +691,18 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   findCachedOutputDeviceById (id?: string): MediaDeviceInfo | undefined {
     return this.getOutputDevices().find(d => d.deviceId === id);
+  }
+
+   /**
+   * Returns the device that matches the passed in deviceId
+   * and deviceType
+   *
+   * @param deviceId ID of device in question
+   * @param deviceType device type audioinput | videoinput | audiooutput | etc.
+   * @returns the device that matches the deviceId and type
+   */
+  findCachedDeviceByIdAndKind (deviceId: string, deviceKind: MediaDeviceKind): MediaDeviceInfo {
+    return this.getDevices().find(device => device.deviceId === deviceId && device.kind === deviceKind);
   }
 
   /**

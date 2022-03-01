@@ -14,7 +14,7 @@ export class SdkHeadset {
     }
 
     getAudioDevice(newMicId: string): void {
-        const completeDeviceInfo = this.media.getDeviceByIdAndType(newMicId, 'audioinput');
+        const completeDeviceInfo = this.media.findCachedDeviceByIdAndKind(newMicId, 'audioinput' as MediaDeviceKind);
         this.headsetLibrary.activeMicChange(completeDeviceInfo.label.toLowerCase());
     }
 

@@ -37,14 +37,14 @@ describe('SdkHeadset', () => {
     describe('getAudioDevice', () => {
         it('should fetch the proper device and send it to the headset library', () => {
             const testId = "testId";
-            const getDeviceByIdAndTypeSpy = jest.spyOn(sdkMedia, 'getDeviceByIdAndType' as any).mockReturnValue({
+            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdkMedia, 'findCachedDeviceByIdAndKind' as any).mockReturnValue({
                 kind: 'audioinput',
                 deviceId: 'testId',
                 label: 'Test Device Mark V',
             } as MediaDeviceInfo);
             const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange' as any);
             sdkHeadset.getAudioDevice(testId);
-            expect(getDeviceByIdAndTypeSpy).toHaveBeenCalledWith(testId, 'audioinput');
+            expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
             expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
         })
     })

@@ -582,6 +582,14 @@ describe('SdkMedia', () => {
         expect(e.message).toBe('Must call `requestMediaPermissions()` with at least one valid media type: `audio`, `video`, or `both`');
       }
     });
+    it('should not populate uuid with v4 if one already exists in optionsCopy', () => {
+      const uuid = require('uuid');
+      const v4Spy = jest.spyOn(uuid, 'v4');
+      const reqOptions: IMediaRequestOptions = { audio: true, video: false, retryOnFailure: false, uuid: '123456-789' };
+      sdkMedia.requestMediaPermissions('audio', false, reqOptions);
+      expect(v4Spy).not.toHaveBeenCalled();
+      jest.clearAllMocks();
+    })
   });
 
   describe('getValidDeviceId()', () => {
@@ -2155,42 +2163,33 @@ describe('SdkMedia', () => {
       sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
       expect(removeFn).toHaveBeenCalled();
     });
-    // it('should skip calling the removeFn if one isnt found for the passed in id', () => {
-    //   const removeFn = jest.fn();
-    //   const track = new MockTrack('audio');
-    //   sdkMedia['defaultsBeingMonitored'].set(track.id, undefined);
 
-    //   sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
-    //   expect(removeFn).not.toHaveBeenCalled();
-    // });
+    it('should skip calling the removeFn if one isnt found for the passed in id', () => {
+      const removeFn = jest.fn();
+      const track = new MockTrack('audio');
+      sdkMedia['defaultsBeingMonitored'].set(track.id, undefined);
+
+      sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
+      expect(removeFn).not.toHaveBeenCalled();
+    });
   });
-
-  describe('getDeviceByIdAndType()', () => {
+  describe('findCachedDeviceByIdAndKind()', () => {
     afterAll(() => {
       jest.clearAllMocks();
     })
     it('should return the proper device with supplied ID and type (audioinput)', async () => {
-      // navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
-
-      // await sdkMedia.enumerateDevices();
-      jest.spyOn(sdkMedia, 'getAudioDevices').mockReturnValueOnce([mockAudioDevice1, mockAudioDevice2]);
-      const returnedDevice = sdkMedia.getDeviceByIdAndType('mockAudioDevice1', 'audioinput');
+      jest.spyOn(sdkMedia, 'getDevices').mockReturnValueOnce(mockedDevices);
+      const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockAudioDevice1', 'audioinput');
       expect(returnedDevice).toStrictEqual(mockedDevices[2]);
     });
     it('should return the proper device with supplied ID and type (videoinput)', async () => {
-      // navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
-
-      // await sdkMedia.enumerateDevices();
-      jest.spyOn(sdkMedia, 'getVideoDevices').mockReturnValueOnce([mockVideoDevice1, mockVideoDevice2]);
-      const returnedDevice = sdkMedia.getDeviceByIdAndType('mockVideoDevice1', 'videoinput');
+      jest.spyOn(sdkMedia, 'getDevices').mockReturnValueOnce(mockedDevices);
+      const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockVideoDevice1', 'videoinput');
       expect(returnedDevice).toStrictEqual(mockedDevices[0]);
     });
     it('should return the proper device with supplied ID and type (other)', async () => {
-      // navigatorMediaDevicesMock.enumerateDevices.mockResolvedValueOnce(mockedDevices);
-
-      // await sdkMedia.enumerateDevices();
-      jest.spyOn(sdkMedia, 'getOutputDevices').mockReturnValueOnce([mockOutputDevice1, mockOutputDevice2]);
-      const returnedDevice = sdkMedia.getDeviceByIdAndType('mockOutputDevice1', 'audiooutput');
+      jest.spyOn(sdkMedia, 'getDevices').mockReturnValueOnce(mockedDevices);
+      const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockOutputDevice1', 'audiooutput');
       expect(returnedDevice).toStrictEqual(mockedDevices[4]);
     })
   })
