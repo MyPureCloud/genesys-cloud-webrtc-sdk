@@ -643,7 +643,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session reject goes out
    */
   async rejectPendingSession (params: IPendingSessionActionParams): Promise<void> {
-    //TODO: Reject Pending Call
+    //This seems to not need any extra work as previously thought; keep eye on though
     await this.sessionManager.rejectPendingSession(params);
   }
 
