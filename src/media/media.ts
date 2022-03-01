@@ -635,14 +635,21 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return Array.from(this.allMediaTracksCreated.values());
   }
 
+  /**
+   * Returns the device that matches the passed in deviceId
+   * and deviceType
+   *
+   * @param deviceId ID of device in question
+   * @param deviceType device type audioinput | videoinput | audiooutput | etc.
+   * @returns the device that matches the deviceId and type
+   */
   getDeviceByIdAndType (deviceId: string, deviceType: string): MediaDeviceInfo {
     if (deviceType === 'audioinput') {
-      return this.getState().audioDevices.filter(device => deviceId === device.deviceId)[0];
+      return this.getAudioDevices().filter(device => deviceId === device.deviceId)[0];
     } else if (deviceType === 'videoinput') {
-      return this.getState().videoDevices.filter(device => deviceId === device.deviceId)[0];
-    } else {
-      return this.getState().outputDevices.filter(device => deviceId === device.deviceId)[0];
+      return this.getVideoDevices().filter(device => deviceId === device.deviceId)[0];
     }
+    return this.getOutputDevices().filter(device => deviceId === device.deviceId)[0];
   }
 
   /**
