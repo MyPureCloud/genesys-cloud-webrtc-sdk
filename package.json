@@ -45,7 +45,6 @@
     "start": "stupid-server -s -p 8443",
     "start:sample": "npm run build-run-local",
     "test": "npm run lint && npm run test:unit",
-    "test:coverage": "jest --collectCoverage=true --runInBand",
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
     "lint": "eslint -c .eslintrc.json --ext .ts src",

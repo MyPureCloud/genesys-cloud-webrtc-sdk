@@ -627,7 +627,6 @@ describe('Client', () => {
         outputDeviceId: 'new-output-device',
       };
 
-      // const getAudioDeviceSpy = jest.spyOn(sdk.headset, 'getAudioDevice');
       sdk.headset.getAudioDevice = jest.fn();
       sdk.sessionManager = null;
       await sdk.updateDefaultDevices({ ...options, updateActiveSessions: true });
