@@ -582,6 +582,15 @@ describe('SdkMedia', () => {
         expect(e.message).toBe('Must call `requestMediaPermissions()` with at least one valid media type: `audio`, `video`, or `both`');
       }
     });
+
+    it('should not populate uuid with v4 if one already exists in optionsCopy', () => {
+      const uuid = require('uuid');
+      const v4Spy = jest.spyOn(uuid, 'v4');
+      const reqOptions: IMediaRequestOptions = { audio: true, video: false, retryOnFailure: false, uuid: '123456-789' };
+      sdkMedia.requestMediaPermissions('audio', false, reqOptions);
+      expect(v4Spy).not.toHaveBeenCalled();
+      jest.clearAllMocks();
+    });
   });
 
   describe('getValidDeviceId()', () => {
@@ -2154,6 +2163,15 @@ describe('SdkMedia', () => {
 
       sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
       expect(removeFn).toHaveBeenCalled();
+    });
+
+    it('should skip calling the removeFn if one isnt found for the passed in id', () => {
+      const removeFn = jest.fn();
+      const track = new MockTrack('audio');
+      sdkMedia['defaultsBeingMonitored'].set(track.id, undefined);
+
+      sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
+      expect(removeFn).not.toHaveBeenCalled();
     });
   });
 });
