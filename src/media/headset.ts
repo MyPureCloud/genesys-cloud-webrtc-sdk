@@ -5,12 +5,12 @@ import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation} from 'soft
 export class SdkHeadset {
     private sdk: GenesysCloudWebrtcSdk;
     private headsetLibrary: HeadsetService;
-    headsetEvents: Observable<ConsumedHeadsetEvents>;
+    headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
     constructor(sdk: GenesysCloudWebrtcSdk) {
         this.sdk = sdk;
         this.headsetLibrary = HeadsetService.getInstance({ logger: console });
-        this.headsetEvents = this.headsetLibrary.headsetEvents$;
+        this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
     }
 
     updateAudioInputDevice (newMicId: string): void {

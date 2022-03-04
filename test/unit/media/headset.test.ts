@@ -8,13 +8,13 @@ import { SimpleMockSdk } from '../../test-utils';
 let sdk: GenesysCloudWebrtSdk;
 let sdkHeadset: SdkHeadset;
 let headsetLibrary: HeadsetService;
-let headsetEvents: Observable<ConsumedHeadsetEvents>;
+let headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
 describe('SdkHeadset', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         headsetLibrary = HeadsetService.getInstance({ logger: console });
-        headsetEvents = headsetLibrary.headsetEvents$;
+        headsetEvents$ = headsetLibrary.headsetEvents$;
         sdk = new SimpleMockSdk() as any;
         sdkHeadset = new SdkHeadset(sdk);
     })
@@ -28,7 +28,7 @@ describe('SdkHeadset', () => {
             // const headset = new SdkHeadset(sdkMedia);
             expect(sdkHeadset['sdk']).toBe(sdk);
             expect(sdkHeadset['headsetLibrary']).toBe(headsetLibrary);
-            expect(sdkHeadset['headsetEvents']).toStrictEqual(headsetEvents);
+            expect(sdkHeadset['headsetEvents$']).toStrictEqual(headsetEvents$);
         })
     })
 
