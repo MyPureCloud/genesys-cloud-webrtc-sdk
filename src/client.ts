@@ -162,7 +162,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
-    this.headset = new SdkHeadset(this.media);
+    this.headset = new SdkHeadset(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 
     // Telemetry for specific events
@@ -406,7 +406,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     if (updateAudio) {
       this.logger.info('Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
-      this.headset.getAudioDevice(options.audioDeviceId);
+      this.headset.updateAudioInputDevice(options.audioDeviceId);
       this._config.defaults.audioDeviceId = options.audioDeviceId;
     }
 
@@ -586,7 +586,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
-    !muteOptions.fromHeadset && this.headset.toggleMute(muteOptions.mute);
+    !muteOptions.fromHeadset && this.headset.setMute(muteOptions.mute);
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
@@ -598,7 +598,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param heldOptions conversationId and desired held state
    */
   async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
-    !heldOptions.fromHeadset && this.headset.toggleHold(heldOptions.conversationId, heldOptions.held);
+    !heldOptions.fromHeadset && this.headset.setHold(heldOptions.conversationId, heldOptions.held);
     await this.sessionManager.setConversationHeld(heldOptions);
   }
 

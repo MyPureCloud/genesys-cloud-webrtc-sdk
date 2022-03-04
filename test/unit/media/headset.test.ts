@@ -1,12 +1,11 @@
 import { Observable } from 'rxjs';
 import { SdkHeadset } from "../../../src/media/headset";
-import { SdkMedia } from "../../../src";
+import GenesysCloudWebrtcSdk from '../../../src/client';
 import GenesysCloudWebrtSdk from "../../../src";
 import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation} from 'softphone-vendor-headsets';
 import { SimpleMockSdk } from '../../test-utils';
 
 let sdk: GenesysCloudWebrtSdk;
-let sdkMedia: SdkMedia;
 let sdkHeadset: SdkHeadset;
 let headsetLibrary: HeadsetService;
 let headsetEvents: Observable<ConsumedHeadsetEvents>;
@@ -17,8 +16,7 @@ describe('SdkHeadset', () => {
         headsetLibrary = HeadsetService.getInstance({ logger: console });
         headsetEvents = headsetLibrary.headsetEvents$;
         sdk = new SimpleMockSdk() as any;
-        sdkMedia = sdk.media as any;
-        sdkHeadset = new SdkHeadset(sdkMedia);
+        sdkHeadset = new SdkHeadset(sdk);
     })
 
     afterEach(() => {
@@ -28,22 +26,22 @@ describe('SdkHeadset', () => {
     describe('constructor()', () => {
         it('should start initialization', () => {
             // const headset = new SdkHeadset(sdkMedia);
-            expect(sdkHeadset['media']).toBe(sdkMedia);
+            expect(sdkHeadset['sdk']).toBe(sdk);
             expect(sdkHeadset['headsetLibrary']).toBe(headsetLibrary);
             expect(sdkHeadset['headsetEvents']).toStrictEqual(headsetEvents);
         })
     })
 
-    describe('getAudioDevice', () => {
+    describe('updateAudioInputDevice', () => {
         it('should fetch the proper device and send it to the headset library', () => {
             const testId = "testId";
-            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdkMedia, 'findCachedDeviceByIdAndKind' as any).mockReturnValue({
+            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind' as any).mockReturnValue({
                 kind: 'audioinput',
                 deviceId: 'testId',
                 label: 'Test Device Mark V',
             } as MediaDeviceInfo);
             const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange' as any);
-            sdkHeadset.getAudioDevice(testId);
+            sdkHeadset.updateAudioInputDevice(testId);
             expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
             expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
         })
@@ -96,10 +94,10 @@ describe('SdkHeadset', () => {
         })
     })
 
-    describe('incomingCallRing', () => {
+    describe('setRinging', () => {
         it('should call the proper function in the headset library', () => {
             const incomingCallSpy = jest.spyOn(headsetLibrary, 'incomingCall');
-            sdkHeadset.incomingCallRing({conversationId: '123', contactName: 'Maxwell'}, false);
+            sdkHeadset.setRinging({conversationId: '123', contactName: 'Maxwell'}, false);
             expect(incomingCallSpy).toHaveBeenCalledWith({conversationId: '123', contactName: 'Maxwell'}, false);
         })
     })
@@ -135,18 +133,18 @@ describe('SdkHeadset', () => {
         })
     })
 
-    describe('toggleMute', () => {
+    describe('setMute', () => {
         it('should call the proper function in the headset library', () => {
             const setMuteSpy = jest.spyOn(headsetLibrary, 'setMute');
-            sdkHeadset.toggleMute(true);
+            sdkHeadset.setMute(true);
             expect(setMuteSpy).toHaveBeenCalledWith(true);
         })
     })
 
-    describe('toggleHold', () => {
+    describe('setHold', () => {
         it('should call the proper function in the headset library', () => {
             const setHoldSpy = jest.spyOn(headsetLibrary, 'setHold');
-            sdkHeadset.toggleHold('123', false);
+            sdkHeadset.setHold('123', false);
             expect(setHoldSpy).toHaveBeenCalledWith('123', false);
         })
     })

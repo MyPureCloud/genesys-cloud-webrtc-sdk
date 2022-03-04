@@ -1,28 +1,28 @@
 import { Observable } from 'rxjs';
-import { SdkMedia } from "..";
+import GenesysCloudWebrtcSdk from '../client';
 import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation} from 'softphone-vendor-headsets';
 
 export class SdkHeadset {
-    private media: SdkMedia;
+    private sdk: GenesysCloudWebrtcSdk;
     private headsetLibrary: HeadsetService;
     headsetEvents: Observable<ConsumedHeadsetEvents>;
 
-    constructor(media) {
-        this.media = media;
+    constructor(sdk: GenesysCloudWebrtcSdk) {
+        this.sdk = sdk;
         this.headsetLibrary = HeadsetService.getInstance({ logger: console });
         this.headsetEvents = this.headsetLibrary.headsetEvents$;
     }
 
-    getAudioDevice(newMicId: string): void {
-        const completeDeviceInfo = this.media.findCachedDeviceByIdAndKind(newMicId, 'audioinput' as MediaDeviceKind);
+    updateAudioInputDevice (newMicId: string): void {
+        const completeDeviceInfo = this.sdk.media.findCachedDeviceByIdAndKind(newMicId, 'audioinput');
         this.headsetLibrary.activeMicChange(completeDeviceInfo.label.toLowerCase());
     }
 
-    getCurrentSelectedImplementation(): VendorImplementation {
+    getCurrentSelectedImplementation (): VendorImplementation {
         return this.headsetLibrary.selectedImplementation;
     }
 
-    showRetry(): boolean {
+    showRetry (): boolean {
         const selectedImplementation = this.getCurrentSelectedImplementation();
         if (selectedImplementation.disableRetry) {
             return false;
@@ -30,42 +30,42 @@ export class SdkHeadset {
 
         return selectedImplementation
             && !selectedImplementation.isConnected
-            && ! selectedImplementation.isConnecting;
+            && !selectedImplementation.isConnecting;
     }
 
-    retryConnection(micLabel): void {
+    retryConnection (micLabel: string): void {
         const selectedImplementation = this.getCurrentSelectedImplementation();
         selectedImplementation.connect(micLabel.toLowerCase());
     }
 
-    incomingCallRing(callInfo: { conversationId: string, contactName: string }, hasOtherActiveCalls) {
-        this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
+    setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls): Promise<void> {
+        return this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
     }
 
-    outgoingCall(callInfo: { conversationId: string, contactName: string }) {
-        this.headsetLibrary.outgoingCall(callInfo);
+    outgoingCall (callInfo: { conversationId: string, contactName: string }): Promise<void> {
+        return this.headsetLibrary.outgoingCall(callInfo);
     }
 
-    endCurrentCall(currentCallId: string) {
-        if (currentCallId) {
-            this.headsetLibrary.endCall(currentCallId);
+    endCurrentCall (conversationId: string): Promise<void> {
+        if (conversationId) {
+            return this.headsetLibrary.endCall(conversationId);
         }
     }
 
-    endAllCalls() {
-        this.headsetLibrary.endAllCalls();
+    endAllCalls (): Promise<void> {
+        return this.headsetLibrary.endAllCalls();
     }
 
-    answerIncomingCall(currentCallId: string) {
-        this.headsetLibrary.answerCall(currentCallId);
+    answerIncomingCall (conversationId: string): Promise<void> {
+        return this.headsetLibrary.answerCall(conversationId);
     }
 
-    toggleMute(isMuted: boolean) {
-        this.headsetLibrary.setMute(isMuted);
+    setMute (isMuted: boolean): Promise<void> {
+        return this.headsetLibrary.setMute(isMuted);
     }
 
-    toggleHold(currentCallId: string, isHeld: boolean) {
-        this.headsetLibrary.setHold(currentCallId, isHeld);
+    setHold (conversationId: string, isHeld: boolean): Promise<void> {
+        return this.headsetLibrary.setHold(conversationId, isHeld);
     }
 
 }
