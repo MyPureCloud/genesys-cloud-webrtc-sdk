@@ -338,3 +338,18 @@ describe('logPendingSession()', () => {
     expect(logger.debug).toHaveBeenCalledWith(loggyMessage, pendingSession);
   });
 });
+
+describe('getBareJid', () => {
+  it('should get the bareJid', () => {
+    const jid = 'mybarejid@myorg.orgspan.conference.com';
+    const sdk = {
+      _streamingConnection: {
+        config: {
+          jid
+        }
+      }
+    };
+
+    expect(utils.getBareJid(sdk as any)).toEqual(jid);
+  });
+});
