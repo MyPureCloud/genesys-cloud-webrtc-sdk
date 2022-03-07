@@ -987,7 +987,7 @@ Params:
       * `trackId: string;` The `MediaStreamTrack.id` associated with this screen.
       * `screenId: string;` The id associated with the monitor/screen you are recording. This can often be found at `MediaStreamTrack.getSettings().deviceId`.
       * `originX: number;` The left coordinate for this screen.
-      * `originY: number;` The bottom coordinatefor this screen. *NOTE: Windows and Mac sometimes switch where they reference originY. This property is for playback purposes and a Y coordinate of 0 should always represent the bottom of the screen.
+      * `originY: number;` The bottom coordinate for this screen. *NOTE: Windows and Mac sometimes switch where they reference originY. This property is for playback purposes and a Y coordinate of 0 should always represent the bottom of the screen.
       * `resolutionX: number` The width of the screen.
       * `resolutionY: number` The height of the screen.
       * `primary: boolean` This monitor is the system default/primary monitor where the start bar and/or dock lives.
