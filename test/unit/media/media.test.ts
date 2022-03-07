@@ -589,7 +589,7 @@ describe('SdkMedia', () => {
       sdkMedia.requestMediaPermissions('audio', false, reqOptions);
       expect(v4Spy).not.toHaveBeenCalled();
       jest.clearAllMocks();
-    })
+    });
   });
 
   describe('getValidDeviceId()', () => {

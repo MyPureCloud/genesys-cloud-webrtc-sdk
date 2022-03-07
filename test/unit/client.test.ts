@@ -5,7 +5,7 @@ jest.mock('genesys-cloud-client-logger', () => {
 });
 
 import StreamingClient from 'genesys-cloud-streaming-client';
-import { ILogger } from 'genesys-cloud-client-logger';
+import { Logger } from 'genesys-cloud-client-logger';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockStream, MockSession, random } from '../test-utils';
@@ -33,13 +33,14 @@ import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
 
-const mockLogger: jest.Mocked<ILogger> = {
+const mockLogger: jest.Mocked<Logger> = {
   debug: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   info: jest.fn(),
-  log: jest.fn()
-};
+  log: jest.fn(),
+  setAccessToken: jest.fn()
+} as any;
 
 describe('Client', () => {
   let sdk: GenesysCloudWebrtcSdk;
@@ -66,7 +67,8 @@ describe('Client', () => {
       // mockLogger = { debug: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn(), log: jest.fn() };
       sessionManagerMock = sdk.sessionManager = new SessionManager(sdk) as any;
       streamingClientMock = {
-        disconnect: jest.fn()
+        disconnect: jest.fn(),
+        config: {}
       } as any;
 
       sdk._streamingConnection = streamingClientMock;
@@ -775,15 +777,33 @@ describe('Client', () => {
   });
 
   describe('setAccessToken()', () => {
-    it('should set _config.accessToken', () => {
+    it('should set _config.accessToken and pass it to logger and streamingclient', () => {
       sdk = constructSdk();
 
+      expect(sdk._config.accessToken).toBe('secure');
+      expect(sdk._streamingConnection.config.authToken).toBe(undefined);
+
+      const newToken = 'hi-auth-token';
+      sdk.setAccessToken(newToken);
+
+      expect(sdk._config.accessToken).toBe(newToken);
+      expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
+      expect(sdk._streamingConnection.config.authToken).toBe(newToken);
+    });
+
+    it('should not pass it to the streaming-client if it does not exist', () => {
+      sdk = constructSdk();
+
+      /* mock that we haven't initialized yet */
+      delete sdk._streamingConnection;
       expect(sdk._config.accessToken).toBe('secure');
 
       const newToken = 'hi-auth-token';
       sdk.setAccessToken(newToken);
 
       expect(sdk._config.accessToken).toBe(newToken);
+      expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
+      expect(sdk._streamingConnection).toBeFalsy();
     });
   });
 

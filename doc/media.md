@@ -601,7 +601,7 @@ Event when devices change.
 
 > Note: this will only fire when devices change.
  For example: if `sdk.media.enumerateDevices()` is
- called multiple times, `sdk.media.on('devices', evt)
+ called multiple times, `sdk.media.on('devices', evt)`
  will only fire once _unless_ the devices are different
  on subsequent enumerations. This ensures `enumerateDevices()`
  can be called many times without the event emitting
