@@ -61,6 +61,26 @@ describe('updateOutgoingMedia()', () => {
     return session.getTracks().filter(t => t && t.kind === kind)[0];
   };
 
+  it('should delete the session object from logging', async () => {
+    const videoDeviceId = 'imbatman';
+    const session = new MockSession();
+    const sender = new MockSender(new MockTrack());
+    session.pc._senders = [sender];
+
+    session._outboundStream = new MockStream();
+    const stream = new MockStream({ video: true, audio: true });
+
+    const spy = jest.spyOn(mediaUtils, 'logDeviceChange').mockReturnValue(null);
+    const logSpy = handler['log'] = jest.fn();
+    jest.spyOn(handler['sdk'].media, 'findCachedDeviceByTrackLabelAndKind').mockReturnValue({ deviceId: videoDeviceId } as any);
+
+    /* with a session and stream */
+    await handler.updateOutgoingMedia(session as any, { stream: stream as any, videoDeviceId, session: { id: 'mySession', otherSessionStuff: {} } as any });
+
+    const call = logSpy.mock.calls[0];
+    expect(call[2].options.session).toEqual({ sessionId: 'mySession' });
+  });
+
   it('should correctly log param information', async () => {
     const videoDeviceId = 'imbatman';
     const audioDeviceId = 'wonderwoman';
