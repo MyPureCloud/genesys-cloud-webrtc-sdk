@@ -60,6 +60,22 @@ sdk.on('sessionStart', async (session) => {
     // gather media in whatever way you want. The SDK does *not* gather screen media for you
     const screenStream = await navigator.getDisplayMedia();
 
+    // create metadatas
+    const track = screenStream.getTracks()[0];
+    const { height, width, deviceId } = track.getSettings();
+    const screenRecordingMetadatas = [
+      {
+        trackId: track.id,
+        screenId: deviceId, // some applications give you a deviceId on the track which is uniquely tied to a specific monitor
+        originX: 0,
+        originY: 0,
+        resolutionX: width,
+        resolutionY: height,
+        primary: true,
+        main: true
+      }
+    ];
+
     sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream });
   }
 });
@@ -74,7 +90,7 @@ which means you will need to combine the streams. Here's an example of that.
 
 ``` ts
 // set up needed events
-sdk.on('sessionStart', async (session) => {
+sdk.on('sessionStarted', async (session) => {
   if (sdk.isScreenRecordingSession(session)) {
     // gather media in whatever way you want. The SDK does *not* gather screen media for you
     const screenStream = await navigator.getDisplayMedia();
@@ -82,8 +98,11 @@ sdk.on('sessionStart', async (session) => {
 
     screenStream2.getVideoTracks().map(track => screenStream.addTrack(track));
 
+    // create metadatas so the playback service knows how to display the screens during playback.
+    const screenRecordingMetadatas = myCustomScreenMetadataGatherer();
+
     // add the media track(s) to the session
-    sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream });
+    sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream, screenRecordingMetadatas });
   }
 });
 

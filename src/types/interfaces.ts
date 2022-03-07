@@ -818,13 +818,47 @@ export interface ScreenRecordingMediaSession extends IExtendedMediaSession {
 }
 
 export interface ScreenRecordingMetadata {
+  /**
+   * The `MediaStreamTrack.id` associated with this screen.
+   */
   trackId: string;
+
+  /**
+   * The id associated with the monitor/screen you are recording. This can often be found at 
+   * `MediaStreamTrack.getSettings().deviceId`.
+   */
   screenId: string;
+
+  /**
+   * The left coordinate for this screen.
+   */
   originX: number;
+
+  /**
+   * The bottom coordinatefor this screen. *NOTE: Windows and Mac sometimes switch where 
+   * they reference originY. This property is for playback purposes and a Y coordinate of 
+   * 0 should always represent the bottom of the screen.
+   */
   originY: number;
+
+  /**
+   * The width of the screen.
+   */
   resolutionX: number;
+
+  /**
+   * The height of the screen.
+   */
   resolutionY: number;
+
+  /**
+   * This monitor is the system default/primary monitor where the start bar and/or dock lives.
+   */
   primary: boolean;
+
+  /**
+   * This monitor contains the primary application you wish to be recorded.
+   */
   main: boolean;
 }
 
