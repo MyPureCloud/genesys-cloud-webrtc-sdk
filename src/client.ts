@@ -605,6 +605,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   setAccessToken (token: string): void {
     this._config.accessToken = token;
+    this.logger.setAccessToken(token);
+
+    if (this._streamingConnection) {
+      this._streamingConnection.config.authToken = token;
+    }
   }
 
   /**

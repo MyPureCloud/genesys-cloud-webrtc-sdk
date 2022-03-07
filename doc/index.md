@@ -959,6 +959,7 @@ Params:
       videoElement?: HTMLVideoElement;
       videoDeviceId?: string | boolean | null;
       audioDeviceId?: string | boolean | null;
+      screenRecordingMetadatas?: ScreenRecordingMetadata[];
     }
     ```
   * `conversationId: string` Required: id of the conversation to accept
@@ -970,6 +971,26 @@ Params:
       default is sdk `defaults.videoElement`. (only used for video sessions)
   * `videoDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
   * `audioDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
+  * `screenRecordingMetadatas?: ScreenRecordingMetadata[];` Required for screen recording sessions
+    * Basic interface:
+      ``` ts
+      interface ScreenRecordingMetadata {
+        trackId: string;
+        screenId: string;
+        originX: number;
+        originY: number;
+        resolutionX: number;
+        resolutionY: number;
+        primary: boolean;
+      }
+      ```
+      * `trackId: string;` The `MediaStreamTrack.id` associated with this screen.
+      * `screenId: string;` The id associated with the monitor/screen you are recording. This can often be found at `MediaStreamTrack.getSettings().deviceId`.
+      * `originX: number;` The left coordinate for this screen.
+      * `originY: number;` The bottom coordinatefor this screen. *NOTE: Windows and Mac sometimes switch where they reference originY. This property is for playback purposes and a Y coordinate of 0 should always represent the bottom of the screen.
+      * `resolutionX: number` The width of the screen.
+      * `resolutionY: number` The height of the screen.
+      * `primary: boolean` This monitor is the system default/primary monitor where the start bar and/or dock lives.
 
 
 Returns: a promise that fullfils once the session accept goes out
