@@ -24,7 +24,7 @@ your screen tracks and then call `sdk.acceptSession(session)`.
 
 ``` ts
 // set up needed events
-sdk.on('sessionStart', async (session) => {
+sdk.on('sessionStarted', async (session) => {
   if (sdk.isScreenRecordingSession(session)) {
     // gather media in whatever way you want. The SDK does *not* gather screen media for you
     const screenStream = await navigator.getDisplayMedia();
@@ -55,7 +55,7 @@ sdk.on('pendingSession', (session) => {
 });
 
 // set up needed events
-sdk.on('sessionStart', async (session) => {
+sdk.on('sessionStarted', async (session) => {
   if (sdk.isScreenRecordingSession(session)) {
     // gather media in whatever way you want. The SDK does *not* gather screen media for you
     const screenStream = await navigator.getDisplayMedia();
