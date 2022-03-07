@@ -131,3 +131,7 @@ export const logPendingSession = function (
 
   logger[level](message, data);
 };
+
+export function getBareJid (sdk: GenesysCloudWebrtcSdk) {
+  return sdk._streamingConnection.config.jid;
+}

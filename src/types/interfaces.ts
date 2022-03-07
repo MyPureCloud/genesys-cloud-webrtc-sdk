@@ -588,6 +588,11 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
    */
   mediaStream?: MediaStream;
 
+  /**
+   * metadata about screens and tracks. This is required for screen recording sessions
+   */
+  screenRecordingMetadatas?: ScreenRecordingMetadata[];
+
   /** audio element to attach incoming audio to. default is sdk `defaults.audioElement` */
   audioElement?: HTMLAudioElement;
 
@@ -809,6 +814,18 @@ export interface VideoMediaSession extends IExtendedMediaSession {
 
 export interface ScreenRecordingMediaSession extends IExtendedMediaSession {
   sessionType: SessionTypes.screenRecording;
+  screenMetadatas: ScreenRecordingMetadata[];
+}
+
+export interface ScreenRecordingMetadata {
+  trackId: string;
+  screenId: string;
+  originX: number;
+  originY: number;
+  resolutionX: number;
+  resolutionY: number;
+  primary: boolean;
+  main: boolean;
 }
 
 export interface SubscriptionEvent {
