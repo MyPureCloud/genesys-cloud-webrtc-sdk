@@ -29,7 +29,22 @@ sdk.on('sessionStarted', async (session) => {
     // gather media in whatever way you want. The SDK does *not* gather screen media for you
     const screenStream = await navigator.getDisplayMedia();
 
-    sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream });
+    // create metadatas
+    const track = screenStream.getTracks()[0];
+    const { height, width, deviceId } = track.getSettings();
+    const screenRecordingMetadatas = [
+      {
+        trackId: track.id,
+        screenId: deviceId, // some applications give you a deviceId on the track which is uniquely tied to a specific monitor
+        originX: 0,
+        originY: 0,
+        resolutionX: width,
+        resolutionY: height,
+        primary: true,
+      }
+    ];
+
+    sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream, screenRecordingMetadatas });
   }
 });
 
@@ -75,7 +90,7 @@ sdk.on('sessionStarted', async (session) => {
       }
     ];
 
-    sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream });
+    sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream, screenRecordingMetadatas });
   }
 });
 
