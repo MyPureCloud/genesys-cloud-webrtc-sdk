@@ -130,7 +130,6 @@ Returns: a boolean value determining if a the show retry button is required
 
 #### `retryConnection()`
 Function to retry connection to the selected implementation. It takes in the micLabel of the device in question and calls the `connect(label)` function of the corresponding implementation.
-    NOTE: This may be reworked
 
 Declaration:
 ``` ts

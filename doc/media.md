@@ -448,14 +448,14 @@ Look through cached devices and match based on the passed in deviceId and device
 
 Declaration:
 ```ts
-findCahcedDeviceByIdAndKind(deviceId: string, deviceKind: MediaDeviceKind): MediaDeviceInfo;
+findCachedDeviceByIdAndKind(deviceId: string, deviceKind: MediaDeviceKind): MediaDeviceInfo;
 ```
 
 Params:
 * `deviceId: string` - device ID that is being looked for
 * `deviceKind: MediaDeviceKind` - the device kind of the device being looked for (`audioinput` | `videoinput` | `audiooutput`)
 
-Returns: the found device or `undefined` if the device coudl not be found
+Returns: the found device or `undefined` if the device could not be found
 
 #### `findCachedVideoDeviceById()`
 
