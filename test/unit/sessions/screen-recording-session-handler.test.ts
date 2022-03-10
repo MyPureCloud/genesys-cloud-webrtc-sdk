@@ -7,7 +7,7 @@ import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import * as utils from '../../../src/utils';
 import ScreenRecordingSessionHandler from '../../../src/sessions/screen-recording-session-handler';
-import { ScreenRecordingMediaSession } from '../../../src';
+import { ScreenRecordingMediaSession, SdkErrorTypes } from '../../../src';
 
 let handler: ScreenRecordingSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -67,8 +67,41 @@ describe('handlePropose', () => {
 });
 
 describe('acceptSession', () => {
-  it('should add _outboundStream to session and add each track', async () => {
+  it('should throw if no metadatas are provided', async () => {
+    const metadatasSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+    const session = {
+      pc: {
+        addTrack: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    const media = new MockStream();
+    media.addTrack(new MockTrack());
+
+    await expect(() => handler.acceptSession(session as any, { mediaStream: media } as any)).rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas`');
+
+    expect(metadatasSpy).not.toHaveBeenCalled();
+  });
+  
+  it('should throw if no metadatas are empty', async () => {
+    const metadatasSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+    const session = {
+      pc: {
+        addTrack: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    const media = new MockStream();
+    media.addTrack(new MockTrack());
+
+    await expect(() => handler.acceptSession(session as any, { mediaStream: media, screenRecordingMetadatas: [] } as any)).rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas`');
+
+    expect(metadatasSpy).not.toHaveBeenCalled();
+  });
+
+  it('should add _outboundStream to session and add each track and send metadatas', async () => {
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
+    const metadatasSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     const addSpy = jest.fn();
 
     const session = {
@@ -82,11 +115,12 @@ describe('acceptSession', () => {
     media.addTrack(new MockTrack());
     media.addTrack(new MockTrack());
 
-    await handler.acceptSession(session as any, { mediaStream: media } as any);
+    await handler.acceptSession(session as any, { mediaStream: media, screenRecordingMetadatas: [{}] } as any);
 
     expect(addSpy).toHaveBeenCalledTimes(3);
     expect((session as any)._outboundStream).toBe(media);
     expect(superSpy).toHaveBeenCalled();
+    expect(metadatasSpy).toHaveBeenCalled();
   });
 
   it('should throw error if no media stream is required', async () => {
@@ -101,5 +135,21 @@ describe('acceptSession', () => {
 describe('endSession', () => {
   it('should throw and error', async () => {
     await expect(handler.endSession('123', {} as any)).rejects.toThrow('must be ended remotely');
+  });
+});
+
+describe('updateOutgoingMedia', () => {
+  it('should throw because updating outgoing media is not supported for screen recording', async () => {
+    try {
+      handler.updateOutgoingMedia({} as any, {} as any);
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.type).toBe(SdkErrorTypes.not_supported);
+      expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Cannot update outgoing media for screen recording sessions'),
+        expect.any(Object),
+        undefined
+      );
+    }
   });
 });

@@ -184,6 +184,9 @@ export default abstract class BaseSessionHandler {
     let updateAudio = options.audioDeviceId !== undefined && options.audioDeviceId !== false;
     let stream: MediaStream = options.stream;
 
+    const loggableOptions: any = { ...options };
+    loggableOptions.session = options.session && { sessionId: options.session.id };
+
     /* make sure we don't request the same media that is already active on the session */
     senderTracks.forEach(track => {
       const deviceInUseByTrack = this.sdk.media.findCachedDeviceByTrackLabelAndKind(track);
@@ -191,7 +194,7 @@ export default abstract class BaseSessionHandler {
       if (updateAudio && track.kind.substring(0, 5) === 'audio' && deviceInUseByTrack?.deviceId === options.audioDeviceId) {
         this.log('info',
           'Request to update existing media on session with the same deviceId that is already in use. Not requesting same media', {
-          options,
+          options: loggableOptions,
           conversationId: session.conversationId,
           sessionId: session.id,
           trackInUse: { kind: track.kind, label: track.label },
@@ -203,7 +206,7 @@ export default abstract class BaseSessionHandler {
       if (updateVideo && track.kind.substring(0, 5) === 'video' && deviceInUseByTrack?.deviceId === options.videoDeviceId) {
         this.log('info',
           'Request to update existing media on session with the same deviceId that is already in use. Not requesting same media', {
-          options,
+          options: loggableOptions,
           conversationId: session.conversationId,
           sessionId: session.id,
           trackInUse: { kind: track.kind, label: track.label },

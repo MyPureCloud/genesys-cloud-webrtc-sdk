@@ -4,11 +4,13 @@ import {
   IPendingSession,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
-  IAcceptSessionRequest
+  IAcceptSessionRequest,
+  IUpdateOutgoingMedia,
+  ScreenRecordingMetadata
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
-import { createAndEmitSdkError, isScreenRecordingJid } from '../utils';
+import { createAndEmitSdkError, getBareJid, isScreenRecordingJid, requestApi } from '../utils';
 
 export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -40,6 +42,10 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept screen recording session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
     }
 
+    if (!params.screenRecordingMetadatas?.length) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'acceptSession must be called with a `screenRecordingMetadatas` property for screen recording sessions');
+    }
+
     session._outboundStream = mediaStream;
 
     let addMediaPromise: Promise<any> = Promise.resolve();
@@ -52,10 +58,31 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
     await addMediaPromise;
 
-    return super.acceptSession(session, params);
+    await super.acceptSession(session, params);
+    await this.updateScreenRecordingMetadatas(session, params.screenRecordingMetadatas);
+
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${this.sessionType} must be ended remotely`, { conversationId });
+  }
+
+  updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
+    this.log('warn', 'Cannot update outgoing media for screen recording sessions', { sessionId: session.id, sessionType: session.sessionType });
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for screen recording sessions');
+  }
+
+  private updateScreenRecordingMetadatas (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    const data = JSON.stringify({
+      participantJid: getBareJid(this.sdk),
+      metaData: metadatas,
+      roomId: session.originalRoomJid,
+      conversationId: session.conversationId
+    });
+
+    return requestApi.call(this.sdk, '/recordings/screensessions/metadata', {
+      method: 'post',
+      data
+    });
   }
 }

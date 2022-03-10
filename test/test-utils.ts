@@ -46,6 +46,9 @@ export class SimpleMockSdk extends EventEmitter {
     error: jest.fn()
   };
   _streamingConnection = {
+    config: {
+      jid: 'userjid@orgspan.com'
+    },
     notifications: {
       subscribe: jest.fn(),
       unsubscribe: jest.fn()
