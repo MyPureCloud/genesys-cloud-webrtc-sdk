@@ -9,7 +9,7 @@
 
 
 ## Purpose of SdkHeadset
-The SdkHeadset namespace connects directly to the new headset library that allows device call controls from at this moment three headset vendors. Plantronics/Poly, Sennheiser/EPOS and Jabra. It makes it possible for events from the headset to be properly handled and reflected in consuming apps. It also allows events from consuming apps to be properly reflected in the headset itself. This ensures the states of both the devices and consuming apps are always in sync
+The SdkHeadset namespace connects directly to the [new headset library](https://github.com/purecloudlabs/softphone-vendor-headsets) that allows device call controls from at this moment three headset vendors. Plantronics/Poly, Sennheiser/EPOS and Jabra. It makes it possible for events from the headset to be properly handled and reflected in consuming apps. It also allows events from consuming apps to be properly reflected in the headset itself. This ensures the states of both the devices and consuming apps are always in sync
 
 --------
 
@@ -23,27 +23,11 @@ The SdkHeadset namespace connects directly to the new headset library that allow
 async function testAnswerCall () {
     /* This function handles a fromHeadset event. This will not cause the headset library to be called */
     sdk.acceptPendingSession('123456789', 'softphone', true);
-    /*  async acceptPendingSession (params: IPendingSessionActionParams):       Promise<void> {
-        !params.fromHeadset && this.headset.answerIncomingCall(params.      conversationId);
-        await this.sessionManager.proceedWithSession(params);
-    }
-  */
 }
 
 async function testMuteCall () {
     /* This function handles a from app event. This will cause the headset library to be called */
     sdk.setAudioMute ('123456789', 'softphone', false | undefined);
-    /*  async acceptPendingSession (params: IPendingSessionActionParams):       Promise<void> {
-        !params.fromHeadset && this.headset.answerIncomingCall(params.      conversationId);
-        await this.sessionManager.proceedWithSession(params);
-    }
-
-    This in turn will call to the headset library which will update the headset's state to ensure everything is in sync
-
-    setMute (isMuted: boolean): Promise<void> {
-        return this.headsetLibrary.setMute(isMuted);
-    }
-  */
 }
 
 /* Examples of listening for events from the headset */
@@ -63,37 +47,33 @@ sdk.headset.headsetEvents.subscribe(value: {
 } => {
     switch (value.event) {
         case 'deviceAnsweredCall':
-            this.trigger(value.event) | sdk.acceptPendingSession();
+            sdk.acceptPendingSession();
             break;
         case 'deviceEndedCall':
-            this.trigger(value.event) | sdk.endSession();
+            sdk.endSession();
             break;
         case 'deviceMuteStatusChanged':
-            this.trigger(value.event, value.payload.isMuted) |
             sdk.setAudioMute(value.payload.isMuted);
             break;
         case 'deviceHoldStatusChanged':
-            this.trigger(value.event, value.payload.holdRequested, value.payload.toggle) |
             sdk.setConversationHold(value.payload.holdRequested, value.payload.toggle);
             break;
         case 'deviceRejectedCall':
-            this.trigger(value.event, value.payload.conversationId) |
             sdk.rejectPendingSession(value.payload.conversationId);
             break;
         case 'webHidPermissionRequested':
-            this.set('showPermissionsModal', true);
-            this.set('requestAdditionalPermissions', value.payload.body.callback) |
-            anyNecessaryFunctions();
+            anyNecessaryFunctions(value.payload.callback);
             break;
         case 'deviceConnectionStatusChanged':
-            this.set('headsetState', {
-                isConnected: value.payload.isConnected,
-                isConnecting: value.payload.isConnecting
-            });
+            console.log({
+                isConnecting: value.payload.isConnecting,
+                isConnected: value.payload.isConnected
+            })
             anyNecessaryFunctions(value.payload.isConnected, value.payload.isConnecting)
             break;
         default:
         // console.log('some other event');
+    }
 }
 
 ```
@@ -101,7 +81,7 @@ sdk.headset.headsetEvents.subscribe(value: {
 ### Methods
 
 #### `updateAudioInputDevice()`
-Function that will update what the active mic is in the headset library. This passes the newly selected mic label into the headset library where it will check to see which (if any) of the currently supported implementations will be a best fit for the new device This function should be called any time a new audio device is selected.
+Function that will update what the active mic is in the headset library. This passes the newly selected mic label into the headset library where it will check to see which (if any) of the currently supported implementations will be a best fit for the new device. This function should be called any time a new audio device is selected.
 
 This function is currently called from `client.ts` if a new audio device is selected through the function `sdk.updateDefaultDevices()`.
 
@@ -133,10 +113,11 @@ Returns: an instance of a VendorImplementation from the headset library
 
 #### `showRetry()`
 Function that determines if a "show retry" button should be shown on screen to allow the user to attempt to reconnect to their selected vendor and the corresponding implementation. The show retry button should show up if:
-    1.) The selected implementation has disabled retry capabilities
-    2.) The selected device is not supported (`!selectedImplementation`)
-    3.) The selected implementation is not connected (`!selectedImplementation.isConnected`)
-    4.) The selected implementation is not connecting (`!selectedImplementation.isConnecting`)
+
+1. The selected implementation has disabled retry capabilities
+2. The selected device is not supported (i.e. there is no matching implementation - `!selectedImplementation`)
+3. The selected implementation is not connected (`!selectedImplementation.isConnected`)
+4. The selected implementation is not connecting (`!selectedImplementation.isConnecting`)
 
 Declaration:
 ``` ts
@@ -157,7 +138,7 @@ Declaration:
 ```
 
 Params:
-* `micLabel`: string - The label of the device in question to ensure proper functionality when bein passed into the `connect` function
+* `micLabel`: string - The label of the device in question to ensure proper functionality when being passed into the `connect` function
 
 Returns: void
 
@@ -256,7 +237,7 @@ Returns: a Promise containing `void`
 --------
 
 ### Events
-The SDK Headset Utility does not explicitly emit events itself. It uses RxJS observables (https://rxjs.dev/guide/observable) to emit the events which are then subscribed to within the consuming app. It listens for changes and fires functions that correspond to the events
+The SDK Headset Utility does not explicitly emit events itself. It uses [RxJS observables](https://rxjs.dev/guide/observable) to emit the events which are then subscribed to within the consuming app. It listens for changes and fires functions that correspond to the events
 
 ### `deviceAnsweredCall`
 Event emitted when a user presses the answer call button during an incoming call on their selected device. The event includes the event `name` as it is interpretted by the headset and a collection of items that may help with logging (`event`). It can also potentially have a `code` that corresponds to the event.
@@ -279,11 +260,10 @@ Declaration:
 
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
-* `payload:` {
-    `name: string` - Name of the recent event as interpretted by the headset device
-    `event`: { containing various items mostly for logging purposes}
-    `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
-}
+* `payload:` - object containing
+    * `name: string` - Name of the recent event as interpretted by the headset device
+    * `event`: { containing various items mostly for logging purposes}
+    * `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
 
 
 #### `deviceEndedCall`
@@ -298,19 +278,18 @@ Declaration:
             event: { `containing various items mostly for logging purposes` },
             code?: string
         } => {
-            if (event.event === 'deviceEndedCall) {
-                sdk.endSession();
+            if (event.event === 'deviceEndedCall') {
+                sdk.endSession({ conversationId });
             }
         }
     })
 ```
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
-* `payload:` {
-    `name: string` - Name of the recent event as interpretted by the headset device
-    `event`: { containing various items mostly for logging purposes}
-    `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
-}
+* `payload:` - object containing
+    * `name: string` - Name of the recent event as interpretted by the headset device
+    * `event`: { containing various items mostly for logging purposes}
+    * `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
 
 
 #### `deviceMuteStatusChanged`
@@ -326,7 +305,7 @@ Declaration:
             isMuted: boolean,
             code?: string
         } => {
-            if (event.event === 'deviceMuteStatusChanged) {
+            if (event.event === 'deviceMuteStatusChanged') {
                 sdk.setAudioMute(event.payload.isMuted);
             }
         }
@@ -335,12 +314,11 @@ Declaration:
 
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
-* `payload:` {
-    `name: string` - Name of the recent event as interpretted by the headset device
-    `event`: { containing various items mostly for logging purposes}
-    `isMuted: boolean` - the value determining if the event is to mute (`true`) or unmute (`false`) the device
-    `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
-}
+* `payload:` - object containing
+    * `name: string` - Name of the recent event as interpretted by the headset device
+    * `event`: { containing various items mostly for logging purposes}
+    * `isMuted: boolean` - the value determining if the event is to mute (`true`) or unmute (`false`) the device
+    * `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
 
 
 #### `deviceHoldStatusChanged`
@@ -366,16 +344,15 @@ Declaration:
 
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
-* `payload:` {
-    `name: string` - Name of the recent event as interpretted by the headset device
-    `event`: { containing various items mostly for logging purposes}
-    `holdRequested: boolean` - the value determining if the event is to hold (`true`) or resume (`false`) the call
-    `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
-}
+* `payload:` - object containing
+    * `name: string` - Name of the recent event as interpretted by the headset device
+    * `event`: { containing various items mostly for logging purposes}
+    * `holdRequested: boolean` - the value determining if the event is to hold (`true`) or resume (`false`) the call
+    * `code?: string` - Optional: A string value of a number that represents the action that was just taken. Not all vendors supply a code which is why it is only optional
 
 
 #### `webHidPermissionRequested`
-This is a special event that is only necessary for specific devices. Certain devices (such as Jabra) support a technology known as WebHID that requires additional permissions in order to use the call controls. This event is emitted when a WebHID enabled device is selected. The event includes a `callback` function that is required in order to achieve additional permissions for WebHID
+This is a special event that is only necessary for specific devices. Certain devices (such as Jabra) support a technology known as [WebHID](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API) that requires additional permissions in order to use the call controls. This event is emitted when a WebHID enabled device is selected. The event includes a `callback` function that is required in order to achieve additional permissions for WebHID
 
 Declaration:
 ``` ts
@@ -394,9 +371,8 @@ Declaration:
 
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
-* `payload:` {
-    `callback: Function` - the passed in function that will help achieve additional permissions for WebHID devices
-}
+* `payload:` - object containing
+    * `callback: Function` - the passed in function that will help achieve additional permissions for WebHID devices
 
 #### `deviceConnectionStatusChanged`
 Event emitted when a device implementation's connection status changes in some way. This can be the flags of `isConnected` or `isConnecting` changing in any way. These flags are also included with the events payload.
@@ -418,10 +394,9 @@ Declaration:
 
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
-* `payload:` {
-    `isConnected: boolean` - if the vendor implementation is fully connected
-    `isConnecting: boolean` - if the vendor implementation is in the process of connecting
-}
+* `payload:` - object containing
+    * `isConnected: boolean` - if the vendor implementation is fully connected
+    * `isConnecting: boolean` - if the vendor implementation is in the process of connecting
 
 [Purpose of SdkHeadset]: #purpose-of-sdkheadset
 [SdkHeadset]: #sdkheadset

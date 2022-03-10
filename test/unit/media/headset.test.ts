@@ -83,14 +83,22 @@ describe('SdkHeadset', () => {
             let showRetryResult = sdkHeadset.showRetry();
             expect(showRetryResult).toBe(false);
         })
+
+        it('should return false if the selectedImplementation is falsy', () => {
+            headsetLibrary.selectedImplementation = undefined;
+            const showRetryResult = sdkHeadset.showRetry();
+            expect(showRetryResult).toBe(false);
+        })
     })
 
     describe('retryConnection', () => {
         it('should properly call the connect function for the corresponding implementation', () => {
             headsetLibrary.activeMicChange('plantronics test device');
             const headsetConnectSpy = jest.spyOn(headsetLibrary['plantronics'], 'connect');
+            const headsetRetryConnectionSpy = jest.spyOn(headsetLibrary, 'retryConnection');
             sdkHeadset.retryConnection('plantronics test device');
-            expect(headsetConnectSpy).toHaveBeenCalledWith('plantronics test device')
+            expect(headsetRetryConnectionSpy).toHaveBeenCalledWith('plantronics test device');
+            expect(headsetConnectSpy).toHaveBeenCalledWith('plantronics test device');
         })
     })
 

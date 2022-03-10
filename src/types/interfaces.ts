@@ -598,8 +598,11 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 }
 
 export interface IEndSessionRequest {
+  /** conversation ID of the call to end */
   conversationId: string;
+  /** the reason why the call was ended to determine if intentional or an error for example*/
   reason?: Constants.JingleReasonCondition;
+  /** boolean to show if the event needs to pass along to the headset */
   fromHeadset?: boolean;
 }
 

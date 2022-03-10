@@ -9,7 +9,7 @@ export class SdkHeadset {
 
     constructor(sdk: GenesysCloudWebrtcSdk) {
         this.sdk = sdk;
-        this.headsetLibrary = HeadsetService.getInstance({ logger: console });
+        this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger });
         this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
     }
 
@@ -24,18 +24,17 @@ export class SdkHeadset {
 
     showRetry (): boolean {
         const selectedImplementation = this.getCurrentSelectedImplementation();
-        if (selectedImplementation.disableRetry) {
+        if (selectedImplementation?.disableRetry) {
             return false;
         }
 
-        return selectedImplementation
+        return !!selectedImplementation
             && !selectedImplementation.isConnected
             && !selectedImplementation.isConnecting;
     }
 
     retryConnection (micLabel: string): void {
-        const selectedImplementation = this.getCurrentSelectedImplementation();
-        selectedImplementation.connect(micLabel.toLowerCase());
+        this.headsetLibrary.retryConnection(micLabel);
     }
 
     setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls): Promise<void> {
