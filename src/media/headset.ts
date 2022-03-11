@@ -7,7 +7,7 @@ export class SdkHeadset {
     private headsetLibrary: HeadsetService;
     headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
-    constructor(sdk: GenesysCloudWebrtcSdk) {
+    constructor (sdk: GenesysCloudWebrtcSdk) {
         this.sdk = sdk;
         this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger });
         this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
