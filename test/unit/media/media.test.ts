@@ -582,7 +582,6 @@ describe('SdkMedia', () => {
         expect(e.message).toBe('Must call `requestMediaPermissions()` with at least one valid media type: `audio`, `video`, or `both`');
       }
     });
-
     it('should not populate uuid with v4 if one already exists in optionsCopy', () => {
       const uuid = require('uuid');
       const v4Spy = jest.spyOn(uuid, 'v4');
@@ -2174,4 +2173,24 @@ describe('SdkMedia', () => {
       expect(removeFn).not.toHaveBeenCalled();
     });
   });
+  describe('findCachedDeviceByIdAndKind()', () => {
+    afterAll(() => {
+      jest.clearAllMocks();
+    })
+    it('should return the proper device with supplied ID and type (audioinput)', async () => {
+      jest.spyOn(sdkMedia, 'getDevices').mockReturnValueOnce(mockedDevices);
+      const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockAudioDevice1', 'audioinput');
+      expect(returnedDevice).toStrictEqual(mockedDevices[2]);
+    });
+    it('should return the proper device with supplied ID and type (videoinput)', async () => {
+      jest.spyOn(sdkMedia, 'getDevices').mockReturnValueOnce(mockedDevices);
+      const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockVideoDevice1', 'videoinput');
+      expect(returnedDevice).toStrictEqual(mockedDevices[0]);
+    });
+    it('should return the proper device with supplied ID and type (other)', async () => {
+      jest.spyOn(sdkMedia, 'getDevices').mockReturnValueOnce(mockedDevices);
+      const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockOutputDevice1', 'audiooutput');
+      expect(returnedDevice).toStrictEqual(mockedDevices[4]);
+    })
+  })
 });

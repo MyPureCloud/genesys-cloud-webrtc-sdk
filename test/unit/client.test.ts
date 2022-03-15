@@ -629,10 +629,12 @@ describe('Client', () => {
         outputDeviceId: 'new-output-device',
       };
 
+      sdk.headset.updateAudioInputDevice = jest.fn();
       sdk.sessionManager = null;
       await sdk.updateDefaultDevices({ ...options, updateActiveSessions: true });
 
       expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
       expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
       expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
     });
@@ -645,9 +647,11 @@ describe('Client', () => {
         outputDeviceId: 'new-output-device',
       };
 
+      sdk.headset.updateAudioInputDevice = jest.fn();
       await sdk.updateDefaultDevices(options);
 
       expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
       expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
       expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
     });
@@ -664,6 +668,7 @@ describe('Client', () => {
       sessionManagerMock.updateOutgoingMediaForAllSessions.mockResolvedValue(undefined);
       sessionManagerMock.updateOutputDeviceForAllSessions.mockResolvedValue(undefined);
 
+      sdk.headset.updateAudioInputDevice = jest.fn();
       await sdk.updateDefaultDevices(options);
 
       expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalled();
@@ -692,12 +697,14 @@ describe('Client', () => {
       sessionManagerMock.updateOutputDeviceForAllSessions.mockReset();
 
       /* audio device */
+      sdk.headset.updateAudioInputDevice = jest.fn();
       options.videoDeviceId = undefined;
       options.outputDeviceId = undefined;
       options.audioDeviceId = 'new-audio-device-id';
 
       await sdk.updateDefaultDevices(options);
 
+      expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
       expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith();
       expect(sessionManagerMock.updateOutputDeviceForAllSessions).not.toHaveBeenCalled();
 

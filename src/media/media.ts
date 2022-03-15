@@ -693,6 +693,18 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     return this.getOutputDevices().find(d => d.deviceId === id);
   }
 
+   /**
+   * Returns the device that matches the passed in deviceId
+   * and deviceType
+   *
+   * @param deviceId ID of device in question
+   * @param deviceType device type audioinput | videoinput | audiooutput | etc.
+   * @returns the device that matches the deviceId and type
+   */
+  findCachedDeviceByIdAndKind (deviceId: string, deviceKind: MediaDeviceKind): MediaDeviceInfo {
+    return this.getDevices().find(device => device.deviceId === deviceId && device.kind === deviceKind);
+  }
+
   /**
    * Determine if the passed in device exists
    *  in the cached devices

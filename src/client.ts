@@ -35,6 +35,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
+import { SdkHeadset } from './media/headset';
 import { Constants } from 'stanza';
 
 const ENVIRONMENTS = [
@@ -88,6 +89,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   sessionManager: SessionManager;
   media: SdkMedia;
   station: IStation | null;
+  headset: SdkHeadset;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -160,6 +162,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
+    this.headset = new SdkHeadset(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 
     // Telemetry for specific events
@@ -403,6 +406,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     if (updateAudio) {
       this.logger.info('Updating defaultAudioDeviceId', { defaultAudioDeviceId: options.audioDeviceId });
+      this.headset.updateAudioInputDevice(options.audioDeviceId);
       this._config.defaults.audioDeviceId = options.audioDeviceId;
     }
 
@@ -582,6 +586,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
+    !muteOptions.fromHeadset && this.headset.setMute(muteOptions.mute);
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
@@ -593,6 +598,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param heldOptions conversationId and desired held state
    */
   async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
+    !heldOptions.fromHeadset && this.headset.setHold(heldOptions.conversationId, heldOptions.held);
     await this.sessionManager.setConversationHeld(heldOptions);
   }
 
@@ -631,6 +637,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (params: IPendingSessionActionParams): Promise<void> {
+    !params.fromHeadset && this.headset.answerIncomingCall(params.conversationId);
     await this.sessionManager.proceedWithSession(params);
   }
 
@@ -660,6 +667,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session has ended
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
+    !endOptions.fromHeadset && this.headset.endCurrentCall(endOptions.conversationId);
     return this.sessionManager.endSession(endOptions);
   }
 

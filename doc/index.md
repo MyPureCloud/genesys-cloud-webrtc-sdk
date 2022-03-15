@@ -19,6 +19,7 @@
 - [WebRTC Video Conferencing]
 - [WebRTC Screen Recording]
 - [WebRTC Media] (media, devices, and permissions support)
+- [WebRTC Headset Integration]
 
 ### App Authorization
 
@@ -705,6 +706,8 @@ Params:
     `null|falsy` for system default device.
   * `updateActiveSessions?: boolean` flag to update active sessions' devices
 
+  * If updating the audio device, a call will be made to the headset library to ensure the correct implementation is being used
+
 Returns: a promise that fullfils once the default
 device values have been updated
 
@@ -821,11 +824,13 @@ Params:
     interface ISessionMuteRequest {
         conversationId: string;
         mute: boolean;
+        fromHeadset?: boolean;
         unmuteDeviceId?: string | boolean | null;
     }
     ```
   * `conversationId: string` Required: conversation id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
+  * `fromHeadset?: boolean` Optional: if `true` event came from headset, if `false` event came from consuming app
   * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting,
     `true` for sdk default, `null` for system default,
     `undefined` will attempt to use the sdk default device
@@ -837,6 +842,8 @@ Returns: a promise that fullfils once the mute request has completed
 Mutes/Unmutes audio/mic for a session and updates the conversation accordingly.
 Will fail if the session is not found.
 Incoming audio is unaffected.
+
+If fromHeadset is false, a call will be made to the headset library to ensure the connected device's state is properly updated. If fromHeadset is true, no call to the headset library will be made. This is because if the event comes from the headset, its state will already be the most up to date
 
 > NOTE: if no `unmuteDeviceId` is provided when unmuting _AND_ there is no active
  audio stream, it will unmute and attempt to use the sdk `defaults.audioDeviceId`
@@ -851,6 +858,7 @@ Params:
 * `muteOptions: ISessionMuteRequest` Required:
   * `conversationId: string` Required: conversation id to for which perform the action
   * `mute: boolean` Required: `true` to mute, `false` to unmute
+  * `fromHeadset?: boolean` Optional: if `true` do not call headsets library functions, if `false` call headsets library functions
   * `unmuteDeviceId?: string` Optional: the desired deviceId to use when unmuting,
     `true` for sdk default, `null` for system default,
     `undefined` will attempt to use the sdk default device
@@ -859,6 +867,7 @@ Params:
       interface ISessionMuteRequest {
           conversationId: string;
           mute: boolean;
+          fromHeadset?: boolean;
           unmuteDeviceId?: string | boolean | null;
       }
     ```
@@ -867,6 +876,8 @@ Returns: a promise that fullfils once the mute request has completed
 
 #### `setConversationHeld()`
 Set a conversation's hold state.
+
+If fromHeadset is false, a call will be made to the headset library to ensure the connected device's state is properly updated. If fromHeadset is true, no call to the headset library will be made. This is because if the event comes from the headset, its state will already be the most up to date
 
 > NOTE: only applicable for softphone conversations
 
@@ -883,6 +894,8 @@ Params:
       conversationId: string;
       /** `true` to place on hold, `false` to take off hold */
       held: boolean;
+      /** `true` if from headset, `false` if from app */
+      fromHeadset?: boolean;
     }
     ```
 
@@ -920,13 +933,15 @@ Returns: void
 #### `acceptPendingSession()`
 Accept a pending session based on the passed in ID.
 
+If fromHeadset is false, a call will be made to the headset library to ensure the connected device's state is properly updated. If fromHeadset is true, no call to the headset library will be made. This is because if the event comes from the headset, its state will already be the most up to date
+
 Declaration:
 ``` ts
 acceptPendingSession(params: { conversationId: string }): Promise<void>;
 ```
 Params:
 * `conversationId: string` Required: id of the pending conversation to accept
-
+  * `fromHeadset?: boolean` Optional: if `true` do not call headsets library functions, if `false` call headsets library functions
 Returns: a promise that fullfils once the session accept goes out
 
 #### `rejectPendingSession()`
@@ -998,6 +1013,8 @@ Returns: a promise that fullfils once the session accept goes out
 #### `endSession()`
 End an active session based on the session ID _or_ conversation ID (one is required)
 
+If fromHeadset is false, a call will be made to the headset library to ensure the connected device's state is properly updated. If fromHeadset is true, no call to the headset library will be made. This is because if the event comes from the headset, its state will already be the most up to date
+
 Declaration:
 ``` ts
 endSession(endOptions: IEndSessionRequest): Promise<void>;
@@ -1009,9 +1026,11 @@ Params:
     interface IEndSessionRequest {
       conversationId: string;
       reason?: JingleReason;
+      fromHeadset?: boolean
     }
     ```
   * `conversationId: string` conversation id of the session to end.
+  * `fromHeadset?: boolean` Optional: if `true` do not call headsets library functions, if `false` call headsets library functions
   * `reason?: JingleReason` Optional: defaults to `success`. This is for internal usage and should not be provided in custom applications.
 
 Returns: a promise that fullfils once the session has ended
