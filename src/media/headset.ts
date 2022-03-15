@@ -90,8 +90,6 @@ export class SdkHeadset {
         if (conversationId) {
             return this.headsetLibrary.endCall(conversationId);
         }
-
-        return Promise.resolve();
     }
 
     /**
