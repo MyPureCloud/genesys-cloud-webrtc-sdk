@@ -4,6 +4,7 @@
 * [Purpose of SdkHeadset]
 * [SdkHeadset]
     * [Example usage]
+    * [Properties]
     * [Methods]
     * [Events]
 
@@ -78,6 +79,11 @@ sdk.headset.headsetEvents.subscribe(value: {
 
 ```
 
+### Properties
+
+#### `currentSelectedImplementation`
+The currently selected implementation from the headset library. This will help with checking proper flags for various functionality such as `this.currentSelectedImplementation.isConnected`
+
 ### Methods
 
 #### `updateAudioInputDevice()`
@@ -99,18 +105,6 @@ Params:
 
 Returns: void
 
-#### `getCurrentSelectedImplementation()`
-Function that fetches the currently selected implementation from the headset library. This will help with checking proper flags for various functionality such as `this.getCurrentSelectedImplementation().isConnected`
-
-Declaration:
-``` ts
-    getCurrentSelectedImplementation () : VendorImplementation;
-```
-
-Params: none
-
-Returns: an instance of a VendorImplementation from the headset library
-
 #### `showRetry()`
 Function that determines if a "show retry" button should be shown on screen to allow the user to attempt to reconnect to their selected vendor and the corresponding implementation. The show retry button should show up if:
 
@@ -129,7 +123,7 @@ Params: none
 Returns: a boolean value determining if a the show retry button is required
 
 #### `retryConnection()`
-Function to retry connection to the selected implementation. It takes in the micLabel of the device in question and calls the `connect(label)` function of the corresponding implementation.
+Function to retry connection to the selected implementation. It takes in the micLabel of the device in question and calls the `connect(label)` function of the corresponding implementation only if the passed in micLabel has an actual value.
 
 Declaration:
 ``` ts
@@ -199,6 +193,19 @@ Function that calls the headset library's `answerIncomingCall(conversationId)` f
 Declaration:
 ``` ts
     answerIncomingCall(conversationId: string): Promise<void>;
+```
+
+Params:
+* `conversationId: string` - The conversationId of the call that needs to be answered
+
+Returns: a Promise containing `void`
+
+#### `rejectIncomingCall()`
+Function that calls the headset library's `rejectCall(conversationId)` function. This signals the headset device to switch off the answer call button's ringing (flashing) light to show the call was rejected and therefore not active.
+
+Declaration:
+``` ts
+    rejectIncomingCall(conversationId: string): Promise<void>;
 ```
 
 Params:
@@ -400,5 +407,6 @@ Value of event:
 [Purpose of SdkHeadset]: #purpose-of-sdkheadset
 [SdkHeadset]: #sdkheadset
 [Example usage]: #example-usage
+[Properties]: #properties
 [Methods]: #methods
 [Events]: #events

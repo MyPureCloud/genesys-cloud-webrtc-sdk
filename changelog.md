@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.1.0...HEAD)
+### Fixed
+* [PCM-1668](https://inindca.atlassian.net/browse/PCM-1668) - Installed newer version of headset library that will help with some issues that were found as well as offer a better approach to rejecting calls.
 ### Added
 * [PCM-1668](https://inindca.atlassian.net/browse/PCM-1668) - Integrate the new headset library into the SDK to allow device call controls for three headset vendors at the moment: Plantronics/Poly, Sennheiser/EPOS, Jabra
 
