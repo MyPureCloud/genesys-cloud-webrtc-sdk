@@ -39,9 +39,9 @@ export class SdkHeadset {
      */
     showRetry (): boolean {
         const selectedImplementation = this.currentSelectedImplementation;
-            if (selectedImplementation?.disableRetry) {
-                return false;
-            }
+        if (selectedImplementation?.disableRetry) {
+            return false;
+        }
 
         return !!selectedImplementation
             && !selectedImplementation.isConnected
