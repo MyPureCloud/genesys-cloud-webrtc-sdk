@@ -53,7 +53,7 @@ export class SdkHeadset {
      * @param micLabel the label that matches the currently selected device
      * @returns Promise<void>
      */
-    retryConnection (micLabel: string): Promise<void> {
+    async retryConnection (micLabel: string): Promise<void> {
         return micLabel && this.headsetLibrary.retryConnection(micLabel.toLowerCase());
     }
 

@@ -82,7 +82,7 @@ sdk.headset.headsetEvents.subscribe(value: {
 ### Properties
 
 #### `currentSelectedImplementation`
-The currently selected implementation from the headset library. This will help with checking proper flags for various functionality such as `this.currentSelectedImplementation.isConnected`
+The currently selected implementation from the headset library. See the [Vendor Implementation interface](https://github.com/purecloudlabs/softphone-vendor-headsets/blob/master/react-app/src/library/services/vendor-implementations/vendor-implementation.ts) for available properties and functions.
 
 ### Methods
 
@@ -123,7 +123,7 @@ Params: none
 Returns: a boolean value determining if a the show retry button is required
 
 #### `retryConnection()`
-Function to retry connection to the selected implementation. It takes in the micLabel of the device in question and calls the `connect(label)` function of the corresponding implementation only if the passed in micLabel has an actual value.
+Function to retry connection to the selected implementation. It takes in the label of the microphone device in question and calls the `connect(label)` function of the corresponding implementation only if the passed in label is not undefined.
 
 Declaration:
 ``` ts
