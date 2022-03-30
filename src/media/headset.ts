@@ -54,7 +54,7 @@ export class SdkHeadset {
      * @returns Promise<void>
      */
     async retryConnection (micLabel: string): Promise<void> {
-        return micLabel && this.headsetLibrary.retryConnection(micLabel.toLowerCase());
+        return micLabel && this.headsetLibrary.retryConnection(micLabel);
     }
 
     /**
