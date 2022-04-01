@@ -937,7 +937,7 @@ If fromHeadset is false, a call will be made to the headset library to ensure th
 
 Declaration:
 ``` ts
-acceptPendingSession(params: { conversationId: string }): Promise<void>;
+acceptPendingSession(params: { conversationId: string, fromHeadset: boolean }): Promise<void>;
 ```
 Params:
 * `conversationId: string` Required: id of the pending conversation to accept
@@ -947,12 +947,15 @@ Returns: a promise that fullfils once the session accept goes out
 #### `rejectPendingSession()`
 Reject a pending session based on the passed in ID.
 
+If fromHeadset is false, a call will be made to the headset library to ensure the connected device's state is properly updated. If fromHeadset is true, no call to the headset library will be made. This is because if the event comes from the headset, its state will already be the most up to date
+
 Declaration:
 ``` ts
-rejectPendingSession(params: { conversationId: string }): Promise<void>;
+rejectPendingSession(params: { conversationId: string, fromHeadset: boolean }): Promise<void>;
 ```
 Params:
 * `conversationId: string` Required: id of the conversation to reject
+* `fromHeadset?: boolean` Optional: if `true` do not call headsets library functions, if `false` call headsets library functions
 
 Returns: a promise that fullfils once the session reject goes out
 
