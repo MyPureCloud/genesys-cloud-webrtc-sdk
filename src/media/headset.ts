@@ -28,7 +28,7 @@ export class SdkHeadset {
      * @params none
      * @returns VendorImplementation
      */
-    getCurrentSelectedImplementation (): VendorImplementation {
+    get currentSelectedImplementation (): VendorImplementation {
         return this.headsetLibrary.selectedImplementation;
     }
 
@@ -38,7 +38,7 @@ export class SdkHeadset {
      * @returns boolean
      */
     showRetry (): boolean {
-        const selectedImplementation = this.getCurrentSelectedImplementation();
+        const selectedImplementation = this.currentSelectedImplementation;
         if (selectedImplementation?.disableRetry) {
             return false;
         }
@@ -53,8 +53,8 @@ export class SdkHeadset {
      * @param micLabel the label that matches the currently selected device
      * @returns Promise<void>
      */
-    retryConnection (micLabel: string): Promise<void> {
-        return this.headsetLibrary.retryConnection(micLabel);
+    async retryConnection (micLabel: string): Promise<void> {
+        return micLabel && this.headsetLibrary.retryConnection(micLabel);
     }
 
     /**
@@ -110,6 +110,17 @@ export class SdkHeadset {
      */
     answerIncomingCall (conversationId: string): Promise<void> {
         return this.headsetLibrary.answerCall(conversationId);
+    }
+
+    /**
+     * Calls the headset library's rejectIncomingCall function to signal the device
+     * to switch on the answer call button's light to show the call has been rejected
+     * @param conversationId a string representing the incoming call that is being
+     * rejected
+     * @returns Promise<void>
+     */
+    rejectIncomingCall (conversationId: string): Promise<void> {
+        return this.headsetLibrary.rejectCall(conversationId);
     }
 
     /**
