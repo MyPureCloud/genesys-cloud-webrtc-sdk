@@ -156,15 +156,20 @@ Declaration:
 Params:
 * `conversationId: string` - The conversationId of the call that needs to be answered
 Returns: a Promise containing `void`
+
 #### `rejectIncomingCall()`
 Function that calls the headset library's `rejectCall(conversationId)` function. This signals the headset device to switch off the answer call button's ringing (flashing) light to show the call was rejected and therefore not active.
+
 Declaration:
 ``` ts
     rejectIncomingCall(conversationId: string): Promise<void>;
 ```
+
 Params:
 * `conversationId: string` - The conversationId of the call that needs to be answered
+
 Returns: a Promise containing `void`
+
 #### `setMute()`
 Function that calls the headset library's `setMute(isMuted)` function. This signals the headset device to switch on or off (depending on the value of `isMuted`) the mute call button's light to show the call has been muted or unmuted respectively
 Declaration:
