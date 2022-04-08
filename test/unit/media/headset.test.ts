@@ -1,8 +1,7 @@
 import { Observable } from 'rxjs';
 import { SdkHeadset } from "../../../src/media/headset";
-import GenesysCloudWebrtcSdk from '../../../src/client';
 import GenesysCloudWebrtSdk from "../../../src";
-import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation} from 'softphone-vendor-headsets';
+import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
 import { SimpleMockSdk } from '../../test-utils';
 
 let sdk: GenesysCloudWebrtSdk;
