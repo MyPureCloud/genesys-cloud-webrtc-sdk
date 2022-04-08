@@ -15,6 +15,9 @@ import {
 import { SdkError } from '../../src/utils';
 import { SdkErrorTypes } from '../../src/types/enums';
 import { mockGetStationApi } from '../mock-apis';
+import { BroadcastChannel } from 'broadcast-channel';
+
+jest.mock('broadcast-channel');
 
 let { ws } = require('../mock-apis');
 
@@ -31,6 +34,11 @@ function disconnectSdk (sdk: GenesysCloudWebrtcSdk): Promise<any> {
 }
 
 describe('Client (integration)', () => {
+  Object.defineProperty(window.navigator, 'hid', { get: () => ({
+    getDevices: () => { return [] }
+  })});
+  Object.defineProperty(window.navigator, 'locks', { get: () => ({})});
+  (window as any).BroadcastChannel = BroadcastChannel;
   // check to make sure the server isn't running
   beforeAll(async () => {
     await closeWebSocketServer();
