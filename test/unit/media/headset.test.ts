@@ -1,8 +1,7 @@
 import { Observable } from 'rxjs';
 import { SdkHeadset } from "../../../src/media/headset";
-import GenesysCloudWebrtcSdk from '../../../src/client';
 import GenesysCloudWebrtSdk from "../../../src";
-import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation} from 'softphone-vendor-headsets';
+import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
 import { SimpleMockSdk } from '../../test-utils';
 
 let sdk: GenesysCloudWebrtSdk;
@@ -35,12 +34,12 @@ describe('SdkHeadset', () => {
     describe('updateAudioInputDevice', () => {
         it('should fetch the proper device and send it to the headset library', () => {
             const testId = "testId";
-            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind' as any).mockReturnValue({
+            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValue({
                 kind: 'audioinput',
                 deviceId: 'testId',
                 label: 'Test Device Mark V',
             } as MediaDeviceInfo);
-            const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange' as any);
+            const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
             sdkHeadset.updateAudioInputDevice(testId);
             expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
             expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
@@ -73,14 +72,14 @@ describe('SdkHeadset', () => {
         it('should return false if disableRetry is false, isConnected is false but isConnecting is true', () => {
             headsetLibrary.activeMicChange('plantronics test device');
             headsetLibrary.selectedImplementation.isConnecting = true;
-            let showRetryResult = sdkHeadset.showRetry();
+            const showRetryResult = sdkHeadset.showRetry();
             expect(showRetryResult).toBe(false);
         })
 
         it('should return false if disableRetry is false, isConnecting is false but isConnected is true', () => {
             headsetLibrary.activeMicChange('plantronics test device');
             headsetLibrary.selectedImplementation.isConnected = true;
-            let showRetryResult = sdkHeadset.showRetry();
+            const showRetryResult = sdkHeadset.showRetry();
             expect(showRetryResult).toBe(false);
         })
 
