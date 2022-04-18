@@ -19,7 +19,6 @@ The SdkHeadset namespace connects directly to the [new headset library](https://
 ### Example Usage
 
 ``` ts
-
 /* async function for demonstration */
 async function testAnswerCall () {
     /* This function handles a fromHeadset event. This will not cause the headset library to be called */
@@ -30,7 +29,6 @@ async function testMuteCall () {
     /* This function handles a from app event. This will cause the headset library to be called */
     sdk.setAudioMute ('123456789', 'softphone', false | undefined);
 }
-
 /* Examples of listening for events from the headset */
 sdk.headset.headsetEvents.subscribe(value: {
     event: EmittedHeadsetEvents,
@@ -263,7 +261,6 @@ Declaration:
         }
     })
 ```
-
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
@@ -299,7 +296,11 @@ Value of event:
 
 
 #### `deviceMuteStatusChanged`
-Event emitted when a user presses the mute call button on their selected device. It doesn't matter if the device state is currently muted or unmuted, this event will be emitted with the _OPPOSITE_ value. For example, if the headset is currently muted, it will emit the event with the corresponding value to unmute the device. The event includes the event `name` as it is interpretted by the headset and a collection of items that may help with logging (`event`). It also comes with a value known as `isMuted` which determines the event is trying to mute or unmute the call. It can also potentially have a `code` that corresponds to the event.
+Event emitted when a user presses the mute call button on their selected device. It doesn't matter if the device state is currently muted or unmuted,
+this event will be emitted with the _OPPOSITE_ value. For example, if the headset is currently muted, it will emit the event with the corresponding
+value to unmute the device. The event includes the event `name` as it is interpretted by the headset and a collection of items that may help with
+logging (`event`). It also comes with a value known as `isMuted` which determines the event is trying to mute or unmute the call. It can also
+potentially have a `code` that corresponds to the event.
 
 Declaration:
 ``` ts
@@ -317,7 +318,6 @@ Declaration:
         }
     })
 ```
-
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
@@ -328,7 +328,11 @@ Value of event:
 
 
 #### `deviceHoldStatusChanged`
-Event emitted when a user presses the hold call button on their selected device. It doesn't matter if the device state is currently on hold or not, this event will be emitted with the _OPPOSITE_ value. For example, if the headset is currently on hold, it will emit the event with the corresponding value to resume the call. The event includes the event `name` as it is interpretted by the headset and a collection of items that may help with logging (`event`). It also comes with a value known as `holdRequested` which determines the event is trying to hold or resume the call. It will also have an optional value for `toggle`. It can also potentially have a `code` that corresponds to the event.
+Event emitted when a user presses the hold call button on their selected device. It doesn't matter if the device state is currently on hold or not,
+this event will be emitted with the _OPPOSITE_ value. For example, if the headset is currently on hold, it will emit the event with the corresponding value to
+resume the call. The event includes the event `name` as it is interpretted by the headset and a collection of items that may help with logging (`event`).
+It also comes with a value known as `holdRequested` which determines the event is trying to hold or resume the call. It will also have an optional value for `toggle`.
+It can also potentially have a `code` that corresponds to the event.
 
 Declaration:
 ``` ts
@@ -347,7 +351,6 @@ Declaration:
         }
     })
 ```
-
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
@@ -358,7 +361,10 @@ Value of event:
 
 
 #### `webHidPermissionRequested`
-This is a special event that is only necessary for specific devices. Certain devices (such as Jabra) support a technology known as [WebHID](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API) that requires additional permissions in order to use the call controls. This event is emitted when a WebHID enabled device is selected. The event includes a `callback` function that is required in order to achieve additional permissions for WebHID
+This is a special event that is only necessary for specific devices. Certain devices (such as Jabra) support a technology known as
+[WebHID](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API) that requires additional permissions in order to use the call controls.
+This event is emitted when a WebHID enabled device is selected. The event includes a `callback` function that is required in order to
+achieve additional permissions for WebHID
 
 Declaration:
 ``` ts
@@ -374,14 +380,14 @@ Declaration:
         }
     })
 ```
-
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `callback: Function` - the passed in function that will help achieve additional permissions for WebHID devices
 
 #### `deviceConnectionStatusChanged`
-Event emitted when a device implementation's connection status changes in some way. This can be the flags of `isConnected` or `isConnecting` changing in any way. These flags are also included with the events payload.
+Event emitted when a device implementation's connection status changes in some way. This can be the flags of `isConnected` or `isConnecting` changing in any way.
+These flags are also included with the events payload.
 
 Declaration:
 ``` ts
@@ -397,13 +403,11 @@ Declaration:
         }
     })
 ```
-
 Value of event:
 * `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `isConnected: boolean` - if the vendor implementation is fully connected
     * `isConnecting: boolean` - if the vendor implementation is in the process of connecting
-
 [Purpose of SdkHeadset]: #purpose-of-sdkheadset
 [SdkHeadset]: #sdkheadset
 [Example usage]: #example-usage

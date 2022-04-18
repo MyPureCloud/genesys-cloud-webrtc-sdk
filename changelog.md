@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.0...HEAD)
 ### Fixed
 * Worked on issue found in Volt when there wasn't a proper device found after changing default devices
+* [PCM-1878](https://inindca.atlassian.net/browse/PCM-1878) cleaned up logging for `sdk.acceptSession()` which was logging the HTML elements and media stream
+  causing an infinite loop with the client-logger.
+* Ran `npm audit fix` to update deps and resolve security vulnerabilities
 
 # [v7.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.1.1...v7.2.0)
 ### Fixed
