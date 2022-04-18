@@ -54,6 +54,12 @@ webappPipeline {
         readJSON(file: 'dist/manifest.json')
     }
 
+    snykConfig = {
+      return [
+        organization: 'genesys-client-media-webrtc',
+      ]
+    }
+
     deployConfig = [
       dev : 'always',
       test : 'always',
