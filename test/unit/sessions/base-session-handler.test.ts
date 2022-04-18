@@ -5,7 +5,7 @@ import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/e
 import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
-import { IExtendedMediaSession, ConversationUpdate } from '../../../src';
+import { IExtendedMediaSession, ConversationUpdate, IAcceptSessionRequest } from '../../../src';
 import { v4 } from 'uuid';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
@@ -583,7 +583,12 @@ describe('acceptSession', () => {
 
   it('should log correctly', async () => {
     const session: any = new MockSession();
-    const params = { conversationId: session.conversationId };
+    const params = {
+      conversationId: session.conversationId,
+      audioElement: { iam: 'an audio el' } as any,
+      videoElement: undefined,
+      mediaStream: null
+    } as IAcceptSessionRequest;
     const logSpy = jest.spyOn(handler, 'log' as any);
 
     await handler.acceptSession(session, params);
@@ -592,7 +597,12 @@ describe('acceptSession', () => {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,
-      params
+      params: {
+        ...params,
+        audioElement: {},
+        videoElement: undefined,
+        mediaStream: null
+      }
     });
   });
 
