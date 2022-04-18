@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.0...HEAD)
+### Fixed
+* Worked on issue found in Volt when there wasn't a proper device found after changing default devices
 
 # [v7.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.1.1...v7.2.0)
 ### Fixed
