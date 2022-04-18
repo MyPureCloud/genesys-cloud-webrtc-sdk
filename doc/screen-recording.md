@@ -47,8 +47,6 @@ sdk.on('sessionStarted', async (session) => {
     sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream, screenRecordingMetadatas });
   }
 });
-
-await sdk.startVideoConference(roomJid);
 ```
 
 ### Manual Accept
@@ -93,8 +91,6 @@ sdk.on('sessionStarted', async (session) => {
     sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream, screenRecordingMetadatas });
   }
 });
-
-await sdk.startVideoConference(roomJid);
 ```
 
 ### Multiple Screens
@@ -119,8 +115,6 @@ sdk.on('sessionStarted', async (session) => {
     sdk.acceptSession({ conversationId: session.conversationId, sessionType: session.sessionType, mediaStream: screenStream, screenRecordingMetadatas });
   }
 });
-
-await sdk.startVideoConference(roomJid);
 ```
 
 When the session ends, the webrtc sdk will clean up the media automatically.
