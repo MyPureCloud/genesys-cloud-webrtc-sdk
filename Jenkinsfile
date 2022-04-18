@@ -57,6 +57,7 @@ webappPipeline {
     snykConfig = {
       return [
         organization: 'genesys-client-media-webrtc',
+        wait: true
       ]
     }
 
