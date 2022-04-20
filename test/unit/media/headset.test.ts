@@ -44,6 +44,18 @@ describe('SdkHeadset', () => {
             expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
             expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
         })
+        it('should properly handle if NO device is returned from findCachedDeviceByIdAndKind', () => {
+            const testId = "testId";
+            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValueOnce(undefined)
+                .mockReturnValueOnce({} as MediaDeviceInfo);
+            const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
+            sdkHeadset.updateAudioInputDevice(testId);
+            expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
+            expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
+
+            sdkHeadset.updateAudioInputDevice(testId);
+            expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
+        })
     })
 
     describe('getCurrentSelectedImplementation()', () => {

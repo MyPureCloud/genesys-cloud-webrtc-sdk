@@ -3,7 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.1...HEAD)
+
+# [v7.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.0...v7.2.1)
+
+### Fixed
+* Worked on issue found in Volt when there wasn't a proper device found after changing default devices
+* [PCM-1878](https://inindca.atlassian.net/browse/PCM-1878) cleaned up logging for `sdk.acceptSession()` which was logging the HTML elements and media stream
+  causing an infinite loop with the client-logger.
+* Ran `npm audit fix` to update deps and resolve security vulnerabilities
 
 # [v7.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.1.1...v7.2.0)
 ### Fixed

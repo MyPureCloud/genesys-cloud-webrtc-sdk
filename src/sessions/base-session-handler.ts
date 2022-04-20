@@ -1,11 +1,12 @@
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
+import { ILogMessageOptions } from 'genesys-cloud-client-logger';
 
 import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, logPendingSession, requestApi } from '../utils';
+import { createAndEmitSdkError, requestApi } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
@@ -16,7 +17,6 @@ import {
   IUpdateOutgoingMedia,
   IConversationHeldRequest
 } from '../types/interfaces';
-import { ILogMessageOptions } from 'genesys-cloud-client-logger';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
@@ -94,6 +94,15 @@ export default abstract class BaseSessionHandler {
       sessionId: session.id,
       params
     };
+
+    /* clean up log params */
+    const keysNotToFilter = ['conversationId', 'sessionType', 'screenRecordingMetadatas'] as Array<keyof IAcceptSessionRequest>;
+
+    /* we only want to mask params that actually exist */
+    Object.keys(logExtras.params)
+      .filter(key => !keysNotToFilter.includes(key as keyof IAcceptSessionRequest) && params[key])
+      .forEach(key => logExtras.params[key] = {});
+
     const outputDeviceId = this.sdk._config.defaults.outputDeviceId || '';
     const isSupported = this.sdk.media.getState().hasOutputDeviceSupport;
 
