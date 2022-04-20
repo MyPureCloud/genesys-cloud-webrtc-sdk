@@ -81,10 +81,10 @@ describe('Client', () => {
     }
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.restoreAllMocks();
     if (sdk) {
-      sdk.destroy();
+      await sdk.destroy();
       sdk = null;
     }
   });
@@ -804,6 +804,8 @@ describe('Client', () => {
       expect(sdk._config.accessToken).toBe(newToken);
       expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
       expect(sdk._streamingConnection).toBeFalsy();
+      
+      // add streamingConnection
     });
   });
 

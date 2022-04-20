@@ -688,7 +688,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   disconnect (): Promise<any> {
     this._http.stopAllRetries();
-    return this._streamingConnection.disconnect();
+    return this._streamingConnection?.disconnect();
   }
 
   /**
@@ -713,6 +713,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  tasks have completed
    */
   async destroy (): Promise<any> {
+    if (!this.sessionManager) {
+      return;
+    }
+    
     const activeSessions = this.sessionManager.getAllJingleSessions();
     this.logger.info('destroying webrtc sdk', {
       activeSessions: activeSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
