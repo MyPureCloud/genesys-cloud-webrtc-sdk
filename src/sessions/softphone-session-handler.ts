@@ -182,7 +182,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
             fromJid: session.peerID,
             toJid: this.sdk._personDetails.chat.jabberId
           };
-          this.sessionManager.pendingSessions[update.id] = pendingSession;
+          this.sessionManager.pendingSessions.push(pendingSession);
           this.sdk.emit('pendingSession', pendingSession);
         }
         /* we don't want to emit events for these */

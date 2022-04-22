@@ -262,8 +262,8 @@ describe('removePendingSession()', () => {
 
     sessionManager.removePendingSession({ conversationId: pendingSession1.conversationId });
 
-    expect(Object.values(sessionManager.pendingSessions).length).toBe(1);
-    expect(sessionManager.pendingSessions[pendingSession1.conversationId]).toBeUndefined();
+    expect(sessionManager.pendingSessions.length).toBe(1);
+    expect(sessionManager.pendingSessions[0]).toBe(pendingSession2);
   });
 
   it('should warn if a session is not found', () => {

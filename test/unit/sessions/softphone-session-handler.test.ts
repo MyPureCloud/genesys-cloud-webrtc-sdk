@@ -858,7 +858,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
       'pendingSession',
       expectedPendingSession
     );
-    expect(mockSessionManager.pendingSessions[update.id]).toEqual(expectedPendingSession);
+    expect(mockSessionManager.pendingSessions[0]).toEqual(expectedPendingSession);
   });
 
   it('should not emit a pending session if we do not have an active session', () => {
