@@ -356,6 +356,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       participant = participantsForUser.filter(p => p.calls.find(c => c.state === state))[0];
     }
 
+    /* find the most recent participant that is not already terminated */
+    if (!participant) {
+      // Possibly should guard against "disconnected" too but DEFINITELY "terminated"
+      participant = participantsForUser.filter(p => p.calls.some(c => c.state !== CommunicationStates.terminated))[0];
+    }
+
     /* find user participant with a call */
     if (!participant) {
       participant = participantsForUser.find(p => p.calls.length)
