@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { SdkHeadset } from "../../../src/media/headset";
+import { SdkHeadset, SdkHeadsetStub } from '../../../src/media/headset';
 import GenesysCloudWebrtSdk from "../../../src";
 import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
 import { SimpleMockSdk } from '../../test-utils';
@@ -10,161 +10,241 @@ let headsetLibrary: HeadsetService;
 let headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
 describe('SdkHeadset', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-        headsetLibrary = HeadsetService.getInstance({ logger: console });
-        headsetEvents$ = headsetLibrary.headsetEvents$;
-        sdk = new SimpleMockSdk() as any;
-        sdkHeadset = new SdkHeadset(sdk);
-    })
+  beforeEach(() => {
+    jest.clearAllMocks();
+    headsetLibrary = HeadsetService.getInstance({ logger: console });
+    headsetEvents$ = headsetLibrary.headsetEvents$;
+    sdk = new SimpleMockSdk() as any;
+    sdkHeadset = new SdkHeadset(sdk);
+  });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
-    })
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
-    describe('constructor()', () => {
-        it('should start initialization', () => {
-            // const headset = new SdkHeadset(sdkMedia);
-            expect(sdkHeadset['sdk']).toBe(sdk);
-            expect(sdkHeadset['headsetLibrary']).toBe(headsetLibrary);
-            expect(sdkHeadset['headsetEvents$']).toStrictEqual(headsetEvents$);
-        })
-    })
+  describe('constructor()', () => {
+    it('should start initialization', () => {
+      // const headset = new SdkHeadset(sdkMedia);
+      expect(sdkHeadset['sdk']).toBe(sdk);
+      expect(sdkHeadset['headsetLibrary']).toBe(headsetLibrary);
+      expect(sdkHeadset['headsetEvents$']).toStrictEqual(headsetEvents$);
+    });
+  });
 
-    describe('updateAudioInputDevice', () => {
-        it('should fetch the proper device and send it to the headset library', () => {
-            const testId = "testId";
-            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValue({
-                kind: 'audioinput',
-                deviceId: 'testId',
-                label: 'Test Device Mark V',
-            } as MediaDeviceInfo);
-            const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
-            sdkHeadset.updateAudioInputDevice(testId);
-            expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
-            expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
-        })
-        it('should properly handle if NO device is returned from findCachedDeviceByIdAndKind', () => {
-            const testId = "testId";
-            const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValueOnce(undefined)
-                .mockReturnValueOnce({} as MediaDeviceInfo);
-            const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
-            sdkHeadset.updateAudioInputDevice(testId);
-            expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
-            expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
+  describe('updateAudioInputDevice', () => {
+    it('should fetch the proper device and send it to the headset library', () => {
+      const testId = "testId";
+      const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValue({
+        kind: 'audioinput',
+        deviceId: 'testId',
+        label: 'Test Device Mark V',
+      } as MediaDeviceInfo);
+      const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
+      sdkHeadset.updateAudioInputDevice(testId);
+      expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
+      expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
+    });
+    it('should properly handle if NO device is returned from findCachedDeviceByIdAndKind', () => {
+      const testId = "testId";
+      const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValueOnce(undefined)
+        .mockReturnValueOnce({} as MediaDeviceInfo);
+      const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
+      sdkHeadset.updateAudioInputDevice(testId);
+      expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
+      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
 
-            sdkHeadset.updateAudioInputDevice(testId);
-            expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
-        })
-    })
+      sdkHeadset.updateAudioInputDevice(testId);
+      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
+    });
+  });
 
-    describe('getCurrentSelectedImplementation()', () => {
-        it('should fetch the currently selected vendor implementation from the headset library', () => {
-            headsetLibrary.activeMicChange('plantronics test device');
-            expect(headsetLibrary.selectedImplementation).toStrictEqual(headsetLibrary['plantronics']);
-        })
-    })
+  describe('getCurrentSelectedImplementation()', () => {
+    it('should fetch the currently selected vendor implementation from the headset library', () => {
+      headsetLibrary.activeMicChange('plantronics test device');
+      expect(headsetLibrary.selectedImplementation).toStrictEqual(headsetLibrary['plantronics']);
+    });
+  });
 
-    describe('showRetry', () => {
-        it('should return false if the selected implementation has disableRetry as true', () => {
-            headsetLibrary.activeMicChange('plantronics test device');
-            headsetLibrary.selectedImplementation.disableRetry = true;
-            const showRetryResult = sdkHeadset.showRetry();
-            expect(showRetryResult).toBe(false);
-        })
+  describe('showRetry', () => {
+    it('should return false if the selected implementation has disableRetry as true', () => {
+      headsetLibrary.activeMicChange('plantronics test device');
+      headsetLibrary.selectedImplementation.disableRetry = true;
+      const showRetryResult = sdkHeadset.showRetry();
+      expect(showRetryResult).toBe(false);
+    });
 
-        it('should return true if disableRetry is false, isConnected is false and isConnecting is false', () => {
-            headsetLibrary.activeMicChange('plantronics test device');
-            headsetLibrary.selectedImplementation.disableRetry = false;
-            headsetLibrary.selectedImplementation.isConnecting = false;
-            const showRetryResult = sdkHeadset.showRetry();
-            expect(showRetryResult).toBe(true);
-        })
+    it('should return true if disableRetry is false, isConnected is false and isConnecting is false', () => {
+      headsetLibrary.activeMicChange('plantronics test device');
+      headsetLibrary.selectedImplementation.disableRetry = false;
+      headsetLibrary.selectedImplementation.isConnecting = false;
+      const showRetryResult = sdkHeadset.showRetry();
+      expect(showRetryResult).toBe(true);
+    });
 
-        it('should return false if disableRetry is false, isConnected is false but isConnecting is true', () => {
-            headsetLibrary.activeMicChange('plantronics test device');
-            headsetLibrary.selectedImplementation.isConnecting = true;
-            const showRetryResult = sdkHeadset.showRetry();
-            expect(showRetryResult).toBe(false);
-        })
+    it('should return false if disableRetry is false, isConnected is false but isConnecting is true', () => {
+      headsetLibrary.activeMicChange('plantronics test device');
+      headsetLibrary.selectedImplementation.isConnecting = true;
+      const showRetryResult = sdkHeadset.showRetry();
+      expect(showRetryResult).toBe(false);
+    });
 
-        it('should return false if disableRetry is false, isConnecting is false but isConnected is true', () => {
-            headsetLibrary.activeMicChange('plantronics test device');
-            headsetLibrary.selectedImplementation.isConnected = true;
-            const showRetryResult = sdkHeadset.showRetry();
-            expect(showRetryResult).toBe(false);
-        })
+    it('should return false if disableRetry is false, isConnecting is false but isConnected is true', () => {
+      headsetLibrary.activeMicChange('plantronics test device');
+      headsetLibrary.selectedImplementation.isConnected = true;
+      const showRetryResult = sdkHeadset.showRetry();
+      expect(showRetryResult).toBe(false);
+    });
 
-        it('should return false if the selectedImplementation is falsy', () => {
-            headsetLibrary.selectedImplementation = undefined;
-            const showRetryResult = sdkHeadset.showRetry();
-            expect(showRetryResult).toBe(false);
-        })
-    })
+    it('should return false if the selectedImplementation is falsy', () => {
+      headsetLibrary.selectedImplementation = undefined;
+      const showRetryResult = sdkHeadset.showRetry();
+      expect(showRetryResult).toBe(false);
+    });
+  });
 
-    describe('retryConnection', () => {
-        it('should properly call the connect function for the corresponding implementation', () => {
-            headsetLibrary.activeMicChange('plantronics test device');
-            const headsetConnectSpy = jest.spyOn(headsetLibrary['plantronics'], 'connect');
-            const headsetRetryConnectionSpy = jest.spyOn(headsetLibrary, 'retryConnection');
-            sdkHeadset.retryConnection('plantronics test device');
-            expect(headsetRetryConnectionSpy).toHaveBeenCalledWith('plantronics test device');
-            expect(headsetConnectSpy).toHaveBeenCalledWith('plantronics test device');
-        })
-    })
+  describe('retryConnection', () => {
+    it('should properly call the connect function for the corresponding implementation', () => {
+      headsetLibrary.activeMicChange('plantronics test device');
+      const headsetConnectSpy = jest.spyOn(headsetLibrary['plantronics'], 'connect');
+      const headsetRetryConnectionSpy = jest.spyOn(headsetLibrary, 'retryConnection');
+      sdkHeadset.retryConnection('plantronics test device');
+      expect(headsetRetryConnectionSpy).toHaveBeenCalledWith('plantronics test device');
+      expect(headsetConnectSpy).toHaveBeenCalledWith('plantronics test device');
+    });
+  });
 
-    describe('setRinging', () => {
-        it('should call the proper function in the headset library', () => {
-            const incomingCallSpy = jest.spyOn(headsetLibrary, 'incomingCall');
-            sdkHeadset.setRinging({conversationId: '123', contactName: 'Maxwell'}, false);
-            expect(incomingCallSpy).toHaveBeenCalledWith({conversationId: '123', contactName: 'Maxwell'}, false);
-        })
-    })
+  describe('setRinging', () => {
+    it('should call the proper function in the headset library', () => {
+      const incomingCallSpy = jest.spyOn(headsetLibrary, 'incomingCall');
+      sdkHeadset.setRinging({ conversationId: '123', contactName: 'Maxwell' }, false);
+      expect(incomingCallSpy).toHaveBeenCalledWith({ conversationId: '123', contactName: 'Maxwell' }, false);
+    });
+  });
 
-    describe('outgoingCall', () => {
-        it('should call the proper function in the headset library', () => {
-            const outgoingCallSpy = jest.spyOn(headsetLibrary, 'outgoingCall');
-            sdkHeadset.outgoingCall({conversationId: '123', contactName: 'Maxwell'});
-            expect(outgoingCallSpy).toHaveBeenCalledWith({conversationId: '123', contactName: 'Maxwell'});
-        })
-    })
+  describe('outgoingCall', () => {
+    it('should call the proper function in the headset library', () => {
+      const outgoingCallSpy = jest.spyOn(headsetLibrary, 'outgoingCall');
+      sdkHeadset.outgoingCall({ conversationId: '123', contactName: 'Maxwell' });
+      expect(outgoingCallSpy).toHaveBeenCalledWith({ conversationId: '123', contactName: 'Maxwell' });
+    });
+  });
 
-    describe('endCurrentCall', () => {
-        it('should call the proper function in the headset library', () => {
-            const endCurrentCallSpy = jest.spyOn(headsetLibrary, 'endCall');
-            sdkHeadset.endCurrentCall('');
-            expect(endCurrentCallSpy).not.toHaveBeenCalled();
+  describe('endCurrentCall', () => {
+    it('should call the proper function in the headset library', () => {
+      const endCurrentCallSpy = jest.spyOn(headsetLibrary, 'endCall');
+      sdkHeadset.endCurrentCall('');
+      expect(endCurrentCallSpy).not.toHaveBeenCalled();
 
-            sdkHeadset.endCurrentCall('123');
-            expect(endCurrentCallSpy).toHaveBeenCalledWith('123');
+      sdkHeadset.endCurrentCall('123');
+      expect(endCurrentCallSpy).toHaveBeenCalledWith('123');
 
-            const endAllCallsSpy = jest.spyOn(headsetLibrary, 'endAllCalls');
-            sdkHeadset.endAllCalls();
-            expect(endAllCallsSpy).toHaveBeenCalled();
-        })
-    })
+      const endAllCallsSpy = jest.spyOn(headsetLibrary, 'endAllCalls');
+      sdkHeadset.endAllCalls();
+      expect(endAllCallsSpy).toHaveBeenCalled();
+    });
+  });
 
-    describe('answerIncomingCall', () => {
-        it('should call the proper function in the headset library', () => {
-            const answerCallSpy = jest.spyOn(headsetLibrary, 'answerCall');
-            sdkHeadset.answerIncomingCall('123');
-            expect(answerCallSpy).toHaveBeenCalledWith('123');
-        })
-    })
+  describe('answerIncomingCall', () => {
+    it('should call the proper function in the headset library', () => {
+      const answerCallSpy = jest.spyOn(headsetLibrary, 'answerCall');
+      sdkHeadset.answerIncomingCall('123');
+      expect(answerCallSpy).toHaveBeenCalledWith('123');
+    });
+  });
 
-    describe('setMute', () => {
-        it('should call the proper function in the headset library', () => {
-            const setMuteSpy = jest.spyOn(headsetLibrary, 'setMute');
-            sdkHeadset.setMute(true);
-            expect(setMuteSpy).toHaveBeenCalledWith(true);
-        })
-    })
+  describe('setMute', () => {
+    it('should call the proper function in the headset library', () => {
+      const setMuteSpy = jest.spyOn(headsetLibrary, 'setMute');
+      sdkHeadset.setMute(true);
+      expect(setMuteSpy).toHaveBeenCalledWith(true);
+    });
+  });
 
-    describe('setHold', () => {
-        it('should call the proper function in the headset library', () => {
-            const setHoldSpy = jest.spyOn(headsetLibrary, 'setHold');
-            sdkHeadset.setHold('123', false);
-            expect(setHoldSpy).toHaveBeenCalledWith('123', false);
-        })
-    })
-})
+  describe('setHold', () => {
+    it('should call the proper function in the headset library', () => {
+      const setHoldSpy = jest.spyOn(headsetLibrary, 'setHold');
+      sdkHeadset.setHold('123', false);
+      expect(setHoldSpy).toHaveBeenCalledWith('123', false);
+    });
+  });
+});
+
+describe('SdkHeadsetStub', () => {
+  let headsetStub: SdkHeadsetStub;
+
+  beforeEach(() => {
+    headsetStub = new SdkHeadsetStub();
+  });
+
+  describe('get currentSelectedImplementation()', () => {
+    it('should return null', () => {
+      expect(headsetStub.currentSelectedImplementation).toBe(null);
+    });
+  });
+
+  describe('updateAudioInputDevice()', () => {
+    it('should return undefined', () => {
+      expect(headsetStub.updateAudioInputDevice('')).toBe(undefined);
+    });
+  });
+
+  describe('showRetry()', () => {
+    it('should return false', () => {
+      expect(headsetStub.showRetry()).toBe(false);
+    });
+  });
+
+  describe('retryConnection()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.retryConnection('')).toBe(undefined);
+    });
+  });
+
+  describe('setRinging()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.setRinging({ conversationId: '' }, false)).toBe(undefined);
+    });
+  });
+
+  describe('outgoingCall()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.outgoingCall({ conversationId: '', contactName: '' })).toBe(undefined);
+    });
+  });
+
+  describe('endCurrentCall()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.endCurrentCall('')).toBe(undefined);
+    });
+  });
+
+  describe('endAllCalls()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.endAllCalls()).toBe(undefined);
+    });
+  });
+
+  describe('answerIncomingCall()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.answerIncomingCall('')).toBe(undefined);
+    });
+  });
+
+  describe('rejectIncomingCall()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.rejectIncomingCall('')).toBe(undefined);
+    });
+  });
+
+  describe('setMute()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.setMute(false)).toBe(undefined);
+    });
+  });
+
+  describe('setHold()', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.setHold('', false)).toBe(undefined);
+    });
+  });
+});
