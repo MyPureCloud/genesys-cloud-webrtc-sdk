@@ -35,7 +35,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
-import { ISdkHeadset, SdkHeadset, SdkHeadsetStub } from './media/headset';
+import { SdkHeadset, SdkHeadsetBase, SdkHeadsetStub } from './media/headset';
 import { Constants } from 'stanza';
 
 const ENVIRONMENTS = [
@@ -89,7 +89,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   sessionManager: SessionManager;
   media: SdkMedia;
   station: IStation | null;
-  headset: ISdkHeadset;
+  headset: SdkHeadsetBase;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -163,7 +163,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
-    this.headset = this._config.useHeadsets ? new SdkHeadset(this) : new SdkHeadsetStub();
+    this.headset = this._config.useHeadsets ? new SdkHeadset(this) : new SdkHeadsetStub(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 
     // Telemetry for specific events
