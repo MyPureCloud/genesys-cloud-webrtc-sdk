@@ -173,7 +173,7 @@ describe('SdkHeadsetStub', () => {
   let headsetStub: SdkHeadsetStub;
 
   beforeEach(() => {
-    headsetStub = new SdkHeadsetStub();
+    headsetStub = new SdkHeadsetStub(sdk);
   });
 
   describe('get currentSelectedImplementation()', () => {
