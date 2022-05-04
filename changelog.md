@@ -5,15 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.2...HEAD)
 
+### Fixed
+* [PCM-1893](https://inindca.atlassian.net/browse/PCM-1893) – added `useHeadsets: boolean` config option to allow "opting out" of the headset functionality.
+  See [docs on constructing the SDK](doc/index.md#constructor) for more details.
+
 # [v7.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.1...v7.2.2)
 ### Fixed
-* [PCM-1887](https://inindca.atlassian.net/browse/PCM-1887) Fixed how we create fake pending sessions for when line appearance == 1. Missed reference during refactor.
+* [PCM-1887](https://inindca.atlassian.net/browse/PCM-1887) – Fixed how we create fake pending sessions for when line appearance == 1. Missed reference during refactor.
 
 # [v7.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.0...v7.2.1)
 
 ### Fixed
 * Worked on issue found in Volt when there wasn't a proper device found after changing default devices
-* [PCM-1878](https://inindca.atlassian.net/browse/PCM-1878) cleaned up logging for `sdk.acceptSession()` which was logging the HTML elements and media stream
+* [PCM-1878](https://inindca.atlassian.net/browse/PCM-1878) – cleaned up logging for `sdk.acceptSession()` which was logging the HTML elements and media stream
   causing an infinite loop with the client-logger.
 * Ran `npm audit fix` to update deps and resolve security vulnerabilities
 

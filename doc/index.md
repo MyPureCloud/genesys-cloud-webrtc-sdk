@@ -131,6 +131,7 @@ interface ISdkConfig {
     logLevel?: LogLevels;
     logger?: ILogger;
     optOutOfTelemetry?: boolean;
+    useHeadsets?: boolean;
     originAppName?: string;
     originAppVersion?: string;
     originAppId?: string;
@@ -248,6 +249,16 @@ Optional: default `false`.
 Opt out of sending logs to the server. Logs are only sent to the server
 if the default [GenesysCloudClientLogger] is used. The default logger will
 send logs to the server unless this option is `true`
+
+#### `useHeadsets`
+`useHeadsets?: boolean;`
+Optional: default `true`.
+
+Opt out of initializing the headset functionality included in the SDK.
+ See the "Headset" documentation of the SDK for more details.
+
+> Note: if `false`, a no-op stub will be used at `sdk.headset` to eliminate
+>  the need to "null" type check `sdk.headset` before using in code.
 
 #### `originAppName`
 `originAppName?: string;`
