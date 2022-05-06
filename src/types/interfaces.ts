@@ -80,7 +80,7 @@ export interface ISdkConfig {
    *
    * Optional: default `false`.
    */
-   autoAcceptPendingScreenRecordingRequests?: boolean;
+  autoAcceptPendingScreenRecordingRequests?: boolean;
 
   /**
    * The identifier that will go into the full jid. The jid will be constructed as {usersBareJid}/{jidResource}
@@ -161,6 +161,17 @@ export interface ISdkConfig {
    * Optional: default `false`
    */
   optOutOfTelemetry?: boolean;
+
+  /**
+   * Opt out of initializing the headset functionality included in the SDK.
+   *  See the "Headset" documentation of the SDK for more details.
+   *
+   * Note: if `false`, a no-op stub will be used at `sdk.headset` to eliminate
+   *  the need to "null" type check `sdk.headset` before using in code.
+   *
+   * Optional: default `true`
+   */
+  useHeadsets?: boolean;
 
   /**
    * Allowed session types the sdk instance should handle.
@@ -834,7 +845,7 @@ export interface ScreenRecordingMetadata {
   trackId: string;
 
   /**
-   * The id associated with the monitor/screen you are recording. This can often be found at 
+   * The id associated with the monitor/screen you are recording. This can often be found at
    * `MediaStreamTrack.getSettings().deviceId`.
    */
   screenId: string;
@@ -845,8 +856,8 @@ export interface ScreenRecordingMetadata {
   originX: number;
 
   /**
-   * The bottom coordinatefor this screen. *NOTE: Windows and Mac sometimes switch where 
-   * they reference originY. This property is for playback purposes and a Y coordinate of 
+   * The bottom coordinatefor this screen. *NOTE: Windows and Mac sometimes switch where
+   * they reference originY. This property is for playback purposes and a Y coordinate of
    * 0 should always represent the bottom of the screen.
    */
   originY: number;

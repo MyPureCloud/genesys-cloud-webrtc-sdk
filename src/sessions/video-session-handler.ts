@@ -517,7 +517,17 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     // if conversation is already muted, we wont get an update so dont wait for one
     if (replayMuteRequest) {
-      this.log('warn', 'Replaying audio mute request since the local state already matches the requested state', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+      this.log('warn', 'Replaying audio mute request since the local state already matches the requested state', {
+        conversationId: session.conversationId,
+        sessionId: session.id,
+        sessionType: session.sessionType,
+        params: {
+          conversationId: params.conversationId,
+          mute: params.mute,
+          fromHeadset: params.fromHeadset,
+          unmuteDeviceId: params.unmuteDeviceId
+        }
+      });
     }
 
     const userId = this.sdk._personDetails.id;
