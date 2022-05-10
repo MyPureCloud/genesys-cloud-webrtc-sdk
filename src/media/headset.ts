@@ -119,6 +119,17 @@ export class SdkHeadset extends SdkHeadsetBase {
     super(sdk);
     this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
+    this.listenForSessionEvents();
+  }
+
+  listenForSessionEvents (): void {
+    this.sdk.on('cancelPendingSession', ({ conversationId }) => this.rejectIncomingCall(conversationId));
+    this.sdk.on('sessionEnded', ({ conversationId }) => this.endCurrentCall(conversationId));
+    this.sdk.on('pendingSession', ({ conversationId, autoAnswer }) => {
+      if (!autoAnswer) {
+        this.setRinging({ conversationId, contactName: null }, !!this.sdk.sessionManager.getAllActiveSessions().length);
+      }
+    });
   }
 
   /**
@@ -173,7 +184,7 @@ export class SdkHeadset extends SdkHeadsetBase {
    * @param hasOtherActiveCalls boolean determining if there are other active calls
    * @returns Promise<void>
    */
-  setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls): Promise<void> {
+  setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls: boolean): Promise<void> {
     return this.headsetLibrary.incomingCall(callInfo, hasOtherActiveCalls);
   }
 
