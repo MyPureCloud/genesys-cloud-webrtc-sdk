@@ -3,6 +3,7 @@ import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation } from 'sof
 
 import GenesysCloudWebrtcSdk from '../client';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export abstract class SdkHeadsetBase {
   protected sdk: GenesysCloudWebrtcSdk;
   headsetEvents$: Observable<ConsumedHeadsetEvents>;
@@ -109,6 +110,7 @@ export abstract class SdkHeadsetBase {
    * @returns Promise<void>
    */
   async setHold (_conversationId: string, _isHeld: boolean): Promise<void> { /* no-op */ }
+  /* eslint-enable */
 }
 
 export class SdkHeadset extends SdkHeadsetBase {
