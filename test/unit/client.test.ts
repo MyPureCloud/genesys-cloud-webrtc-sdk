@@ -29,6 +29,7 @@ import {
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
+import { SdkHeadset, SdkHeadsetStub } from '../../src/media/headset';
 
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
@@ -135,6 +136,7 @@ describe('Client', () => {
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
       expect(sdk.isGuest).toBe(false);
+      expect(sdk.headset instanceof SdkHeadset).toBe(true);
     });
 
     it('sets up options when provided and track default audioStream', () => {
@@ -172,6 +174,11 @@ describe('Client', () => {
       expect(sdk.logger.info).toHaveBeenCalledWith('cancelPendingSession', ids);
       expect(sdk.logger.info).toHaveBeenCalledWith('handledPendingSession', ids);
 
+    });
+
+    it('should use SdkHeadsetStub if opted out', () => {
+      const sdk = constructSdk({ accessToken: '1234', useHeadsets: false } as ISdkConfig);
+      expect(sdk.headset instanceof SdkHeadsetStub).toBe(true);
     });
   });
 
@@ -804,7 +811,7 @@ describe('Client', () => {
       expect(sdk._config.accessToken).toBe(newToken);
       expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
       expect(sdk._streamingConnection).toBeFalsy();
-      
+
       // add streamingConnection
     });
   });
