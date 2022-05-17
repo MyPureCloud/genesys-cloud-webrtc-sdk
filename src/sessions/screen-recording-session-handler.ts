@@ -73,6 +73,21 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
   }
 
   private updateScreenRecordingMetadatas (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    metadatas.forEach((meta) => {
+      // adding any here because I don't want to add this to the public interface
+      (meta as any)._trackId = meta.trackId;
+
+      const transceiver = session.pc.getTransceivers()
+        .find((transceiver) => transceiver.sender.track?.id === meta.trackId);
+
+      if (!transceiver) {
+        this.log('warn', 'Failed to find transceiver for screen recording track', { conversationId: session.conversationId, sessionId: session.id, trackId: meta.trackId });
+        return;
+      }
+
+      meta.trackId = transceiver.mid;
+    });
+    
     const data = JSON.stringify({
       participantJid: getBareJid(this.sdk),
       metaData: metadatas,
