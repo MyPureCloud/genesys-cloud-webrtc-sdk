@@ -835,7 +835,7 @@ describe('Client', () => {
       const session2 = new MockSession();
 
       sessionManagerMock.getAllJingleSessions.mockReturnValue([session1, session2] as any);
-      sessionManagerMock.endSession.mockResolvedValue(null);
+      sessionManagerMock.forceTerminateSession.mockResolvedValue(null);
       mediaMock.destroy.mockReturnValue();
 
       jest.spyOn(sdk, 'removeAllListeners');
@@ -849,8 +849,8 @@ describe('Client', () => {
           { sessionId: session2.id, conversationId: session2.conversationId },
         ]
       });
-      expect(sdk.sessionManager.endSession).toHaveBeenCalledWith(session1);
-      expect(sdk.sessionManager.endSession).toHaveBeenCalledWith(session2);
+      expect(sdk.sessionManager.forceTerminateSession).toHaveBeenCalledWith(session1.id);
+      expect(sdk.sessionManager.forceTerminateSession).toHaveBeenCalledWith(session2.id);
       expect(sdk.removeAllListeners).toHaveBeenCalled();
       expect(sdk.media.destroy).toHaveBeenCalled();
       expect(sdk.disconnect).toHaveBeenCalled();
