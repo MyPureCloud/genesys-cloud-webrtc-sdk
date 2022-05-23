@@ -47,6 +47,7 @@ function initControls () {
 
   /* misc */
   document.getElementById('disconnect-sdk').addEventListener('click', disconnect);
+  document.getElementById('destroy-sdk').addEventListener('click', destroy);
   document.getElementById('clear-media-state-log').addEventListener('click', () => clearLog('media-state-log-data'));
   document.getElementById('clear-log').addEventListener('click', () => clearLog('log-data'));
 }
@@ -117,6 +118,10 @@ function initialize (environmentData, conversationsApi, noAuth, withDefaultAudio
 function disconnect () {
   sdkHandler.disconnectSdk();
   setAppControlVisiblity(false);
+}
+
+function destroy () {
+  sdkHandler.destroySdk();
 }
 
 function onLoad () {

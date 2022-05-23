@@ -222,6 +222,12 @@ function disconnectSdk () {
   utils.writeToLog('Disconnected -- Reauthenticate to reconnect');
 }
 
+async function destroySdk () {
+  utils.writeToLog('destroying sdk');
+  await webrtcSdk.destroy();
+  utils.writeToLog('sdk completely destroyed');
+}
+
 function getInputValue (inputId) {
   return document.getElementById(inputId).value;
 }
@@ -779,6 +785,7 @@ export default {
   updateOutputMediaDevice,
   updateDefaultDevices,
   disconnectSdk,
+  destroySdk,
   initWebrtcSDK,
   pinParticipantVideo,
   updateOnQueueStatus,
