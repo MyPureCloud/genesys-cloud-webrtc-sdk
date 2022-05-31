@@ -71,7 +71,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
       url: `https://api.${options.environment}/api/v2/diagnostics/trace`,
       appVersion: 'dev',
       logLevel: 'info',
-      logTopic: 'webrtc-demo-app',
+      appName: 'webrtc-demo-app',
     });
   }
 
