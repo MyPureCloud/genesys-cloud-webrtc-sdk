@@ -72,7 +72,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
       url: `https://api.${options.environment}/api/v2/diagnostics/trace`,
       appVersion: 'dev',
       logLevel: 'info',
-      logTopic: 'webrtc-demo-app',
+      appName: 'webrtc-demo-app',
     });
   }
 
@@ -302,6 +302,12 @@ function disconnectSdk () {
 
   webrtcSdk.disconnect();
   utils.writeToLog('Disconnected -- Reauthenticate to reconnect');
+}
+
+async function destroySdk () {
+  utils.writeToLog('destroying sdk');
+  await webrtcSdk.destroy();
+  utils.writeToLog('sdk completely destroyed');
 }
 
 function getInputValue (inputId) {
@@ -818,7 +824,7 @@ async function updateOnQueueStatus (goingOnQueue) {
       method: 'get',
       host: webrtcSdk._config.environment,
       authToken: webrtcSdk._config.accessToken
-    })).body;
+    })).data;
   }
 
   let presenceDefinition;
@@ -854,6 +860,7 @@ export default {
   updateOutputMediaDevice,
   updateDefaultDevices,
   disconnectSdk,
+  destroySdk,
   initWebrtcSDK,
   pinParticipantVideo,
   updateOnQueueStatus,

@@ -1,4 +1,4 @@
-import nock = require('nock');
+import nock from 'nock';
 
 import {
   SimpleMockSdk,
@@ -1416,6 +1416,16 @@ describe('getUserParticipantFromConversationEvent()', () => {
     expect(handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.alerting)).toEqual(participant2);
   });
 
+  it('should return the first participant that is not already terminated', () => {
+        /* setup our user to have multiple participants with different call states */
+        participant1.userId = userId;
+        participant1.calls = [{ ...call, state: CommunicationStates.terminated }];
+        participant2.userId = userId;
+        participant2.calls = [{ ...call }];
+        converversationUpdate.participants = [participant1, participant2];
+        expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
+  })
+
   it('should return the first participant with calls', () => {
     participant1.userId = userId;
     participant1.calls = [];
@@ -1793,7 +1803,7 @@ describe('fetchUserParticipantFromConversationId()', () => {
     } as any;
 
     requestApiSpy.mockResolvedValue({
-      body: {
+      data: {
         participants: [{
           ...expectedParticipant,
           extra: 'props',
@@ -1820,7 +1830,7 @@ describe('fetchUserParticipantFromConversationId()', () => {
   });
 
   it('should not map if the body does not have a participants array', async () => {
-    requestApiSpy.mockResolvedValue({ body: {} });
+    requestApiSpy.mockResolvedValue({ data: {} });
 
     await handler.fetchUserParticipantFromConversationId(conversationId);
 

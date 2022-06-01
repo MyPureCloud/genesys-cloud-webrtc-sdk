@@ -1,5 +1,5 @@
-import nock = require('nock');
-import uuid = require('uuid');
+import nock from 'nock';
+import uuid from 'uuid';
 
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
@@ -399,7 +399,7 @@ describe('startSession', () => {
       }
     } as any;
 
-    jest.spyOn(utils, 'requestApi').mockResolvedValue({ body: 'sldk' });
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
     await handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
 
     const expected = JSON.stringify({
@@ -421,7 +421,7 @@ describe('startSession', () => {
       }
     } as any;
 
-    jest.spyOn(utils, 'requestApi').mockResolvedValue({ body: 'sldk' });
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
     await handler.startSession({ jid: roomJid, inviteeJid: 'sndkkf@conference.com', sessionType: SessionTypes.collaborateVideo });
 
     const expected = JSON.stringify({

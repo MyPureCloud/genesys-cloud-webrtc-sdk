@@ -482,9 +482,9 @@ export default abstract class BaseSessionHandler {
   }
 
   async fetchConversationStateFromApi (conversationId: string): Promise<ConversationUpdate> {
-    const { body } = await requestApi.call(this.sdk, `/conversations/${conversationId}`);
-    if (body) {
-      return new ConversationUpdate(body);
+    const { data } = await requestApi.call(this.sdk, `/conversations/${conversationId}`);
+    if (data) {
+      return new ConversationUpdate(data);
     }
   }
 }

@@ -1002,7 +1002,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     this.sdk.logger.debug('devices changed');
     /* refresh devices in the cache with the new devices */
     await this.enumerateDevices();
-    return this.sdk.sessionManager.validateOutgoingMediaTracks();
+    if (this.sdk.sessionManager) {
+      return this.sdk.sessionManager.validateOutgoingMediaTracks();
+    }
   }
 
   /**
