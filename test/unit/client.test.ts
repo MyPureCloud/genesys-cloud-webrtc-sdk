@@ -319,7 +319,7 @@ describe('Client', () => {
   describe('fetchUsersStation()', () => {
     let station: IStation;
     let user: IPersonDetails;
-    let mockStationResponse: Promise<{ body: IStation }>;
+    let mockStationResponse: Promise<{ data: IStation }>;
 
     beforeEach(() => {
       const stationId = 'the-bat-phone';
@@ -346,8 +346,8 @@ describe('Client', () => {
       };
       jest.spyOn(utils, 'requestApiWithRetry').mockImplementation(() => {
         return {
-          promise: mockStationResponse || Promise.resolve({ body: station })
-        } as RetryPromise<{ body: IStation }>;
+          promise: mockStationResponse || Promise.resolve({ data: station })
+        } as RetryPromise<{ data: IStation }>;
       });
       sdk = constructSdk();
     });

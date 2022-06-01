@@ -214,8 +214,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             addCommunicationCode: opts.securityCode
           },
           noAuthHeader: true
-        }).then(({ body }) => {
-          this._customerData = body;
+        }).then(({ data }) => {
+          this._customerData = data;
         });
 
         /* if no securityCode, check for valid customerData */
@@ -492,19 +492,19 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   async fetchOrganization (): Promise<IOrgDetails> {
     return requestApiWithRetry.call(this, '/organizations/me').promise
-      .then(({ body }) => {
-        this._orgDetails = body;
-        this.logger.debug('Fetched organization details', body, { skipServer: true }); // don't log PII
-        return body;
+      .then(({ data }) => {
+        this._orgDetails = data;
+        this.logger.debug('Fetched organization details', data, { skipServer: true }); // don't log PII
+        return data;
       });
   }
 
   async fetchAuthenticatedUser (): Promise<IPersonDetails> {
     return requestApiWithRetry.call(this, '/users/me?expand=station').promise
-      .then(({ body }) => {
-        this._personDetails = body;
-        this.logger.debug('Fetched person details', body, { skipServer: true }); // don't log PII
-        return body;
+      .then(({ data }) => {
+        this._personDetails = data;
+        this.logger.debug('Fetched person details', data, { skipServer: true }); // don't log PII
+        return data;
       });
   }
 
@@ -519,18 +519,18 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
-    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
-    this.station = body;
+    const { data } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
+    this.station = data;
     this.logger.info('Fetched user station', {
-      userId: body.userId,
-      type: body.type,
-      webRtcPersistentEnabled: body.webRtcPersistentEnabled,
-      webRtcForceTurn: body.webRtcForceTurn,
-      webRtcCallAppearances: body.webRtcCallAppearances,
+      userId: data.userId,
+      type: data.type,
+      webRtcPersistentEnabled: data.webRtcPersistentEnabled,
+      webRtcForceTurn: data.webRtcForceTurn,
+      webRtcCallAppearances: data.webRtcCallAppearances,
     });
     this.emit('concurrentSoftphoneSessionsEnabled', this.isConcurrentSoftphoneSessionsEnabled());
-    this.emit('station', { action: 'Associated', station: body });
-    return body;
+    this.emit('station', { action: 'Associated', station: data });
+    return data;
   }
 
   /**

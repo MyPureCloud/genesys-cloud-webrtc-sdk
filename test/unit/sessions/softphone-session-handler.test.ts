@@ -1803,7 +1803,7 @@ describe('fetchUserParticipantFromConversationId()', () => {
     } as any;
 
     requestApiSpy.mockResolvedValue({
-      body: {
+      data: {
         participants: [{
           ...expectedParticipant,
           extra: 'props',
@@ -1830,7 +1830,7 @@ describe('fetchUserParticipantFromConversationId()', () => {
   });
 
   it('should not map if the body does not have a participants array', async () => {
-    requestApiSpy.mockResolvedValue({ body: {} });
+    requestApiSpy.mockResolvedValue({ data: {} });
 
     await handler.fetchUserParticipantFromConversationId(conversationId);
 
