@@ -14,6 +14,9 @@ module.exports = {
     // Add module name that needs to be transpiled
     // '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
   ],
+  setupFiles: [
+    '<rootDir>/test/setup.js'
+  ],
   collectCoverage: true,
   collectCoverageFrom: [
     '<rootDir>/src/**/*.{js,jsx,ts,tsx}',

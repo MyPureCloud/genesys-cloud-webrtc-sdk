@@ -749,7 +749,7 @@ async function updateOnQueueStatus (goingOnQueue) {
       method: 'get',
       host: webrtcSdk._config.environment,
       authToken: webrtcSdk._config.accessToken
-    })).body;
+    })).data;
   }
 
   let presenceDefinition;

@@ -698,7 +698,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       method: 'post',
       data: JSON.stringify(params)
     });
-    return { id: response.body.id, selfUri: response.body.selfUri };
+    return { id: response.data.id, selfUri: response.data.selfUri };
   }
 
   private async patchPhoneCall (

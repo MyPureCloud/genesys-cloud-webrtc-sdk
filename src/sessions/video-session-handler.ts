@@ -236,7 +236,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         data
       });
 
-      return { conversationId: response.body.conversationId };
+      return { conversationId: response.data.conversationId };
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
       this.log('error', 'Failed to request video session', err);
