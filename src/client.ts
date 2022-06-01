@@ -440,6 +440,20 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     }
   }
 
+  async updateDefaultResolution(options: { width: ConstrainULong, height: ConstrainULong, updateActiveSessions: boolean }): Promise<any> {
+    const { width, height, updateActiveSessions } = options;
+    this.logger.info('Updating defaultVideoResolution', { defaultVideoResolution: { width, height }});
+    this._config.defaults.videoResolution = { width, height };
+
+    if (updateActiveSessions) {
+      this.logger.info('Updating devices for all active session', {
+        defaultVideoDeviceId: this._config.defaults.videoDeviceId
+      });
+
+      return this.sessionManager && Promise.resolve(this.sessionManager.updateOutgoingMediaForAllSessions());
+    }
+  }
+
   /**
    * Update the default media settings from the config.
    *
