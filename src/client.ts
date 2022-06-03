@@ -397,7 +397,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the default
    *  device values have been updated
    */
-  async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
+  async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<void> {
     const updateVideo = options.videoDeviceId !== undefined;
     const updateAudio = options.audioDeviceId !== undefined;
     const updateOutput = options.outputDeviceId !== undefined;
@@ -438,7 +438,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         );
       }
 
-      return Promise.all(promises);
+      await Promise.all(promises);
     }
   }
 
@@ -454,7 +454,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the default
    *  settings and sessions are updated (if specified)
    */
-  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<any> {
+  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<void> {
     const allowedSettings: Array<keyof IMediaSettings> = [
       'micAutoGainControl',
       'micEchoCancellation',
@@ -687,7 +687,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Disconnect the streaming connection
    * @returns a promise that fullfils once the web socket has disconnected
    */
-  disconnect (): Promise<any> {
+  disconnect (): Promise<void> {
     this._http.stopAllRetries();
     return this._streamingConnection?.disconnect();
   }
@@ -696,7 +696,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Reconnect the streaming connection
    * @returns a promise that fullfils once the web socket has reconnected
    */
-  reconnect (): Promise<any> {
+  reconnect (): Promise<void> {
     this._http.stopAllRetries();
     return this._streamingConnection.reconnect();
   }
@@ -713,7 +713,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once all the cleanup
    *  tasks have completed
    */
-  async destroy (): Promise<any> {
+  async destroy (): Promise<void> {
     if (!this.sessionManager) {
       return;
     }

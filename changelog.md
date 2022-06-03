@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.3...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.4...HEAD)
+
+# [v7.2.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.3...v7.2.4)
 ### Fixed
 * [PCM-1911](https://inindca.atlassian.net/browse/PCM-1911) Added in logic to help with the ACD flow that checks for terminated/disconnected users if the user shows up twice in the participant update
 * [PCM-1909](https://inindca.atlassian.net/browse/PCM-1909) – force terminate sessions so sdk.destroy doesn't hang in the case of persistent connection or LA==1

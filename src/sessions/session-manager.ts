@@ -193,7 +193,7 @@ export class SessionManager {
     return handler.updateOutgoingMedia(session, options);
   }
 
-  async updateOutgoingMediaForAllSessions (options?: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
+  async updateOutgoingMediaForAllSessions (options?: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<void> {
     const opts = options || {
       videoDeviceId: this.sdk._config.defaults.videoDeviceId,
       audioDeviceId: this.sdk._config.defaults.audioDeviceId
@@ -214,7 +214,7 @@ export class SessionManager {
         audioDeviceId: opts.audioDeviceId
       });
     });
-    return Promise.all(promises);
+    await Promise.all(promises);
   }
 
   updateAudioVolume (volume: number): void {
