@@ -31,7 +31,7 @@ async function testMuteCall () {
 }
 /* Examples of listening for events from the headset */
 sdk.headset.headsetEvents.subscribe(value: {
-    event: EmittedHeadsetEvents,
+    event: HeadsetEvents,
     payload: {
         name: string,
         event: {`object containing various items from the headset`},
@@ -243,7 +243,7 @@ Returns: a Promise containing `void`
 ### Events
 The SDK Headset Utility does not explicitly emit events itself. It uses [RxJS observables](https://rxjs.dev/guide/observable) to emit the events which are then subscribed to within the consuming app. It listens for changes and fires functions that correspond to the events
 
-### `deviceAnsweredCall`
+#### `deviceAnsweredCall`
 Event emitted when a user presses the answer call button during an incoming call on their selected device. The event includes the event `name` as it is interpretted by the headset and a collection of items that may help with logging (`event`). It can also potentially have a `code` that corresponds to the event.
 
 Declaration:
@@ -262,7 +262,7 @@ Declaration:
     })
 ```
 Value of event:
-* `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
+* `event: HeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `name: string` - Name of the recent event as interpretted by the headset device
     * `event`: { containing various items mostly for logging purposes}
@@ -288,7 +288,7 @@ Declaration:
     })
 ```
 Value of event:
-* `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
+* `event: HeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `name: string` - Name of the recent event as interpretted by the headset device
     * `event`: { containing various items mostly for logging purposes}
@@ -319,7 +319,7 @@ Declaration:
     })
 ```
 Value of event:
-* `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
+* `event: HeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `name: string` - Name of the recent event as interpretted by the headset device
     * `event`: { containing various items mostly for logging purposes}
@@ -342,7 +342,6 @@ Declaration:
             name: string,
             event: { `containing various items mostly for logging purposes` },
             holdRequested: boolean,
-            toggle?: boolean
             code?: string
         } => {
             if (event.event === 'deviceHoldStatusChanged') {
@@ -352,7 +351,7 @@ Declaration:
     })
 ```
 Value of event:
-* `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
+* `event: HeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `name: string` - Name of the recent event as interpretted by the headset device
     * `event`: { containing various items mostly for logging purposes}
@@ -381,7 +380,7 @@ Declaration:
     })
 ```
 Value of event:
-* `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
+* `event: HeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `callback: Function` - the passed in function that will help achieve additional permissions for WebHID devices
 
@@ -404,7 +403,7 @@ Declaration:
     })
 ```
 Value of event:
-* `event: EmittedHeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
+* `event: HeadsetEvents` - string value emitted by the headset library to determine what event had just occurred
 * `payload:` - object containing
     * `isConnected: boolean` - if the vendor implementation is fully connected
     * `isConnecting: boolean` - if the vendor implementation is in the process of connecting
