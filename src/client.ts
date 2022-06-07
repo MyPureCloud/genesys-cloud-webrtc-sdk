@@ -214,8 +214,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             addCommunicationCode: opts.securityCode
           },
           noAuthHeader: true
-        }).then(({ body }) => {
-          this._customerData = body;
+        }).then(({ data }) => {
+          this._customerData = data;
         });
 
         /* if no securityCode, check for valid customerData */
@@ -318,7 +318,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
     (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
-    return this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+    const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+    this.headset.outgoingCall({ conversationId: callInfo.id, contactName: null });
+    return callInfo;
   }
 
   /**
@@ -541,19 +543,19 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   async fetchOrganization (): Promise<IOrgDetails> {
     return requestApiWithRetry.call(this, '/organizations/me').promise
-      .then(({ body }) => {
-        this._orgDetails = body;
-        this.logger.debug('Fetched organization details', body, { skipServer: true }); // don't log PII
-        return body;
+      .then(({ data }) => {
+        this._orgDetails = data;
+        this.logger.debug('Fetched organization details', data, { skipServer: true }); // don't log PII
+        return data;
       });
   }
 
   async fetchAuthenticatedUser (): Promise<IPersonDetails> {
     return requestApiWithRetry.call(this, '/users/me?expand=station').promise
-      .then(({ body }) => {
-        this._personDetails = body;
-        this.logger.debug('Fetched person details', body, { skipServer: true }); // don't log PII
-        return body;
+      .then(({ data }) => {
+        this._personDetails = data;
+        this.logger.debug('Fetched person details', data, { skipServer: true }); // don't log PII
+        return data;
       });
   }
 
@@ -568,18 +570,18 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
-    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
-    this.station = body;
+    const { data } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
+    this.station = data;
     this.logger.info('Fetched user station', {
-      userId: body.userId,
-      type: body.type,
-      webRtcPersistentEnabled: body.webRtcPersistentEnabled,
-      webRtcForceTurn: body.webRtcForceTurn,
-      webRtcCallAppearances: body.webRtcCallAppearances,
+      userId: data.userId,
+      type: data.type,
+      webRtcPersistentEnabled: data.webRtcPersistentEnabled,
+      webRtcForceTurn: data.webRtcForceTurn,
+      webRtcCallAppearances: data.webRtcCallAppearances,
     });
     this.emit('concurrentSoftphoneSessionsEnabled', this.isConcurrentSoftphoneSessionsEnabled());
-    this.emit('station', { action: 'Associated', station: body });
-    return body;
+    this.emit('station', { action: 'Associated', station: data });
+    return data;
   }
 
   /**
@@ -636,7 +638,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
-    !muteOptions.fromHeadset && this.headset.setMute(muteOptions.mute);
+    this.headset.setMute(muteOptions.mute);
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
@@ -648,7 +650,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param heldOptions conversationId and desired held state
    */
   async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
-    !heldOptions.fromHeadset && this.headset.setHold(heldOptions.conversationId, heldOptions.held);
+    this.headset.setHold(heldOptions.conversationId, heldOptions.held);
     await this.sessionManager.setConversationHeld(heldOptions);
   }
 
@@ -687,7 +689,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (params: IPendingSessionActionParams): Promise<void> {
-    !params.fromHeadset && this.headset.answerIncomingCall(params.conversationId);
+    this.headset.answerIncomingCall(params.conversationId);
     await this.sessionManager.proceedWithSession(params);
   }
 
@@ -698,7 +700,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session reject goes out
    */
   async rejectPendingSession (params: IPendingSessionActionParams): Promise<void> {
-    !params.fromHeadset && this.headset.rejectIncomingCall(params.conversationId);
     await this.sessionManager.rejectPendingSession(params);
   }
 
@@ -718,7 +719,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session has ended
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
-    !endOptions.fromHeadset && this.headset.endCurrentCall(endOptions.conversationId);
     return this.sessionManager.endSession(endOptions);
   }
 
