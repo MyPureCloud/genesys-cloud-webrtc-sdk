@@ -822,6 +822,20 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
   _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
 }
 
+export interface IResolutionChange {
+  requestedResolution: {
+    width: ConstrainULong,
+    height: ConstrainULong
+  },
+  actualResolution: {
+    width: ConstrainULong,
+    height: ConstrainULong
+  },
+  sessionId: string,
+  conversationId: string,
+  videoTrack: MediaStreamTrack
+}
+
 export interface VideoMediaSession extends IExtendedMediaSession {
   fromUserId?: string;
   sessionType: SessionTypes.collaborateVideo;
@@ -937,6 +951,7 @@ export interface SdkEvents {
   conversationUpdate: ISdkConversationUpdateEvent;
   station: (event: { action: 'Associated' | 'Disassociated', station: IStation | null }) => void;
   concurrentSoftphoneSessionsEnabled: boolean; // lineAppearence > 1
+  resolutionUpdated: IResolutionChange
 }
 
 /**
