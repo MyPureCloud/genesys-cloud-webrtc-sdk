@@ -6,6 +6,8 @@ jest.mock('genesys-cloud-client-logger', () => {
 
 import StreamingClient from 'genesys-cloud-streaming-client';
 import { Logger } from 'genesys-cloud-client-logger';
+import * as clientPrivate from '../../src/client-private';
+import jwtDecode from 'jwt-decode';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockStream, MockSession, random } from '../test-utils';
@@ -33,7 +35,9 @@ import { SdkHeadset, SdkHeadsetStub } from '../../src/media/headset';
 
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
+jest.mock('jwt-decode');
 
+const jwtDecodeSpy: jest.SpyInstance = jwtDecode as any;
 const mockLogger: jest.Mocked<Logger> = {
   debug: jest.fn(),
   warn: jest.fn(),
@@ -100,12 +104,12 @@ describe('Client', () => {
       }
     });
 
-    it('throws if accessToken and organizationId is not provided', () => {
+    it('throws if accessToken and organizationId and jwt is not provided', () => {
       try {
         constructSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
         fail();
       } catch (err) {
-        expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
+        expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'An accessToken, jwt, or organizationId (for guest access) is required to instantiate the sdk.'));
       }
     });
 
@@ -1113,4 +1117,74 @@ describe('Client', () => {
       expect(sdk.fetchUsersStation).not.toHaveBeenCalled();
     });
   });
+
+  describe('initialize', () => {
+    let orgSpy: jest.SpyInstance;
+    let userSpy: jest.SpyInstance;
+    let setupScSpy: jest.SpyInstance;
+    let proxySpy: jest.SpyInstance;
+    let requestSpy: jest.SpyInstance;
+
+    function setupSpys () {
+      orgSpy = jest.spyOn(sdk, 'fetchOrganization');
+      userSpy = jest.spyOn(sdk, 'fetchAuthenticatedUser');
+    }
+
+    beforeEach(() => {
+      setupScSpy = jest.spyOn(clientPrivate, 'setupStreamingClient').mockResolvedValue(null);
+      proxySpy = jest.spyOn(clientPrivate, 'proxyStreamingClientEvents').mockResolvedValue(null);
+      requestSpy = jest.spyOn(utils, 'requestApi');
+    });
+    
+    it('should init with jwt', async () => {
+      jwtDecodeSpy.mockReturnValue({
+        name: 'scooby',
+        org: 'myorg',
+        data: {
+          uid: 'myuserid',
+          jid: 'myjid',
+        }
+      } as any);
+
+      constructSdk({jwt: 'lsdjf'});
+      setupSpys();
+
+      await sdk.initialize();
+
+      expect(orgSpy).not.toHaveBeenCalled();
+      expect(userSpy).not.toHaveBeenCalled();
+      expect(setupScSpy).toHaveBeenCalled();
+      expect(proxySpy).toHaveBeenCalled();
+      expect(requestSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  // describe('parseJwt', () => {
+  //   it('should set person and org details', () => {
+  //     constructSdk({jwt: 'lsdjf'});
+  //     jwtDecodeSpy.mockReturnValue({
+  //       name: 'scooby',
+  //       org: 'myorg',
+  //       data: {
+  //         uid: 'myuserid',
+  //         jid: 'myjid',
+  //       }
+  //     } as any);
+
+  //     sdk.parseJwt();
+
+  //     expect(sdk._personDetails).toEqual({
+  //       id: 'myuserid',
+  //       name: 'scooby',
+  //       chat: {
+  //         jabberId: 'myjid'
+  //       }
+  //     });
+
+  //     expect(sdk._orgDetails).toEqual({
+  //       id: 'myorg',
+  //       name: null
+  //     });
+  //   });
+  // });
 });

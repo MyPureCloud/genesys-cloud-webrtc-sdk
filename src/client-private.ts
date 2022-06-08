@@ -50,6 +50,10 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     connectionOptions.jwt = this._customerData.jwt;
   }
 
+  if (this.isJwtAuth) {
+    connectionOptions.jwt = this._config.jwt;
+  }
+
   connectionOptions.logFormatters = this._config.logFormatters;
   this.logger.debug('Streaming client WebSocket connection options', connectionOptions);
   this._hasConnected = false;
@@ -83,7 +87,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
 export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): Promise<void> {
   this.sessionManager = new SessionManager(this);
 
-  if (this._personDetails) {
+  if (this._personDetails && !this.isJwtAuth) {
     await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, handleConversationUpdate.bind(this), true);
   }
 

@@ -121,17 +121,23 @@ export class SdkHeadset extends SdkHeadsetBase {
     super(sdk);
     this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
-    this.listenForSessionEvents();
+    this._listenForSessionEvents();
   }
 
-  listenForSessionEvents (): void {
+  _listenForSessionEvents (): void {
     this.sdk.on('cancelPendingSession', ({ conversationId }) => this.rejectIncomingCall(conversationId));
-    this.sdk.on('sessionEnded', ({ conversationId }) => this.endCurrentCall(conversationId));
-    this.sdk.on('pendingSession', ({ conversationId, autoAnswer }) => {
-      if (!autoAnswer) {
-        this.setRinging({ conversationId, contactName: null }, !!this.sdk.sessionManager.getAllActiveSessions().length);
-      }
-    });
+    this.sdk.on('sessionEnded', this._handleSessionEnded.bind(this));
+    this.sdk.on('pendingSession',  this._handlePendingSession.bind(this));
+  }
+
+  _handleSessionEnded ({ conversationId }): void {
+    this.endCurrentCall(conversationId);
+  }
+
+  _handlePendingSession ({ conversationId, autoAnswer }): void {
+    if (!autoAnswer) {
+      this.setRinging({ conversationId, contactName: null }, !!this.sdk.sessionManager.getAllActiveSessions().length);
+    }
   }
 
   /**

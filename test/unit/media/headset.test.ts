@@ -31,6 +31,31 @@ describe('SdkHeadset', () => {
     });
   });
 
+  describe('_handleSessionEnded', () => {
+    it('should call endCurrentCall', () => {
+      const spy = jest.spyOn(sdkHeadset, 'endCurrentCall');
+
+      sdkHeadset._handleSessionEnded({ conversationId: 'convi15215' });
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('_handlePendingSession', () => {
+    it('should setRinging if not autoAnswer', () => {
+      const spy = jest.spyOn(sdkHeadset, 'setRinging');
+
+      sdkHeadset._handlePendingSession({ conversationId: 'myconvoid', autoAnswer: false });
+      expect(spy).toHaveBeenCalled();
+    });
+    
+    it('should not setRinging if autoAnswer', () => {
+      const spy = jest.spyOn(sdkHeadset, 'setRinging');
+
+      sdkHeadset._handlePendingSession({ conversationId: 'myconvoid', autoAnswer: true });
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('updateAudioInputDevice', () => {
     it('should fetch the proper device and send it to the headset library', () => {
       const testId = "testId";
