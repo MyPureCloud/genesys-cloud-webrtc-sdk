@@ -1158,33 +1158,4 @@ describe('Client', () => {
       expect(requestSpy).not.toHaveBeenCalled();
     });
   });
-
-  // describe('parseJwt', () => {
-  //   it('should set person and org details', () => {
-  //     constructSdk({jwt: 'lsdjf'});
-  //     jwtDecodeSpy.mockReturnValue({
-  //       name: 'scooby',
-  //       org: 'myorg',
-  //       data: {
-  //         uid: 'myuserid',
-  //         jid: 'myjid',
-  //       }
-  //     } as any);
-
-  //     sdk.parseJwt();
-
-  //     expect(sdk._personDetails).toEqual({
-  //       id: 'myuserid',
-  //       name: 'scooby',
-  //       chat: {
-  //         jabberId: 'myjid'
-  //       }
-  //     });
-
-  //     expect(sdk._orgDetails).toEqual({
-  //       id: 'myorg',
-  //       name: null
-  //     });
-  //   });
-  // });
 });

@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { SdkHeadset, SdkHeadsetStub } from '../../../src/media/headset';
-import GenesysCloudWebrtSdk from "../../../src";
+import GenesysCloudWebrtSdk, { JingleReason, JingleReasonCondition } from "../../../src";
 import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
 import { SimpleMockSdk } from '../../test-utils';
 
@@ -28,31 +28,6 @@ describe('SdkHeadset', () => {
       expect(sdkHeadset['sdk']).toBe(sdk);
       expect(sdkHeadset['headsetLibrary']).toBe(headsetLibrary);
       expect(sdkHeadset['headsetEvents$']).toStrictEqual(headsetEvents$);
-    });
-  });
-
-  describe('_handleSessionEnded', () => {
-    it('should call endCurrentCall', () => {
-      const spy = jest.spyOn(sdkHeadset, 'endCurrentCall');
-
-      sdkHeadset._handleSessionEnded({ conversationId: 'convi15215' });
-      expect(spy).toHaveBeenCalled();
-    });
-  });
-
-  describe('_handlePendingSession', () => {
-    it('should setRinging if not autoAnswer', () => {
-      const spy = jest.spyOn(sdkHeadset, 'setRinging');
-
-      sdkHeadset._handlePendingSession({ conversationId: 'myconvoid', autoAnswer: false });
-      expect(spy).toHaveBeenCalled();
-    });
-    
-    it('should not setRinging if autoAnswer', () => {
-      const spy = jest.spyOn(sdkHeadset, 'setRinging');
-
-      sdkHeadset._handlePendingSession({ conversationId: 'myconvoid', autoAnswer: true });
-      expect(spy).not.toHaveBeenCalled();
     });
   });
 
@@ -190,6 +165,31 @@ describe('SdkHeadset', () => {
       const setHoldSpy = jest.spyOn(headsetLibrary, 'setHold');
       sdkHeadset.setHold('123', false);
       expect(setHoldSpy).toHaveBeenCalledWith('123', false);
+    });
+  });
+
+  describe('listenForSessionEvents', () => {
+    it('should end currentCall on sessionEnded', () => {
+      sdkHeadset.endCurrentCall = jest.fn();
+
+      const conversationId = 'myConvoId';
+      sdk.emit('sessionEnded', { conversationId } as any, null);
+
+      expect(sdkHeadset.endCurrentCall).toHaveBeenCalledWith(conversationId);
+    });
+
+    it('should set ringing if not autoanswer', () => {
+      sdkHeadset.setRinging = jest.fn();
+
+      sdk.emit('pendingSession', { autoAnswer: false, conversationId: '15215asdf'} as any);
+      expect(sdkHeadset.setRinging).toHaveBeenCalled();
+    });
+
+    it('should not set ringing if autoanswer', () => {
+      sdkHeadset.setRinging = jest.fn();
+
+      sdk.emit('pendingSession', { autoAnswer: true, conversationId: '15215asdf'} as any);
+      expect(sdkHeadset.setRinging).not.toHaveBeenCalled();
     });
   });
 });
