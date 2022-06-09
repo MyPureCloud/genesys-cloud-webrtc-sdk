@@ -527,20 +527,24 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   parseJwt (): void {
-    const decoded: JWTDetails = jwtDecode(this._config.jwt);
+    try {
+      const decoded: JWTDetails = jwtDecode(this._config.jwt);
 
-    this._personDetails = {
-      id: decoded.data.uid,
-      name: decoded.name,
-      chat: {
-        jabberId: decoded.data.jid
-      }
-    };
-
-    this._orgDetails = {
-      id: decoded.org,
-      name: null
-    };
+      this._personDetails = {
+        id: decoded.data.uid,
+        name: decoded.name,
+        chat: {
+          jabberId: decoded.data.jid
+        }
+      };
+  
+      this._orgDetails = {
+        id: decoded.org,
+        name: null
+      };
+    } catch (e) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, 'Failed to parse provided jwt, please ensure it is valid', e);
+    }
   }
 
   async fetchUsersStation (): Promise<IStation> {

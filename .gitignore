@@ -5,7 +5,6 @@
 
 dist
 docs
-test/test-pages/sdk-sample.js
 test/test-pages/**/common/
 test/test-pages/*/*sdk-sample.*s*
 test/test-pages/*/index.html

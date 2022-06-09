@@ -1157,5 +1157,21 @@ describe('Client', () => {
       expect(proxySpy).toHaveBeenCalled();
       expect(requestSpy).not.toHaveBeenCalled();
     });
+
+    it('should blow up with malformed jwt', async () => {
+      jwtDecodeSpy.mockImplementation(() => {
+        throw new Error('testError');
+      });
+
+      constructSdk({jwt: 'lsdjf'});
+      setupSpys();
+
+      try {
+        await sdk.initialize();
+        fail();
+      } catch (e) {
+        expect(e.message).toContain('Failed to parse provided jwt');
+      }
+    });
   });
 });
