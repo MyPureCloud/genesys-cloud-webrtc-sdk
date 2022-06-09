@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [PCM-1885](https://inindca.atlassian.net/browse/PCM-1885) – on `deviceschange` event from the window, SdkMedia should only validate all sessions if the `sessionManager` has already been initialized.
 * [PCM-1922](https://inindca.atlassian.net/browse/PCM-1922) - update streaming client to 14
 
+### Added
+* [PCM-1993](https://inindca.atlassian.net/browse/PCM-1933) – added build, deploy, and publish notifications to the Jenkinsfile
+
 # [v7.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.2...v7.2.3)
 ### Fixed
 * [PCM-1893](https://inindca.atlassian.net/browse/PCM-1893) – added `useHeadsets: boolean` config option to allow "opting out" of the headset functionality.
