@@ -475,7 +475,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         session.sessionType === 'collaborateVideo').forEach(videoSession => {
           videoSession._outboundStream.getVideoTracks().forEach(async track => {
             try {
-              await track.applyConstraints({ ...track.getConstraints(), height: resolution?.height, width: resolution?.width });
+              await track.applyConstraints({ ...track.getConstraints(),
+                height: resolution ? resolution.height : null,
+                width: resolution ? resolution.width : null
+              });
             } catch (e) {
               createAndEmitSdkError.call(this, SdkErrorTypes.generic, e.message, e);
             }

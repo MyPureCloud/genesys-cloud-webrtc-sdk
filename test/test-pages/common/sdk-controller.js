@@ -13,6 +13,14 @@ let conversationUpdatesToRender = {
   conversations: {},
   activeConversationId: ''
 };
+const videoResolutions = {
+  "default": undefined,
+  "480p": { width: 854, height: 480 },
+  "720p": { width: 1280, height: 720 },
+  "1080p": { width: 1920, height: 1080 },
+  "2K": { width: 2560, height: 1440 },
+  "4K": {width: 3840, height: 2160 }
+}
 
 async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDefaultAudio) {
   let options = {};
@@ -599,6 +607,8 @@ async function sessionStarted (session) {
 
       const controls = document.getElementById('video-actions');
       controls.classList.remove('hidden');
+
+      document.getElementById('select-video-resolution').classList.remove('hidden')
     });
 
     let mediaStream;
@@ -817,6 +827,11 @@ function pinParticipantVideo () {
   currentSession.pinParticipantVideo(getInputValue('participant-pin'));
 }
 
+function updateVideoResolution () {
+  const requestedResolution = document.getElementById('video-resolutions').value
+  webrtcSdk.updateDefaultResolution(videoResolutions[requestedResolution], true);
+}
+
 let systemPresences;
 async function updateOnQueueStatus (goingOnQueue) {
   if (!systemPresences) {
@@ -864,5 +879,6 @@ export default {
   initWebrtcSDK,
   pinParticipantVideo,
   updateOnQueueStatus,
-  endSession
+  endSession,
+  updateVideoResolution
 };

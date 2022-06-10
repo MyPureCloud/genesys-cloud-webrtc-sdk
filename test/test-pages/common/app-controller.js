@@ -28,6 +28,7 @@ function initControls () {
   document.getElementById('video-end').addEventListener('click', sdkHandler.endSession);
   document.getElementById('start-screen-share').addEventListener('click', sdkHandler.startScreenShare);
   document.getElementById('stop-screen-share').addEventListener('click', sdkHandler.stopScreenShare);
+  document.getElementById('update-video-resolution').addEventListener('click', () => sdkHandler.updateVideoResolution());
 
   /* media devices */
   document.getElementById('update-audio-media').addEventListener('click', () => sdkHandler.updateOutgoingMediaDevices('audio'));
