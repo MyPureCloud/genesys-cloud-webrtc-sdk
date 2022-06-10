@@ -1,0 +1,108 @@
+<html>
+
+<head>
+  <title>Test Page</title>
+  <!-- bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/137.0.1/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://apps.inindca.com/genesys-cloud-client-logger/genesys-cloud-client-logger.min.js"></script>
+  <script>
+    window.environments = {
+      'dca': {
+        // clientId: '2c75d833-922b-4324-9d0e-6c20b9c714b2', // created in valve-telphony org, dca
+        clientId: '2e10c888-5261-45b9-ac32-860a1e67eff8',
+        uri: 'inindca.com'
+      },
+      'pca-us': {
+        clientId: '6b9f791c-86ef-4f7a-af85-3f3520dd0975', // created in torontohackathon org
+        uri: 'mypurecloud.com'
+      }
+    };
+  </script>
+  <link rel="stylesheet" type="text/css" href="../common/main.css">
+</head>
+
+<body>
+  <div class="app-header">
+    <div class="title">GenesysCoud WebRTC SDK Sample</div>
+    <div class="subtitle">Choose and environment to authenticate with, then click 'Start App' to initialize the SDK
+    </div>
+  </div>
+
+  <div>
+    <div>
+      <label for="environment">Select Environment:</label>
+      <select id="environment" name="environment">
+        <option value="dca">dca</option>
+        <option value="pca-us">pca-us</option>
+      </select>
+    </div>
+
+    <div class="m-2">
+      <form id="manual-form">
+        <div class="form-group d-flex">
+          <input style="width: 400px" class="form-control" id="manual-auth" placeholder="Auth Token">
+          <button class="btn btn-sm btn-secondary mr-2" type="submit">Set Auth Token</button>
+        </div>
+        <div class="form-group">
+          <button id="auth-logout" type="button" class="btn btn-danger btn-sm">Sign out</button>
+        </div>
+      </form>
+
+      <form id="jwt-form">
+        <div class="form-group d-flex">
+          <input style="width: 400px" class="form-control" id="jwt-input" placeholder="JWT">
+          <button class="btn btn-sm btn-secondary mr-2" type="submit">Set JWT</button>
+        </div>
+
+        <div class="form-group">
+          <button id="fetch-jwt-button" class="btn btn-sm btn-secondary mr-2" type="button">Get New JWT</button>
+        </div>
+      </form>
+    </div>
+    <button id="start-app-button" type="button" class="btn btn-success">Start App</button>
+  </div>
+  <div id="auth-text" class="auth-text">Authenticated</div>
+  <div id="init-text" class="init-text">Initializing SDK...</div>
+  
+  <!-- Disconnect -->
+  <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
+
+  <div id="user-element">
+  </div>
+
+  <h5>Active Sessions</h5>
+  <div id="sessions-element">
+    <!-- table get dynamically rendered -->
+  </div>
+  <hr>
+  <h5>Pending Sessions</h5>
+  <div id="pending-sessions">
+    <!-- table get dynamically rendered -->
+  </div>
+
+  <!-- log -->
+  <div class="log-output">
+    <div class="log-header">
+      <h5 class="clickable mr-3" id="log-header">Log: <span class="fs-med">(toggle)</span></h5>
+      <span>
+        <input name="log-traces-check" type="checkbox" id="log-traces-check" />
+        <label for="log-traces-check">Log trace events</label>
+      </span>
+    </div>
+    <div id="log-body">
+      <textarea id="log-data" class="log-data" readonly="true"></textarea>
+      <button type="button" id="clear-log">Clear Log</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://help.mypurecloud.com/articles/purecloud-privacy-policy/">Genesys Privacy Policy</a>
+  </div>
+  <script type="text/javascript">
+    // Obtain a reference to the platformClient object
+    window.platformClient = require('platformClient');
+  </script>
+  <script src="sdk-sample.js"></script>
+</body>

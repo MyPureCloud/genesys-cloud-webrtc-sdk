@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
+import jwtDecode from "jwt-decode";
 
 import {
   ISdkConfig,
@@ -24,7 +25,8 @@ import {
   IPendingSessionActionParams,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
-  VideoMediaSession
+  VideoMediaSession,
+  JWTDetails
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -64,8 +66,8 @@ function validateOptions (options: ISdkConfig): string | null {
     return 'Options required to create an instance of the SDK';
   }
 
-  if (!options.accessToken && !options.organizationId) {
-    return 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.';
+  if (!options.accessToken && !options.organizationId && !options.jwt) {
+    return 'An accessToken, jwt, or organizationId (for guest access) is required to instantiate the sdk.';
   }
 
   if (!options.environment) {
@@ -109,8 +111,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return !!this._streamingConnection.connected;
   }
 
+  get isJwtAuth (): boolean {
+    return !!this._config.jwt;
+  }
+
   get isGuest (): boolean {
-    return !this._config.accessToken;
+    return !this.isJwtAuth && !this._config.accessToken;
   }
 
   get VERSION (): string {
@@ -128,6 +134,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     /* grab copies or valid objects */
     const defaultsOptions = options.defaults || {};
 
+    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare];
+
+    // if using jwt auth, we only support screen recording
+    if (options.jwt) {
+      console.debug(`Forcing allowed session types to be ${SessionTypes.screenRecording} due to jwt auth`);
+      allowedSessionTypes = [ SessionTypes.screenRecording ];
+    }
+
     this._config = {
       ...options,
       /* set defaults */
@@ -137,7 +151,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
-        allowedSessionTypes: options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
+        allowedSessionTypes,
         useHeadsets: options.useHeadsets !== false,
 
         /* sdk defaults */
@@ -229,6 +243,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       }
 
       httpRequests.push(guestPromise);
+    } else if (this.isJwtAuth) {
+      this.parseJwt();
     } else {
       const getOrg = this.fetchOrganization();
       const getPerson = this.fetchAuthenticatedUser();
@@ -508,6 +524,27 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         this.logger.debug('Fetched person details', data, { skipServer: true }); // don't log PII
         return data;
       });
+  }
+
+  parseJwt (): void {
+    try {
+      const decoded: JWTDetails = jwtDecode(this._config.jwt);
+
+      this._personDetails = {
+        id: decoded.data.uid,
+        name: decoded.name,
+        chat: {
+          jabberId: decoded.data.jid
+        }
+      };
+  
+      this._orgDetails = {
+        id: decoded.org,
+        name: null
+      };
+    } catch (e) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, 'Failed to parse provided jwt, please ensure it is valid', e);
+    }
   }
 
   async fetchUsersStation (): Promise<IStation> {

@@ -153,8 +153,6 @@ describe('updateOutgoingMedia', () => {
 
 describe('updateScreenRecordingMetadatas', () => {
   it('should replace trackIds with mid', async () => {
-
-
     const metas = [
       {
         trackId: 'trackId123'
@@ -201,4 +199,42 @@ describe('updateScreenRecordingMetadatas', () => {
     expect(metas[1].trackId).toBe('7');
     expect((metas[1] as any)._trackId).toBe('trackId456');
   });
+
+  it('should use the backgroundassistant url', async () => {
+    const metas = [
+      { trackId: 'trackId123' }
+    ];
+
+    const transceivers = [
+      {
+        mid: '3',
+        sender: {
+          track: { id: metas[0].trackId }
+        }
+      }
+    ];
+
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue(transceivers)
+      }
+    };
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+
+    Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => true });
+    mockSdk._config.jwt = 'myjwt';
+    mockSdk._config.accessToken = null;
+
+    await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
+
+    expect(utils.requestApi).toHaveBeenCalledWith(
+      expect.stringContaining('backgroundassistant'),
+      expect.objectContaining({
+        authToken: 'myjwt'
+      }
+    ));
+    expect(metas[0].trackId).toBe('3');
+    expect((metas[0] as any)._trackId).toBe('trackId123');
+  })
 });
