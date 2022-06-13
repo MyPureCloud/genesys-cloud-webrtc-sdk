@@ -1,5 +1,6 @@
 /* global MediaStream */
 
+import { HeadsetEvents } from 'softphone-vendor-headsets';
 import { getSdk, GenesysCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
 
@@ -71,11 +72,13 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
       url: `https://api.${options.environment}/api/v2/diagnostics/trace`,
       appVersion: 'dev',
       logLevel: 'info',
-      logTopic: 'webrtc-demo-app',
+      appName: 'webrtc-demo-app',
     });
   }
 
   connectEventHandlers();
+  exposeGlobalFunctions();
+
   return webrtcSdk.initialize(initOptions)
     .then(() => {
       utils.writeToLog(`SDK initialized with ${JSON.stringify(options, null, 2)}`);
@@ -108,6 +111,9 @@ function connectEventHandlers () {
   webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
   webrtcSdk.media.on('state', handleMediaStateChanges);
   webrtcSdk.media.on('gumRequest', handleGumRequest);
+
+  /* headset related */
+  webrtcSdk.headset.headsetEvents$.subscribe(handleHeadsetEvent);
 }
 
 function requestMicPermissions () {
@@ -191,6 +197,82 @@ function handleAudioChange (info) {
   }
 }
 
+function acceptPendingSession ({ conversationId }) {
+  webrtcSdk.acceptPendingSession({ conversationId });
+}
+
+function rejectPendingSession ({ conversationId }) {
+  webrtcSdk.rejectPendingSession({ conversationId });
+}
+
+function setConversationHeld ({ held, conversationId }) {
+  webrtcSdk.setConversationHeld({ held, conversationId });
+}
+
+function endSession ({ conversationId }) {
+  webrtcSdk.endSession({ conversationId });
+}
+
+function setAudioMute ({ mute, conversationId }) {
+  webrtcSdk.setAudioMute({ mute, conversationId });
+}
+
+function requestWebhidPermissions ({ callback }) {
+  const element = document.getElementById('webhid-permissions-btn');
+  element.classList.remove('d-none');
+  element.onclick = () => {
+    callback();
+    element.classList.add('d-none');
+  }
+}
+
+function exposeGlobalFunctions () {
+  window.acceptPendingSession = acceptPendingSession;
+  window.rejectPendingSession = rejectPendingSession;
+  window.setAudioMute = setAudioMute;
+  window.setConversationHeld = setConversationHeld;
+  window.endSession = endSession;
+}
+
+function handleHeadsetEvent (event) {
+  const payload = event.payload || {};
+  const { holdRequested, isMuted, conversationId } = payload;
+
+  let loggable = event;
+  if (event.event === HeadsetEvents.implementationChanged) {
+    loggable = { event: event.event, payload: '** REDACTED **' };
+  }
+  utils.writeToLog(`Headset Event: ${JSON.stringify(loggable)}`);
+
+  switch(event.event) {
+    case HeadsetEvents.implementationChanged:
+      const name = payload.vendorName || 'none';
+      document.getElementById('headset-vendor').innerText = name;
+      break;
+    case HeadsetEvents.deviceHoldStatusChanged:
+      setConversationHeld({ held: holdRequested, conversationId })
+      break;
+    case HeadsetEvents.deviceMuteStatusChanged:
+      setAudioMute({ mute: isMuted, conversationId: currentConversationId });
+      break;
+    case HeadsetEvents.deviceAnsweredCall:
+      acceptPendingSession({ conversationId });
+      break;
+    case HeadsetEvents.deviceEndedCall:
+      endSession({ conversationId });
+      break;
+    case HeadsetEvents.deviceRejectedCall:
+      rejectPendingSession({ conversationId });
+      break;
+    case HeadsetEvents.webHidPermissionRequested:
+      requestWebhidPermissions(event.payload);
+      break;
+    case HeadsetEvents.deviceConnectionStatusChanged:
+      document.getElementById('headset-connection').innerText = payload;
+      break;
+  }
+}
+
 function _getLogHeader (functionName) {
   return `${functionName}\n---------------------`;
 }
@@ -220,6 +302,12 @@ function disconnectSdk () {
 
   webrtcSdk.disconnect();
   utils.writeToLog('Disconnected -- Reauthenticate to reconnect');
+}
+
+async function destroySdk () {
+  utils.writeToLog('destroying sdk');
+  await webrtcSdk.destroy();
+  utils.writeToLog('sdk completely destroyed');
 }
 
 function getInputValue (inputId) {
@@ -310,10 +398,10 @@ function renderPendingSessions () {
     <th scope="row">${session.conversationId}</th>
     <td>${session.id}</td>
     <td>${session.autoAnswer}</td>
-    <td><button type="button" class="btn btn-success btn-sm" onclick="webrtcSdk.acceptPendingSession({conversationId:'${session.conversationId}'})"
+    <td><button type="button" class="btn btn-success btn-sm" onclick="acceptPendingSession({conversationId:'${session.conversationId}'})"
       >Answer</button>
     </td>
-    <td><button type="button" class="btn btn-danger btn-sm" onclick="webrtcSdk.rejectPendingSession({conversationId:'${session.conversationId}'})"
+    <td><button type="button" class="btn btn-danger btn-sm" onclick="rejectPendingSession({conversationId:'${session.conversationId}'})"
       >Decline</button>
     </td>
   </tr>`
@@ -404,19 +492,19 @@ function renderSessions () {
 
     <td>
       <button type="button" class="btn btn-info btn-sm"
-        onclick="webrtcSdk.setAudioMute({mute: ${!isCallMuted},conversationId:'${update.conversationId}'})"
+        onclick="setAudioMute({mute: ${!isCallMuted},conversationId:'${update.conversationId}'})"
         ${isCallActive ? '' : 'disabled'}
       >${isCallMuted ? 'Unmute' : 'Mute'}</button>
     </td>
     <td>
       <button type="button" class="btn btn-info btn-sm"
-        onclick="webrtcSdk.setConversationHeld({held: ${!isCallHeld},conversationId:'${update.conversationId}'})"
+        onclick="setConversationHeld({held: ${!isCallHeld},conversationId:'${update.conversationId}'})"
         ${isCallActive ? '' : 'disabled'}
       >${isCallHeld ? 'Unhold' : 'Hold'}</button>
     </td>
     <td>
       <button type="button" class="btn btn-danger btn-sm"
-        onclick="webrtcSdk.endSession({conversationId:'${update.conversationId}'})"
+        onclick="endSession({conversationId:'${update.conversationId}'})"
         ${isCallActive ? '' : 'disabled'}
       >End</button>
     </td>
@@ -716,9 +804,6 @@ function setVideoMute (mute) {
   webrtcSdk.setVideoMute({ conversationId: currentConversationId, mute });
 }
 
-function setAudioMute (mute) {
-  webrtcSdk.setAudioMute({ conversationId: currentConversationId, mute });
-}
 
 function startScreenShare () {
   currentSession.startScreenShare();
@@ -726,10 +811,6 @@ function startScreenShare () {
 
 function stopScreenShare () {
   currentSession.stopScreenShare();
-}
-
-function endSession () {
-  webrtcSdk.endSession({ conversationId: currentConversationId });
 }
 
 function pinParticipantVideo () {
@@ -743,7 +824,7 @@ async function updateOnQueueStatus (goingOnQueue) {
       method: 'get',
       host: webrtcSdk._config.environment,
       authToken: webrtcSdk._config.accessToken
-    })).body;
+    })).data;
   }
 
   let presenceDefinition;
@@ -779,6 +860,7 @@ export default {
   updateOutputMediaDevice,
   updateDefaultDevices,
   disconnectSdk,
+  destroySdk,
   initWebrtcSDK,
   pinParticipantVideo,
   updateOnQueueStatus,

@@ -6,6 +6,8 @@ jest.mock('genesys-cloud-client-logger', () => {
 
 import StreamingClient from 'genesys-cloud-streaming-client';
 import { Logger } from 'genesys-cloud-client-logger';
+import * as clientPrivate from '../../src/client-private';
+import jwtDecode from 'jwt-decode';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockStream, MockSession, random } from '../test-utils';
@@ -33,7 +35,9 @@ import { SdkHeadset, SdkHeadsetStub } from '../../src/media/headset';
 
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
+jest.mock('jwt-decode');
 
+const jwtDecodeSpy: jest.SpyInstance = jwtDecode as any;
 const mockLogger: jest.Mocked<Logger> = {
   debug: jest.fn(),
   warn: jest.fn(),
@@ -100,12 +104,12 @@ describe('Client', () => {
       }
     });
 
-    it('throws if accessToken and organizationId is not provided', () => {
+    it('throws if accessToken and organizationId and jwt is not provided', () => {
       try {
         constructSdk({ environment: 'mypurecloud.com' }); // tslint:disable-line
         fail();
       } catch (err) {
-        expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.'));
+        expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'An accessToken, jwt, or organizationId (for guest access) is required to instantiate the sdk.'));
       }
     });
 
@@ -319,7 +323,7 @@ describe('Client', () => {
   describe('fetchUsersStation()', () => {
     let station: IStation;
     let user: IPersonDetails;
-    let mockStationResponse: Promise<{ body: IStation }>;
+    let mockStationResponse: Promise<{ data: IStation }>;
 
     beforeEach(() => {
       const stationId = 'the-bat-phone';
@@ -346,8 +350,8 @@ describe('Client', () => {
       };
       jest.spyOn(utils, 'requestApiWithRetry').mockImplementation(() => {
         return {
-          promise: mockStationResponse || Promise.resolve({ body: station })
-        } as RetryPromise<{ body: IStation }>;
+          promise: mockStationResponse || Promise.resolve({ data: station })
+        } as RetryPromise<{ data: IStation }>;
       });
       sdk = constructSdk();
     });
@@ -835,7 +839,7 @@ describe('Client', () => {
       const session2 = new MockSession();
 
       sessionManagerMock.getAllJingleSessions.mockReturnValue([session1, session2] as any);
-      sessionManagerMock.endSession.mockResolvedValue(null);
+      sessionManagerMock.forceTerminateSession.mockResolvedValue(null);
       mediaMock.destroy.mockReturnValue();
 
       jest.spyOn(sdk, 'removeAllListeners');
@@ -849,8 +853,8 @@ describe('Client', () => {
           { sessionId: session2.id, conversationId: session2.conversationId },
         ]
       });
-      expect(sdk.sessionManager.endSession).toHaveBeenCalledWith(session1);
-      expect(sdk.sessionManager.endSession).toHaveBeenCalledWith(session2);
+      expect(sdk.sessionManager.forceTerminateSession).toHaveBeenCalledWith(session1.id);
+      expect(sdk.sessionManager.forceTerminateSession).toHaveBeenCalledWith(session2.id);
       expect(sdk.removeAllListeners).toHaveBeenCalled();
       expect(sdk.media.destroy).toHaveBeenCalled();
       expect(sdk.disconnect).toHaveBeenCalled();
@@ -1111,6 +1115,63 @@ describe('Client', () => {
       });
 
       expect(sdk.fetchUsersStation).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('initialize', () => {
+    let orgSpy: jest.SpyInstance;
+    let userSpy: jest.SpyInstance;
+    let setupScSpy: jest.SpyInstance;
+    let proxySpy: jest.SpyInstance;
+    let requestSpy: jest.SpyInstance;
+
+    function setupSpys () {
+      orgSpy = jest.spyOn(sdk, 'fetchOrganization');
+      userSpy = jest.spyOn(sdk, 'fetchAuthenticatedUser');
+    }
+
+    beforeEach(() => {
+      setupScSpy = jest.spyOn(clientPrivate, 'setupStreamingClient').mockResolvedValue(null);
+      proxySpy = jest.spyOn(clientPrivate, 'proxyStreamingClientEvents').mockResolvedValue(null);
+      requestSpy = jest.spyOn(utils, 'requestApi');
+    });
+    
+    it('should init with jwt', async () => {
+      jwtDecodeSpy.mockReturnValue({
+        name: 'scooby',
+        org: 'myorg',
+        data: {
+          uid: 'myuserid',
+          jid: 'myjid',
+        }
+      } as any);
+
+      constructSdk({jwt: 'lsdjf'});
+      setupSpys();
+
+      await sdk.initialize();
+
+      expect(orgSpy).not.toHaveBeenCalled();
+      expect(userSpy).not.toHaveBeenCalled();
+      expect(setupScSpy).toHaveBeenCalled();
+      expect(proxySpy).toHaveBeenCalled();
+      expect(requestSpy).not.toHaveBeenCalled();
+    });
+
+    it('should blow up with malformed jwt', async () => {
+      jwtDecodeSpy.mockImplementation(() => {
+        throw new Error('testError');
+      });
+
+      constructSdk({jwt: 'lsdjf'});
+      setupSpys();
+
+      try {
+        await sdk.initialize();
+        fail();
+      } catch (e) {
+        expect(e.message).toContain('Failed to parse provided jwt');
+      }
     });
   });
 });

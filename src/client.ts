@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
+import jwtDecode from "jwt-decode";
 
 import {
   ISdkConfig,
@@ -24,7 +25,8 @@ import {
   IPendingSessionActionParams,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
-  VideoMediaSession
+  VideoMediaSession,
+  JWTDetails
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -64,8 +66,8 @@ function validateOptions (options: ISdkConfig): string | null {
     return 'Options required to create an instance of the SDK';
   }
 
-  if (!options.accessToken && !options.organizationId) {
-    return 'Access token is required to create an authenticated instance of the SDK. Otherwise, provide organizationId for a guest/anonymous user.';
+  if (!options.accessToken && !options.organizationId && !options.jwt) {
+    return 'An accessToken, jwt, or organizationId (for guest access) is required to instantiate the sdk.';
   }
 
   if (!options.environment) {
@@ -109,8 +111,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return !!this._streamingConnection.connected;
   }
 
+  get isJwtAuth (): boolean {
+    return !!this._config.jwt;
+  }
+
   get isGuest (): boolean {
-    return !this._config.accessToken;
+    return !this.isJwtAuth && !this._config.accessToken;
   }
 
   get VERSION (): string {
@@ -128,6 +134,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     /* grab copies or valid objects */
     const defaultsOptions = options.defaults || {};
 
+    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare];
+
+    // if using jwt auth, we only support screen recording
+    if (options.jwt) {
+      console.debug(`Forcing allowed session types to be ${SessionTypes.screenRecording} due to jwt auth`);
+      allowedSessionTypes = [ SessionTypes.screenRecording ];
+    }
+
     this._config = {
       ...options,
       /* set defaults */
@@ -137,7 +151,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
-        allowedSessionTypes: options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare],
+        allowedSessionTypes,
         useHeadsets: options.useHeadsets !== false,
 
         /* sdk defaults */
@@ -214,8 +228,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             addCommunicationCode: opts.securityCode
           },
           noAuthHeader: true
-        }).then(({ body }) => {
-          this._customerData = body;
+        }).then(({ data }) => {
+          this._customerData = data;
         });
 
         /* if no securityCode, check for valid customerData */
@@ -229,6 +243,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       }
 
       httpRequests.push(guestPromise);
+    } else if (this.isJwtAuth) {
+      this.parseJwt();
     } else {
       const getOrg = this.fetchOrganization();
       const getPerson = this.fetchAuthenticatedUser();
@@ -318,7 +334,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
     (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
-    return this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+    const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+    this.headset.outgoingCall({ conversationId: callInfo.id, contactName: null });
+    return callInfo;
   }
 
   /**
@@ -492,20 +510,41 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   async fetchOrganization (): Promise<IOrgDetails> {
     return requestApiWithRetry.call(this, '/organizations/me').promise
-      .then(({ body }) => {
-        this._orgDetails = body;
-        this.logger.debug('Fetched organization details', body, { skipServer: true }); // don't log PII
-        return body;
+      .then(({ data }) => {
+        this._orgDetails = data;
+        this.logger.debug('Fetched organization details', data, { skipServer: true }); // don't log PII
+        return data;
       });
   }
 
   async fetchAuthenticatedUser (): Promise<IPersonDetails> {
     return requestApiWithRetry.call(this, '/users/me?expand=station').promise
-      .then(({ body }) => {
-        this._personDetails = body;
-        this.logger.debug('Fetched person details', body, { skipServer: true }); // don't log PII
-        return body;
+      .then(({ data }) => {
+        this._personDetails = data;
+        this.logger.debug('Fetched person details', data, { skipServer: true }); // don't log PII
+        return data;
       });
+  }
+
+  parseJwt (): void {
+    try {
+      const decoded: JWTDetails = jwtDecode(this._config.jwt);
+
+      this._personDetails = {
+        id: decoded.data.uid,
+        name: decoded.name,
+        chat: {
+          jabberId: decoded.data.jid
+        }
+      };
+  
+      this._orgDetails = {
+        id: decoded.org,
+        name: null
+      };
+    } catch (e) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, 'Failed to parse provided jwt, please ensure it is valid', e);
+    }
   }
 
   async fetchUsersStation (): Promise<IStation> {
@@ -519,18 +558,18 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
-    const { body } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
-    this.station = body;
+    const { data } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
+    this.station = data;
     this.logger.info('Fetched user station', {
-      userId: body.userId,
-      type: body.type,
-      webRtcPersistentEnabled: body.webRtcPersistentEnabled,
-      webRtcForceTurn: body.webRtcForceTurn,
-      webRtcCallAppearances: body.webRtcCallAppearances,
+      userId: data.userId,
+      type: data.type,
+      webRtcPersistentEnabled: data.webRtcPersistentEnabled,
+      webRtcForceTurn: data.webRtcForceTurn,
+      webRtcCallAppearances: data.webRtcCallAppearances,
     });
     this.emit('concurrentSoftphoneSessionsEnabled', this.isConcurrentSoftphoneSessionsEnabled());
-    this.emit('station', { action: 'Associated', station: body });
-    return body;
+    this.emit('station', { action: 'Associated', station: data });
+    return data;
   }
 
   /**
@@ -587,7 +626,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
-    !muteOptions.fromHeadset && this.headset.setMute(muteOptions.mute);
+    this.headset.setMute(muteOptions.mute);
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
@@ -599,7 +638,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param heldOptions conversationId and desired held state
    */
   async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
-    !heldOptions.fromHeadset && this.headset.setHold(heldOptions.conversationId, heldOptions.held);
+    this.headset.setHold(heldOptions.conversationId, heldOptions.held);
     await this.sessionManager.setConversationHeld(heldOptions);
   }
 
@@ -638,7 +677,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (params: IPendingSessionActionParams): Promise<void> {
-    !params.fromHeadset && this.headset.answerIncomingCall(params.conversationId);
+    this.headset.answerIncomingCall(params.conversationId);
     await this.sessionManager.proceedWithSession(params);
   }
 
@@ -649,7 +688,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session reject goes out
    */
   async rejectPendingSession (params: IPendingSessionActionParams): Promise<void> {
-    !params.fromHeadset && this.headset.rejectIncomingCall(params.conversationId);
     await this.sessionManager.rejectPendingSession(params);
   }
 
@@ -669,7 +707,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session has ended
    */
   async endSession (endOptions: IEndSessionRequest): Promise<void> {
-    !endOptions.fromHeadset && this.headset.endCurrentCall(endOptions.conversationId);
     return this.sessionManager.endSession(endOptions);
   }
 
@@ -723,7 +760,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       activeSessions: activeSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
     });
 
-    await Promise.all(activeSessions.map(s => this.sessionManager.endSession(s)));
+    await Promise.all(activeSessions.map(s => this.sessionManager.forceTerminateSession(s.id)));
 
     this.removeAllListeners();
     this.media.destroy();

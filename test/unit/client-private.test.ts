@@ -2,13 +2,57 @@ import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk } from '../test-utils';
 import { CommunicationStates } from '../../src/types/enums';
 import { SubscriptionEvent } from '../../src/types/interfaces';
-import { handleConversationUpdate } from '../../src/client-private';
+import { handleConversationUpdate, setupStreamingClient } from '../../src/client-private';
 import { ConversationUpdate } from '../../src/';
+import StreamingClient from 'genesys-cloud-streaming-client';
+
+jest.mock('genesys-cloud-streaming-client');
 
 let mockSdk: GenesysCloudWebrtcSdk;
 
 beforeEach(() => {
   mockSdk = new SimpleMockSdk() as any;
+});
+
+describe('setupStreamingClient', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should use jwt in connection options', async () => {
+    const jwt = 'myjwt';
+
+    mockSdk._config.jwt = jwt;
+    Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => true });
+    mockSdk._config.accessToken = null;
+    mockSdk._personDetails = {
+      id: 'abc123',
+      name: 'myUsername',
+      chat: {
+        jabberId: 'myJid'
+      }
+    };
+
+    let connectedCb: () => void;
+    const connectSpy = jest.fn().mockImplementation(() => {
+      connectedCb();
+    });
+    (StreamingClient as any).mockReturnValue({
+      on: (event, cb) => {
+        if (event === 'connected') {
+          connectedCb = cb;
+        }
+      },
+      connect: connectSpy
+    });
+
+    await setupStreamingClient.call(mockSdk);
+
+    expect(StreamingClient).toHaveBeenCalledWith(expect.objectContaining({
+      jwt,
+      jid: 'myJid'
+    }));
+  });
 });
 
 describe('handleConversationUpdate', () => {

@@ -122,6 +122,7 @@ The `ISdkConfig`'s interface definition:
 interface ISdkConfig {
     environment?: string;
     accessToken?: string;
+    jwt?: string;
     organizationId?: string;
     wsHost?: string;
     autoConnectSessions?: boolean;
@@ -176,6 +177,12 @@ Available Options:
 #### `accessToken`
 `accessToken?: string;`
 Access token received from authentication. Required for authenticated users (aka agents).
+
+#### `jwt`
+`jwt?: string;`
+This is tied to some genesys-internal functionality and is not intended for outside use at this point in time.
+A genesys-signed jwt can be used to allow limited agent access to the sdk. Currently this only enables 
+screen-recording functionality. This cannot be used in conjuction with an accessToken or guest access.
 
 #### `organizationId`
 `organizationId?: string;`

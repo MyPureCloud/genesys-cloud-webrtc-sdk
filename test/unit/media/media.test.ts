@@ -1482,6 +1482,18 @@ describe('SdkMedia', () => {
       expect(sdk.sessionManager.validateOutgoingMediaTracks).toHaveBeenCalled();
       expect(sdk.logger.debug).toHaveBeenCalled();
     });
+
+    it('should not call sessionManager if it has not been initialized yet', async () => {
+      const enumerateDevicesSpy = jest.spyOn(sdkMedia, 'enumerateDevices').mockResolvedValue([]);
+      const miniSdk = { logger: { debug: jest.fn() } };
+      sdkMedia['sdk'] = miniSdk as any;
+
+      await sdkMedia['handleDeviceChange']();
+
+      expect(enumerateDevicesSpy).toHaveBeenCalled();
+      expect(sdk.sessionManager.validateOutgoingMediaTracks).not.toHaveBeenCalled();
+      expect(miniSdk.logger.debug).toHaveBeenCalled();
+    });
   });
 
   describe('startSingleMedia()', () => {

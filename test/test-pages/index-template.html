@@ -255,6 +255,7 @@
 
         <!-- Disconnect -->
         <div><a class="control-link" href="#" id="disconnect-sdk">Disconnect</a></div>
+        <div><a class="control-link" href="#" id="destroy-sdk">Destroy Sdk</a></div>
 
         <!-- devices -->
         <h5 id="media-devices-header" class="clickable">Media Devices <span class="fs-med">(toggle)</span></h5>
@@ -280,6 +281,13 @@
           <label for="audio-devices" class="d-block">Mic Device</label>
           <select name="audioDevices" id="audio-devices" class="d-inline"></select>
           <button id="update-audio-media" class="d-inline btn btn-info btn-sm">Update Mic Device</button>
+
+          <div>
+            <label class="d-block">Headset Vendor: <span id="headset-vendor">none</span></label>
+            <label class="d-block">Headset Connection: <span id="headset-connection">noVendor</span></label>
+            <button id="webhid-permissions-btn" class="d-none btn btn-info btn-sm">Allow Webhid Permissions</button>
+          </div>
+
           <br>
 
           <!-- video -->

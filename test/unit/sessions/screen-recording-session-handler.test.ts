@@ -1,13 +1,10 @@
-import nock = require('nock');
-import uuid = require('uuid');
-
 import { SimpleMockSdk, random, MockStream, MockTrack } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import * as utils from '../../../src/utils';
 import ScreenRecordingSessionHandler from '../../../src/sessions/screen-recording-session-handler';
-import { ScreenRecordingMediaSession, SdkErrorTypes } from '../../../src';
+import { SdkErrorTypes } from '../../../src';
 
 let handler: ScreenRecordingSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -16,7 +13,6 @@ let userId: string;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  nock.cleanAll();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoAcceptPendingScreenRecordingRequests = true;
@@ -106,6 +102,7 @@ describe('acceptSession', () => {
 
     const session = {
       pc: {
+        getTransceivers: jest.fn().mockReturnValue([]),
         addTrack: addSpy.mockResolvedValue(null)
       }
     };
@@ -152,4 +149,92 @@ describe('updateOutgoingMedia', () => {
       );
     }
   });
+});
+
+describe('updateScreenRecordingMetadatas', () => {
+  it('should replace trackIds with mid', async () => {
+    const metas = [
+      {
+        trackId: 'trackId123'
+      },
+      {
+        trackId: 'trackId456'
+      }
+    ];
+
+    const transceivers = [
+      {
+        mid: '3',
+        sender: {
+          track: { id: metas[0].trackId }
+        }
+      },
+      {
+        mid: '5',
+        sender: {
+          track: null
+        }
+      },
+      {
+        mid: '7',
+        sender: {
+          track: { id: metas[1].trackId }
+        }
+      },
+    ];
+
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue(transceivers)
+      }
+    };
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+
+    await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
+
+    expect(metas[0].trackId).toBe('3');
+    expect((metas[0] as any)._trackId).toBe('trackId123');
+
+    expect(metas[1].trackId).toBe('7');
+    expect((metas[1] as any)._trackId).toBe('trackId456');
+  });
+
+  it('should use the backgroundassistant url', async () => {
+    const metas = [
+      { trackId: 'trackId123' }
+    ];
+
+    const transceivers = [
+      {
+        mid: '3',
+        sender: {
+          track: { id: metas[0].trackId }
+        }
+      }
+    ];
+
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue(transceivers)
+      }
+    };
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+
+    Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => true });
+    mockSdk._config.jwt = 'myjwt';
+    mockSdk._config.accessToken = null;
+
+    await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
+
+    expect(utils.requestApi).toHaveBeenCalledWith(
+      expect.stringContaining('backgroundassistant'),
+      expect.objectContaining({
+        authToken: 'myjwt'
+      }
+    ));
+    expect(metas[0].trackId).toBe('3');
+    expect((metas[0] as any)._trackId).toBe('trackId123');
+  })
 });
