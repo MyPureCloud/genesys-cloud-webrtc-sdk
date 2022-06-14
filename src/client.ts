@@ -24,7 +24,8 @@ import {
   IPendingSessionActionParams,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
-  VideoMediaSession
+  VideoMediaSession,
+  IVideoResolution
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -468,7 +469,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the event has been emitted
    * signaling that the resolution has updated
    */
-  async updateDefaultResolution(resolution: { width: ConstrainULong, height: ConstrainULong }, updateActiveSessions: boolean): Promise<any> {
+  async updateDefaultResolution(resolution: IVideoResolution, updateActiveSessions: boolean): Promise<any> {
     this._config.defaults.videoResolution = resolution;
     if (updateActiveSessions) {
       this.sessionManager.getAllActiveSessions().filter(session =>

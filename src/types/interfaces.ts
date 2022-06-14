@@ -266,10 +266,7 @@ export interface ISdkConfig {
      * }
      * ```
      */
-    videoResolution?: {
-      width: ConstrainULong,
-      height: ConstrainULong
-    };
+    videoResolution?: IVideoResolution;
 
     /**
      * Automatic gain control is a feature in which a sound
@@ -411,10 +408,7 @@ export interface IMediaRequestOptions {
    * Default is SDK configured resolution. `false` will
    *  not any resolution including the sdk default
    */
-  videoResolution?: {
-    width: ConstrainULong,
-    height: ConstrainULong
-  } | false;
+  videoResolution?: IVideoResolution | false;
 
   /**
    * Video frame rate to request from getUserMedia. Example, if is set
@@ -823,14 +817,8 @@ export interface IExtendedMediaSession extends GenesysCloudMediaSession {
 }
 
 export interface IResolutionChange {
-  requestedResolution: {
-    width: ConstrainULong,
-    height: ConstrainULong
-  },
-  actualResolution: {
-    width: ConstrainULong,
-    height: ConstrainULong
-  },
+  requestedResolution: IVideoResolution,
+  actualResolution: IVideoResolution,
   sessionId: string,
   conversationId: string,
   videoTrack: MediaStreamTrack
@@ -1150,4 +1138,9 @@ export interface ISdkSoftphoneDestination {
   name?: string;
   userId?: string;
   queueId?: string;
+}
+
+export interface IVideoResolution {
+  width: ConstrainULong,
+  height: ConstrainULong
 }
