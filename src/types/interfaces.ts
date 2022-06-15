@@ -53,6 +53,12 @@ export interface ISdkConfig {
   accessToken?: string;
 
   /**
+   * jwt providing limited functionality. For the time being,
+   * this is limited to agent screen recording functionality.
+   */
+  jwt?: string;
+
+  /**
    * Organization ID (aka the GUID).
    *  Required for unauthenticated users (aka guest).
    */
@@ -632,6 +638,19 @@ export interface IPersonDetails {
     lastAssociatedStation?: IStation;
     defaultStation?: IStation;
   }
+}
+
+export interface JWTDetails {
+  data: {
+    uid: string; // userId
+    jid: string;
+    gcbaid: string; // genesys cloud background assistant id
+  };
+  exp: number; // exp in seconds
+  iat: number; // issued at time in seconds,
+  iss: string; // issuer
+  name: string; // users name
+  org: string; // org id
 }
 
 export interface IOrgDetails {

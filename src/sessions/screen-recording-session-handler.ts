@@ -95,8 +95,15 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
       conversationId: session.conversationId
     });
 
-    return requestApi.call(this.sdk, '/recordings/screensessions/metadata', {
+    let url = '/recordings/screensessions/metadata';
+    const { accessToken, jwt } = this.sdk._config;
+    if (this.sdk.isJwtAuth) {
+      url += '/backgroundassistant';
+    }
+
+    return requestApi.call(this.sdk, url, {
       method: 'post',
+      authToken: accessToken || jwt,
       data
     });
   }

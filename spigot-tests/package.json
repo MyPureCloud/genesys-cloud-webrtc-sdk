@@ -27,7 +27,7 @@
     "rollup-plugin-typescript2": "^0.29.0",
     "rxjs": "^6.6.3",
     "stupid-server": "^0.2.5",
-    "ts-node": "^9.0.0",
+    "ts-node": "^10.8.1",
     "uuid": "^7.0.3"
   },
   "scripts": {
