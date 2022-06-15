@@ -253,6 +253,11 @@ export class SessionManager {
     return Promise.all(promises);
   }
 
+  async updateSessionWithNewVideo(track, session) {
+    const handler = this.getSessionHandler({ jingleSession: session });
+    await handler.addReplaceTrackToSession(session, track);
+  }
+
   /**
    * Event handler for pending webrtc-sessions.
    * @param sessionInfo pending webrtc-session info
