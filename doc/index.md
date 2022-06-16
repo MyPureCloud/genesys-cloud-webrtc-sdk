@@ -1692,7 +1692,7 @@ updates
 
 Declaration:
 ``` ts
-session.on('resolutionUpdated', (
+sdk.on('resolutionUpdated', (
   requestedResolution: IVideoResolution,
   actualResolution: IVideoResolution,
   videoTrack: MediaStreamTrack,
