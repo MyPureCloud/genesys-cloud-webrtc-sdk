@@ -485,7 +485,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the event has been emitted
    * signaling that the resolution has updated
    */
-  async updateDefaultResolution(resolution: IVideoResolution, updateActiveSessions: boolean): Promise<any> {
+  async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any> {
     this._config.defaults.videoResolution = resolution;
     if (updateActiveSessions) {
       this.sessionManager.getAllActiveSessions().filter(session =>
@@ -494,8 +494,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             try {
               if (resolution) {
                 await track.applyConstraints({ ...track.getConstraints(),
-                  height: resolution ? resolution.height : null,
-                  width: resolution ? resolution.width : null
+                  height: resolution.height,
+                  width: resolution.width
                 });
               } else {
                 track.stop();
@@ -505,7 +505,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
                   await this.media.startMedia({ video: true, session: videoSession })
                 ).getVideoTracks()[0];
 
-                this.sessionManager.updateSessionWithNewVideo(newTrack, videoSession);
+                this.sessionManager.updateSessionWithDefaultResolution(newTrack, videoSession);
                 videoSession._outboundStream.addTrack(newTrack);
               }
             } catch (e) {

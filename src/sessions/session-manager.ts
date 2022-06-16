@@ -253,7 +253,7 @@ export class SessionManager {
     return Promise.all(promises);
   }
 
-  async updateSessionWithNewVideo(track, session) {
+  async updateSessionWithDefaultResolution (track: MediaStreamTrack, session: IExtendedMediaSession): Promise<void> {
     const handler = this.getSessionHandler({ jingleSession: session });
     await handler.addReplaceTrackToSession(session, track);
   }
