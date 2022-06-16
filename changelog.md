@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.0...HEAD)
+### Fixed
+* [PCM-1938](https://inindca.atlassian.net/browse/PCM-1938) made small change so softphone session handling checks start with the most recent participant rather than the first
 
 # [v7.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.3...v7.3.0)
 ### Added
