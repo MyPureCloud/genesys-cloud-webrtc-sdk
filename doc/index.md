@@ -1686,6 +1686,34 @@ Value of event:
 * `reason: JingleInfo` – info regarding the mute
 * Basic interface: See [mute](#mute)
 
+#### `resolutionUpdated`
+Emits when the session's resolution
+updates
+
+Declaration:
+``` ts
+session.on('resolutionUpdated', (
+  requestedResolution: IVideoResolution,
+  actualResolution: IVideoResolution,
+  videoTrack: MediaStreamTrack,
+  sessionId: string,
+  conversationId: string
+) => { });
+```
+
+Value of event:
+* `requestedResolution: IVideoResolution` - the height and width for the requested resolution
+* `actualResolution: IVideoResolution` - the heigh and width actually set in the case of camera capabilities being lower than requested
+* Basic interface:
+  ``` ts
+  interface IVideoResolution {
+    width: ConstrainULong,
+    height: ConstrainULong
+  }
+  ```
+* `videoTrack: MediaStreamTrack` - the video track whose resolution was updated
+* `sessionId: string` - the session that had the resolution updated
+* `conversationId: string` - the conversation that had the resolution updated
 
 #### Video session level events
 There are session events that are specific for video sessions.

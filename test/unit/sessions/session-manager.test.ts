@@ -1055,7 +1055,7 @@ describe('updateAudioVolume', () => {
       });
   });
 
-  describe('updateSessionWithDefaultResolution', () => {
+  describe('addOrReplaceTrackOnSession', () => {
     it('should call the handler to update session', () => {
       const session = new MockSession(SessionTypes.collaborateVideo) as any;
       const track = {
@@ -1069,7 +1069,7 @@ describe('updateAudioVolume', () => {
       } as unknown as MediaStreamTrack;
       const mockSessionHandler = { addReplaceTrackToSession: jest.fn() };
       jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
-      sessionManager.updateSessionWithDefaultResolution(track, session);
+      sessionManager.addOrReplaceTrackOnSession(track, session);
       expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ jingleSession: session });
       expect(mockSessionHandler.addReplaceTrackToSession).toHaveBeenCalledWith(session, track);
     })

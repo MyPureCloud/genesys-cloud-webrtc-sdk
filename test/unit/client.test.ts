@@ -805,12 +805,12 @@ describe('Client', () => {
         sessionType: SessionTypes.collaborateVideo,
         _outboundStream: stream
       } as IExtendedMediaSession])
-      const updateSessionSpy = jest.spyOn(sdk.sessionManager, 'updateSessionWithDefaultResolution');
+      const updateSessionSpy = jest.spyOn(sdk.sessionManager, 'addOrReplaceTrackOnSession').mockReturnValue(Promise.resolve());
       const startMediaSpy = jest.spyOn(sdk.media, 'startMedia').mockReturnValue(Promise.resolve(stream));
       const eventEmitSpy = jest.spyOn(sdk, 'emit');
       await sdk.updateDefaultResolution(undefined, true);
       expect(startMediaSpy).toHaveBeenCalled();
-      expect(updateSessionSpy).toHaveBeenCalled();
+      expect(await updateSessionSpy).toHaveBeenCalled();
       expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
         requestedResolution: undefined,
         actualResolution: stream.getVideoTracks()[0].getSettings(),
