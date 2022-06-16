@@ -498,6 +498,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
                   width: resolution.width
                 });
               } else {
+                /* If the consumer passes in undefined, it means they selected the default resolution
+                  option.  Since we do not know what the system default is, we will need to stop the current
+                  track and re-request the media again so that it fetches the system default automatically.
+                */
                 track.stop();
                 videoSession._outboundStream.removeTrack(track);
 

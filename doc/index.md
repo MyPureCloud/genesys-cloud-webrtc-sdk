@@ -729,6 +729,37 @@ Params:
 Returns: a promise that fullfils once the default
 device values have been updated
 
+#### `updateDefaultResolution()`
+Update the default video resolution
+
+If `updateActiveSessions` is `true`, any active sessions will
+have their video's resolutions updated to match the passed in value
+
+If `updateActiveSessions` is `false`, only the sdk defaults will be updated and
+active sessions' video resolutions will not be touched
+
+Declaration:
+``` ts
+updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any>;
+```
+
+Params:
+* `resolution: IVideoResolution | undefined`
+  * Basic interface:
+    ``` ts
+    interface IVideoResolution {
+      width: ConstrainULong
+      height: ConstrainULong
+    }
+    ```
+  * `width: ConstrainULong` Width of the selected video resolution
+  * `height: ConstrainULong` Height of the selected video resolution
+* `updateActiveSessions: boolean` Determines if we need to update the
+active sessions or leave them as is
+
+Returns: a promise that fulfills once the default
+resolution values have been updated
+
 #### `updateDefaultMediaSettings()`
 Update the default media settings that exist in the sdk config.
 
