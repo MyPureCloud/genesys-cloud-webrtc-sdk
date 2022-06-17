@@ -338,7 +338,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id);
+    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id).reverse();
     let participant: IConversationParticipantFromEvent;
 
     if (!participantsForUser.length) {
@@ -354,11 +354,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     /* find user participant with desired call state */
     if (!participant && state) {
       participant = participantsForUser.filter(p => p.calls.find(c => c.state === state))[0];
-    }
-
-    /* find the most recent participant that is not already terminated or disconnected */
-    if (!participant) {
-      participant = participantsForUser.filter(p => p.calls.some(c => !this.isEndedState(c)))[0];
     }
 
     /* find user participant with a call */

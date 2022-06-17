@@ -1423,7 +1423,7 @@ describe('getUserParticipantFromConversationEvent()', () => {
   });
 
   it('should return the participant that matches the auth userId', () => {
-    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant1);
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 
   it('should return the participant that has call in the desired state', () => {
@@ -1437,16 +1437,6 @@ describe('getUserParticipantFromConversationEvent()', () => {
     expect(handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.alerting)).toEqual(participant2);
   });
 
-  it('should return the first participant that is not already terminated', () => {
-        /* setup our user to have multiple participants with different call states */
-        participant1.userId = userId;
-        participant1.calls = [{ ...call, state: CommunicationStates.terminated }];
-        participant2.userId = userId;
-        participant2.calls = [{ ...call }];
-        converversationUpdate.participants = [participant1, participant2];
-        expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
-  })
-
   it('should return the first participant with calls', () => {
     participant1.userId = userId;
     participant1.calls = [];
@@ -1457,8 +1447,8 @@ describe('getUserParticipantFromConversationEvent()', () => {
     expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 
-  it('should return the first participant if there are no calls on any of them', () => {
-    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant1);
+  it('should return the most recent participant if there are no calls on any of them', () => {
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 });
 
