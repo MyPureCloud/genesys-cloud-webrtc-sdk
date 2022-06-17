@@ -13,6 +13,14 @@ let conversationUpdatesToRender = {
   conversations: {},
   activeConversationId: ''
 };
+const videoResolutions = {
+  "default": undefined,
+  "480p": { width: 854, height: 480 },
+  "720p": { width: 1280, height: 720 },
+  "1080p": { width: 1920, height: 1080 },
+  "2K": { width: 2560, height: 1440 },
+  "4K": {width: 3840, height: 2160 }
+}
 
 async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDefaultAudio) {
   let options = {};
@@ -106,6 +114,7 @@ function connectEventHandlers () {
   webrtcSdk.on('connected', connected);
   webrtcSdk.on('conversationUpdate', handleConversationUpdate);
   webrtcSdk.on('station', handleStationUpdate);
+  webrtcSdk.on('resolutionUpdated', handleResolutionUpdate);
 
   /* media related */
   webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
@@ -554,6 +563,27 @@ function handleStationUpdate (event) {
   </table>`;
 }
 
+function handleResolutionUpdate (event) {
+  const { requestedResolution, actualResolution } = event;
+  if (requestedResolution?.width !== actualResolution?.width && requestedResolution?.height !== actualResolution?.height) {
+    const resolutionShorthands = Object.keys(videoResolutions);
+    const selectedShorthand = resolutionShorthands.find(resolutionKey => {
+      if (resolutionKey === 'default' && !requestedResolution) {
+        return resolutionKey;
+      }
+      return videoResolutions[resolutionKey]?.width === actualResolution?.width && videoResolutions[resolutionKey]?.height === actualResolution?.height;
+    });
+
+    if (selectedShorthand) {
+      document.getElementById('video-resolutions').selectedIndex = resolutionShorthands.indexOf(selectedShorthand);
+    } else {
+      document.getElementById('unique-resolution').innerText = actualResolution.height + " x " + actualResolution.width;
+      document.getElementById('unique-resolution').value = JSON.stringify({ width: actualResolution.width, height: actualResolution.height });
+      document.getElementById('video-resolutions').selectedIndex = resolutionShorthands.length;
+    }
+  }
+}
+
 function cancelPendingSession (params) {
   let output = `${_getLogHeader('cancelPendingSession')}
     sessionId: ${params.sessionId}
@@ -599,6 +629,8 @@ async function sessionStarted (session) {
 
       const controls = document.getElementById('video-actions');
       controls.classList.remove('hidden');
+
+      document.getElementById('select-video-resolution').classList.remove('hidden')
     });
 
     let mediaStream;
@@ -817,6 +849,16 @@ function pinParticipantVideo () {
   currentSession.pinParticipantVideo(getInputValue('participant-pin'));
 }
 
+function updateVideoResolution () {
+  const requestedResolution = document.getElementById('video-resolutions').value
+  if (requestedResolution.includes('width') && requestedResolution.includes('height')) {
+    const requestedResolutionAsObject = JSON.parse(requestedResolution);
+    webrtcSdk.updateDefaultResolution({ width: requestedResolutionAsObject.width, height: requestedResolutionAsObject.height }, true);
+  } else {
+    webrtcSdk.updateDefaultResolution(videoResolutions[requestedResolution], true);
+  }
+}
+
 let systemPresences;
 async function updateOnQueueStatus (goingOnQueue) {
   if (!systemPresences) {
@@ -864,5 +906,6 @@ export default {
   initWebrtcSDK,
   pinParticipantVideo,
   updateOnQueueStatus,
-  endSession
+  endSession,
+  updateVideoResolution
 };

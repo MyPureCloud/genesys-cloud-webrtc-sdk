@@ -26,6 +26,7 @@ import {
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
   VideoMediaSession,
+  IVideoResolution,
   JWTDetails
 } from './types/interfaces';
 import {
@@ -456,6 +457,77 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       return Promise.all(promises);
     }
+  }
+
+    /**
+   * Update the default resolution of the selected video track for the sdk.
+   *  Pass in the following:
+   *  - resolution: Either undefined or an object containing ConstrainULongs
+   *      representing both width and height
+   *  - updateActiveSessions: boolean
+   *
+   * If `updateActiveSessions` is `true`, any active sessions will
+   *  have their video resolutions updated to either the selected resolution
+   *  or the next best resolution the device is capable of
+   *
+   * Else, only the sdk defaults will be updated and active sessions'
+   * resolutions will not be touched
+   *
+   * Success or failure of `applyConstraints` will emit an event for
+   * the consuming app to listen for so that it can determine if the
+   * resolution they requested is actually in place or the next best
+   * option. This will allow the consuming app to notify the user as
+   * they see fit.
+   *
+   * @param resolution the width and height that was requested
+   * to update the video; could be undefined to represent the default value
+   *
+   * @returns a promise that fullfils once the event has been emitted
+   * signaling that the resolution has updated
+   */
+  async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any> {
+    this._config.defaults.videoResolution = resolution;
+    if (!updateActiveSessions) {
+      return;
+    }
+
+    this.sessionManager.getAllActiveSessions()
+      .filter(session => session.sessionType === 'collaborateVideo' && session._outboundStream)
+      .forEach(videoSession => {
+        videoSession._outboundStream.getVideoTracks().forEach(async track => {
+          try {
+            if (resolution) {
+              await track.applyConstraints({ ...track.getConstraints(),
+                height: resolution.height,
+                width: resolution.width
+              });
+            } else {
+              /* If the consumer passes in undefined, it means they selected the default resolution
+                option.  Since we do not know what the system default is, we will need to stop the current
+                track and re-request the media again so that it fetches the system default automatically.
+              */
+              track.stop();
+              videoSession._outboundStream.removeTrack(track);
+
+              const newTrack = (
+                await this.media.startMedia({ video: true, session: videoSession })
+              ).getVideoTracks()[0];
+
+              await this.sessionManager.addOrReplaceTrackOnSession(newTrack, videoSession);
+              videoSession._outboundStream.addTrack(newTrack);
+            }
+          } catch (e) {
+            createAndEmitSdkError.call(this, SdkErrorTypes.generic, e.message, e);
+          }
+          this.emit('resolutionUpdated', {
+            requestedResolution: resolution,
+            actualResolution: { width: track.getSettings().width, height: track.getSettings().height },
+            videoTrack: track,
+            sessionId: videoSession.id,
+            conversationId: videoSession.conversationId
+          })
+        })
+      })
   }
 
   /**

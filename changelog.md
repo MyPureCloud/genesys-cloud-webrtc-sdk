@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.0...HEAD)
+### Added
+* [PCM-1856](https://inindca.atlassian.net/browse/PCM-1856) added function to the SDK that allows users to update the default video resolution
+
 ### Fixed
 * [PCM-1912](https://inindca.atlassian.net/browse/PCM-1912) fixed rejecting non-acd softphone calls. They now go to voicemail.
 * [PCM-1938](https://inindca.atlassian.net/browse/PCM-1938) made small change so softphone session handling checks start with the most recent participant rather than the first

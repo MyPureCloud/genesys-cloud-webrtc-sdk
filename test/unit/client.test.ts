@@ -749,6 +749,110 @@ describe('Client', () => {
     });
   });
 
+  describe('updateDefaultResolution()', () => {
+    it('should set the default video resolution to the proper value', () => {
+      sdk = constructSdk();
+      sdk.updateDefaultResolution({width: 1920, height: 1080}, false);
+      expect(sdk._config.defaults.videoResolution).toStrictEqual({width: 1920, height: 1080});
+
+      sdk.updateDefaultResolution(undefined, false);
+      expect(sdk._config.defaults.videoResolution).toBeUndefined();
+    })
+
+    it('will attempt to update the videos resolution to the requested value; resolution is defined', async () => {
+      sdk = constructSdk();
+      const stream = new MockStream() as any as MediaStream;
+      stream.getVideoTracks = jest.fn().mockReturnValue([{
+        applyConstraints: jest.fn(),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: 1920,
+          height: 1080
+        })
+      }]);
+      jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValue([{
+        id: 'test-id-123',
+        conversationId: 'test-convo-id-123',
+        sessionType: SessionTypes.collaborateVideo,
+        _outboundStream: stream
+      } as IExtendedMediaSession])
+      const eventEmitSpy = jest.spyOn(sdk, 'emit');
+      await sdk.updateDefaultResolution({width: 1920, height: 1080}, true);
+      expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
+        requestedResolution: { width: 1920, height: 1080 },
+        actualResolution: stream.getVideoTracks()[0].getSettings(),
+        videoTrack: stream.getVideoTracks()[0],
+        sessionId: 'test-id-123',
+        conversationId: 'test-convo-id-123'
+      })
+    })
+
+    it('will attempt to update the videos resolution to the requested value; resolution is undefined', async () => {
+      sdk = constructSdk();
+      const stream = new MockStream() as any as MediaStream;
+      stream.getVideoTracks = jest.fn().mockReturnValue([{
+        applyConstraints: jest.fn(),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: 1920,
+          height: 1080
+        }),
+        stop: jest.fn()
+      }]);
+      jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValue([{
+        id: 'test-id-123',
+        conversationId: 'test-convo-id-123',
+        sessionType: SessionTypes.collaborateVideo,
+        _outboundStream: stream
+      } as IExtendedMediaSession])
+      const updateSessionSpy = jest.spyOn(sdk.sessionManager, 'addOrReplaceTrackOnSession').mockReturnValue(Promise.resolve());
+      const startMediaSpy = jest.spyOn(sdk.media, 'startMedia').mockReturnValue(Promise.resolve(stream));
+      const eventEmitSpy = jest.spyOn(sdk, 'emit');
+      await sdk.updateDefaultResolution(undefined, true);
+      expect(startMediaSpy).toHaveBeenCalled();
+      expect(await updateSessionSpy).toHaveBeenCalled();
+      expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
+        requestedResolution: undefined,
+        actualResolution: stream.getVideoTracks()[0].getSettings(),
+        videoTrack: stream.getVideoTracks()[0],
+        sessionId: 'test-id-123',
+        conversationId: 'test-convo-id-123'
+      })
+    })
+
+    it('will attempt to update the videos resolution to the requested value but fail', async () => {
+      sdk = constructSdk();
+      const stream = new MockStream() as any as MediaStream;
+      stream.getVideoTracks = jest.fn().mockReturnValue([{
+        applyConstraints: jest.fn().mockImplementation(() => {
+          throw(new SdkError(SdkErrorTypes.generic, '', {}));
+        }),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: 1920,
+          height: 1080
+        })
+      }]);
+      jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValue([{
+        id: 'test-id-123',
+        conversationId: 'test-convo-id-123',
+        sessionType: SessionTypes.collaborateVideo,
+        _outboundStream: stream
+      } as IExtendedMediaSession])
+      const eventEmitSpy = jest.spyOn(sdk, 'emit');
+      const createAndEmitSdkErrorSpy = jest.spyOn(utils, 'createAndEmitSdkError');
+      await sdk.updateDefaultResolution({ width: 206589741, height: 987652378 }, true);
+      expect(createAndEmitSdkErrorSpy).toHaveBeenCalled();
+      expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
+        requestedResolution: { width: 206589741, height: 987652378},
+        actualResolution: stream.getVideoTracks()[0].getSettings(),
+        videoTrack: stream.getVideoTracks()[0],
+        sessionId: 'test-id-123',
+        conversationId: 'test-convo-id-123'
+      })
+    })
+  })
+
   describe('setAudioMute()', () => {
     it('proxies the call to the sessionManager', async () => {
       sdk = constructSdk();
