@@ -114,6 +114,7 @@ function connectEventHandlers () {
   webrtcSdk.on('connected', connected);
   webrtcSdk.on('conversationUpdate', handleConversationUpdate);
   webrtcSdk.on('station', handleStationUpdate);
+  webrtcSdk.on('resolutionUpdated', handleResolutionUpdate);
 
   /* media related */
   webrtcSdk.media.on('audioTrackVolume', handleAudioChange);
@@ -562,6 +563,27 @@ function handleStationUpdate (event) {
   </table>`;
 }
 
+function handleResolutionUpdate (event) {
+  const { requestedResolution, actualResolution } = event;
+  if (requestedResolution?.width !== actualResolution?.width && requestedResolution?.height !== actualResolution?.height) {
+    const resolutionShorthands = Object.keys(videoResolutions);
+    const selectedShorthand = resolutionShorthands.find(resolutionKey => {
+      if (resolutionKey === 'default' && !requestedResolution) {
+        return resolutionKey;
+      }
+      return videoResolutions[resolutionKey]?.width === actualResolution?.width && videoResolutions[resolutionKey]?.height === actualResolution?.height;
+    });
+
+    if (selectedShorthand) {
+      document.getElementById('video-resolutions').selectedIndex = resolutionShorthands.indexOf(selectedShorthand);
+    } else {
+      document.getElementById('unique-resolution').innerText = actualResolution.height + " x " + actualResolution.width;
+      document.getElementById('unique-resolution').value = JSON.stringify({ width: actualResolution.width, height: actualResolution.height });
+      document.getElementById('video-resolutions').selectedIndex = resolutionShorthands.length;
+    }
+  }
+}
+
 function cancelPendingSession (params) {
   let output = `${_getLogHeader('cancelPendingSession')}
     sessionId: ${params.sessionId}
@@ -829,7 +851,12 @@ function pinParticipantVideo () {
 
 function updateVideoResolution () {
   const requestedResolution = document.getElementById('video-resolutions').value
-  webrtcSdk.updateDefaultResolution(videoResolutions[requestedResolution], true);
+  if (requestedResolution.includes('width') && requestedResolution.includes('height')) {
+    const requestedResolutionAsObject = JSON.parse(requestedResolution);
+    webrtcSdk.updateDefaultResolution({ width: requestedResolutionAsObject.width, height: requestedResolutionAsObject.height }, true);
+  } else {
+    webrtcSdk.updateDefaultResolution(videoResolutions[requestedResolution], true);
+  }
 }
 
 let systemPresences;
