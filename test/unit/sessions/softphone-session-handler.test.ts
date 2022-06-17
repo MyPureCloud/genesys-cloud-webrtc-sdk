@@ -233,7 +233,7 @@ describe('acceptSession()', () => {
     const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia');
 
     const element = {};
-    const volume = mockSdk._config.defaults.audioVolume = 67;
+    const volume = mockSdk._config.defaults!.audioVolume = 67;
     const mockOutgoingStream = new MockStream({ audio: true });
     const mockIncomingStream = new MockStream({ audio: true });
 
@@ -267,9 +267,9 @@ describe('acceptSession()', () => {
     const defaultElement = {};
     const defaultStream = new MockStream({ audio: true });
 
-    mockSdk._config.defaults.audioElement = defaultElement as any;
-    mockSdk._config.defaults.audioStream = defaultStream as any;
-    const volume = mockSdk._config.defaults.audioVolume = 67;
+    mockSdk._config.defaults!.audioElement = defaultElement as any;
+    mockSdk._config.defaults!.audioStream = defaultStream as any;
+    const volume = mockSdk._config.defaults!.audioVolume = 67;
     const mockIncomingStream = new MockStream({ audio: true });
 
     const session: any = new MockSession();
@@ -302,7 +302,7 @@ describe('acceptSession()', () => {
     const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
 
     const mockIncomingStream = new MockStream({ audio: true });
-    const volume = mockSdk._config.defaults.audioVolume = 67;
+    const volume = mockSdk._config.defaults!!.audioVolume = 67;
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
@@ -330,7 +330,7 @@ describe('acceptSession()', () => {
     const element = {};
 
     const session: any = new MockSession();
-    const volume = mockSdk._config.defaults.audioVolume = 67;
+    const volume = mockSdk._config.defaults!!.audioVolume = 67;
 
     const params: IAcceptSessionRequest = {
       conversationId: session.conversationId,
@@ -358,14 +358,14 @@ describe('acceptSession()', () => {
     jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
 
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
-    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation((_sdk, _stream, _volume, element) => element);
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation((_sdk, _stream, _volume, element) => element as HTMLAudioElement);
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     const createdStream = new MockStream({ audio: true });
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
 
     const mockIncomingStream = new MockStream({ audio: true });
-    mockSdk._config.defaults.audioVolume = 100;
+    mockSdk._config.defaults!.audioVolume = 100;
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
@@ -378,7 +378,7 @@ describe('acceptSession()', () => {
 
     session.emit('terminated');
 
-    expect(mockAudioElement.parentNode.removeChild).toHaveBeenCalledWith(mockAudioElement);
+    expect(mockAudioElement.parentNode!.removeChild).toHaveBeenCalledWith(mockAudioElement);
   });
 
   it('should setup listener but not remove the audio element from the DOM if it was not tracked', async () => {
@@ -386,14 +386,14 @@ describe('acceptSession()', () => {
     jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
 
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
-    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation((_sdk, _stream, _volume, element) => element);
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation((_sdk, _stream, _volume, element) => element as HTMLAudioElement);
     jest.spyOn(handler, 'addMediaToSession').mockImplementation();
 
     const createdStream = new MockStream({ audio: true });
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
 
     const mockIncomingStream = new MockStream({ audio: true });
-    mockSdk._config.defaults.audioVolume = 100;
+    mockSdk._config.defaults!.audioVolume = 100;
 
     const session: any = new MockSession();
     session.streams = [mockIncomingStream];
@@ -409,7 +409,7 @@ describe('acceptSession()', () => {
 
     session.emit('terminated');
 
-    expect(mockAudioElement.parentNode.removeChild).not.toHaveBeenCalledWith(mockAudioElement);
+    expect(mockAudioElement.parentNode!.removeChild).not.toHaveBeenCalledWith(mockAudioElement);
   });
 });
 
@@ -435,7 +435,7 @@ describe('proceedWithSession()', () => {
     patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
     proceedWithSessionSpy = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockResolvedValue(null);
     getUserParticipantFromConversationEventSpy = jest.spyOn(handler, 'getUserParticipantFromConversationEvent')
-      .mockReturnValue(null);
+      .mockReturnValue(undefined);
     fetchUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'fetchUserParticipantFromConversationId' as any)
       .mockResolvedValue(null)
   });
@@ -461,7 +461,7 @@ describe('proceedWithSession()', () => {
     getUserParticipantFromConversationEventSpy.mockReturnValue(participant);
 
     handler.activeSession = new MockSession() as any;
-    handler.activeSession.id = pendingSession.id;
+    handler.activeSession!.id = pendingSession.id;
     handler.conversations[pendingSession.conversationId] = { conversationUpdate: {} } as any;
 
     await handler.proceedWithSession(pendingSession);
@@ -479,7 +479,7 @@ describe('proceedWithSession()', () => {
     fetchUserParticipantFromConversationIdSpy.mockResolvedValue(participant);
 
     handler.activeSession = new MockSession() as any;
-    handler.activeSession.id = pendingSession.id;
+    handler.activeSession!.id = pendingSession.id;
 
     await handler.proceedWithSession(pendingSession);
 
@@ -495,7 +495,7 @@ describe('proceedWithSession()', () => {
 describe('rejectPendingSession()', () => {
   let pendingSession: IPendingSession;
   let patchPhoneCallSpy: jest.SpyInstance;
-  let rejectPendingSessionSpy: jest.SpyInstance;
+  let superRejectPendingSessionSpy: jest.SpyInstance;
   let getUserParticipantFromConversationEventSpy: jest.SpyInstance;
   let fetchUserParticipantFromConversationIdSpy: jest.SpyInstance;
 
@@ -512,17 +512,27 @@ describe('rejectPendingSession()', () => {
     };
 
     patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
-    rejectPendingSessionSpy = jest.spyOn(BaseSessionHandler.prototype, 'rejectPendingSession').mockResolvedValue(null);
+    superRejectPendingSessionSpy = jest.spyOn(BaseSessionHandler.prototype, 'rejectPendingSession').mockResolvedValue(null);
     getUserParticipantFromConversationEventSpy = jest.spyOn(handler, 'getUserParticipantFromConversationEvent')
-      .mockReturnValue(null);
+      .mockReturnValue(undefined);
     fetchUserParticipantFromConversationIdSpy = jest.spyOn(handler, 'fetchUserParticipantFromConversationId' as any)
       .mockResolvedValue(null)
   });
 
-  it('should proxy call through if we do not have an active session', async () => {
+  it('should reject uc calls by sending to vm', async () => {
+    const participant = { id: 'blazer', purpose: 'user' };
+    getUserParticipantFromConversationEventSpy.mockReturnValue(participant);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession!.id = pendingSession.id;
+    handler.conversations[pendingSession.conversationId] = { conversationUpdate: {} } as any;
+
+    const spy = jest.spyOn(handler, '_rejectUcCall').mockResolvedValue(null);
+
     await handler.rejectPendingSession(pendingSession);
 
-    expect(rejectPendingSessionSpy).toHaveBeenCalledWith(pendingSession);
+    expect(spy).toHaveBeenCalled();
+    expect(superRejectPendingSessionSpy).not.toHaveBeenCalled();
     expect(patchPhoneCallSpy).not.toHaveBeenCalled();
   });
 
@@ -531,12 +541,12 @@ describe('rejectPendingSession()', () => {
     getUserParticipantFromConversationEventSpy.mockReturnValue(participant);
 
     handler.activeSession = new MockSession() as any;
-    handler.activeSession.id = pendingSession.id;
+    handler.activeSession!.id = pendingSession.id;
     handler.conversations[pendingSession.conversationId] = { conversationUpdate: {} } as any;
 
     await handler.rejectPendingSession(pendingSession);
 
-    expect(rejectPendingSessionSpy).not.toHaveBeenCalled();
+    expect(superRejectPendingSessionSpy).not.toHaveBeenCalled();
     expect(patchPhoneCallSpy).toHaveBeenCalledWith(
       pendingSession.conversationId,
       participant.id,
@@ -549,16 +559,27 @@ describe('rejectPendingSession()', () => {
     fetchUserParticipantFromConversationIdSpy.mockResolvedValue(participant);
 
     handler.activeSession = new MockSession() as any;
-    handler.activeSession.id = pendingSession.id;
+    handler.activeSession!.id = pendingSession.id;
 
     await handler.rejectPendingSession(pendingSession);
 
-    expect(rejectPendingSessionSpy).not.toHaveBeenCalled();
+    expect(superRejectPendingSessionSpy).not.toHaveBeenCalled();
     expect(patchPhoneCallSpy).toHaveBeenCalledWith(
       pendingSession.conversationId,
       participant.id,
       { state: CommunicationStates.disconnected }
     );
+  });
+});
+
+describe('_rejectUcCall', () => {
+  it('should call requestApi', async () => {
+    const requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+
+    await handler._rejectUcCall('myConvo', 'myPartId');
+
+    expect(requestApiSpy).toHaveBeenCalled();
+    requestApiSpy.mockRestore();
   });
 });
 
@@ -710,10 +731,10 @@ describe('handleConversationUpdate()', () => {
 
 describe('handleSoftphoneConversationUpdate()', () => {
   interface ReturnedState {
-    update?: ConversationUpdate;
-    participant?: IConversationParticipantFromEvent;
-    callState?: ICallStateFromParticipant;
-    session?: IExtendedMediaSession;
+    update: ConversationUpdate;
+    participant: IConversationParticipantFromEvent;
+    callState: ICallStateFromParticipant;
+    session: IExtendedMediaSession;
     previousUpdate?: ConversationUpdate;
   }
 
@@ -765,7 +786,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
       participant,
       callState,
       session,
-      previousUpdate
+      previousUpdate: previousUpdate!
     };
   };
 
@@ -1132,8 +1153,8 @@ describe('diffConversationCallStates()', () => {
   });
 
   it('should return "true" if one call state is missing', () => {
-    expect(handler.diffConversationCallStates(undefined, call2)).toBe(true);
-    expect(handler.diffConversationCallStates(call1, undefined)).toBe(true);
+    expect(handler.diffConversationCallStates(undefined as any, call2)).toBe(true);
+    expect(handler.diffConversationCallStates(call1, undefined as any)).toBe(true);
   });
 
   it('should return "true" if the state is different', () => {
@@ -1185,7 +1206,7 @@ describe('emitConversationEvent()', () => {
     });
 
     expectedEvent.added.push(conversationState);
-    handler.emitConversationEvent('added', conversationState, undefined);
+    handler.emitConversationEvent('added', conversationState, undefined as any);
   });
 
   it('should emit removed conversations', () => {
@@ -1194,7 +1215,7 @@ describe('emitConversationEvent()', () => {
     });
 
     expectedEvent.removed.push(conversationState);
-    handler.emitConversationEvent('removed', conversationState, undefined);
+    handler.emitConversationEvent('removed', conversationState, undefined as any);
   });
 
   it('should emit updated conversations', () => {
@@ -1204,7 +1225,7 @@ describe('emitConversationEvent()', () => {
 
     handler.conversations[conversationState.conversationId] = conversationState;
     expectedEvent.current.push(conversationState);
-    handler.emitConversationEvent('updated', conversationState, undefined);
+    handler.emitConversationEvent('updated', conversationState, undefined as any);
   });
 });
 
@@ -1392,7 +1413,7 @@ describe('getUserParticipantFromConversationEvent()', () => {
   });
 
   it('should return void if no update', () => {
-    expect(handler.getUserParticipantFromConversationEvent(undefined)).toBe(undefined);
+    expect(handler.getUserParticipantFromConversationEvent(undefined as any)).toBe(undefined);
   });
 
   it('should return void if no participant found with the auth userId', () => {
@@ -1402,7 +1423,7 @@ describe('getUserParticipantFromConversationEvent()', () => {
   });
 
   it('should return the participant that matches the auth userId', () => {
-    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant1);
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 
   it('should return the participant that has call in the desired state', () => {
@@ -1416,16 +1437,6 @@ describe('getUserParticipantFromConversationEvent()', () => {
     expect(handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.alerting)).toEqual(participant2);
   });
 
-  it('should return the first participant that is not already terminated', () => {
-        /* setup our user to have multiple participants with different call states */
-        participant1.userId = userId;
-        participant1.calls = [{ ...call, state: CommunicationStates.terminated }];
-        participant2.userId = userId;
-        participant2.calls = [{ ...call }];
-        converversationUpdate.participants = [participant1, participant2];
-        expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
-  })
-
   it('should return the first participant with calls', () => {
     participant1.userId = userId;
     participant1.calls = [];
@@ -1436,8 +1447,8 @@ describe('getUserParticipantFromConversationEvent()', () => {
     expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 
-  it('should return the first participant if there are no calls on any of them', () => {
-    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant1);
+  it('should return the most recent participant if there are no calls on any of them', () => {
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 });
 
@@ -1699,7 +1710,7 @@ describe('setAudioMute()', () => {
   });
 
   it('should throw if there are errors', async () => {
-    const params: ISessionMuteRequest = { conversationId: null, mute: true };
+    const params: ISessionMuteRequest = { conversationId: null as any, mute: true };
     const error = new Error('Bad Request');
 
     patchPhoneCallSpy.mockRejectedValue(error);
@@ -1981,7 +1992,7 @@ describe('isPendingState()', () => {
   });
 
   it('should return "false" for non-pending states', () => {
-    expect(isPendingState(undefined)).toBe(false);
+    expect(isPendingState(undefined as any)).toBe(false);
 
     expect(isPendingState({} as any)).toBe(false);
 
@@ -2008,7 +2019,7 @@ describe('isConnectedState()', () => {
   });
 
   it('should return "false" for non-connected states', () => {
-    expect(isConnectedState(undefined)).toBe(false);
+    expect(isConnectedState(undefined as any)).toBe(false);
 
     expect(isConnectedState({} as any)).toBe(false);
 
@@ -2035,7 +2046,7 @@ describe('isEndedState()', () => {
   });
 
   it('should return "false" for non-ended states', () => {
-    expect(isEndedState(undefined)).toBe(false);
+    expect(isEndedState(undefined as any)).toBe(false);
 
     expect(isEndedState({} as any)).toBe(false);
 
