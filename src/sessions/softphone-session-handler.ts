@@ -518,14 +518,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async rejectPendingSession (pendingSession: IPendingSession): Promise<any> {
-    if (!this.hasActiveSession()) {
-      return super.rejectPendingSession(pendingSession);
-    }
-    this.log('info', 'rejecting pending session with an active persistent connection', {
-      sessionId: pendingSession.id,
-      conversationId: pendingSession.conversationId
-    });
-
     let participant = this.getUserParticipantFromConversationEvent(
       this.conversations[pendingSession.conversationId]?.conversationUpdate
     );
@@ -534,8 +526,19 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       participant = await this.fetchUserParticipantFromConversationId(pendingSession.conversationId);
     }
 
+    if (participant.purpose === 'user') {
+      return this._rejectUcCall(pendingSession.conversationId, participant.id);
+    }
+
     return this.patchPhoneCall(pendingSession.conversationId, participant.id, {
       state: CommunicationStates.disconnected
+    });
+  }
+
+  _rejectUcCall (conversationId: string, participantId: string): Promise<any> {
+    return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}/replace`, {
+      method: 'post',
+      data: JSON.stringify({ voicemail: true })
     });
   }
 
