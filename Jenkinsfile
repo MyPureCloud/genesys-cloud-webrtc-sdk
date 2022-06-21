@@ -27,14 +27,14 @@ def getBranchType = {
 }
 
 def hasRunSpigotTests = false
-def testSpigotByEnv = { environment, version ->
+def testSpigotByEnv = { environment, branch ->
    stage("Spigot test '${environment}'") {
         script {
-            println("Scheduling spigot test for: { env: '${environment}', branch: '${version}'")
+            println("Scheduling spigot test for: { env: '${environment}', branch: '${branch}' }")
             build(job: 'spigot-tests-webrtcsdk-entry',
                     parameters: [
                         string(name: 'ENVIRONMENT', value: environment),
-                        string(name: 'BRANCH_TO_TEST', value: version)
+                        string(name: 'BRANCH_TO_TEST', value: branch)
                     ],
                     propagate: true,
                     wait: true // wait for the test job to finish
@@ -123,9 +123,9 @@ VERSION      : ${env.VERSION}
 
         // run spigot tests on release/ branches
         if (isRelease() && !hasRunSpigotTests) {
-          testSpigotByEnv('dev', env.VERSION);
-          testSpigotByEnv('test', env.VERSION);
-          testSpigotByEnv('prod', env.VERSION);
+          testSpigotByEnv('dev', env.BRANCH_NAME);
+          testSpigotByEnv('test', env.BRANCH_NAME);
+          testSpigotByEnv('prod', env.BRANCH_NAME);
           hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
         }
     }
