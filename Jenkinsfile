@@ -4,6 +4,7 @@ import groovy.json.JsonBuilder
 
 def MAIN_BRANCH = 'master'
 def DEVELOP_BRANCH = 'develop'
+def isBitbucket = false
 
 def isMain = {
   env.BRANCH_NAME == MAIN_BRANCH
@@ -17,20 +18,23 @@ def isDevelop = {
   env.BRANCH_NAME == DEVELOP_BRANCH
 }
 
-def getBuildType = {
-  isMain()
-    ? 'MAINLINE'
-    : 'FEATURE'
+def isMainline = {
+  isMain() || isDevelop() || isRelease()
 }
 
-def testSpigotByEnv = { environment, version ->
+def getBranchType = {
+  isMainline() ? 'MAINLINE' : 'FEATURE'
+}
+
+def hasRunSpigotTests = false
+def testSpigotByEnv = { environment, branch ->
    stage("Spigot test '${environment}'") {
         script {
-            println("Scheduling spigot test for: { env: '${environment}', branch: '${version}'")
+            println("Scheduling spigot test for: { env: '${environment}', branch: '${branch}' }")
             build(job: 'spigot-tests-webrtcsdk-entry',
                     parameters: [
                         string(name: 'ENVIRONMENT', value: environment),
-                        string(name: 'BRANCH_TO_TEST', value: version)
+                        string(name: 'BRANCH_TO_TEST', value: branch)
                     ],
                     propagate: true,
                     wait: true // wait for the test job to finish
@@ -38,16 +42,37 @@ def testSpigotByEnv = { environment, version ->
         }
     }
 }
-def hasRunSpigotTests = false
+
+def getDeployConfig = {
+  def deployConfig = [:]
+
+  if (isMainline()) {
+    deployConfig['dev'] = 'always'
+    deployConfig['test'] = 'always'
+  }
+
+  if (isMain()) {
+    deployConfig['prod'] = 'always'
+    deployConfig['fedramp-use2-core'] = 'always'
+  }
+
+  return deployConfig;
+}
+
+def npmFunctions = new com.genesys.jenkins.Npm()
+def gitFunctions = new com.genesys.jenkins.Git()
+def notifications = new com.genesys.jenkins.Notifications()
+
+def chatGroupId = 'adhoc-60e40c95-3d9c-458e-a48e-ca4b29cf486d'
 
 webappPipeline {
     projectName = 'developercenter-cdn/webrtc-sdk'
     team = 'Genesys Client Media (WebRTC)'
     mailer = 'genesyscloud-client-media@genesys.com'
-    chatGroupId = '763fcc91-e530-4ed7-b318-03f525a077f6'
+    chatGroupId = chatGroupId
 
     nodeVersion = '14.x'
-    buildType = getBuildType
+    buildType = getBranchType
 
     manifest = customManifest('dist') {
         sh('node ./create-manifest.js')
@@ -61,18 +86,15 @@ webappPipeline {
       ]
     }
 
-    deployConfig = [
-      dev : 'always',
-      test : 'always',
-      prod : 'always',
-      'fedramp-use2-core': 'always'
-    ]
+    deployConfig = getDeployConfig()
 
     autoSubmitCm = true
 
     testJob = 'no-tests' // see buildStep to spigot tests
 
     ciTests = {
+      sh('node -e "console.log(process.env)"')
+
         println("""
 ========= BUILD VARIABLES =========
 ENVIRONMENT  : ${env.ENVIRONMENT}
@@ -101,9 +123,9 @@ VERSION      : ${env.VERSION}
 
         // run spigot tests on release/ branches
         if (isRelease() && !hasRunSpigotTests) {
-          testSpigotByEnv('dev', env.VERSION);
-          testSpigotByEnv('test', env.VERSION);
-          testSpigotByEnv('prod', env.VERSION);
+          testSpigotByEnv('dev', env.BRANCH_NAME);
+          testSpigotByEnv('test', env.BRANCH_NAME);
+          testSpigotByEnv('prod', env.BRANCH_NAME);
           hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
         }
     }
@@ -159,34 +181,24 @@ VERSION      : ${env.VERSION}
           version = "${packageJson.version}-${featureBranch}.${env.BUILD_NUMBER}".toString()
         }
 
-        def npmFunctions = null
-        def gitFunctions = null
-        def pwd = pwd()
-
-        stage('Download npm & git utils') {
-            script {
-              // clone pipelines repo
-                dir('pipelines') {
-                    git branch: 'COMUI-857',
-                        url: 'git@bitbucket.org:inindca/pipeline-library.git',
-                        changelog: false
-
-                    npmFunctions = load 'src/com/genesys/jenkins/Npm.groovy'
-                    gitFunctions = load 'src/com/genesys/jenkins/Git.groovy'
-                }
-            }
-        } // end download pipeline utils
-
         stage('Publish to NPM') {
             script {
-                dir(pwd) {
+                dir(pwd()) {
                     npmFunctions.publishNpmPackage([
                         tag: tag, // optional
-                        useArtifactoryRepo: false, // optional, default `true`
+                        useArtifactoryRepo: isBitbucket, // optional, default `true`
                         version: version, // optional, default is version in package.json
                         dryRun: false // dry run the publish, default `false`
                     ])
                 }
+
+                def message = "**${env.APP_NAME}** ${version} (Build [#${env.BUILD_NUMBER}](${env.BUILD_URL})) has been published to **npm**"
+
+                if (!tag) {
+                  message = ":loudspeaker: ${message}"
+                }
+
+                notifications.requestToGenericWebhooksWithMessage(chatGroupId, message);
             }
         } // end publish to npm
 
@@ -196,14 +208,14 @@ VERSION      : ${env.VERSION}
                     gitFunctions.tagCommit(
                       "v${version}",
                       gitFunctions.getCurrentCommit(),
-                      false
+                      isBitbucket
                     )
 
                     gitFunctions.mergeBackAndPrep(
                       MAIN_BRANCH,
                       DEVELOP_BRANCH,
                       'patch',
-                      false
+                      isBitbucket
                     )
                 }
             } // end tag commit and merge back

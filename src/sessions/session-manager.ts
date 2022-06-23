@@ -253,6 +253,11 @@ export class SessionManager {
     return Promise.all(promises);
   }
 
+  async addOrReplaceTrackOnSession (track: MediaStreamTrack, session: IExtendedMediaSession): Promise<void> {
+    const handler = this.getSessionHandler({ jingleSession: session });
+    await handler.addReplaceTrackToSession(session, track);
+  }
+
   /**
    * Event handler for pending webrtc-sessions.
    * @param sessionInfo pending webrtc-session info

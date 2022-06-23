@@ -3,7 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.1...HEAD)
+
+# [v7.3.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.0...v7.3.1)
+### Added
+* [PCM-1856](https://inindca.atlassian.net/browse/PCM-1856) added function to the SDK that allows users to update the default video resolution
+
+### Fixed
+* [PCM-1912](https://inindca.atlassian.net/browse/PCM-1912) fixed rejecting non-acd softphone calls. They now go to voicemail.
+* [PCM-1938](https://inindca.atlassian.net/browse/PCM-1938) made small change so softphone session handling checks start with the most recent participant rather than the first
 
 # [v7.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.3...v7.3.0)
 ### Added
@@ -15,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [PCM-1913](https://inindca.atlassian.net/browse/PCM-1913) – Fixed the screen recording metadata request to use mids in place of trackIds.
 * [PCM-1885](https://inindca.atlassian.net/browse/PCM-1885) – on `deviceschange` event from the window, SdkMedia should only validate all sessions if the `sessionManager` has already been initialized.
 * [PCM-1922](https://inindca.atlassian.net/browse/PCM-1922) - update streaming client to 14
+
+### Added
+* [PCM-1993](https://inindca.atlassian.net/browse/PCM-1933) – added build, deploy, and publish notifications to the Jenkinsfile
 
 # [v7.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.2...v7.2.3)
 ### Fixed

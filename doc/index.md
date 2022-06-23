@@ -729,6 +729,37 @@ Params:
 Returns: a promise that fullfils once the default
 device values have been updated
 
+#### `updateDefaultResolution()`
+Update the default video resolution
+
+If `updateActiveSessions` is `true`, any active sessions will
+have their video's resolutions updated to match the passed in value
+
+If `updateActiveSessions` is `false`, only the sdk defaults will be updated and
+active sessions' video resolutions will not be touched
+
+Declaration:
+``` ts
+updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any>;
+```
+
+Params:
+* `resolution: IVideoResolution | undefined`
+  * Basic interface:
+    ``` ts
+    interface IVideoResolution {
+      width: ConstrainULong
+      height: ConstrainULong
+    }
+    ```
+  * `width: ConstrainULong` Width of the selected video resolution
+  * `height: ConstrainULong` Height of the selected video resolution
+* `updateActiveSessions: boolean` Determines if we need to update the
+active sessions or leave them as is
+
+Returns: a promise that fulfills once the default
+resolution values have been updated
+
 #### `updateDefaultMediaSettings()`
 Update the default media settings that exist in the sdk config.
 
@@ -1655,6 +1686,34 @@ Value of event:
 * `reason: JingleInfo` – info regarding the mute
 * Basic interface: See [mute](#mute)
 
+#### `resolutionUpdated`
+Emits when the session's resolution
+updates
+
+Declaration:
+``` ts
+sdk.on('resolutionUpdated', (
+  requestedResolution: IVideoResolution,
+  actualResolution: IVideoResolution,
+  videoTrack: MediaStreamTrack,
+  sessionId: string,
+  conversationId: string
+) => { });
+```
+
+Value of event:
+* `requestedResolution: IVideoResolution` - the height and width for the requested resolution
+* `actualResolution: IVideoResolution` - the heigh and width actually set in the case of camera capabilities being lower than requested
+* Basic interface:
+  ``` ts
+  interface IVideoResolution {
+    width: ConstrainULong,
+    height: ConstrainULong
+  }
+  ```
+* `videoTrack: MediaStreamTrack` - the video track whose resolution was updated
+* `sessionId: string` - the session that had the resolution updated
+* `conversationId: string` - the conversation that had the resolution updated
 
 #### Video session level events
 There are session events that are specific for video sessions.

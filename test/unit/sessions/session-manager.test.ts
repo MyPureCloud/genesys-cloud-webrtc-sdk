@@ -1054,4 +1054,24 @@ describe('updateAudioVolume', () => {
         expect(mockSessionHandler.updateAudioVolume).toHaveBeenCalledWith(session, 63);
       });
   });
+
+  describe('addOrReplaceTrackOnSession', () => {
+    it('should call the handler to update session', () => {
+      const session = new MockSession(SessionTypes.collaborateVideo) as any;
+      const track = {
+        applyConstraints: jest.fn(),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: 1920,
+          height: 1080
+        }),
+        stop: jest.fn()
+      } as unknown as MediaStreamTrack;
+      const mockSessionHandler = { addReplaceTrackToSession: jest.fn() };
+      jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
+      sessionManager.addOrReplaceTrackOnSession(track, session);
+      expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ jingleSession: session });
+      expect(mockSessionHandler.addReplaceTrackToSession).toHaveBeenCalledWith(session, track);
+    })
+  })
 });
