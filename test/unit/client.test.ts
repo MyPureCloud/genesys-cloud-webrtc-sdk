@@ -750,15 +750,13 @@ describe('Client', () => {
   });
 
   describe('updateDefaultResolution()', () => {
-    it('should set the default video resolution to the proper value', () => {
+    it ('should do nothing if updateActiveSessions is false', () => {
       sdk = constructSdk();
-      sdk.updateDefaultResolution({width: 1920, height: 1080}, false);
-      expect(sdk._config.defaults.videoResolution).toStrictEqual({width: 1920, height: 1080});
-
-      sdk.updateDefaultResolution(undefined, false);
-      expect(sdk._config.defaults.videoResolution).toBeUndefined();
+      const eventEmitSpy = jest.spyOn(sdk, 'emit');
+      sdk.updateDefaultResolution({ width: 1920, height: 1080 }, false);
+      expect(sdk._config.defaults?.videoResolution).toBeUndefined();
+      expect(eventEmitSpy).not.toHaveBeenCalled();
     })
-
     it('will attempt to update the videos resolution to the requested value; resolution is defined', async () => {
       sdk = constructSdk();
       const stream = new MockStream() as any as MediaStream;
@@ -778,6 +776,7 @@ describe('Client', () => {
       } as IExtendedMediaSession])
       const eventEmitSpy = jest.spyOn(sdk, 'emit');
       await sdk.updateDefaultResolution({width: 1920, height: 1080}, true);
+      expect(sdk._config.defaults?.videoResolution).toStrictEqual({ width: 1920, height: 1080 });
       expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
         requestedResolution: { width: 1920, height: 1080 },
         actualResolution: stream.getVideoTracks()[0].getSettings(),

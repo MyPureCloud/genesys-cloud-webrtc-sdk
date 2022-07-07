@@ -486,7 +486,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * signaling that the resolution has updated
    */
   async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any> {
-    this._config.defaults.videoResolution = resolution;
     if (!updateActiveSessions) {
       return;
     }
@@ -519,9 +518,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           } catch (e) {
             createAndEmitSdkError.call(this, SdkErrorTypes.generic, e.message, e);
           }
+          const actualResolution = { width: track.getSettings().width, height: track.getSettings().height };
+          this._config.defaults.videoResolution = resolution ? actualResolution : undefined;
           this.emit('resolutionUpdated', {
             requestedResolution: resolution,
-            actualResolution: { width: track.getSettings().width, height: track.getSettings().height },
+            actualResolution: actualResolution,
             videoTrack: track,
             sessionId: videoSession.id,
             conversationId: videoSession.conversationId
