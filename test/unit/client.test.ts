@@ -754,7 +754,7 @@ describe('Client', () => {
       sdk = constructSdk();
       const eventEmitSpy = jest.spyOn(sdk, 'emit');
       sdk.updateDefaultResolution({ width: 1920, height: 1080 }, false);
-      expect(sdk._config.defaults?.videoResolution).toBeUndefined();
+      expect(sdk._config.defaults?.videoResolution).toStrictEqual({ width: 1920, height: 1080 });
       expect(eventEmitSpy).not.toHaveBeenCalled();
     })
     it('will attempt to update the videos resolution to the requested value; resolution is defined', async () => {
@@ -846,6 +846,91 @@ describe('Client', () => {
         requestedResolution: { width: 206589741, height: 987652378},
         actualResolution: stream.getVideoTracks()[0].getSettings(),
         videoTrack: stream.getVideoTracks()[0],
+        sessionId: 'test-id-123',
+        conversationId: 'test-convo-id-123'
+      })
+    })
+
+    it('will update the SDK defaults if the actualResolution differs from the requested', async () => {
+      sdk = constructSdk();
+      const stream1 = new MockStream() as any as MediaStream;
+      stream1.getVideoTracks = jest.fn().mockReturnValue([{
+        applyConstraints: jest.fn(),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: 1920,
+          height: 1080
+        })
+      }]);
+
+      const stream2 = new MockStream() as any as MediaStream;
+      stream2.getVideoTracks = jest.fn().mockReturnValue([{
+        applyConstraints: jest.fn(),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: 3840,
+          height: 1440
+        })
+      }]);
+
+      /* Impossible scenario but put in place to satisfy coverage */
+      const stream3 = new MockStream() as any as MediaStream;
+      stream3.getVideoTracks = jest.fn().mockReturnValue([{
+        applyConstraints: jest.fn(),
+        getConstraints: jest.fn(),
+        getSettings: jest.fn().mockReturnValue({
+          width: undefined,
+          height: 1440
+        })
+      }]);
+
+      jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValueOnce([{
+        id: 'test-id-123',
+        conversationId: 'test-convo-id-123',
+        sessionType: SessionTypes.collaborateVideo,
+        _outboundStream: stream1
+      } as IExtendedMediaSession])
+      .mockReturnValueOnce([{
+        id: 'test-id-123',
+        conversationId: 'test-convo-id-123',
+        sessionType: SessionTypes.collaborateVideo,
+        _outboundStream: stream2
+      } as IExtendedMediaSession])
+      .mockReturnValueOnce([{
+        id: 'test-id-123',
+        conversationId: 'test-convo-id-123',
+        sessionType: SessionTypes.collaborateVideo,
+        _outboundStream: stream3
+      } as IExtendedMediaSession])
+
+      const eventEmitSpy = jest.spyOn(sdk, 'emit');
+      await sdk.updateDefaultResolution({ width: 3840, height: 2160 }, true);
+      expect(sdk._config.defaults?.videoResolution).toStrictEqual({ width: 1920, height: 1080 });
+      expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
+        requestedResolution: { width: 3840, height: 2160 },
+        actualResolution: stream1.getVideoTracks()[0].getSettings(),
+        videoTrack: stream1.getVideoTracks()[0],
+        sessionId: 'test-id-123',
+        conversationId: 'test-convo-id-123'
+      })
+
+      await sdk.updateDefaultResolution({ width: 3840, height: 2160 }, true);
+      expect(sdk._config.defaults?.videoResolution).toStrictEqual({ width: 3840, height: 1440 });
+      expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
+        requestedResolution: { width: 3840, height: 2160 },
+        actualResolution: stream2.getVideoTracks()[0].getSettings(),
+        videoTrack: stream2.getVideoTracks()[0],
+        sessionId: 'test-id-123',
+        conversationId: 'test-convo-id-123'
+      })
+
+      /* Impossible scenario, but put in place to satisfy coverage */
+      await sdk.updateDefaultResolution(undefined, true);
+      expect(sdk._config.defaults?.videoResolution).toStrictEqual(undefined);
+      expect(eventEmitSpy).toHaveBeenCalledWith('resolutionUpdated', {
+        requestedResolution: undefined,
+        actualResolution: stream3.getVideoTracks()[0].getSettings(),
+        videoTrack: stream3.getVideoTracks()[0],
         sessionId: 'test-id-123',
         conversationId: 'test-convo-id-123'
       })
