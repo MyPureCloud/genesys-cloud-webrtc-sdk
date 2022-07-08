@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * [PCM-1912](https://inindca.atlassian.net/browse/PCM-1912) fixed rejecting non-acd softphone calls. They now go to voicemail.
+* [PCM-1945](https://inindca.atlassian.net/browse/PCM-1945) fixed the logging url to use the backgroundassistant suffix for jwt auth
 * [PCM-1938](https://inindca.atlassian.net/browse/PCM-1938) made small change so softphone session handling checks start with the most recent participant rather than the first
 
 # [v7.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.2.3...v7.3.0)
