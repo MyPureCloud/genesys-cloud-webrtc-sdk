@@ -5,7 +5,6 @@ import { GenesysCloudWebrtcSdk } from './client';
 export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
   const {
     logLevel,
-    accessToken,
     optOutOfTelemetry,
     originAppId,
     originAppName,
@@ -13,10 +12,18 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     logFormatters
   } = this._config;
 
+  let url = `https://api.${this._config.environment}/api/v2/diagnostics/trace`;
+  let accessToken = this._config.accessToken;
+
+  if (this.isJwtAuth) {
+    url += '/backgroundassistant';
+    accessToken = this._config.jwt;
+  }
+  
   this.logger = new Logger({
     accessToken,
     logLevel,
-    url: `https://api.${this._config.environment}/api/v2/diagnostics/trace`,
+    url,
     appVersion: this.VERSION,
     appName: 'webrtc-sdk',
     uploadDebounceTime: 1000,
