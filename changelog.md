@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.2...HEAD)
+
+# [v7.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.1...v7.3.2)
 * [PCM-1856](https://inindca.atlassian.net/browse/PCM-1856) touched up and improved function for handling resolution changes
 * [PCM-1948](https://inindca.atlassian.net/browse/PCM-1948) moved rxjs to be a full dependency rather than a dev dep.
 
