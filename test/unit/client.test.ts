@@ -785,10 +785,7 @@ describe('Client', () => {
         conversationId: 'test-convo-id-123'
       })
     })
-
     it('will attempt to update the videos resolution to the requested value; resolution is undefined', async () => {
-      sdk = constructSdk();
-      const stream = new MockStream() as any as MediaStream;
       stream.getVideoTracks = jest.fn().mockReturnValue([{
         applyConstraints: jest.fn(),
         getConstraints: jest.fn(),
