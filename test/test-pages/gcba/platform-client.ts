@@ -126,7 +126,7 @@ const persitentName = 'sdk_test';
         'Content-Type': 'application/json',
         'Authorization': `bearer ${accessToken}`
       },
-      body: JSON.stringify({backgroundAssistantId: "test1234"})
+      body: JSON.stringify({backgroundAssistantId: "5a106b00-b2d2-466d-94ea-75a0908cadeb"})
     });
 
     const { jwt } = await response.json();
