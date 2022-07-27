@@ -23,6 +23,7 @@ import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
+import Logger from 'genesys-cloud-client-logger';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -276,14 +277,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   emitConversationEvent (event: SdkConversationEvents, conversation: IStoredConversationState, session: IExtendedMediaSession): void {
-    const current = Object.values(this.conversations);
     const currentEmittedEvent: ISdkConversationUpdateEvent = {
       added: [],
       removed: [],
-      current,
+      current: [],
       activeConversationId: ''
     };
-
 
     if (event === 'added') {
       currentEmittedEvent.added.push(conversation);
@@ -292,6 +291,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       delete this.conversations[conversation.conversationId];
     }
 
+    currentEmittedEvent.current = Object.values(this.conversations);
     currentEmittedEvent.activeConversationId = this.determineActiveConversationId(session);
 
     this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, session }, { skipServer: true });
