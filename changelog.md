@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.2...HEAD)
+### Fixed
+* [PCM-1966](https://inindca.atlassian.net/browse/PCM-1966) fix a race condition when joining video and unmuting audio at the same time. We will now wait for the session to be stable before swapping the track on the sender.
+
 ### Changed
 * [PCM-1965](https://inindca.atlassian.net/browse/PCM-1965) bump softphone vendor headsets
 
