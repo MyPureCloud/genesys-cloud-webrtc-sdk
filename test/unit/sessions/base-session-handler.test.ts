@@ -1,4 +1,4 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, MockSender } from '../../test-utils';
+import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack, MockSender, flushPromises } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes, JingleReasons } from '../../../src/types/enums';
@@ -661,13 +661,36 @@ describe('addMediatoSession', () => {
     const mockSession: any = {
       pc: {
         addTrack: jest.fn(),
-        addStream: jest.fn()
+        addStream: jest.fn(),
+        getSenders: jest.fn().mockReturnValue([])
       }
     };
 
     await handler.addMediaToSession(mockSession, stream as any);
 
     expect(mockSession.pc.addTrack).toHaveBeenCalled();
+  });
+
+  it('should not add track if it\'s already there', async () => {
+    const stream = new MockStream(true);
+    const track = new MockTrack('audio');
+    stream._tracks = [track];
+    jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(true);
+
+    const mockSession: any = {
+      pc: {
+        addTrack: jest.fn(),
+        addStream: jest.fn(),
+        getSenders: jest.fn().mockReturnValue([ { track }])
+      }
+    };
+
+    const logSpy = jest.spyOn(handler as any, 'log');
+
+    await handler.addMediaToSession(mockSession, stream as any);
+
+    expect(mockSession.pc.addTrack).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('info', expect.stringContaining('Attempted to add track to the session which was already there'), expect.anything());
   });
 
   it('should throw error if not capable of track actions', async () => {
@@ -710,6 +733,38 @@ describe('_warnNegotiationNeeded', () => {
   });
 });
 
+describe('waitForSessionConnected', () => {
+  it('should resolve immediately if connected', async () => {
+    const session = new MockSession();
+
+    session.on = jest.fn();
+    (session as any).connectionState = 'connected';
+
+    await handler.waitForSessionConnected(session as any);
+    expect(session.on).not.toHaveBeenCalled();
+  });
+
+  it('should wait for connected', async () => {
+    const session = new MockSession();
+
+    session.on = jest.fn();
+    (session as any).connectionState = 'starting';
+
+    const promise = handler.waitForSessionConnected(session as any);
+
+    await flushPromises();
+
+    expect(session.on).toHaveBeenCalled();
+    (session.on as jest.Mock).mock.calls[0][1]('connecting');
+    await flushPromises();
+
+    (session.on as jest.Mock).mock.calls[0][1]('connected');
+    await flushPromises();
+
+    await promise;
+  });
+});
+
 describe('addReplaceTrackToSession', () => {
   it('should not apply constraints for audio tracks', async () => {
     const session = new MockSession();
@@ -719,6 +774,17 @@ describe('addReplaceTrackToSession', () => {
     await handler.addReplaceTrackToSession(session as any, track as any);
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('should wait for connected if starting', async () => {
+    handler.waitForSessionConnected = jest.fn().mockResolvedValue(undefined);
+    const session = new MockSession();
+    (session as any).connectionState = 'starting';
+
+    const track = new MockTrack('audio');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+
+    expect(handler.waitForSessionConnected).toHaveBeenCalled();
   });
 
   it('should find sender by the receiver track', async () => {
