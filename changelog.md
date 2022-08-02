@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [PCM-1965](https://inindca.atlassian.net/browse/PCM-1965) bump softphone vendor headsets
 
+### Fixed
+* [PCM-1944](https://inindca.atlassian.net/browse/PCM-1944) pulled in the new streaming-client so requestApiWithRetry will actually retry
+
 # [v7.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.1...v7.3.2)
 * [PCM-1856](https://inindca.atlassian.net/browse/PCM-1856) touched up and improved function for handling resolution changes
 * [PCM-1948](https://inindca.atlassian.net/browse/PCM-1948) moved rxjs to be a full dependency rather than a dev dep.
