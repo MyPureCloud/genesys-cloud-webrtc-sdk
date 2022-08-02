@@ -394,7 +394,16 @@ export default abstract class BaseSessionHandler {
     const promises: any[] = [];
     if (checkHasTransceiverFunctionality()) {
       this.log('info', 'Using track based actions', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+      const senders = session.pc.getSenders();
+
       stream.getTracks().forEach(t => {
+        // if the track is already on the session we shouldn't add it again
+        const trackAlreadyOnSession = senders.length && senders.find(sender => sender.track === t);
+
+        if (trackAlreadyOnSession) {
+          return this.log('info', 'Attempted to add track to the session which was already there, skipping', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+        }
+
         this.log('debug', 'Adding track to session', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
         promises.push(session.pc.addTrack(t));
       });
@@ -406,10 +415,33 @@ export default abstract class BaseSessionHandler {
     await Promise.all(promises);
   }
 
+  async waitForSessionConnected (session: IExtendedMediaSession): Promise<undefined> {
+    if (session.connectionState === 'connected') {
+      return;
+    }
+
+    return new Promise((resolve) => {
+      const handler = (connectionState) => {
+        if (connectionState === 'connected') {
+          resolve(undefined);
+          session.off('connectionState', handler);
+        }
+      };
+
+      session.on('connectionState', handler);
+    });
+  }
+
   /**
    * Will try and replace a track of the same kind if possible, otherwise it will add the track
    */
   async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
+    // we need to wait for the session to be stable before we add/replace tracks or we could end up in a renego state
+    // if tranceiver is recvonly and `starting` state, we need to wait until it transitions to `connected`
+    if (session.connectionState === 'starting') {
+      await this.waitForSessionConnected(session);
+    }
+
     // find a transceiver with the same kind of track
     const transceiver = session.pc.getTransceivers().find(t => {
       return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
