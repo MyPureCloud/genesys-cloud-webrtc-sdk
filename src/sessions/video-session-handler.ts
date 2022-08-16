@@ -13,13 +13,15 @@ import {
   IConversationParticipant,
   IMediaRequestOptions,
   IStartVideoSessionParams,
-  VideoMediaSession
+  VideoMediaSession,
+  IMemberStatusMessage
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
 import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -274,6 +276,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     session.startScreenShare = this.startScreenShare.bind(this, session);
     session.stopScreenShare = this.stopScreenShare.bind(this, session);
     session.pinParticipantVideo = this.pinParticipantVideo.bind(this, session);
+    session.on('dataChannelMessage', this.handleDataChannelMessage.bind(this, session));
 
     return super.handleSessionInit(session);
   }
@@ -723,5 +726,21 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return sdp?.split('m=')
       .find(s => s.startsWith(kind))?.split('\n')
       .find(s => s.startsWith('a=msid:'))?.split(' ')[1]?.trim();
+  }
+
+  isMemberStatusMessage (message: JsonRpcMessage): message is IMemberStatusMessage {
+    return message.method === 'member.notify.status';
+  }
+
+  handleDataChannelMessage (session: VideoMediaSession, message: JsonRpcMessage) {
+    if (this.isMemberStatusMessage(message)) {
+      this.handleMemberStatusMessage(message);
+    } else {
+      this.log('warn', 'no handler for data channel message', { message });
+    }
+  }
+
+  handleMemberStatusMessage(message: IMemberStatusMessage) {
+    this.log('debug', 'member status message', { message });
   }
 }

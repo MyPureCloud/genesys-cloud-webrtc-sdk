@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { GenesysCloudMediaSession, ISessionInfo, IPendingSession } from 'genesys-cloud-streaming-client';
+import { GenesysCloudMediaSession, ISessionInfo, IPendingSession, JsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -1162,4 +1162,52 @@ export interface ISdkSoftphoneDestination {
 export interface IVideoResolution {
   width: ConstrainULong,
   height: ConstrainULong
+}
+
+export interface IMemberStatusMessage extends JsonRpcMessage {
+  method: 'member.notify.status';
+  params: {
+    speakers?: VideoSpeakerStatus[];
+    outgoingStreams?: OutgoingStreamStatus[];
+    incomingStreams?: IncomingStreamStatus[];
+  }
+}
+
+export interface VideoSpeakerStatus {
+  /** userId */
+  id: string;
+
+  activity: 'speaking' | 'inactive' | 'non-speech';
+
+  /** Audio level, in dB, in the range of -127.0 to 0.0 with 0.0 being the loudest */
+  level: number;
+
+  /** true to indicate the conference member is being heard, false to indicate they are not currently in the audio mix */
+  included: boolean;
+}
+
+export interface OutgoingStreamStatus {
+  /** Stream ID of the outgoing stream (stream sent from member to MMS) */
+  outgoingStreamId: string; 
+
+  /** Userids currently viewing this stream */
+  viewers: string[];
+}
+
+export interface IncomingStreamStatus {
+  /** Stream ID of the incoming stream on this member being described */
+  sinkPinId: string;
+
+  /** Track ID (from the SDP, local to this member) */
+  sinkTrackId: string;
+
+  /** Client ID of the source being sent to this stream */
+  sourceId: string;
+
+  /** Pin ID of the stream on the viewed member's client */
+  sourcePinId: string;
+
+  /** Track ID from the SDP of the viewed member's client */
+  sourceTrackId: string;
+  contentType: 'camera' | 'screenshare' | 'playback';
 }

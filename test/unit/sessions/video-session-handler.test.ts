@@ -10,7 +10,8 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession } from '../../../src/types/interfaces';
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import { ConversationUpdate } from '../../../src/';
+import { ConversationUpdate, IMemberStatusMessage } from '../../../src/';
+import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 
 let handler: VideoSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -553,7 +554,7 @@ describe('handlePropose', () => {
 describe('handleSessionInit', () => {
   it('should decorate the session', async () => {
     const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit').mockResolvedValue(null);
-    const session: VideoMediaSession = {} as any;
+    const session: VideoMediaSession = { on: jest.fn() } as any;
 
     await handler.handleSessionInit(session);
 
@@ -1429,5 +1430,54 @@ a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071`;
 m=audio 1 UDP/TLS/RTP/SAVPF 96
 a=msid:cbf2ec37-5e50-4ac4-9ae7-1d1dc4508071 ${trackId} `; /* should trim this blank space */
     expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(trackId);
+  });
+});
+
+describe('handleDataChannelMessage', () => {
+  it('should call handleMemberStatusMessage', () => {
+    const spy = handler.handleMemberStatusMessage = jest.fn();
+
+    const message: IMemberStatusMessage = {
+      jsonrpc: 'v2',
+      method: 'member.notify.status',
+      params: {
+        speakers: []
+      }
+    };
+
+    handler.handleDataChannelMessage({} as any, message);
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should log a warning if there is no message handler', () => {
+    const spy = handler.handleMemberStatusMessage = jest.fn();
+    const logSpy = jest.spyOn(handler as any, 'log');
+    const message: JsonRpcMessage = {
+      jsonrpc: 'v2',
+      method: 'myDummyMessage',
+      params: {
+      }
+    };
+
+    handler.handleDataChannelMessage({} as any, message);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('warn', 'no handler for data channel message', expect.anything());
+  });
+});
+
+describe('handleMemberStatusMessage', () => {
+  it('for coverage', () => {
+    // this is just a placeholder
+    const message: IMemberStatusMessage = {
+      jsonrpc: 'v2',
+      method: 'member.notify.status',
+      params: {
+        speakers: []
+      }
+    };
+
+    expect(handler.handleMemberStatusMessage(message)).toBeFalsy();
   });
 });
