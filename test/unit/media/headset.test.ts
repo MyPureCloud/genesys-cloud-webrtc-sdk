@@ -147,8 +147,8 @@ describe('SdkHeadset', () => {
   describe('answerIncomingCall', () => {
     it('should call the proper function in the headset library', () => {
       const answerCallSpy = jest.spyOn(headsetLibrary, 'answerCall');
-      sdkHeadset.answerIncomingCall('123');
-      expect(answerCallSpy).toHaveBeenCalledWith('123');
+      sdkHeadset.answerIncomingCall('123', false);
+      expect(answerCallSpy).toHaveBeenCalledWith('123', false);
     });
   });
 
@@ -251,7 +251,7 @@ describe('SdkHeadsetStub', () => {
 
   describe('answerIncomingCall()', () => {
     it('should return an empty promise', async () => {
-      expect(await headsetStub.answerIncomingCall('')).toBe(undefined);
+      expect(await headsetStub.answerIncomingCall('', false)).toBe(undefined);
     });
   });
 
