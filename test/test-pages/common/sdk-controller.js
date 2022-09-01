@@ -265,7 +265,9 @@ function handleHeadsetEvent (event) {
       setAudioMute({ mute: isMuted, conversationId: currentConversationId });
       break;
     case HeadsetEvents.deviceAnsweredCall:
-      acceptPendingSession({ conversationId });
+      if (sdk.sessionManager.getPendingSession({ conversationId })) {
+        acceptPendingSession({ conversationId });
+      }
       break;
     case HeadsetEvents.deviceEndedCall:
       endSession({ conversationId });
@@ -599,9 +601,11 @@ function handledPendingSession (params) {
     sessionId: ${params.sessionId}
     conversationId: ${params.conversationId}`;
 
+  const autoAnswer = pendingSessions.find(s => s.conversationId === params.conversationId).autoAnswer;
   pendingSessions = pendingSessions.filter(s => s.conversationId !== params.conversationId);
   renderPendingSessions();
   utils.writeToLog(output);
+  webrtcSdk.headset.answerIncomingCall(params.conversationId, autoAnswer);
 }
 
 function getDeviceId (type) {
