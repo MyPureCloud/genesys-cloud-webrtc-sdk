@@ -858,7 +858,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             stationId: event.eventBody.associatedStation.id
           });
 
-          this._personDetails.station = event.eventBody;
+          const associatedStation = event.eventBody.associatedStation;
+          this._personDetails.station = {
+            effectiveStation: associatedStation,
+            associatedStation: associatedStation
+          };
           // we emit the effectiveStation station after it is loaded
           return this.fetchUsersStation();
         }
