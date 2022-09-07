@@ -447,7 +447,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
       throw e;
     });
-    stream.getTracks().forEach(track => {
+    stream.getVideoTracks().forEach(track => {
       if (track.muted) {
         stream.removeTrack(track);
       }
@@ -1098,7 +1098,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       this.emit('gumRequest', { gumPromise, constraints, mediaRequestOptions });
 
       const stream = await gumPromise;
-      stream.getTracks().forEach(track => {
+      stream.getVideoTracks().forEach(track => {
         if (track.muted) {
           stream.removeTrack(track);
         }
