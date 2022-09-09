@@ -211,7 +211,7 @@ describe('SdkMedia', () => {
       stream._tracks = [mutedTrack, unmutedTrack];
 
       jest.spyOn(window.navigator.mediaDevices, 'getUserMedia')
-        .mockResolvedValue(stream as any as MediaStream);
+        .mockResolvedValue(stream as unknown as MediaStream);
 
       await sdkMedia.startDisplayMedia();
       expect(stream.getTracks().length).toBe(1);

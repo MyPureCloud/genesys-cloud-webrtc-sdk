@@ -449,9 +449,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     });
     stream.getVideoTracks().forEach(track => {
       if (track.muted) {
+        this.sdk.logger.warn('Track was removed because it was muted', track);
         stream.removeTrack(track);
       }
-    })
+    });
 
     this.trackMedia(stream);
     return stream;
@@ -1100,6 +1101,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       const stream = await gumPromise;
       stream.getVideoTracks().forEach(track => {
         if (track.muted) {
+          this.sdk.logger.warn('Track was removed because it was muted', track);
           stream.removeTrack(track);
         }
       });
