@@ -81,7 +81,7 @@ export abstract class SdkHeadsetBase {
    * answered
    * @returns Promise<void>
    */
-  async answerIncomingCall (_conversationId: string): Promise<void> { /* no-op */ }
+  async answerIncomingCall (_conversationId: string, _autoAnswer: boolean): Promise<void> { /* no-op */ }
 
   /**
    * Calls the headset library's rejectIncomingCall function to signal the device
@@ -229,8 +229,8 @@ export class SdkHeadset extends SdkHeadsetBase {
    * answered
    * @returns Promise<void>
    */
-  answerIncomingCall (conversationId: string): Promise<void> {
-    return this.headsetLibrary.answerCall(conversationId);
+  answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void> {
+    return this.headsetLibrary.answerCall(conversationId, autoAnswer);
   }
 
   /**
