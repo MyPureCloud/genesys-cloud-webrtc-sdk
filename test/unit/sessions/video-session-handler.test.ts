@@ -1468,8 +1468,12 @@ describe('handleDataChannelMessage', () => {
 });
 
 describe('handleMemberStatusMessage', () => {
-  it('for coverage', () => {
-    // this is just a placeholder
+  it('should log and emit memberStatusMessage', () => {
+    const session: any = {
+      emit: jest.fn()
+    };
+    const spy = session.emit = jest.fn();
+    const logSpy = jest.spyOn(handler as any, 'log');
     const message: IMemberStatusMessage = {
       jsonrpc: 'v2',
       method: 'member.notify.status',
@@ -1478,6 +1482,8 @@ describe('handleMemberStatusMessage', () => {
       }
     };
 
-    expect(handler.handleMemberStatusMessage(message)).toBeFalsy();
-  });
+    handler.handleMemberStatusMessage(message, session);
+    expect(spy).toHaveBeenCalledWith('memberStatusUpdate', message);
+    expect(logSpy).toHaveBeenCalledWith('debug', 'member status message', { message });
+  })
 });
