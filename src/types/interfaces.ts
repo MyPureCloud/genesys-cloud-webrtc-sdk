@@ -17,6 +17,7 @@ declare module 'genesys-cloud-streaming-client' {
     speakersUpdate: ISpeakersUpdate;
     incomingMedia: void;
     pinnedParticipant: { participantId: string | null };
+    memberStatusUpdate: IMemberStatusMessage;
   }
 }
 
@@ -1188,7 +1189,7 @@ export interface VideoSpeakerStatus {
 
 export interface OutgoingStreamStatus {
   /** Stream ID of the outgoing stream (stream sent from member to MMS) */
-  outgoingStreamId: string; 
+  outgoingStreamId: string;
 
   /** Userids currently viewing this stream */
   viewers: string[];

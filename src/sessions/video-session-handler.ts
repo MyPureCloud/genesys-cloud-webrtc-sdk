@@ -732,15 +732,16 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return message.method === 'member.notify.status';
   }
 
-  handleDataChannelMessage (session: VideoMediaSession, message: JsonRpcMessage) {
+  handleDataChannelMessage (session: VideoMediaSession, message: JsonRpcMessage): void {
     if (this.isMemberStatusMessage(message)) {
-      this.handleMemberStatusMessage(message);
+      this.handleMemberStatusMessage(message, session);
     } else {
       this.log('warn', 'no handler for data channel message', { message });
     }
   }
 
-  handleMemberStatusMessage(message: IMemberStatusMessage) {
+  handleMemberStatusMessage(message: IMemberStatusMessage, session: VideoMediaSession): void {
     this.log('debug', 'member status message', { message });
+    session.emit('memberStatusUpdate', message);
   }
 }
