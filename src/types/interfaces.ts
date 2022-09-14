@@ -1175,7 +1175,6 @@ export interface IMemberStatusMessage extends JsonRpcMessage {
 }
 
 export interface VideoSpeakerStatus {
-  /** userId */
   id: string;
 
   activity: 'speaking' | 'inactive' | 'non-speech';
@@ -1185,6 +1184,19 @@ export interface VideoSpeakerStatus {
 
   /** true to indicate the conference member is being heard, false to indicate they are not currently in the audio mix */
   included: boolean;
+
+  /** Contains IDs of the speaker  */
+  appId: {
+
+    /** The speaker's jabberId. */
+    sourceJid: string;
+
+    /** The speaker's participantId. */
+    sourceParticipantId: string;
+
+    /** The speaker's userId. */
+    sourceUserId: string;
+  }
 }
 
 export interface OutgoingStreamStatus {
