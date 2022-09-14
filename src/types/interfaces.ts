@@ -1175,6 +1175,7 @@ export interface IMemberStatusMessage extends JsonRpcMessage {
 }
 
 export interface VideoSpeakerStatus {
+  /** memberId of the conference member. */
   id: string;
 
   activity: 'speaking' | 'inactive' | 'non-speech';
