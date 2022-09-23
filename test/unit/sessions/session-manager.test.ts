@@ -4,6 +4,9 @@ import { SimpleMockSdk, createPendingSession, MockSession, MockStream, MockTrack
 import { SessionTypes } from '../../../src/types/enums';
 import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState, VideoMediaSession } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
+import uuid from 'uuid';
+import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
+import VideoSessionHandler from '../../../src/sessions/video-session-handler';
 
 let mockSdk: GenesysCloudWebrtcSdk;
 let sessionManager: SessionManager;
@@ -1074,4 +1077,25 @@ describe('updateAudioVolume', () => {
       expect(mockSessionHandler.addReplaceTrackToSession).toHaveBeenCalledWith(session, track);
     })
   })
+});
+
+describe('getAllActiveConversations', () => {
+  it('should return a concat\'d list of conversations', () => {
+    sessionManager.sessionHandlers = [
+      { 
+        getActiveConversations: () => [
+          { sessionId: 'session1', sessionType: SessionTypes.softphone, conversationId: 'convo1' },
+          { sessionId: 'session2', sessionType: SessionTypes.softphone, conversationId: 'convo2' }
+        ]
+      } as unknown as SoftphoneSessionHandler,
+      { 
+        getActiveConversations: () => [
+          { sessionId: 'session3', sessionType: SessionTypes.softphone, conversationId: 'convo3' },
+          { sessionId: 'session4', sessionType: SessionTypes.softphone, conversationId: 'convo4' }
+        ]
+      } as unknown as VideoSessionHandler
+    ];
+
+    expect(sessionManager.getAllActiveConversations().length).toEqual(4);
+  });
 });

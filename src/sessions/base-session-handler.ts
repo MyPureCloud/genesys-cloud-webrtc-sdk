@@ -15,7 +15,8 @@ import {
   ISessionMuteRequest,
   IExtendedMediaSession,
   IUpdateOutgoingMedia,
-  IConversationHeldRequest
+  IConversationHeldRequest,
+  IActiveConversationDescription
 } from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -34,6 +35,12 @@ export default abstract class BaseSessionHandler {
 
   protected log (level: LogLevels, message: any, details?: any, logOptions?: ILogMessageOptions): void {
     this.sdk.logger[level].call(this.sdk.logger, message, details, logOptions);
+  }
+
+  getActiveConversations (): IActiveConversationDescription[] {
+    return this.sessionManager.getAllActiveSessions()
+      .filter(session => session.sessionType === this.sessionType)
+      .map(session => ({ conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType }));
   }
 
   async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
