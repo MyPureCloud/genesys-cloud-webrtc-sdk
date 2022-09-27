@@ -15,7 +15,8 @@ import {
   ICallStateFromParticipant,
   IStoredConversationState,
   ISdkConversationUpdateEvent,
-  IConversationHeldRequest
+  IConversationHeldRequest,
+  IActiveConversationDescription
 } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
@@ -113,6 +114,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (pendingSession.autoAnswer && !this.sdk._config.disableAutoAnswer) {
       await this.proceedWithSession(pendingSession);
     }
+  }
+
+  getActiveConversations (): IActiveConversationDescription[] {
+    const currentConversations = this.lastEmittedSdkConversationEvent?.current || [];
+
+    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
   }
 
   handleSoftphoneConversationUpdate (

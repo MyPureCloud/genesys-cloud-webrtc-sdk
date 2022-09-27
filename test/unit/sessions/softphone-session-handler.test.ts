@@ -2084,3 +2084,29 @@ describe('checkForCallErrors', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+describe('getActiveConversations', () => {
+  it('should return a list based on conversation events', () => {
+    handler.lastEmittedSdkConversationEvent = {
+      current: [
+        { conversationId: 'convo1', session: { id: 'session1' }},
+        { conversationId: 'convo2', session: { id: 'session2' }},
+      ],
+    } as unknown as ISdkConversationUpdateEvent;
+
+    expect(handler.getActiveConversations()).toEqual([
+      { conversationId: 'convo1', sessionId: 'session1', sessionType: SessionTypes.softphone },
+      { conversationId: 'convo2', sessionId: 'session2', sessionType: SessionTypes.softphone }
+    ]);
+  });
+  
+  it('should return an empty list of not conversation events', () => {
+    handler.lastEmittedSdkConversationEvent = null as any;
+    expect(handler.getActiveConversations()).toEqual([]);
+  });
+  
+  it('should return an empty list of not conversation events', () => {
+    handler.lastEmittedSdkConversationEvent = {} as any;
+    expect(handler.getActiveConversations()).toEqual([]);
+  });
+});

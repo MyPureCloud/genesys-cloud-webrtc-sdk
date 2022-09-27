@@ -1225,3 +1225,8 @@ export interface IncomingStreamStatus {
   sourceTrackId: string;
   contentType: 'camera' | 'screenshare' | 'playback';
 }
+export interface IActiveConversationDescription {
+  conversationId: string;
+  sessionId: string;
+  sessionType: SessionTypes;
+}
