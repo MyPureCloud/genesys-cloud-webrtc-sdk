@@ -1163,3 +1163,9 @@ export interface IVideoResolution {
   width: ConstrainULong,
   height: ConstrainULong
 }
+
+export interface IActiveConversationDescription {
+  conversationId: string;
+  sessionId: string;
+  sessionType: SessionTypes;
+}

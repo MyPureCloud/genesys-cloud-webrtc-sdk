@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [PCM-1975](https://inindca.atlassian.net/browse/PCM-1975) - Added in logic to properly handle auto answer scenarios
 * [PCM-1983](https://inindca.atlassian.net/browse/PCM-1983) - Fixed an issue where the SDK throws an error when a new station is associated
 
+### Added
+* [PCM-1977](https://inindca.atlassian.net/browse/PCM-1977) - Add a trace on beforeclose stating the window was closed and list the active conversations
+* [PCM-1992](https://inindca.atlassian.net/browse/PCM-1992) - Update client logger so unsent logs get saved and sent in the future
+
 # [v7.3.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.2...v7.3.3)
 ### Changed
 * [PCM-1965](https://inindca.atlassian.net/browse/PCM-1965) bump softphone vendor headsets
