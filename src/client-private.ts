@@ -60,9 +60,11 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
 
   const connection = new StreamingClient(connectionOptions);
   this._streamingConnection = connection;
+  this._pauseDisconnectedMessages = false;
 
   const initialPromise = new Promise<void>((resolve) => {
     connection.on('connected', async () => {
+      this._pauseDisconnectedMessages = false;
       this.emit('connected', { reconnect: this._hasConnected });
       this.logger.info('GenesysCloud streaming client connected', { reconnect: this._hasConnected });
       this._hasConnected = true;
@@ -71,9 +73,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
       resolve();
     });
 
-    connection.on('disconnected', async () => {
-      this.logger.info('GenesysCloud streaming client disconnected');
-    });
+    connection.on('disconnected', handleDisconnectedEvent.bind(this));
   });
 
   await connection.connect();
@@ -104,10 +104,21 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
 
   // other events
   this._streamingConnection.on('error', this.emit.bind(this, 'sdkError'));
-  this._streamingConnection.on('disconnected', () => this.emit('disconnected', 'Streaming API connection disconnected'));
 }
 
 export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
   const update = new ConversationUpdate(updateEvent.eventBody);
   this.sessionManager.handleConversationUpdate(update);
 };
+
+export const handleDisconnectedEvent = function (this: GenesysCloudWebrtcSdk) {
+  // we only want to emit if the state changes
+  if (this._pauseDisconnectedMessages) {
+    return;
+  }
+
+  this._pauseDisconnectedMessages = true;
+  const message = 'Streaming API connection disconnected';
+  this.logger.error(message);
+  this.emit('disconnected', message);
+}

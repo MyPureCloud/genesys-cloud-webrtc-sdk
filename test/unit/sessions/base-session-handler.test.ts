@@ -6,7 +6,7 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
 import { IExtendedMediaSession, ConversationUpdate, IAcceptSessionRequest } from '../../../src';
-import { v4 } from 'uuid';
+import uuid, { v4 } from 'uuid';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
@@ -895,5 +895,20 @@ describe('getSendersByTrackType()', () => {
 
     const results = handler.getReceiversByTrackType(session as any, 'audio');
     expect(results[0].track).toEqual(audioTrack);
+  });
+});
+
+describe('getActiveConversations', () => {
+  it('should return a list of activeConversations', () => {
+    handler.sessionType = SessionTypes.softphone;
+
+    const sessions = [
+      { sessionType: SessionTypes.collaborateVideo, conversationId: 'convo2', id: uuid.v4() } as unknown as IExtendedMediaSession,
+      { sessionType: SessionTypes.softphone, conversationId: 'convo1', id: uuid.v4() } as unknown as IExtendedMediaSession
+    ];
+
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessions);
+
+    expect(handler.getActiveConversations()).toEqual([{ sessionType: SessionTypes.softphone, conversationId: sessions[1].conversationId, sessionId: sessions[1].id }]);
   });
 });

@@ -3,7 +3,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.4...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.0...HEAD)
+# [v7.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.4...v7.4.0)
+### Added
+* [PCM-1972] - Connect WebRTC data channel for video.
+* [PCM-1789] - Listen and emit `memberStatusMessage` when receiving a data channel message indicating someone is actively speaking.
+
+### Fixed
+* [PCM-1983](https://inindca.atlassian.net/browse/PCM-1983) - Fixed an issue where the SDK throws an error when a new station is associated
+
+### Added
+* [PCM-1977](https://inindca.atlassian.net/browse/PCM-1977) - Add a trace on beforeclose stating the window was closed and list the active conversations
+* [PCM-1992](https://inindca.atlassian.net/browse/PCM-1992) - Update client logger so unsent logs get saved and sent in the future
 
 # [v7.3.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.3...v7.3.4)
 ### Fixed

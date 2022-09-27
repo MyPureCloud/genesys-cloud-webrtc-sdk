@@ -19,7 +19,8 @@ import {
   ISessionIdAndConversationId,
   IConversationHeldRequest,
   IPendingSessionActionParams,
-  VideoMediaSession
+  VideoMediaSession,
+  IActiveConversationDescription
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
@@ -141,6 +142,10 @@ export class SessionManager {
   getAllActiveSessions (): IExtendedMediaSession[] {
     return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession })
       .filter((session: IExtendedMediaSession) => session.state === 'active');
+  }
+
+  getAllActiveConversations (): IActiveConversationDescription[] {
+    return [].concat(...this.sessionHandlers.map(handler => handler.getActiveConversations()));
   }
 
   getAllJingleSessions (): IExtendedMediaSession[] {

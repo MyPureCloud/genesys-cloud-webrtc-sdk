@@ -197,6 +197,26 @@ describe('SdkMedia', () => {
         expect(emittedError).toEqual(new SdkError(SdkErrorTypes.media, error.message));
       }
     });
+
+    it('should filter out any tracks that have muted=true', async () => {
+      sdkMedia['hasGetDisplayMedia'] = jest.fn().mockReturnValue(false);
+      const stream = new MockStream();
+      const mutedTrack = new MockTrack('video');
+      const unmutedTrack = new MockTrack('video');
+
+      mutedTrack.muted = true;
+      unmutedTrack.muted = false;
+
+      const trackMediaSpy = jest.spyOn(sdkMedia, 'trackMedia' as any);
+      stream._tracks = [mutedTrack, unmutedTrack];
+
+      jest.spyOn(window.navigator.mediaDevices, 'getUserMedia')
+        .mockResolvedValue(stream as unknown as MediaStream);
+
+      await sdkMedia.startDisplayMedia();
+      expect(stream.getTracks().length).toBe(1);
+      expect(trackMediaSpy).toHaveBeenCalledWith(stream);
+    })
   });
 
   describe('startMedia()', () => {
@@ -1862,6 +1882,25 @@ describe('SdkMedia', () => {
         expect.any(Object)
       );
     });
+
+    it('removes muted tracks after creating a new media stream', async () => {
+      const mockStream = new MockStream({ audio: true });
+      const requestOptions: IMediaRequestOptions = { audio: true, monitorMicVolume: false, session: { id: 'sessId', conversationId: 'convoId' } as any };
+      const trackMediaSpy = jest.spyOn(sdkMedia, 'trackMedia' as any);
+      const mutedTrack = new MockTrack('video');
+      const unmutedTrack = new MockTrack('video');
+
+      mutedTrack.muted = true;
+      unmutedTrack.muted = false;
+
+      mockStream._tracks = [mutedTrack, unmutedTrack];
+      getUserMediaSpy.mockResolvedValue(mockStream);
+
+      await startSingleMediaFn('video', requestOptions);
+
+      expect(mockStream._tracks.length).toBe(1);
+      expect(trackMediaSpy).toHaveBeenCalledWith(mockStream, requestOptions.monitorMicVolume, requestOptions.session?.id);
+    })
   });
 
   describe('trackMedia()', () => {

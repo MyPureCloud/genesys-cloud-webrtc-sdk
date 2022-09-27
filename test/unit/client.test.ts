@@ -1315,6 +1315,7 @@ describe('Client', () => {
         metadata: { action: 'Associated' },
         eventBody: { associatedStation: { id: 'webrtc-station' } }
       });
+      expect(sdk._personDetails.station?.effectiveStation?.id).toEqual('webrtc-station');
       expect(sdk.fetchUsersStation).toHaveBeenCalled();
     });
 

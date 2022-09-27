@@ -93,6 +93,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   media: SdkMedia;
   station: IStation | null;
   headset: SdkHeadsetBase;
+  _pauseDisconnectedMessages: boolean;
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -183,7 +184,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     // Telemetry for specific events
     // onPendingSession, onSession, onMediaStarted, onSessionTerminated logged in event handlers
-    this.on('disconnected', this.logger.error.bind(this.logger, 'onDisconnected'));
     this.on('cancelPendingSession', (ids: ISessionIdAndConversationId) => this.logger.info('cancelPendingSession', ids));
     this.on('handledPendingSession', (ids: ISessionIdAndConversationId) => this.logger.info('handledPendingSession', ids));
     this.on('sdkError', (error) => {
@@ -259,6 +259,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       await setupStreamingClient.call(this);
       await proxyStreamingClientEvents.call(this);
+
+    /* istanbul ignore next */
+      window.addEventListener('beforeunload', () => {
+        this.logger.info('window.beforeunload was called', { activeConversationsForClient: this.sessionManager.getAllActiveConversations() });
+      });
 
       /* if we are allowing softphone calls, we need station information */
       if (this._config.allowedSessionTypes.includes(SessionTypes.softphone) && !this.isGuest) {
@@ -858,7 +863,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             stationId: event.eventBody.associatedStation.id
           });
 
-          this._personDetails.station = event.eventBody;
+          const associatedStation = event.eventBody.associatedStation;
+          this._personDetails.station = {
+            effectiveStation: associatedStation,
+            associatedStation: associatedStation
+          };
           // we emit the effectiveStation station after it is loaded
           return this.fetchUsersStation();
         }
