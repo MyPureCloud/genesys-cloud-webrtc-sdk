@@ -870,6 +870,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           };
           // we emit the effectiveStation station after it is loaded
           return this.fetchUsersStation();
+        } else if (event.metadata.action === 'WebRTCMigration') {
+          this.logger.info('Received line appearance migration event, updating station', { activeConversationsForClient: this.sessionManager.getAllActiveConversations() });
+          return this.fetchUsersStation();
         }
       }
     );
