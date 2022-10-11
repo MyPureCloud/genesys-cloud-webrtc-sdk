@@ -223,7 +223,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         }
       } else if (this.isEndedState(callState)) {
         /* we don't want to emit events for (most of) these */
-        eventToEmit = false;
+        // eventToEmit = false;
         /* we rejected a pendingSession */
         if (this.isPendingState(previousCallState)) {
           if (session && session === this.activeSession) {
@@ -296,6 +296,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       currentEmittedEvent.added.push(conversation);
     } else if (event === 'removed') {
       currentEmittedEvent.removed.push(conversation);
+      currentEmittedEvent.current = currentEmittedEvent.current.filter(conversationEvent => conversationEvent.conversationId !== conversation.conversationId);
       delete this.conversations[conversation.conversationId];
     }
 
