@@ -223,7 +223,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         }
       } else if (this.isEndedState(callState)) {
         /* we don't want to emit events for (most of) these */
-        // eventToEmit = false;
+        eventToEmit = false;
         /* we rejected a pendingSession */
         if (this.isPendingState(previousCallState)) {
           if (session && session === this.activeSession) {
