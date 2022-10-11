@@ -1218,6 +1218,16 @@ describe('emitConversationEvent()', () => {
     handler.emitConversationEvent('removed', conversationState, undefined as any);
   });
 
+  it('should remove from the current array', () => {
+    mockSdk.on('conversationUpdate', event => {
+      expect(event).toEqual(expectedEvent);
+    });
+
+    expectedEvent.removed.push(conversationState);
+    handler.conversations = { [conversationState.conversationId]: conversationState };
+    handler.emitConversationEvent('removed', conversationState, undefined as any);
+  });
+
   it('should emit updated conversations', () => {
     mockSdk.on('conversationUpdate', event => {
       expect(event).toEqual(expectedEvent);
