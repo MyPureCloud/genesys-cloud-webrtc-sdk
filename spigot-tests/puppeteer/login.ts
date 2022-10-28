@@ -1,3 +1,4 @@
+import { Page } from 'puppeteer';
 import { PuppeteerManager } from './launch';
 
 export function startLogin (this: PuppeteerManager, page) {
@@ -9,22 +10,28 @@ export function startLogin (this: PuppeteerManager, page) {
   return page.goto(authUrl);
 }
 
-export async function doLogin (this: PuppeteerManager, page) {
+export async function doLogin (this: PuppeteerManager, page: Page) {
   await page.waitFor('input#email');
   await page.focus('input#email');
   await page.keyboard.type(this.config.credentials.username);
   await page.focus('input#password');
   await page.keyboard.type(this.config.credentials.password);
   const submit = await page.$('button[type="submit"]');
-  submit.click();
+  submit?.click();
   try {
     await page.waitFor('input#org');
     await page.focus('input#org');
     await page.keyboard.type(this.config.credentials.org);
-    submit.click();
+    submit?.click();
   } catch (e) {
     /* login worked without org input */
   }
+
+  const scopesAllow = await page.$('.authorize-scope');
+  if (scopesAllow) {
+    scopesAllow.click();
+  }
+
   this.logger.debug('logged in, waiting for redirect');
 }
 
