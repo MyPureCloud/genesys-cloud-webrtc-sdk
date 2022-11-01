@@ -296,6 +296,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       currentEmittedEvent.added.push(conversation);
     } else if (event === 'removed') {
       currentEmittedEvent.removed.push(conversation);
+      currentEmittedEvent.current = currentEmittedEvent.current.filter(conversationEvent => conversationEvent.conversationId !== conversation.conversationId);
       delete this.conversations[conversation.conversationId];
     }
 

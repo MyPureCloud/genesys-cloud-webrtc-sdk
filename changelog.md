@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...HEAD)
 * [PCM-2004] - handle webrtc line appearance migration
+* [PCM-1998](https://inindca.atlassian.net/browse/PCM-1998) - added in line to properly remove inactive calls from the list of current calls for consuming apps
 
 # [v7.4.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.0...v7.4.1)
 * [PCM-1968](https://inindca.atlassian.net/browse/PCM-1968) - Bump streaming client for more verbose logging around interrupted connection states
