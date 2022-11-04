@@ -741,7 +741,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
   }
 
   handleMemberStatusMessage(message: IMemberStatusMessage, session: VideoMediaSession): void {
-    this.log('debug', 'member status message', { message });
     session.emit('memberStatusUpdate', message);
   }
 }
