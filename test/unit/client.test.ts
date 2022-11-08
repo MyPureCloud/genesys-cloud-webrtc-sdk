@@ -1319,6 +1319,20 @@ describe('Client', () => {
       expect(sdk.fetchUsersStation).toHaveBeenCalled();
     });
 
+    it('should handle migration event', async () => {
+      const station = { id: 'bane' } as IStation;
+      sdk.station = station;
+      sdk._personDetails.station = {
+        effectiveStation: station
+      };
+
+      await listenForStationEventsFn();
+      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue(station);
+
+      emitEvent({ metadata: { action: 'WebRTCMigration' } });
+      expect(sdk.fetchUsersStation).toHaveBeenCalled();
+    });
+
     it('should ignore other events', async () => {
       await listenForStationEventsFn();
 

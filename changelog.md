@@ -3,7 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.2...HEAD)
+# [v7.4.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...v7.4.2)
+* [PCM-2020](https://inindca.atlassian.net/browse/PCM-2020) - Bump streaming-client and removed data-channel logs.
+* [PCM-2004] - handle webrtc line appearance migration
+* [PCM-1998](https://inindca.atlassian.net/browse/PCM-1998) - added in line to properly remove inactive calls from the list of current calls for consuming apps
+* [PCM-2007](https://inindca.atlassian.net/browse/PCM-2007) - fixed issue with switching device during active call putting Jabra devices in bad state
 
 # [v7.4.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.0...v7.4.1)
 * [PCM-1968](https://inindca.atlassian.net/browse/PCM-1968) - Bump streaming client for more verbose logging around interrupted connection states
