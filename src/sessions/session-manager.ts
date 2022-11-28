@@ -58,7 +58,7 @@ export class SessionManager {
   }
 
   get jingle () {
-    return this.sdk._streamingConnection._webrtcSessions.jingleJs;
+    return this.sdk._streamingConnection._webrtcSessions.getSessionManager();
   }
 
   handleConversationUpdate (update: ConversationUpdate) {

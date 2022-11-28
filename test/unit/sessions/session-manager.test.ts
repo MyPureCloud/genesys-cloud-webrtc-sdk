@@ -11,6 +11,10 @@ import VideoSessionHandler from '../../../src/sessions/video-session-handler';
 let mockSdk: GenesysCloudWebrtcSdk;
 let sessionManager: SessionManager;
 
+function updateSessionManager (value: any) {
+  (mockSdk._streamingConnection._webrtcSessions.getSessionManager as jest.Mock).mockReturnValue(value);
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockSdk = (new SimpleMockSdk() as any);
@@ -85,13 +89,13 @@ describe('handleConversationUpdate', () => {
       sessionType: SessionTypes.collaborateVideo
     };
 
-    mockSdk._streamingConnection._webrtcSessions.jingleJs = {
+    updateSessionManager({
       sessions: {
         1: session1,
         2: session2,
         3: session3
       }
-    } as any;
+    });
 
     const spy = jest.fn();
     const fakeHandler = { handleConversationUpdate: spy, sessionType: SessionTypes.collaborateVideo };
@@ -119,13 +123,13 @@ describe('handleConversationUpdate', () => {
       conversationId
     };
 
-    mockSdk._streamingConnection._webrtcSessions.jingleJs = {
+    updateSessionManager({
       sessions: {
         1: session1,
         2: session2,
         3: session3
       }
-    } as any;
+    });
 
     const spy = jest.fn();
     const fakeHandler = { handleConversationUpdate: spy, disabled: true };
@@ -149,9 +153,10 @@ describe('getSession', () => {
     session2 = new MockSession(SessionTypes.softphone);
 
     sessionsObj = { [session1.sid]: session1, [session2.sid]: session2 };
-    mockSdk._streamingConnection._webrtcSessions.jingleJs = {
+
+    updateSessionManager({
       sessions: sessionsObj
-    } as any;
+    });
   });
 
   it('should get session by sessionType and conversationId', () => {
@@ -679,7 +684,10 @@ describe('getAllActiveSessions()', () => {
     };
     const expectedArray = [sessionsObject['session-1'], sessionsObject['session-2']];
 
-    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject } as any;
+    updateSessionManager({
+      sessions: sessionsObject
+    });
+
     expect(sessionManager.getAllActiveSessions()).toEqual(expectedArray);
   });
 });
@@ -692,7 +700,10 @@ describe('getAllJingleSessions()', () => {
     };
     const expectedArray = [sessionsObject['session-1'], sessionsObject['session-2']];
 
-    mockSdk._streamingConnection._webrtcSessions.jingleJs = { sessions: sessionsObject } as any;
+    updateSessionManager({
+      sessions: sessionsObject
+    });
+
     expect(sessionManager.getAllJingleSessions()).toEqual(expectedArray);
   });
 });

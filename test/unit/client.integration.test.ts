@@ -182,16 +182,6 @@ describe('Client (integration)', () => {
       jest.spyOn(utils, 'requestApiWithRetry').mockRestore();
     });
 
-    it('throws if setting up streaming connection fails', async () => {
-      const { sdk } = mockApis({ failStreaming: true });
-      try {
-        await sdk.initialize();
-        fail();
-      } catch (e) {
-        expect(e.type).toBe(SdkErrorTypes.initialization);
-      }
-    }, 12 * 1000);
-
     it('should not throw if fetching the station fails', async () => {
       const { sdk } = mockApis({ failStation: true });
       jest.spyOn(sdk, 'listenForStationEvents' as any).mockResolvedValue(undefined);
@@ -249,7 +239,7 @@ describe('Client (integration)', () => {
       }
 
       try {
-        await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, e.args, e.transformedArgs)));
+        await Promise.all(eventsToVerify.map(e => awaitEvent(sdk, e.name, e.trigger, (e as any).args, e.transformedArgs)));
       } catch (e) {
         console.info('got an error as expected');
       }
@@ -267,20 +257,6 @@ describe('Client (integration)', () => {
       expect(sdk.connected).toBe(true);
       sdk._streamingConnection.connected = false;
       expect(sdk.connected).toBe(false);
-
-      await disconnectSdk(sdk);
-    });
-  });
-
-  describe('reconnect()', () => {
-    it('proxies the call to the streaming connection', async () => {
-      const { sdk } = mockApis();
-      await sdk.initialize();
-
-      sdk._streamingConnection.reconnect = jest.fn();
-
-      await sdk.reconnect();
-      expect(sdk._streamingConnection.reconnect).toHaveBeenCalledTimes(1);
 
       await disconnectSdk(sdk);
     });
