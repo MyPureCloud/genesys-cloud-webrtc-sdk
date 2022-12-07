@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...HEAD)
+### BREAKING CHANGE
+* We have set the `useHeadsets` flag to default to false rather than true.  This way if a consumer of the SDK omits the headsets flag, it will default to using the original implementation rather than the new.  This has the user to opt in rather than opt out
+
 * [PCM-2020](https://inindca.atlassian.net/browse/PCM-2020) - Bump streaming-client and removed data-channel logs.
 * [PCM-2004] - handle webrtc line appearance migration
 * [PCM-1998](https://inindca.atlassian.net/browse/PCM-1998) - added in line to properly remove inactive calls from the list of current calls for consuming apps

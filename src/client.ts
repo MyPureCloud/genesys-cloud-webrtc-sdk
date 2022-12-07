@@ -154,7 +154,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
         allowedSessionTypes,
-        useHeadsets: options.useHeadsets !== false,
+        useHeadsets: options.useHeadsets || false, // default false
 
         /* sdk defaults */
         defaults: {

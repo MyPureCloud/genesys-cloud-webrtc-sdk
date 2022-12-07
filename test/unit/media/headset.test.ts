@@ -152,6 +152,14 @@ describe('SdkHeadset', () => {
     });
   });
 
+  describe('rejectIncomingCall', () => {
+    it('should call the proper function in the headset library', () => {
+      const rejectCallSpy = jest.spyOn(headsetLibrary, 'rejectCall');
+      sdkHeadset.rejectIncomingCall('123');
+      expect(rejectCallSpy).toHaveBeenCalledWith('123');
+    });
+  });
+
   describe('setMute', () => {
     it('should call the proper function in the headset library', () => {
       const setMuteSpy = jest.spyOn(headsetLibrary, 'setMute');
@@ -190,6 +198,13 @@ describe('SdkHeadset', () => {
 
       sdk.emit('pendingSession', { autoAnswer: true, conversationId: '15215asdf'} as any);
       expect(sdkHeadset.setRinging).not.toHaveBeenCalled();
+    });
+
+    it('should not set ringing if autoanswer', () => {
+      sdkHeadset.rejectIncomingCall = jest.fn();
+
+      sdk.emit('cancelPendingSession', { conversationId: '123' });
+      expect(sdkHeadset.rejectIncomingCall).toHaveBeenCalledWith('123');
     });
   });
 });
