@@ -811,15 +811,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Reconnect the streaming connection
-   * @returns a promise that fullfils once the web socket has reconnected
-   */
-  reconnect (): Promise<any> {
-    this._http.stopAllRetries();
-    return this._streamingConnection.reconnect();
-  }
-
-  /**
    * Ends all active sessions, disconnects the
    *  streaming-client, removes all event listeners,
    *  and cleans up media.

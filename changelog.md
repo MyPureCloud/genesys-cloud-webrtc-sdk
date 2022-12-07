@@ -4,11 +4,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...HEAD)
-### BREAKING CHANGE
+### BREAKING CHANGES
 * We have set the `useHeadsets` flag to default to false rather than true.  This way if a consumer of the SDK omits the headsets flag, it will default to using the original implementation rather than the new.  This has the user to opt in rather than opt out
 
+* We have removed the `sdk.reconnect()` function. We updated the streaming client which includes a better approach to connection management. The `sdk.reconnect()` function
+  made very little sense as it was and was little used. If you are using `sdk.reconnect()`, you'll instead need to do `await sdk.disconnect()` then `await sdk.connect()`.
+
+* [PCM-2024](https://inindca.atlassian.net/browse/PCM-2024) - bump streaming client
 * [PCM-2020](https://inindca.atlassian.net/browse/PCM-2020) - Bump streaming-client and removed data-channel logs.
-* [PCM-2004] - handle webrtc line appearance migration
+* [PCM-2004](https://inindca.atlassian.net/browse/PCM-2004) - handle webrtc line appearance migration
 * [PCM-1998](https://inindca.atlassian.net/browse/PCM-1998) - added in line to properly remove inactive calls from the list of current calls for consuming apps
 * [PCM-2007](https://inindca.atlassian.net/browse/PCM-2007) - fixed issue with switching device during active call putting Jabra devices in bad state
 
@@ -17,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v7.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.3.4...v7.4.0)
 ### Added
-* [PCM-1972] - Connect WebRTC data channel for video.
-* [PCM-1789] - Listen and emit `memberStatusMessage` when receiving a data channel message indicating someone is actively speaking.
+* [PCM-1972](https://inindca.atlassian.net/browse/PCM-1972) - Connect WebRTC data channel for video.
+* [PCM-1789](https://inindca.atlassian.net/browse/PCM-1789) - Listen and emit `memberStatusMessage` when receiving a data channel message indicating someone is actively speaking.
 
 ### Fixed
 * [PCM-1983](https://inindca.atlassian.net/browse/PCM-1983) - Fixed an issue where the SDK throws an error when a new station is associated

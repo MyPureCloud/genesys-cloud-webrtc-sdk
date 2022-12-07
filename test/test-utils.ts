@@ -59,10 +59,11 @@ export class SimpleMockSdk extends EventEmitter {
       rejectRtcSession: jest.fn(),
       rtcSessionAccepted: jest.fn(),
       notifyScreenShareStart: jest.fn(),
-      notifyScreenShareStop: jest.fn()
+      notifyScreenShareStop: jest.fn(),
     },
     _webrtcSessions: {
-      refreshIceServers: jest.fn()
+      refreshIceServers: jest.fn(),
+      getSessionManager: jest.fn()
     }
   };
   sessionManager = {
