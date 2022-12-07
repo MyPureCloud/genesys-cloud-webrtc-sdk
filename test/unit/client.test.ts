@@ -140,7 +140,7 @@ describe('Client', () => {
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
       expect(sdk.isGuest).toBe(false);
-      expect(sdk.headset instanceof SdkHeadset).toBe(true);
+      expect(sdk.headset instanceof SdkHeadsetStub).toBe(true);
     });
 
     it('sets up options when provided and track default audioStream', () => {
@@ -184,6 +184,11 @@ describe('Client', () => {
       const sdk = constructSdk({ accessToken: '1234', useHeadsets: false } as ISdkConfig);
       expect(sdk.headset instanceof SdkHeadsetStub).toBe(true);
     });
+
+    it('should use SdkHeadset if opted in', () => {
+      const sdk = constructSdk({ accessToken: '1234', useHeadsets: true } as ISdkConfig);
+      expect(sdk.headset instanceof SdkHeadset).toBe(true);
+    })
   });
 
   describe('isScreenRecordingSession', () => {
