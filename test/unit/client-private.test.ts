@@ -53,6 +53,38 @@ describe('setupStreamingClient', () => {
       jid: 'myJid'
     }));
   });
+
+  it('should use wsHost', async () => {
+    mockSdk._config.environment = 'downunder';
+    delete mockSdk._config.wsHost;
+    mockSdk._personDetails = {
+      id: 'abc123',
+      name: 'myUsername',
+      chat: {
+        jabberId: 'myJid'
+      }
+    };
+  
+    let connectedCb: () => void;
+    const connectSpy = jest.fn().mockImplementation(() => {
+      connectedCb();
+    });
+    (StreamingClient as any).mockReturnValue({
+      on: (event, cb) => {
+        if (event === 'connected') {
+          connectedCb = cb;
+        }
+      },
+      connect: connectSpy
+    });
+  
+    await setupStreamingClient.call(mockSdk);
+  
+    expect(StreamingClient).toHaveBeenCalledWith(expect.objectContaining({
+      host: 'wss://streaming.downunder',
+      jid: 'myJid'
+    }));
+  });
 });
 
 describe('handleConversationUpdate', () => {

@@ -1111,17 +1111,6 @@ Params: none
 
 Returns: a promise that fullfils once the web socket has disconnected
 
-#### `reconnect()`
-Reconnect the streaming connection
-
-Declaration:
-``` ts
-reconnect(): Promise<any>;
-```
-Params: none
-
-Returns: a promise that fullfils once the web socket has reconnected
-
 #### `destroy()`
 
 Ends all active sessions, disconnects the
