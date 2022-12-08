@@ -108,7 +108,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
 
     activeCall = conversationId;
     await peerTrackAdded;
-    await wait(100); // we have to wait for some async tasks to finish before the `_outputAudioElement` is available
+    await wait(200); // we have to wait for some async tasks to finish before the `_outputAudioElement` is available
 
     const id = 'audio-' + uuid();
     session._outputAudioElement.id = id;
