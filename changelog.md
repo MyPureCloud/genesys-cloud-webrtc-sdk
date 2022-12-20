@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   made very little sense as it was and was little used. If you are using `sdk.reconnect()`, you'll instead need to do `await sdk.disconnect()` then `await sdk.connect()`.
 
 * [PCM-2024](https://inindca.atlassian.net/browse/PCM-2024) - bump streaming client
+
 # [v7.4.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...v7.4.2)
 * [PCM-2020](https://inindca.atlassian.net/browse/PCM-2020) - Bump streaming-client and removed data-channel logs.
 * [PCM-2004](https://inindca.atlassian.net/browse/PCM-2004) - handle webrtc line appearance migration
