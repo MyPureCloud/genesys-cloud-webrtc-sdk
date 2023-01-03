@@ -100,24 +100,7 @@ async function compileTestRunner () {
 }
 
 async function compileTests () {
-  // Child('npx tsc -p .');
-
-  const files = await (glob as any)('tests/**/*index.ts');
-  const bundle = await rollup.rollup({
-    input: files,
-    external: [
-      'genesys-cloud-streaming-client',
-      'genesys-cloud-webrtc-sdk',
-      'chai'
-    ],
-    plugins: [polyfills(), commonjs(), nodeResolve({ browser: true }), json(), ts]
-  });
-  await bundle.write({
-    file: `${buildDir}/tests.js`,
-    // dir: 'bin',
-    format: 'umd',
-    name: 'tests'
-  });
+  Child('npm run build:tests');
 }
 
 function copyStatics () {
