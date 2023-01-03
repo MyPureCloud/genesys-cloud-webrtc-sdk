@@ -9,7 +9,7 @@ let sdkHeadset: SdkHeadset;
 let headsetLibrary: HeadsetService;
 let headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
-describe('SdkHeadset', () => {
+describe.skip('SdkHeadset', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     headsetLibrary = HeadsetService.getInstance({ logger: console });

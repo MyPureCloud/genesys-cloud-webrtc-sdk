@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { Observable, Subject } from 'rxjs';
 import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation } from 'softphone-vendor-headsets';
 

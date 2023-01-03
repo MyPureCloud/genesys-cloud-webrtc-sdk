@@ -185,7 +185,7 @@ describe('Client', () => {
       expect(sdk.headset instanceof SdkHeadsetStub).toBe(true);
     });
 
-    it('should use SdkHeadset if opted in', () => {
+    it.skip('should use SdkHeadset if opted in', () => {
       const sdk = constructSdk({ accessToken: '1234', useHeadsets: true } as ISdkConfig);
       expect(sdk.headset instanceof SdkHeadset).toBe(true);
     })

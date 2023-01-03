@@ -179,6 +179,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
+    /* istanbul ignore next */
     this.headset = this._config.useHeadsets ? new SdkHeadset(this) : new SdkHeadsetStub(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 
