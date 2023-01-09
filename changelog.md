@@ -3,14 +3,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.2...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.0...HEAD)
+
+# [v8.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.2...v8.0.0)
 ### BREAKING CHANGES
 * We have set the `useHeadsets` flag to default to false rather than true.  This way if a consumer of the SDK omits the headsets flag, it will default to using the original implementation rather than the new.  This has the user to opt in rather than opt out
 
 * We have removed the `sdk.reconnect()` function. We updated the streaming client which includes a better approach to connection management. The `sdk.reconnect()` function
   made very little sense as it was and was little used. If you are using `sdk.reconnect()`, you'll instead need to do `await sdk.disconnect()` then `await sdk.connect()`.
 
-* [PCM-2024](https://inindca.atlassian.net/browse/PCM-2024) - bump streaming client
+### Fixed
+* [PCM-2024](https://inindca.atlassian.net/browse/PCM-2024) - bump streaming client (major) to pull in all the connect/reconnect changes
 
 # [v7.4.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.1...v7.4.2)
 * [PCM-2020](https://inindca.atlassian.net/browse/PCM-2020) - Bump streaming-client and removed data-channel logs.
