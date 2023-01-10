@@ -3,7 +3,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.1...HEAD)
+
+# [v8.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.0...v8.0.1)
+### Fixed
+* [SERVOPS-33064](https://inindca.atlassian.net/browse/SERVOPS-33064) - Fixed issue where Jabra Native overwrites CEF registration, preventing the use of external links to place call
 
 # [v8.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v7.4.2...v8.0.0)
 ### BREAKING CHANGES
