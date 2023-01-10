@@ -154,7 +154,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
         allowedSessionTypes,
-        useHeadsets: options.useHeadsets !== false,
+        useHeadsets: options.useHeadsets || false, // default false
 
         /* sdk defaults */
         defaults: {
@@ -808,15 +808,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   disconnect (): Promise<any> {
     this._http.stopAllRetries();
     return this._streamingConnection?.disconnect();
-  }
-
-  /**
-   * Reconnect the streaming connection
-   * @returns a promise that fullfils once the web socket has reconnected
-   */
-  reconnect (): Promise<any> {
-    this._http.stopAllRetries();
-    return this._streamingConnection.reconnect();
   }
 
   /**

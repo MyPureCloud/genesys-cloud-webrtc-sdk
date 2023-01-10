@@ -18,7 +18,6 @@ pipeline {
                     source ./npm-utils/scripts/jenkins-pre-build.sh 12.16.1 &> jenkins-pre.log
                     mv .npmrc spigot-tests/
 
-                    npm install -g npm
                     npm install --silent
 
                     cd spigot-tests
