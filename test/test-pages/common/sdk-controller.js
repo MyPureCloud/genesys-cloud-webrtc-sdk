@@ -46,6 +46,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
   options.logLevel = 'info';
   options.originAppId = v4();
   options.originAppName = 'webrtc-demo-app';
+  options.useHeadsets = true;
   // for sumo debugging
   // options.optOutOfTelemetry = true;
 

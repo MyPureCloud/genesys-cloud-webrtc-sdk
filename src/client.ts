@@ -38,7 +38,7 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
-import { SdkHeadset, SdkHeadsetBase, SdkHeadsetStub } from './media/headset';
+import { HeadsetProxyService, ISdkHeadsetService, SdkHeadsetService } from './media/headset';
 import { Constants } from 'stanza';
 
 const ENVIRONMENTS = [
@@ -92,7 +92,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   sessionManager: SessionManager;
   media: SdkMedia;
   station: IStation | null;
-  headset: SdkHeadsetBase;
+  headset: ISdkHeadsetService;
   _pauseDisconnectedMessages: boolean;
 
   _connected: boolean;
@@ -179,7 +179,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
-    this.headset = this._config.useHeadsets ? new SdkHeadset(this) : new SdkHeadsetStub(this);
+    this.headset = new HeadsetProxyService(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 
     // Telemetry for specific events
@@ -737,6 +737,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     if (this._streamingConnection) {
       this._streamingConnection.config.authToken = token;
     }
+  }
+
+  /**
+   * Changes the headset functionality for the sdk
+   * @param useHeadsets if true, this enables events from active headsets
+   *
+   * @returns void
+   */
+  setUseHeadsets (useHeadsets: boolean): void {
+    this._config.useHeadsets = !!useHeadsets;
+    (this.headset as HeadsetProxyService).setUseHeadsets(!!useHeadsets);
   }
 
   /**
