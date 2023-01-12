@@ -8,6 +8,7 @@ import StreamingClient, { IPendingSession } from 'genesys-cloud-streaming-client
 import { Logger } from 'genesys-cloud-client-logger';
 import * as clientPrivate from '../../src/client-private';
 import jwtDecode from 'jwt-decode';
+import { HeadsetProxyService } from '../../src/media/headset';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockStream, MockSession, random } from '../test-utils';
@@ -31,7 +32,6 @@ import {
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
-import { SdkHeadset, SdkHeadsetStub } from '../../src/media/headset';
 
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
@@ -140,7 +140,7 @@ describe('Client', () => {
       expect(sdk._config.environment).toBe('mypurecloud.com');
       expect(sdk._config.autoConnectSessions).toBe(true);
       expect(sdk.isGuest).toBe(false);
-      expect(sdk.headset instanceof SdkHeadsetStub).toBe(true);
+      expect(sdk.headset instanceof HeadsetProxyService).toBe(true);
     });
 
     it('sets up options when provided and track default audioStream', () => {
@@ -179,16 +179,6 @@ describe('Client', () => {
       expect(sdk.logger.info).toHaveBeenCalledWith('handledPendingSession', ids);
 
     });
-
-    it('should use SdkHeadsetStub if opted out', () => {
-      const sdk = constructSdk({ accessToken: '1234', useHeadsets: false } as ISdkConfig);
-      expect(sdk.headset instanceof SdkHeadsetStub).toBe(true);
-    });
-
-    it('should use SdkHeadset if opted in', () => {
-      const sdk = constructSdk({ accessToken: '1234', useHeadsets: true } as ISdkConfig);
-      expect(sdk.headset instanceof SdkHeadset).toBe(true);
-    })
   });
 
   describe('isScreenRecordingSession', () => {
@@ -1408,6 +1398,19 @@ describe('Client', () => {
       } catch (e) {
         expect(e.message).toContain('Failed to parse provided jwt');
       }
+    });
+  });
+
+  describe('setUseHeadsets', () => {
+    it('should update config and call the proxy', () => {
+      sdk = constructSdk();
+      sdk._config.useHeadsets = true;
+      const spy = jest.spyOn((sdk.headset as HeadsetProxyService), 'setUseHeadsets');
+
+      sdk.setUseHeadsets(false);
+
+      expect(sdk._config.useHeadsets).toBeFalsy();
+      expect(spy).toHaveBeenCalled();
     });
   });
 });

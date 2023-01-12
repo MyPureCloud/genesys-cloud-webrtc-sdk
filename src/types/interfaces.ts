@@ -176,7 +176,7 @@ export interface ISdkConfig {
    * Note: if `false`, a no-op stub will be used at `sdk.headset` to eliminate
    *  the need to "null" type check `sdk.headset` before using in code.
    *
-   * Optional: default `true`
+   * Optional: default `false`
    */
   useHeadsets?: boolean;
 
