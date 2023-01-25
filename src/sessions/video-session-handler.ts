@@ -459,22 +459,22 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     // if we are going to mute, we need to remove/end the existing camera track
     if (params.mute) {
       // Grab all video tracks (there shouild only be one but in the event there are multiple grab all)
-      const tracks = session._outboundStream.getVideoTracks();
+      const track = session._outboundStream.getVideoTracks()[0];
 
-      if (!tracks) {
+      if (!track) {
         this.log('warn', 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       } else {
-        tracks.forEach(async track => {
-          const sender = this.getSendersByTrackType(session, 'video')
-          .find((sender) => sender.track && sender.track.id === track.id);
 
-        if (sender) {
-          await this.removeMediaFromSession(session, sender);
-        }
+        const sender = this.getSendersByTrackType(session, 'video')
+        .find((sender) => sender.track && sender.track.id === track.id);
 
-        track.stop();
-        session._outboundStream.removeTrack(track);
-        });
+      if (sender) {
+        await this.removeMediaFromSession(session, sender);
+      }
+
+      track.stop();
+      session._outboundStream.removeTrack(track);
+
       }
 
       if (!skipServerUpdate) {
@@ -497,7 +497,6 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         const tracks = (
           await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
         ).getVideoTracks();
-        console.warn('here are all the tracks: ', tracks);
         const track = tracks[0];
 
         logDeviceChange(this.sdk, session, 'changingDevices', {
@@ -516,6 +515,8 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         if (!skipServerUpdate) {
           await session.unmute(userId as any, 'video');
         }
+      } else {
+        this.log('debug', 'Cannot unmute, a video track already exists', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       }
     }
 

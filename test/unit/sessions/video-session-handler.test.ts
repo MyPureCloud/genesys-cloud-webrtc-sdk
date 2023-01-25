@@ -950,6 +950,22 @@ describe('setVideoMute', () => {
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find outbound camera'), expect.any(Object), undefined);
   });
 
+  it('unmute: should do nothing if there are already video tracks', async () => {
+    const track = new MockTrack() as any;
+    jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([] as any);
+
+    const outbound = new MockStream();
+    outbound._tracks = [new MockTrack('audio')];
+    session._outboundStream = {
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([track])
+    } as any;
+
+    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false });
+
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('Cannot unmute, a video track already exists'), expect.any(Object), undefined);
+  });
+
   it('mute: should mute video track when there is no screen track and remove track from outboundStream', async () => {
     const track = new MockTrack() as any;
 
@@ -1016,7 +1032,8 @@ describe('setVideoMute', () => {
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
 
     session._outboundStream = {
-      addTrack: jest.fn()
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
@@ -1033,7 +1050,8 @@ describe('setVideoMute', () => {
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
 
     session._outboundStream = {
-      addTrack: jest.fn()
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false });
@@ -1052,7 +1070,8 @@ describe('setVideoMute', () => {
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
 
     session._outboundStream = {
-      addTrack: jest.fn()
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false, unmuteDeviceId });
