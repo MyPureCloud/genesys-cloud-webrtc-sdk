@@ -458,22 +458,22 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     // if we are going to mute, we need to remove/end the existing camera track
     if (params.mute) {
-      // Grab all video tracks (there shouild only be one but in the event there are multiple grab all)
-      const track = session._outboundStream.getVideoTracks()[0];
+      // get the first video track
+      const track = session._outboundStream.getVideoTracks().find(t => t);
 
       if (!track) {
         this.log('warn', 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       } else {
 
         const sender = this.getSendersByTrackType(session, 'video')
-        .find((sender) => sender.track && sender.track.id === track.id);
+          .find((sender) => sender.track && sender.track.id === track.id);
 
-      if (sender) {
-        await this.removeMediaFromSession(session, sender);
-      }
+        if (sender) {
+          await this.removeMediaFromSession(session, sender);
+        }
 
-      track.stop();
-      session._outboundStream.removeTrack(track);
+        track.stop();
+        session._outboundStream.removeTrack(track);
 
       }
 
