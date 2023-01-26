@@ -484,39 +484,40 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
       // Make sure we don't have any tracks before we decide to spin up another.
-      if (session._outboundStream.getVideoTracks().length === 0) {
-        this.log('info', 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-
-        // look for a device to use, else use default
-        const videoDeviceConstraint = params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId;
-
-        logDeviceChange(this.sdk, session, 'unmutingVideo', {
-          requestedVideoDeviceId: videoDeviceConstraint
-        });
-
-        const tracks = (
-          await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
-        ).getVideoTracks();
-        const track = tracks[0];
-
-        logDeviceChange(this.sdk, session, 'changingDevices', {
-          toVideoTrack: track,
-          requestedVideoDeviceId: videoDeviceConstraint
-        });
-
-        // add track to session
-        await this.addReplaceTrackToSession(session, track);
-
-        logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
-
-        // add sync track to local outbound referrence
-        session._outboundStream.addTrack(track);
-
-        if (!skipServerUpdate) {
-          await session.unmute(userId as any, 'video');
-        }
-      } else {
+      if (session._outboundStream.getVideoTracks().length > 0) {
         this.log('debug', 'Cannot unmute, a video track already exists', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+        return;
+      }
+
+      this.log('info', 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+
+      // look for a device to use, else use default
+      const videoDeviceConstraint = params.unmuteDeviceId === undefined ? true : params.unmuteDeviceId;
+
+      logDeviceChange(this.sdk, session, 'unmutingVideo', {
+        requestedVideoDeviceId: videoDeviceConstraint
+      });
+
+      const tracks = (
+        await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
+      ).getVideoTracks();
+      const track = tracks[0];
+
+      logDeviceChange(this.sdk, session, 'changingDevices', {
+        toVideoTrack: track,
+        requestedVideoDeviceId: videoDeviceConstraint
+      });
+
+      // add track to session
+      await this.addReplaceTrackToSession(session, track);
+
+      logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
+
+      // add sync track to local outbound referrence
+      session._outboundStream.addTrack(track);
+
+      if (!skipServerUpdate) {
+        await session.unmute(userId as any, 'video');
       }
     }
 
