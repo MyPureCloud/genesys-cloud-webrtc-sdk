@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.3...HEAD)
+### Fixed
+* [PCM-2060](https://inindca.atlassian.net/browse/PCM-2060) - Fixed issue allowing a user to have multiple video tracks. Fixed some minor issues in demo app.
 # [v8.0.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.2...v8.0.3)
 ### Fixed
 * [PCM-2058](https://inindca.atlassian.net/browse/PCM-2058) - bump streaming client in order to get fixed stats-gatherer

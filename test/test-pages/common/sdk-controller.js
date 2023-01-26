@@ -22,6 +22,7 @@ const videoResolutions = {
   "2K": { width: 2560, height: 1440 },
   "4K": {width: 3840, height: 2160 }
 }
+let currentSession;
 
 async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDefaultAudio) {
   let options = {};
@@ -212,12 +213,17 @@ function setConversationHeld ({ held, conversationId }) {
   webrtcSdk.setConversationHeld({ held, conversationId });
 }
 
-function endSession ({ conversationId }) {
-  webrtcSdk.endSession({ conversationId });
+function endSession () {
+  webrtcSdk.endSession({ conversationId: currentConversationId });
+
+  document.getElementById('video-actions').classList.add('hidden');
+  const startControls = document.querySelectorAll('.start-controls');
+  startControls.forEach(el => el.classList.remove('hidden'));
 }
 
-function setAudioMute ({ mute, conversationId }) {
-  webrtcSdk.setAudioMute({ mute, conversationId });
+function setAudioMute (mute) {
+  webrtcSdk.setAudioMute({ conversationId: currentConversationId, mute });
+
 }
 
 function requestWebhidPermissions ({ callback }) {
@@ -233,6 +239,7 @@ function exposeGlobalFunctions () {
   window.acceptPendingSession = acceptPendingSession;
   window.rejectPendingSession = rejectPendingSession;
   window.setAudioMute = setAudioMute;
+  window.startScreenShare = startScreenShare;
   window.setConversationHeld = setConversationHeld;
   window.endSession = endSession;
 }
@@ -662,6 +669,7 @@ async function sessionStarted (session) {
       vanityVideoElement.volume = 0;
       vanityVideoElement.srcObject = session._outboundStream;
     });
+    currentSession = session;
   }
 }
 
@@ -837,6 +845,10 @@ function setVideoMute (mute) {
 
 function startScreenShare () {
   currentSession.startScreenShare();
+  const vanityVideoElement = document.getElementById('vanity-view');
+  vanityVideoElement.autoplay = true;
+  vanityVideoElement.volume = 0;
+  vanityVideoElement.srcObject = currentSession._outboundStream;
 }
 
 function stopScreenShare () {
@@ -844,7 +856,7 @@ function stopScreenShare () {
 }
 
 function pinParticipantVideo () {
-  currentSession.pinParticipantVideo(getInputValue('participant-pin'));
+  webrtcSdk.pinParticipantVideo(getInputValue('participant-pin'));
 }
 
 function updateVideoResolution () {
