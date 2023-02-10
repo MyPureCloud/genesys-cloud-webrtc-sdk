@@ -80,7 +80,7 @@ describe('Client', () => {
       mediaMock = sdk.media as any;
 
       /* mock needed returned values (needed for `afterEach => sdk.destroy()`) */
-      sessionManagerMock.getAllJingleSessions.mockReturnValue([]);
+      sessionManagerMock.getAllSessions.mockReturnValue([]);
 
       return sdk;
     }
@@ -1049,7 +1049,7 @@ describe('Client', () => {
       const session1 = new MockSession();
       const session2 = new MockSession();
 
-      sessionManagerMock.getAllJingleSessions.mockReturnValue([session1, session2] as any);
+      sessionManagerMock.getAllSessions.mockReturnValue([session1, session2] as any);
       sessionManagerMock.forceTerminateSession.mockResolvedValue(null);
       mediaMock.destroy.mockReturnValue();
 

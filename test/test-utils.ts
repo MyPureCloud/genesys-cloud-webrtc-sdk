@@ -60,6 +60,7 @@ export class SimpleMockSdk extends EventEmitter {
       rtcSessionAccepted: jest.fn(),
       notifyScreenShareStart: jest.fn(),
       notifyScreenShareStop: jest.fn(),
+      getAllSessions: jest.fn().mockReturnValue([])
     },
     _webrtcSessions: {
       refreshIceServers: jest.fn(),
@@ -69,6 +70,7 @@ export class SimpleMockSdk extends EventEmitter {
   sessionManager = {
     validateOutgoingMediaTracks: jest.fn(),
     getAllActiveSessions: jest.fn().mockReturnValue([]),
+    getAllSessions: jest.fn().mockReturnValue([]),
     pendingSessions: {},
     aaid: random().toString()
   };
@@ -84,7 +86,7 @@ export class MockSender {
     this.track = track;
   }
   async replaceTrack (track?: MockTrack): Promise<void> {
-    this.track = track;
+    this.track = track as any;
   }
 }
 
@@ -151,7 +153,8 @@ export class MockSession extends EventEmitter {
   sid = random().toString();
   conversationId = random().toString();
   originalRoomJid = random().toString() + '@organization.com';
-  pc = new MockPC(this);
+  peerConnection = new MockPC(this);
+  pc: MockPC;
   pcParticipant: any;
   _statsGatherer: any;
   _outboundStream: any;
@@ -170,14 +173,15 @@ export class MockSession extends EventEmitter {
   constructor (sessionType?: SessionTypes) {
     super();
     this.id = this.sid;
-    this.sessionType = sessionType;
+    this.pc = this.peerConnection;
+    this.sessionType = sessionType as any;
   }
   addTrack (track: MockTrack) {
     // this.tracks.push(track);
-    this.pc._addSender(track);
+    this.peerConnection._addSender(track);
   }
   getTracks (): MockTrack[] {
-    return this.pc.getSenders().map(s => s.track).filter(t => !!t);
+    return this.peerConnection.getSenders().map(s => s.track).filter(t => !!t);
   }
 }
 
