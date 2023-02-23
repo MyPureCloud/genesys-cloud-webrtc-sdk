@@ -838,7 +838,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       return;
     }
 
-    const activeSessions = this.sessionManager.getAllJingleSessions();
+    const activeSessions = this.sessionManager.getAllSessions();
     this.logger.info('destroying webrtc sdk', {
       activeSessions: activeSessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId }))
     });

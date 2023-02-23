@@ -149,7 +149,7 @@ describe('checkHasTransceiverFunctionality()', () => {
   });
 
   it('should actually do the check', () => {
-    let val: boolean = null;
+    let val: boolean | null = null;
     const def = {
       get: () => val,
       set: (newVal: boolean) => val = newVal
@@ -172,7 +172,7 @@ describe('checkHasTransceiverFunctionality()', () => {
   });
 
   it('should catch errors from getStats after the PC has closed (only in FF, am I right)', async () => {
-    let val: boolean = null;
+    let val: boolean|null = null;
     const def = {
       get: () => val,
       set: (newVal: boolean) => val = newVal
@@ -203,7 +203,7 @@ describe('checkHasTransceiverFunctionality()', () => {
     let val = null;
     Object.defineProperty(mediaUtils, '_hasTransceiverFunctionality', { get: () => val, set: (v) => val = v });
 
-    window.RTCPeerConnection = null;
+    (window as any).RTCPeerConnection = null;
     expect(mediaUtils.checkHasTransceiverFunctionality()).toBe(false);
   });
 });
@@ -323,8 +323,8 @@ describe('logDeviceChange()', () => {
 
     /* setup mock receivers */
     const mockVideoReceiverTrack = new MockTrack('video');
-    mockSession.pc['_addReceiver'](mockVideoReceiverTrack);
-    mockSession.pc['_addReceiver']({}/* a receiver with a track with no id */);
+    mockSession.peerConnection['_addReceiver'](mockVideoReceiverTrack);
+    mockSession.peerConnection['_addReceiver']({}/* a receiver with a track with no id */);
 
     mockSession._outputAudioElement = {
       sinkId: mockOutputDevice2.deviceId
@@ -435,7 +435,7 @@ describe('logDeviceChange()', () => {
       newAudioTrack: mockToAudioTrack,
       newVideoTrack: mockToVideoTrack,
       currentAudioElementSinkId: mockOutputDevice1.deviceId,
-      currentSessionSenderTracks: mockSession.pc.getSenders().map(s => s.track),
+      currentSessionSenderTracks: mockSession.peerConnection.getSenders().map(s => s.track),
       requestedOutputDeviceId: mockOutputDevice2.deviceId
     });
   });

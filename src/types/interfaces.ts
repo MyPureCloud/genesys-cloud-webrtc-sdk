@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { GenesysCloudMediaSession, ISessionInfo, IPendingSession, JsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { GenesysCloudMediaSession, ISessionInfo, IPendingSession, JsonRpcMessage, IMediaSession } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -822,11 +822,8 @@ export interface IConversationParticipant {
   confined: boolean;
 }
 
-export interface IExtendedMediaSession extends GenesysCloudMediaSession {
-  id: string;
+export interface IExtendedMediaSession extends IMediaSession {
   originalRoomJid: string;
-  conversationId: string;
-  sessionType: SessionTypes;
   active: boolean;
   videoMuted?: boolean;
   audioMuted?: boolean;
@@ -845,7 +842,7 @@ export interface IResolutionChange {
 }
 
 export interface VideoMediaSession extends IExtendedMediaSession {
-  fromUserId?: string;
+  fromUserId: string;
   sessionType: SessionTypes.collaborateVideo;
   startScreenShare?: () => Promise<void>;
   stopScreenShare?: () => Promise<void>;

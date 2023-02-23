@@ -483,8 +483,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
     }
 
-    if (session.streams.length === 1 && session.streams[0].getTracks().length > 0) {
-      session._outputAudioElement = attachAudioMedia(this.sdk, session.streams[0], volume, element, ids);
+    const receiverWithActiveAudioTrack = session.peerConnection.getReceivers().find((r) => r.track?.kind === 'audio');
+    if (receiverWithActiveAudioTrack) {
+      const stream = new MediaStream();
+      stream.addTrack(receiverWithActiveAudioTrack.track);
+
+      session._outputAudioElement = attachAudioMedia(this.sdk, stream, volume, element, ids);
     } else {
       session.on('peerTrackAdded', (_track: MediaStreamTrack, stream: MediaStream) => {
         session._outputAudioElement = attachAudioMedia(this.sdk, stream, volume, element, ids);
