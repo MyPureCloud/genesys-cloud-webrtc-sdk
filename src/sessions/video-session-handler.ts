@@ -61,7 +61,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return isVideoJid(jid);
   }
 
-  findLocalParticipantInConversationUpdate (conversationUpdate: ConversationUpdate): IConversationParticipant {
+  findLocalParticipantInConversationUpdate (conversationUpdate: ConversationUpdate): IConversationParticipant | null {
     const participant = conversationUpdate.participants.find((p) => p.userId === this.sdk._personDetails.id);
 
     if (!participant) {

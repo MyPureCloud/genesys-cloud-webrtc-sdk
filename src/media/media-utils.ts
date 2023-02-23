@@ -168,7 +168,7 @@ export function logDeviceChange (
   let currentAudioTrack: MediaStreamTrack;
   const currentOutputDeviceId: string = session._outputAudioElement?.sinkId;
   const screenShareTrackId = session._screenShareStream?.getVideoTracks()[0]?.id;
-  const pcSenders = session.pc.getSenders().filter(s => s.track && s.track.id && s.track.id !== screenShareTrackId);
+  const pcSenders = session.peerConnection.getSenders().filter(s => s.track && s.track.id && s.track.id !== screenShareTrackId);
 
   /* grab the currect device being used */
   pcSenders.forEach(sender => {
@@ -228,7 +228,7 @@ export function logDeviceChange (
     currentAudioElementSinkId: currentOutputDeviceId,
     // TODO: these don't log in sumo as tracks...
     currentSessionSenderTracks: pcSenders.map(s => s.track),
-    currentSessionReceiverTracks: session.pc.getReceivers().filter(s => s.track && s.track.id).map(s => s.track),
+    currentSessionReceiverTracks: session.peerConnection.getReceivers().filter(s => s.track && s.track.id).map(s => s.track),
 
     /* other potentially useful information to log */
     sessionVideoMute: session.videoMuted,

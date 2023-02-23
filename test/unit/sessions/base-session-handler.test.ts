@@ -65,12 +65,12 @@ describe('updateOutgoingMedia()', () => {
     const videoDeviceId = 'imbatman';
     const session = new MockSession();
     const sender = new MockSender(new MockTrack());
-    session.pc._senders = [sender];
+    session.peerConnection._senders = [sender];
 
     session._outboundStream = new MockStream();
     const stream = new MockStream({ video: true, audio: true });
 
-    const spy = jest.spyOn(mediaUtils, 'logDeviceChange').mockReturnValue(null);
+    const spy = jest.spyOn(mediaUtils, 'logDeviceChange').mockReturnValue();
     const logSpy = handler['log'] = jest.fn();
     jest.spyOn(handler['sdk'].media, 'findCachedDeviceByTrackLabelAndKind').mockReturnValue({ deviceId: videoDeviceId } as any);
 
@@ -115,11 +115,11 @@ describe('updateOutgoingMedia()', () => {
     const videoDeviceId = 'imbatman';
     const audioDeviceId = 'wonderwoman';
     const session = new MockSession();
-    const sender1 = new MockSender(null);
+    const sender1 = new MockSender(null as any);
     jest.spyOn(sender1, 'replaceTrack');
     const sender2 = new MockSender(new MockTrack());
     jest.spyOn(sender2, 'replaceTrack').mockResolvedValue();
-    session.pc._senders = [sender1, sender2];
+    session.peerConnection._senders = [sender1, sender2];
     session._outboundStream = new MockStream();
     const spy = mockSdk.logger.info as jest.Mock;
 
@@ -130,7 +130,7 @@ describe('updateOutgoingMedia()', () => {
     });
 
     /* with a session and stream */
-    await handler.updateOutgoingMedia(session as any, { stream: null, videoDeviceId, audioDeviceId });
+    await handler.updateOutgoingMedia(session as any, { stream: undefined, videoDeviceId, audioDeviceId });
 
     expect(createSpy).toHaveBeenCalled();
   });
@@ -246,9 +246,9 @@ describe('updateOutgoingMedia()', () => {
     const session = new MockSession();
     session._outboundStream = new MockStream();
     const existingTrack = new MockTrack('audio', 'Mic #1')
-    session.pc._addSender(existingTrack);
+    session.peerConnection._addSender(existingTrack);
 
-    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(undefined);
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue({} as any);
     const device = { deviceId: v4(), label: existingTrack.label, kind: 'audioinput' };
     mockSdk.media['setDevices']([device as any]);
 
@@ -260,9 +260,9 @@ describe('updateOutgoingMedia()', () => {
     const session = new MockSession();
     session._outboundStream = new MockStream();
     const existingTrack = new MockTrack('video', 'Camera #1')
-    session.pc._addSender(existingTrack);
+    session.peerConnection._addSender(existingTrack);
 
-    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(undefined);
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue({} as any);
     const device = { deviceId: v4(), label: existingTrack.label, kind: 'videoinput' };
     mockSdk.media['setDevices']([device as any]);
 
@@ -515,7 +515,7 @@ describe('handleSessionInit', () => {
     const sessionId = '123abc';
     const conversationId = 'convoabc';
 
-    session.sid = sessionId;
+    session.id = sessionId;
     session.conversationId = conversationId;
 
     await handler.handleSessionInit(session);
@@ -587,7 +587,7 @@ describe('acceptSession', () => {
       conversationId: session.conversationId,
       audioElement: { iam: 'an audio el' } as any,
       videoElement: undefined,
-      mediaStream: null
+      mediaStream: undefined
     } as IAcceptSessionRequest;
     const logSpy = jest.spyOn(handler, 'log' as any);
 
@@ -601,7 +601,7 @@ describe('acceptSession', () => {
         ...params,
         audioElement: {},
         videoElement: undefined,
-        mediaStream: null
+        mediaStream: undefined
       }
     });
   });
@@ -620,9 +620,9 @@ describe('acceptSession', () => {
     expect(audio.setSinkId).toHaveBeenCalledWith('');
 
     /* with sdk default output deviceId */
-    mockSdk._config.defaults.outputDeviceId = 'output-device-id';
+    mockSdk._config.defaults!.outputDeviceId = 'output-device-id';
     await handler.acceptSession(session, { conversationId: session.conversationId });
-    expect(audio.setSinkId).toHaveBeenCalledWith(mockSdk._config.defaults.outputDeviceId);
+    expect(audio.setSinkId).toHaveBeenCalledWith(mockSdk._config.defaults!.outputDeviceId);
   });
 });
 
@@ -659,7 +659,7 @@ describe('addMediatoSession', () => {
     jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(true);
 
     const mockSession: any = {
-      pc: {
+      peerConnection: {
         addTrack: jest.fn(),
         addStream: jest.fn(),
         getSenders: jest.fn().mockReturnValue([])
@@ -668,7 +668,7 @@ describe('addMediatoSession', () => {
 
     await handler.addMediaToSession(mockSession, stream as any);
 
-    expect(mockSession.pc.addTrack).toHaveBeenCalled();
+    expect(mockSession.peerConnection.addTrack).toHaveBeenCalled();
   });
 
   it('should not add track if it\'s already there', async () => {
@@ -678,7 +678,7 @@ describe('addMediatoSession', () => {
     jest.spyOn(mediaUtils, 'checkHasTransceiverFunctionality').mockReturnValue(true);
 
     const mockSession: any = {
-      pc: {
+      peerConnection: {
         addTrack: jest.fn(),
         addStream: jest.fn(),
         getSenders: jest.fn().mockReturnValue([ { track }])
@@ -689,7 +689,7 @@ describe('addMediatoSession', () => {
 
     await handler.addMediaToSession(mockSession, stream as any);
 
-    expect(mockSession.pc.addTrack).not.toHaveBeenCalled();
+    expect(mockSession.peerConnection.addTrack).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith('info', expect.stringContaining('Attempted to add track to the session which was already there'), expect.anything());
   });
 
@@ -768,12 +768,32 @@ describe('waitForSessionConnected', () => {
 describe('addReplaceTrackToSession', () => {
   it('should not apply constraints for audio tracks', async () => {
     const session = new MockSession();
-    session.pc._senders = [new MockSender(new MockTrack('audio'))];
+    session.peerConnection._senders = [new MockSender(new MockTrack('audio'))];
 
     const track = new MockTrack('audio');
     await handler.addReplaceTrackToSession(session as any, track as any);
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('should call add track if there\'s only empty transceivers', async () => {
+    const session = new MockSession();
+    const replaceSpy = jest.fn();
+    const addSpy = jest.spyOn(session, 'addTrack');
+    session.peerConnection.getTransceivers = jest.fn().mockReturnValue([
+      {
+        sender: {
+          replaceTrack: replaceSpy
+        },
+        receiver: {}
+      }
+    ]);
+
+    const track = new MockTrack('audio');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalled();
   });
 
   it('should wait for connected if starting', async () => {
@@ -789,7 +809,7 @@ describe('addReplaceTrackToSession', () => {
 
   it('should find sender by the receiver track', async () => {
     const session = new MockSession();
-    const transceiver = session.pc._addTransceiver(new MockTrack('audio'), null);
+    const transceiver = session.peerConnection._addTransceiver(new MockTrack('audio'), {} as any);
 
     const spy = jest.spyOn(transceiver.sender, 'replaceTrack');
     const track = new MockTrack('audio');
@@ -801,7 +821,7 @@ describe('addReplaceTrackToSession', () => {
 
   it('should find sender by the sender track', async () => {
     const session = new MockSession();
-    const transceiver = session.pc._addTransceiver(null, new MockTrack('audio'));
+    const transceiver = session.peerConnection._addTransceiver({} as any, new MockTrack('audio'));
 
     const spy = jest.spyOn(transceiver.sender, 'replaceTrack');
     const track = new MockTrack('audio');
@@ -814,9 +834,9 @@ describe('addReplaceTrackToSession', () => {
   it('should addTrack if no transceiver found', async () => {
     (window as any).MediaStream = jest.fn();
     const session = new MockSession();
-    session.pc._addTransceiver(null, null);
+    session.peerConnection._addTransceiver({} as any, {} as any);
     const spy = session.addTrack = jest.fn().mockImplementation((track) => {
-      session.pc._addSender(track);
+      session.peerConnection._addSender(track);
     });
 
     const track = new MockTrack('audio');
@@ -829,7 +849,7 @@ describe('addReplaceTrackToSession', () => {
 
 describe('endTracks', () => {
   it('should do nothing and not error if no stream was passed in', () => {
-    handler.endTracks(null);
+    handler.endTracks(undefined);
     expect('It did not thrown an error').toBeTruthy();
   });
 
@@ -848,7 +868,7 @@ describe('endTracks', () => {
     const stream = new MockStream([track]);
     track.readyState = 'live';
 
-    mockSdk._config.defaults.audioStream = stream as any as MediaStream;
+    mockSdk._config.defaults!.audioStream = stream as any as MediaStream;
 
 
     handler.endTracks(track as any as MediaStreamTrack);
@@ -861,7 +881,7 @@ describe('endTracks', () => {
     const stream = new MockStream([track]);
     track.readyState = 'ended';
 
-    mockSdk._config.defaults.audioStream = stream as any as MediaStream;
+    mockSdk._config.defaults!.audioStream = stream as any as MediaStream;
 
 
     handler.endTracks(track as any as MediaStreamTrack);
@@ -872,7 +892,7 @@ describe('endTracks', () => {
 
 describe('updateAudioVolume', () => {
   it('should do nothing if there\'s no element', () => {
-    const session: Pick<IExtendedMediaSession, '_outputAudioElement'> = { _outputAudioElement: null };
+    const session: Pick<IExtendedMediaSession, '_outputAudioElement'> = { _outputAudioElement: null as any };
     expect(() => handler.updateAudioVolume(session as any, 75)).not.toThrow();
   });
 
@@ -880,7 +900,7 @@ describe('updateAudioVolume', () => {
     const session: Pick<IExtendedMediaSession, '_outputAudioElement'> = { _outputAudioElement: document.createElement('audio') };
     handler.updateAudioVolume(session as any, 75);
 
-    expect(session._outputAudioElement.volume).toEqual(.75);
+    expect(session._outputAudioElement!.volume).toEqual(.75);
   });
 });
 
@@ -890,8 +910,8 @@ describe('getSendersByTrackType()', () => {
     const audioTrack = new MockTrack('audio');
     const videoTrack = new MockTrack('video');
 
-    session.pc._addReceiver(audioTrack);
-    session.pc._addReceiver(videoTrack);
+    session.peerConnection._addReceiver(audioTrack);
+    session.peerConnection._addReceiver(videoTrack);
 
     const results = handler.getReceiversByTrackType(session as any, 'audio');
     expect(results[0].track).toEqual(audioTrack);

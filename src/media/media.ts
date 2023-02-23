@@ -504,7 +504,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   getValidDeviceId (
     kind: MediaDeviceKind,
-    deviceId: string | boolean | null,
+    deviceId: string | boolean | null | undefined,
     ...sessions: IExtendedMediaSession[]
   ): string | undefined {
     const state = this.getState();

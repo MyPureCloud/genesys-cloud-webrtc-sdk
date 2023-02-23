@@ -57,12 +57,12 @@ export class SessionManager {
     return this.sdk._streamingConnection.webrtcSessions;
   }
 
-  get jingle () {
-    return this.sdk._streamingConnection._webrtcSessions.getSessionManager();
-  }
+  // get jingle () {
+  //   return this.sdk._streamingConnection._webrtcSessions.getSessionManager();
+  // }
 
   handleConversationUpdate (update: ConversationUpdate) {
-    const sessions = this.getAllJingleSessions();
+    const sessions = this.getAllSessions();
 
     /* let each enabled handler process updates */
     this.sessionHandlers
@@ -118,7 +118,7 @@ export class SessionManager {
       sessionTypesToSearch = Object.values(sessionTypes);
     }
 
-    let session = this.getAllJingleSessions()
+    let session = this.getAllSessions()
       .find((s: IExtendedMediaSession) => sessionTypesToSearch.includes(s.sessionType) && s.conversationId === params.conversationId);
 
     // search fake/shared softphone sessions
@@ -136,20 +136,20 @@ export class SessionManager {
   }
 
   getSessionBySessionId (sessionId: string) {
-    return this.getAllJingleSessions().find(s => s.sid === sessionId);
+    return this.getAllSessions().find(s => s.id === sessionId);
   }
 
   getAllActiveSessions (): IExtendedMediaSession[] {
-    return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession })
-      .filter((session: IExtendedMediaSession) => session.state === 'active');
+    return this.webrtcSessions.getAllSessions()
+      .filter((session) => session.state === 'active') as IExtendedMediaSession[];
   }
 
   getAllActiveConversations (): IActiveConversationDescription[] {
     return [].concat(...this.sessionHandlers.map(handler => handler.getActiveConversations()));
   }
 
-  getAllJingleSessions (): IExtendedMediaSession[] {
-    return Object.values<IExtendedMediaSession>(this.jingle.sessions as { key: IExtendedMediaSession });
+  getAllSessions (): IExtendedMediaSession[] {
+    return this.webrtcSessions.getAllSessions() as IExtendedMediaSession[];
   }
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: any }): BaseSessionHandler {
@@ -395,7 +395,7 @@ export class SessionManager {
   }
 
   async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition) {
-    const session = this.getAllJingleSessions().find((s: IExtendedMediaSession) => s.sid === sessionId);
+    const session = this.getAllSessions().find((s: IExtendedMediaSession) => s.id === sessionId);
     
     if (!session) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find session by sessionId', { sessionId });
@@ -442,7 +442,7 @@ export class SessionManager {
         trackIdsToIgnore.push(...(session as VideoMediaSession)._screenShareStream.getTracks().map((track) => track.id));
       }
 
-      session.pc.getSenders()
+      session.peerConnection.getSenders()
         .filter((sender) => sender.track && !trackIdsToIgnore.includes(sender.track.id))
         .map(s => s.track)
         .forEach(track => {

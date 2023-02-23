@@ -138,7 +138,7 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
 
     const peerStreamAdded: Promise<MediaStream> = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Timeout waiting for remote stream')), config.validationTimeout);
-      const videoReceiver = agentSession.pc.getReceivers().find((receiver) => receiver.track && receiver.track.kind === 'video');
+      const videoReceiver = agentSession.peerConnection.getReceivers().find((receiver) => receiver.track && receiver.track.kind === 'video');
       if (videoReceiver) {
         const stream = new MediaStream();
         stream.addTrack(videoReceiver.track);
@@ -167,6 +167,6 @@ describe('ACD Screen Share via webrtc-sdk [acd-screenshare-sdk] [sdk] [stable]',
     await testUtils.timeout(config.callDelay);
     await testUtils.getConversationDetails(codeData.conversation.id);
     await testUtils.validateVideoStream(agentSession, agentStream);
-    agentSession.end();
+    agentSession.end('success');
   });
 });
