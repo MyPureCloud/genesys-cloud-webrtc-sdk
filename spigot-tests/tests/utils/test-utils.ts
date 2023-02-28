@@ -4,7 +4,7 @@ import { Subject, Observable, throwError } from 'rxjs';
 // import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { v4 as uuid } from 'uuid';
 import Logger from 'genesys-cloud-client-logger';
-import GenesysCloudStreamingClient from 'genesys-cloud-streaming-client';
+import GenesysCloudStreamingClient, { IClientOptions } from 'genesys-cloud-streaming-client';
 import { assert } from 'chai';
 import { filter, first, timeoutWith } from 'rxjs/operators';
 
@@ -261,7 +261,7 @@ export async function getConnectedStreamingClient (authToken?: string, jwt?: str
 }
 
 export function createConnection (authToken?: string, jwt?: string) {
-  const options = {
+  const options: IClientOptions = {
     authToken,
     logger: console,
     host: getConfig().host,
@@ -328,7 +328,10 @@ export async function testCall (testContext: any, streamingClient: any, callOpti
     // As soon as a call is requested, accept the propose
     streamingClient._webrtcSessions.once('requestIncomingRtcSession', async function (options) {
       logger.info('Received Propose', options);
+      logger.info('Accepting propose', options);
       streamingClient.webrtcSessions.acceptRtcSession(options.sessionId);
+      logger.info('propose accepted', options);
+
     });
 
     // Resolve when the session arrives, short circuiting the timeout/reject
@@ -477,7 +480,7 @@ export async function validateStream (session: any, stream: MediaStream, convers
 export async function attachStream (stream: MediaStream, reattach?: boolean, descriptor?: string) {
   logger.log('Remote stream added', { stream });
   const elType = stream.getVideoTracks().length ? 'video' : 'audio';
-  const existingElement = document.getElementsByTagName(elType);
+  const existingElement = Array.from(document.getElementsByTagName(elType)).filter(el => !el.classList.contains('ignore'));
   let el;
   if (reattach && existingElement && existingElement[0]) {
     el = existingElement[0];
@@ -494,7 +497,7 @@ export async function attachStream (stream: MediaStream, reattach?: boolean, des
   logger.debug('starting auto play of element', stream);
 
   // sometimes this doesn't play for whatever reason
-  el.play()
+  // await el.play()
 
   logger.debug('auto play returned');
   let streamReady;

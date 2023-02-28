@@ -61,8 +61,6 @@ export default abstract class BaseSessionHandler {
   }
 
   async handleSessionInit (session: IExtendedMediaSession): Promise<any> {
-    session.id = session.sid;
-
     const pendingSession = this.sessionManager.getPendingSession(session);
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
@@ -78,10 +76,10 @@ export default abstract class BaseSessionHandler {
 
     this.sdk._streamingConnection.webrtcSessions.rtcSessionAccepted(session.id);
 
-    session.pc.addEventListener('negotiationneeded', this._warnNegotiationNeeded.bind(this, session));
+    session.peerConnection.addEventListener('negotiationneeded', this._warnNegotiationNeeded.bind(this, session));
 
     session.on('connectionState' as any, (state: string) => {
-      this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.sid, sessionType: session.sessionType });
+      this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
     });
 
     session.on('terminated', this.onSessionTerminated.bind(this, session));
@@ -191,7 +189,7 @@ export default abstract class BaseSessionHandler {
     const destroyMediaPromises: Promise<any>[] = [];
     const trackIdsToIgnore: string[] = [];
     const trackKindsToIgnore: string[] = [];
-    const senderTracks = session.pc.getSenders()
+    const senderTracks = session.peerConnection.getSenders()
       .filter(s => s.track && s.track.readyState === 'live' && !s.track.muted)
       .map(s => s.track);
 
@@ -244,7 +242,7 @@ export default abstract class BaseSessionHandler {
       trackIdsToIgnore.push(...session._screenShareStream.getTracks().map((track) => track.id));
     }
 
-    const senders = session.pc.getSenders()
+    const senders = session.peerConnection.getSenders()
       .filter((sender) =>
         sender.track &&
         !(
@@ -353,7 +351,7 @@ export default abstract class BaseSessionHandler {
 
     /* prune tracks not being sent */
     session._outboundStream.getTracks().forEach((track) => {
-      const hasSender = session.pc.getSenders().find((sender) => sender.track && sender.track.id === track.id);
+      const hasSender = session.peerConnection.getSenders().find((sender) => sender.track && sender.track.id === track.id);
 
       if (!hasSender) {
         this.endTracks(track);
@@ -401,7 +399,7 @@ export default abstract class BaseSessionHandler {
     const promises: any[] = [];
     if (checkHasTransceiverFunctionality()) {
       this.log('info', 'Using track based actions', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      const senders = session.pc.getSenders();
+      const senders = session.peerConnection.getSenders();
 
       stream.getTracks().forEach(t => {
         // if the track is already on the session we shouldn't add it again
@@ -412,7 +410,7 @@ export default abstract class BaseSessionHandler {
         }
 
         this.log('debug', 'Adding track to session', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-        promises.push(session.pc.addTrack(t));
+        promises.push(session.peerConnection.addTrack(t));
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
@@ -450,7 +448,7 @@ export default abstract class BaseSessionHandler {
     }
 
     // find a transceiver with the same kind of track
-    const transceiver = session.pc.getTransceivers().find(t => {
+    const transceiver = session.peerConnection.getTransceivers().find(t => {
       return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
     });
 
@@ -462,7 +460,7 @@ export default abstract class BaseSessionHandler {
     } else {
       // the stream parameter is documented as *optional* but it is not so we will just provide a fake one
       await session.addTrack(track, new MediaStream());
-      sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
+      sender = session.peerConnection.getSenders().find(sender => sender.track && sender.track.id === track.id);
     }
 
     if (sender.track.kind === 'audio') {
@@ -493,13 +491,13 @@ export default abstract class BaseSessionHandler {
   }
 
   getSendersByTrackType (session: IExtendedMediaSession, kind: 'audio' | 'video'): RTCRtpSender[] {
-    return session.pc.getSenders().filter(sender => {
+    return session.peerConnection.getSenders().filter(sender => {
       return sender.track && sender.track.kind === kind;
     });
   }
 
   getReceiversByTrackType (session: IExtendedMediaSession, kind: 'audio' | 'video'): RTCRtpReceiver[] {
-    return session.pc.getReceivers().filter(receiver => {
+    return session.peerConnection.getReceivers().filter(receiver => {
       return receiver.track && receiver.track.kind === kind;
     });
   }

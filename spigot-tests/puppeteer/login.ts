@@ -11,7 +11,7 @@ export function startLogin (this: PuppeteerManager, page) {
 }
 
 export async function doLogin (this: PuppeteerManager, page: Page) {
-  await page.waitFor('input#email');
+  await page.waitForSelector('input#email');
   await page.focus('input#email');
   await page.keyboard.type(this.config.credentials.username);
   await page.focus('input#password');
@@ -19,7 +19,7 @@ export async function doLogin (this: PuppeteerManager, page: Page) {
   const submit = await page.$('button[type="submit"]');
   submit?.click();
   try {
-    await page.waitFor('input#org');
+    await page.waitForSelector('input#org');
     await page.focus('input#org');
     await page.keyboard.type(this.config.credentials.org);
     submit?.click();

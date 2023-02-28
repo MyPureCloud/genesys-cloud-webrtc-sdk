@@ -576,10 +576,10 @@ describe('acceptSession', () => {
   beforeEach(() => {
     media = new MockStream() as any;
     parentHandlerSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
-    addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
+    addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
     attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue({} as HTMLMediaElement);
     startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(media);
-    initialMutesSpy = jest.spyOn(handler, 'setInitialMuteStates').mockResolvedValue(null);
+    initialMutesSpy = jest.spyOn(handler, 'setInitialMuteStates').mockResolvedValue();
     session = new MockSession() as any;
     jest.spyOn(handler, 'setupTransceivers').mockReturnValue();
   });
@@ -593,8 +593,8 @@ describe('acceptSession', () => {
   });
 
   it('should use default elements', async () => {
-    const audio = mockSdk._config.defaults.audioElement = document.createElement('audio');
-    const video = mockSdk._config.defaults.videoElement = document.createElement('video');
+    const audio = mockSdk._config.defaults!.audioElement = document.createElement('audio');
+    const video = mockSdk._config.defaults!.videoElement = document.createElement('video');
 
     const incomingTrack = {} as any;
     jest.spyOn(session.pc, 'getReceivers').mockReturnValue([{ track: incomingTrack }] as any);
@@ -861,7 +861,7 @@ describe('setupTransceivers', () => {
   });
 
   it('should do nothing if addTransceiver does not exist', () => {
-    delete session.pc.addTransceiver;
+    delete (session.pc as any).addTransceiver;
 
     handler.setupTransceivers(session);
 
@@ -894,7 +894,7 @@ describe('setupTransceivers', () => {
 
 describe('endSession', () => {
   it('should end session and stop all tracks', async () => {
-    const baseSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockResolvedValue(null);
+    const baseSpy = jest.spyOn(BaseSessionHandler.prototype, 'endSession').mockResolvedValue();
 
     const session = new MockSession() as any;
 
@@ -916,14 +916,14 @@ describe('setVideoMute', () => {
   let session: VideoMediaSession;
 
   beforeEach(() => {
-    jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue();
     (window as any).MediaStream = jest.fn();
     session = new MockSession() as any;
   });
 
   it('mute: should not stop screen tracks', async () => {
     session._screenShareStream = new MockStream({ video: true }) as any;
-    const track = session._screenShareStream.getTracks()[0];
+    const track = session._screenShareStream!.getTracks()[0];
     const outbound = new MockStream();
     outbound._tracks = [new MockTrack('audio')];
     session._outboundStream = outbound as any;
@@ -948,6 +948,22 @@ describe('setVideoMute', () => {
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: true });
 
     expect(mockSdk.logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to find outbound camera'), expect.any(Object), undefined);
+  });
+
+  it('unmute: should do nothing if there are already video tracks', async () => {
+    const track = new MockTrack() as any;
+    jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([] as any);
+
+    const outbound = new MockStream();
+    outbound._tracks = [new MockTrack('audio')];
+    session._outboundStream = {
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([track])
+    } as any;
+
+    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false });
+
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('Cannot unmute, a video track already exists'), expect.any(Object), undefined);
   });
 
   it('mute: should mute video track when there is no screen track and remove track from outboundStream', async () => {
@@ -1013,10 +1029,11 @@ describe('setVideoMute', () => {
   it('unmute: should respect skipServerUpdate param', async () => {
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
-    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
 
     session._outboundStream = {
-      addTrack: jest.fn()
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
@@ -1030,16 +1047,17 @@ describe('setVideoMute', () => {
   it('unmute: should add new media to session', async () => {
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
-    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
 
     session._outboundStream = {
-      addTrack: jest.fn()
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false });
 
     expect(spy).toHaveBeenCalledWith({ video: true, session });
-    expect(session._outboundStream.addTrack).toHaveBeenCalledWith(stream.getTracks()[0]);
+    expect(session._outboundStream!.addTrack).toHaveBeenCalledWith(stream.getTracks()[0]);
     expect(session.unmute).toHaveBeenCalledWith(userId, 'video');
     expect(session.mute).not.toHaveBeenCalled();
     expect(session.videoMuted).toBeFalsy();
@@ -1049,16 +1067,17 @@ describe('setVideoMute', () => {
     const unmuteDeviceId = 'device-id';
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
-    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
 
     session._outboundStream = {
-      addTrack: jest.fn()
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false, unmuteDeviceId });
 
     expect(spy).toHaveBeenCalledWith({ video: unmuteDeviceId, session });
-    expect(session._outboundStream.addTrack).toHaveBeenCalledWith(stream.getTracks()[0]);
+    expect(session._outboundStream!.addTrack).toHaveBeenCalledWith(stream.getTracks()[0]);
     expect(session.unmute).toHaveBeenCalledWith(userId, 'video');
     expect(session.mute).not.toHaveBeenCalled();
     expect(session.videoMuted).toBeFalsy();
@@ -1069,7 +1088,7 @@ describe('setAudioMute', () => {
   let session: IExtendedMediaSession;
 
   beforeEach(() => {
-    jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue();
     session = new MockSession() as any;
   });
 
@@ -1121,7 +1140,7 @@ describe('setAudioMute', () => {
     const track = {};
     const media = { getAudioTracks: jest.fn().mockReturnValue([track]) } as any;
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(media);
-    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
 
     await handler.setAudioMute(session, { conversationId: session.conversationId, mute: false });
 
@@ -1138,7 +1157,7 @@ describe('setAudioMute', () => {
     const track = {};
     const media = { getAudioTracks: jest.fn().mockReturnValue([track]) } as any;
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(media);
-    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
 
     await handler.setAudioMute(session, { conversationId: session.conversationId, mute: false, unmuteDeviceId });
 
@@ -1152,8 +1171,8 @@ describe('setAudioMute', () => {
 
 describe('handleMediaChangeEvent', () => {
   it('should update on-screen and speakers', () => {
-    jest.spyOn(handler, 'updateParticipantsOnScreen').mockReturnValue(null);
-    jest.spyOn(handler, 'updateSpeakers').mockReturnValue(null);
+    jest.spyOn(handler, 'updateParticipantsOnScreen').mockReturnValue();
+    jest.spyOn(handler, 'updateSpeakers').mockReturnValue();
 
     handler.handleMediaChangeEvent(new MockSession() as any, {} as any);
 
@@ -1330,9 +1349,9 @@ describe('pinParticipantVideo', () => {
     removeMediaSpy = jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue();
     session = new MockSession();
     localParticipant = {
-      address: null,
-      confined: null,
-      direction: null,
+      address: null as any,
+      confined: null as any,
+      direction: null as any,
       id: uuid(),
       state: CommunicationStates.connected,
       purpose: 'user',
@@ -1386,7 +1405,7 @@ describe('pinParticipantVideo', () => {
     jest.spyOn(utils, 'requestApi').mockResolvedValue({});
     const eventSpy = jest.fn();
     session.on('pinnedParticipant', eventSpy);
-    await handler.pinParticipantVideo(session, null);
+    await handler.pinParticipantVideo(session, undefined);
 
     const expectedParams = {
       method: 'delete'
@@ -1400,7 +1419,7 @@ describe('getTrackIdFromSdp()', () => {
   it('should return `undefined` for bad sdps', () => {
     let sdp: string;
     /* no sdp */
-    expect(handler.getTrackIdFromSdp(sdp, 'audio')).toBe(undefined);
+    expect(handler.getTrackIdFromSdp(sdp!, 'audio')).toBe(undefined);
 
     /* no delimiters */
     sdp = 'v=0';

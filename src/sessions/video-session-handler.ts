@@ -61,7 +61,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     return isVideoJid(jid);
   }
 
-  findLocalParticipantInConversationUpdate (conversationUpdate: ConversationUpdate): IConversationParticipant {
+  findLocalParticipantInConversationUpdate (conversationUpdate: ConversationUpdate): IConversationParticipant | null {
     const participant = conversationUpdate.participants.find((p) => p.userId === this.sdk._personDetails.id);
 
     if (!participant) {
@@ -464,6 +464,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       if (!track) {
         this.log('warn', 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       } else {
+
         const sender = this.getSendersByTrackType(session, 'video')
           .find((sender) => sender.track && sender.track.id === track.id);
 
@@ -473,6 +474,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
         track.stop();
         session._outboundStream.removeTrack(track);
+
       }
 
       if (!skipServerUpdate) {
@@ -481,6 +483,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
+      // Make sure we don't have any tracks before we decide to spin up another.
+      if (session._outboundStream.getVideoTracks().length > 0) {
+        this.log('debug', 'Cannot unmute, a video track already exists', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+        return;
+      }
+
       this.log('info', 'Creating new video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
 
       // look for a device to use, else use default
@@ -490,9 +498,10 @@ export default class VideoSessionHandler extends BaseSessionHandler {
         requestedVideoDeviceId: videoDeviceConstraint
       });
 
-      const track = (
+      const tracks = (
         await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
-      ).getVideoTracks()[0];
+      ).getVideoTracks();
+      const track = tracks[0];
 
       logDeviceChange(this.sdk, session, 'changingDevices', {
         toVideoTrack: track,

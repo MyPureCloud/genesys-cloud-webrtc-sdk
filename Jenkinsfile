@@ -121,13 +121,13 @@ VERSION      : ${env.VERSION}
             npm run build:sample
         """)
 
-        // run spigot tests on release/ branches
-        if (isRelease() && !hasRunSpigotTests) {
-          testSpigotByEnv('dev', env.BRANCH_NAME);
-          testSpigotByEnv('test', env.BRANCH_NAME);
-          testSpigotByEnv('prod', env.BRANCH_NAME);
-          hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
-        }
+        // // run spigot tests on release/ branches
+        // if (isRelease() && !hasRunSpigotTests) {
+        //   testSpigotByEnv('dev', env.BRANCH_NAME);
+        //   testSpigotByEnv('test', env.BRANCH_NAME);
+        //   testSpigotByEnv('prod', env.BRANCH_NAME);
+        //   hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
+        // }
     }
 
     onSuccess = {

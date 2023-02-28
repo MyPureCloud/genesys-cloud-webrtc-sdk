@@ -1,11 +1,27 @@
-/* istanbul ignore file */
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, Subscription } from 'rxjs';
 import HeadsetService, { ConsumedHeadsetEvents, VendorImplementation } from 'softphone-vendor-headsets';
 
 import GenesysCloudWebrtcSdk from '../client';
 
+export interface ISdkHeadsetService {
+  headsetEvents$: Observable<ConsumedHeadsetEvents>;
+  currentSelectedImplementation: VendorImplementation;
+
+  updateAudioInputDevice (newMicId: string): void;
+  showRetry (): boolean;
+  retryConnection (micLabel: string): Promise<void>;
+  setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls: boolean): Promise<void>;
+  outgoingCall (callInfo: { conversationId: string, contactName: string }): Promise<void>;
+  endCurrentCall (conversationId: string): Promise<void>;
+  endAllCalls (): Promise<void>;
+  answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void>;
+  rejectIncomingCall (conversationId: string): Promise<void>;
+  setMute (isMuted: boolean): Promise<void>;
+  setHold (conversationId: string, isHeld: boolean): Promise<void>;
+}
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
-export abstract class SdkHeadsetBase {
+export abstract class SdkHeadsetBase implements ISdkHeadsetService {
   protected sdk: GenesysCloudWebrtcSdk;
   headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
@@ -114,7 +130,7 @@ export abstract class SdkHeadsetBase {
   /* eslint-enable */
 }
 
-export class SdkHeadset extends SdkHeadsetBase {
+export class SdkHeadsetService extends SdkHeadsetBase {
   private headsetLibrary: HeadsetService;
   headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
@@ -123,6 +139,7 @@ export class SdkHeadset extends SdkHeadsetBase {
     this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger, appName: sdk._config.originAppName });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
     this.listenForSessionEvents();
+    this.updateAudioInputDevice(this.sdk._config.defaults.audioDeviceId);
   }
 
   listenForSessionEvents (): void {
@@ -270,8 +287,7 @@ export class SdkHeadset extends SdkHeadsetBase {
 
 }
 
-
-export class SdkHeadsetStub extends SdkHeadsetBase {
+export class SdkHeadsetServiceStub extends SdkHeadsetBase {
   _fakeObservable: Subject<ConsumedHeadsetEvents>;
   headsetEvents$: Observable<ConsumedHeadsetEvents>;
 
@@ -279,5 +295,86 @@ export class SdkHeadsetStub extends SdkHeadsetBase {
     super(sdk);
     this._fakeObservable = new Subject();
     this.headsetEvents$ = this._fakeObservable.asObservable();
+  }
+}
+
+export class HeadsetProxyService implements ISdkHeadsetService {
+  private currentHeadsetService: SdkHeadsetBase;
+  private currentEventSubscription: Subscription;
+  private headsetEventsSub: Subject<ConsumedHeadsetEvents>;
+  headsetEvents$: Observable<ConsumedHeadsetEvents>;
+
+  constructor (protected sdk: GenesysCloudWebrtcSdk) {
+    this.headsetEventsSub = new Subject();
+    this.headsetEvents$ = this.headsetEventsSub.asObservable();
+    this.setUseHeadsets(!!sdk._config.useHeadsets);
+  }
+
+  setUseHeadsets (useHeadsets: boolean) {
+    if (this.currentHeadsetService) {
+      // if this is the real headset service, this will clean up the current device
+      this.currentHeadsetService.updateAudioInputDevice(null);
+    }
+
+    if (useHeadsets) {
+      this.currentHeadsetService = new SdkHeadsetService(this.sdk);
+    } else {
+      this.currentHeadsetService = new SdkHeadsetServiceStub(this.sdk);
+    }
+
+    if (this.currentEventSubscription) {
+      this.currentEventSubscription.unsubscribe();
+    }
+
+    // proxy events
+    this.currentEventSubscription = this.currentHeadsetService.headsetEvents$.subscribe((event) => this.headsetEventsSub.next(event));
+  }
+
+  get currentSelectedImplementation (): VendorImplementation {
+    return this.currentHeadsetService.currentSelectedImplementation;
+  }
+
+  updateAudioInputDevice (newMicDeviceId: string): void {
+    return this.currentHeadsetService.updateAudioInputDevice(newMicDeviceId);
+  }
+
+  showRetry (): boolean {
+    return this.currentHeadsetService.showRetry();
+  }
+
+  retryConnection (micDeviceLabel: string): Promise<void> {
+    return this.currentHeadsetService.retryConnection(micDeviceLabel);
+  }
+
+  setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls: boolean): Promise<void> {
+    return this.currentHeadsetService.setRinging(callInfo, hasOtherActiveCalls);
+  }
+
+  outgoingCall (callInfo: { conversationId: string, contactName: string }): Promise<void> {
+    return this.currentHeadsetService.outgoingCall(callInfo);
+  }
+
+  endCurrentCall (conversationId: string): Promise<void> {
+    return this.currentHeadsetService.endCurrentCall(conversationId);
+  }
+
+  endAllCalls (): Promise<void> {
+    return this.currentHeadsetService.endAllCalls();
+  }
+  
+  answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void> {
+    return this.currentHeadsetService.answerIncomingCall(conversationId, autoAnswer);
+  }
+
+  rejectIncomingCall (conversationId: string): Promise<void> {
+    return this.currentHeadsetService.rejectIncomingCall(conversationId);
+  }
+
+  setMute (isMuted: boolean): Promise<void> {
+    return this.currentHeadsetService.setMute(isMuted);
+  }
+
+  setHold (conversationId: string, isHeld: boolean): Promise<void> {
+    return this.currentHeadsetService.setHold(conversationId, isHeld);
   }
 }

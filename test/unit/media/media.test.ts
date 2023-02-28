@@ -166,7 +166,7 @@ describe('SdkMedia', () => {
     });
 
     it('should use getUserMedia if no getUserMedia', async () => {
-      delete navigatorMediaDevicesMock.getDisplayMedia;
+      delete (navigatorMediaDevicesMock as any).getDisplayMedia;
 
       await sdkMedia.startDisplayMedia();
 
@@ -471,14 +471,14 @@ describe('SdkMedia', () => {
     let startSingleMediaSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      enumerateDevicesSpy = jest.spyOn(sdkMedia, 'enumerateDevices').mockResolvedValue(null);
+      enumerateDevicesSpy = jest.spyOn(sdkMedia, 'enumerateDevices').mockResolvedValue([]);
       startMediaSpy = jest.spyOn(sdkMedia, 'startMedia').mockResolvedValue(new MockStream() as any);
       startSingleMediaSpy = jest.spyOn(sdkMedia, 'startSingleMedia' as any).mockResolvedValue(new MockStream() as any);
     });
 
     it('should set params correctly', async () => {
       const requestOptions: IMediaRequestOptions = {};
-      const expectedLogDetails = {
+      const expectedLogDetails: any = {
         mediaType: 'audio',
         preserveMedia: false,
         requestOptions: {
@@ -632,9 +632,9 @@ describe('SdkMedia', () => {
     });
 
     it('should use the sdk default deviceId if the request deviceId cannot be found', () => {
-      sdk._config.defaults.audioDeviceId = mockAudioDevice1.deviceId;
-      sdk._config.defaults.videoDeviceId = mockVideoDevice1.deviceId;
-      sdk._config.defaults.outputDeviceId = mockOutputDevice1.deviceId;
+      sdk._config.defaults!.audioDeviceId = mockAudioDevice1.deviceId;
+      sdk._config.defaults!.videoDeviceId = mockVideoDevice1.deviceId;
+      sdk._config.defaults!.outputDeviceId = mockOutputDevice1.deviceId;
 
       /* audio device */
       let result = sdkMedia.getValidDeviceId('audioinput', 'non-existent-device-id');
@@ -655,18 +655,18 @@ describe('SdkMedia', () => {
     });
 
     it('should use the sdk default device if `true` was passed in', () => {
-      sdk._config.defaults.audioDeviceId = mockAudioDevice1.deviceId;
+      sdk._config.defaults!.audioDeviceId = mockAudioDevice1.deviceId;
 
       expect(sdkMedia.getValidDeviceId('audioinput', true)).toBe(mockAudioDevice1.deviceId);
     });
 
     it('should return `undefined` if `true` passed in but there is no sdk default', () => {
-      sdk._config.defaults.audioDeviceId = 'this-device-does-not-exist';
+      sdk._config.defaults!.audioDeviceId = 'this-device-does-not-exist';
 
       expect(sdkMedia.getValidDeviceId('audioinput', true)).toBe(undefined);
       expect(sdk.logger.warn).toHaveBeenCalledWith('Unable to find the sdk default deviceId', {
         kind: 'audioinput',
-        deviceId: sdk._config.defaults.audioDeviceId,
+        deviceId: sdk._config.defaults!.audioDeviceId,
         sessionInfos: []
       });
     });
@@ -682,9 +682,9 @@ describe('SdkMedia', () => {
     });
 
     it('should return `undefined` if no deviceId can be found', () => {
-      sdk._config.defaults.audioDeviceId = null;
-      sdk._config.defaults.videoDeviceId = null;
-      sdk._config.defaults.outputDeviceId = null;
+      sdk._config.defaults!.audioDeviceId = null;
+      sdk._config.defaults!.videoDeviceId = null;
+      sdk._config.defaults!.outputDeviceId = null;
 
       /* audio device */
       let result = sdkMedia.getValidDeviceId('audioinput', 'non-existent-device-id');
@@ -786,7 +786,7 @@ describe('SdkMedia', () => {
     });
 
     it('should remove existing stream if null was passed in', () => {
-      sdk._config.defaults.audioStream = new MockStream() as any;
+      sdk._config.defaults!.audioStream = new MockStream() as any;
       sdkMedia.setDefaultAudioStream();
       expect(removeDefaultAudioStreamAndListenersSpy).toHaveBeenCalled();
       expect(setupDefaultMediaStreamListenersSpy).not.toHaveBeenCalled();
@@ -794,7 +794,7 @@ describe('SdkMedia', () => {
 
     it('should do nothing if setting to the same default stream', () => {
       const stream = new MockStream() as any as MediaStream;
-      sdk._config.defaults.audioStream = stream;
+      sdk._config.defaults!.audioStream = stream;
 
       sdkMedia.setDefaultAudioStream(stream);
 
@@ -805,13 +805,13 @@ describe('SdkMedia', () => {
     it('should setup listeners on the stream and tracks and set the default sdk config', () => {
       const stream = new MockStream(true) as any as MediaStream;
 
-      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      expect(sdk._config.defaults!.audioStream).toBeFalsy();
 
       sdkMedia.setDefaultAudioStream(stream);
 
       expect(removeDefaultAudioStreamAndListenersSpy).toHaveBeenCalled();
       expect(setupDefaultMediaStreamListenersSpy).toHaveBeenCalledWith(stream);
-      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(sdk._config.defaults!.audioStream).toBe(stream);
     });
   });
 
@@ -1136,7 +1136,7 @@ describe('SdkMedia', () => {
       expect(getByteFrequencyDataSpy).toHaveBeenCalledTimes(++callbackCount);
       expect(emitSpy).toHaveBeenNthCalledWith(callbackCount, 'audioTrackVolume', {
         track: mockAudioTrack,
-        volume: lastAvg,
+        volume: lastAvg!,
         sessionId,
         muted: false
       });
@@ -1149,7 +1149,7 @@ describe('SdkMedia', () => {
       expect(getByteFrequencyDataSpy).toHaveBeenCalledTimes(++callbackCount);
       expect(emitSpy).toHaveBeenNthCalledWith(callbackCount, 'audioTrackVolume', {
         track: mockAudioTrack,
-        volume: lastAvg,
+        volume: lastAvg!,
         sessionId,
         muted: true
       });
@@ -1164,7 +1164,7 @@ describe('SdkMedia', () => {
       expect(getByteFrequencyDataSpy).toHaveBeenCalledTimes(++callbackCount);
       expect(emitSpy).toHaveBeenNthCalledWith(callbackCount, 'audioTrackVolume', {
         track: mockAudioTrack,
-        volume: lastAvg,
+        volume: lastAvg!,
         sessionId,
         muted: true
       });
@@ -1178,7 +1178,7 @@ describe('SdkMedia', () => {
     });
 
     it('should do nothing if trackId is not being monitored', () => {
-      sdkMedia['clearAudioInputMonitor'](undefined);
+      sdkMedia['clearAudioInputMonitor']('sldkfnsl');
       expect(clearIntervalSpy).not.toHaveBeenCalled();
 
       sdkMedia['clearAudioInputMonitor']('some-track-id');
@@ -1279,7 +1279,7 @@ describe('SdkMedia', () => {
 
     it('should use default sdk videoResolution', () => {
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
-      sdk._config.defaults.videoResolution = {
+      sdk._config.defaults!.videoResolution = {
         width: 900,
         height: 900
       };
@@ -1299,7 +1299,7 @@ describe('SdkMedia', () => {
 
     it('should be able to override video `frameRate` and `resolution` to nothing', () => {
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
-      sdk._config.defaults.videoResolution = {
+      sdk._config.defaults!.videoResolution = {
         width: 900,
         height: 900
       };
@@ -1335,8 +1335,8 @@ describe('SdkMedia', () => {
 
     it('should return video/audio deviceId constraint with sdk default', () => {
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
-      sdk._config.defaults.videoDeviceId = 'video-device-id';
-      sdk._config.defaults.audioDeviceId = 'audio-device-id';
+      sdk._config.defaults!.videoDeviceId = 'video-device-id';
+      sdk._config.defaults!.audioDeviceId = 'audio-device-id';
 
       const options: IMediaRequestOptions = {
         video: true,
@@ -1356,8 +1356,8 @@ describe('SdkMedia', () => {
 
     it('should return video/audio system default if `null` was passed in even if sdk has defaults', () => {
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
-      sdk._config.defaults.videoDeviceId = 'video-device-id';
-      sdk._config.defaults.audioDeviceId = 'audio-device-id';
+      sdk._config.defaults!.videoDeviceId = 'video-device-id';
+      sdk._config.defaults!.audioDeviceId = 'audio-device-id';
 
       const options: IMediaRequestOptions = {
         video: null,
@@ -1391,7 +1391,7 @@ describe('SdkMedia', () => {
     });
 
     it('chrome getUserMedia constraints', async () => {
-      delete navigatorMediaDevicesMock.getDisplayMedia;
+      delete (navigatorMediaDevicesMock as any).getDisplayMedia;
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => true });
 
       await sdkMedia.startDisplayMedia();
@@ -1554,8 +1554,8 @@ describe('SdkMedia', () => {
         retryOnFailure: true,
         mediaType: 'audio',
         constraints: { video: false, audio: expect.not.objectContaining({ deviceId: expect.anything() }) },
-        sessionId: requestOptions.session.id,
-        conversationId: requestOptions.session.conversationId,
+        sessionId: requestOptions.session!.id,
+        conversationId: requestOptions.session!.conversationId,
         sdkDefaultDeviceId: undefined,
         availableDevices: [],
         permissions: {
@@ -1575,7 +1575,7 @@ describe('SdkMedia', () => {
         ...expectedLogExtras,
         mediaTracks: mockStream.getTracks()
       });
-      expect(trackMediaSpy).toHaveBeenCalledWith(mockStream, requestOptions.monitorMicVolume, requestOptions.session.id);
+      expect(trackMediaSpy).toHaveBeenCalledWith(mockStream, requestOptions.monitorMicVolume, requestOptions.session!.id);
     });
 
     it('should request `audio` and set `video` to false – as well as update the permissions state', async () => {
@@ -1614,12 +1614,12 @@ describe('SdkMedia', () => {
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), undefined, undefined);
 
       /* monitorMicVolume should be sdk default */
-      sdk._config.defaults.monitorMicVolume = true;
+      sdk._config.defaults!.monitorMicVolume = true;
       await startSingleMediaFn('audio', requestOptions);
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), true, undefined);
 
       /* monitorMicVolume should override the sdk default with the passed in value */
-      sdk._config.defaults.monitorMicVolume = true;
+      sdk._config.defaults!.monitorMicVolume = true;
       await startSingleMediaFn('audio', { ...requestOptions, monitorMicVolume: false });
       expect(trackMediaSpy).toHaveBeenCalledWith(expect.any(Object), false, undefined);
     });
@@ -1701,7 +1701,7 @@ describe('SdkMedia', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValue(new MockStream());
 
-      sdk._config.defaults.videoDeviceId = 'sdk-default-device-id';
+      sdk._config.defaults!.videoDeviceId = 'sdk-default-device-id';
 
       const requestOptions: IMediaRequestOptions = { video: 'this-device-id-does-not-exist', videoFrameRate: { ideal: 45 } };
 
@@ -1715,7 +1715,7 @@ describe('SdkMedia', () => {
       });
       /* 2nd with sdk default (and default frameRate) */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(2, {
-        video: { deviceId: { exact: sdk._config.defaults.videoDeviceId }, frameRate: { ideal: 30 } },
+        video: { deviceId: { exact: sdk._config.defaults!.videoDeviceId }, frameRate: { ideal: 30 } },
         audio: false
       });
       /* specific log message */
@@ -1761,7 +1761,7 @@ describe('SdkMedia', () => {
         .mockResolvedValue(new MockStream()); // sys default
 
       const requestOptions: IMediaRequestOptions = { audio: 'this-device-id-does-not-exist' };
-      sdk._config.defaults.audioDeviceId = 'this-device-id-also-does-not-exist';
+      sdk._config.defaults!.audioDeviceId = 'this-device-id-also-does-not-exist';
       await startSingleMediaFn('audio', requestOptions);
 
       expect(getUserMediaSpy).toHaveBeenCalledTimes(3);
@@ -1772,7 +1772,7 @@ describe('SdkMedia', () => {
       });
       /* 2nd with sdk default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(2, {
-        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults.audioDeviceId } }),
+        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults!.audioDeviceId } }),
         video: false
       });
       /* 3rd with system default */
@@ -1789,13 +1789,13 @@ describe('SdkMedia', () => {
         .mockResolvedValue(new MockStream()); // sys default
 
       const requestOptions: IMediaRequestOptions = { audio: true };
-      sdk._config.defaults.audioDeviceId = 'this-device-id-also-does-not-exist';
+      sdk._config.defaults!.audioDeviceId = 'this-device-id-also-does-not-exist';
       await startSingleMediaFn('audio', requestOptions);
 
       expect(getUserMediaSpy).toHaveBeenCalledTimes(2);
       /* 1st with requested device */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(1, {
-        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults.audioDeviceId } }),
+        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults!.audioDeviceId } }),
         video: false
       });
       /* 2nd with system default */
@@ -1828,7 +1828,7 @@ describe('SdkMedia', () => {
       const error = createError('BadThing', 'media is just not going to work for this browser');
       getUserMediaSpy.mockRejectedValue(error);
 
-      sdk._config.defaults.audioDeviceId = 'sdk-default-device-id';
+      sdk._config.defaults!.audioDeviceId = 'sdk-default-device-id';
 
       const requestOptions: IMediaRequestOptions = { audio: 'this-device-id-does-not-exist' };
 
@@ -1847,7 +1847,7 @@ describe('SdkMedia', () => {
       });
       /* 2nd with sdk default */
       expect(getUserMediaSpy).toHaveBeenNthCalledWith(2, {
-        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults.audioDeviceId } }),
+        audio: expect.objectContaining({ deviceId: { exact: sdk._config.defaults!.audioDeviceId } }),
         video: false
       });
       /* 3rd with system default */
@@ -2081,7 +2081,7 @@ describe('SdkMedia', () => {
 
       /* call the reset function */
       const resetFn = sdkMedia['defaultsBeingMonitored'].get(stream.id);
-      resetFn();
+      resetFn!();
 
       /* remove listeners */
       expect(stream.removeEventListener).toHaveBeenCalledWith('addtrack', expect.any(Function));
@@ -2110,30 +2110,30 @@ describe('SdkMedia', () => {
     });
 
     it('should do nothing if no default audio stream is found', () => {
-      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      expect(sdk._config.defaults!.audioStream).toBeFalsy();
       sdkMedia['removeDefaultAudioStreamAndListeners']();
-      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      expect(sdk._config.defaults!.audioStream).toBeFalsy();
     });
 
     it('should remove default listeners on audio tracks and clear out sdk default', () => {
       const stream = new MockStream({ audio: true }) as any as MediaStream;
-      sdk._config.defaults.audioStream = stream;
+      sdk._config.defaults!.audioStream = stream;
 
-      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(sdk._config.defaults!.audioStream).toBe(stream);
 
       sdkMedia['removeDefaultAudioStreamAndListeners']();
 
-      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      expect(sdk._config.defaults!.audioStream).toBeFalsy();
       stream.getAudioTracks().forEach(t => expect(removeDefaultAudioMediaTrackListenersSpy).toHaveBeenCalledWith(t.id));
     });
 
     it('should call the remove function to stop tracking media stream', () => {
       const mockRemoveFn = jest.fn();
       const stream = new MockStream({ audio: true }) as any as MediaStream;
-      sdk._config.defaults.audioStream = stream;
+      sdk._config.defaults!.audioStream = stream;
       sdkMedia['defaultsBeingMonitored'].set(stream.id, mockRemoveFn);
 
-      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(sdk._config.defaults!.audioStream).toBe(stream);
 
       sdkMedia['removeDefaultAudioStreamAndListeners']();
 
@@ -2172,20 +2172,20 @@ describe('SdkMedia', () => {
       audioTrack._mockTrackEnded();
 
       /* should remove listener, remove track from stream, and NOT remove the default stream */
-      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(sdk._config.defaults!.audioStream).toBe(stream);
       expect(audioTrack.removeEventListener).toHaveBeenCalledWith('ended', expect.any(Function));
       expect(stream.getAudioTracks()).toEqual([secondAudioTrack]);
 
       /* ending video track should do nothing */
       videoTrack._mockTrackEnded();
-      expect(sdk._config.defaults.audioStream).toBe(stream);
+      expect(sdk._config.defaults!.audioStream).toBe(stream);
       expect(videoTrack.removeEventListener).not.toHaveBeenCalled();
       expect(stream.getAudioTracks()).toEqual([secondAudioTrack]);
 
       /* should remove track from stream and reset default since there are no more active audio tracks */
       secondAudioTrack._mockTrackEnded();
       expect(secondAudioTrack.removeEventListener).toHaveBeenCalledWith('ended', expect.any(Function));
-      expect(sdk._config.defaults.audioStream).toBeFalsy();
+      expect(sdk._config.defaults!.audioStream).toBeFalsy();
     });
 
     it('should override functions to react to only "audio" tracks and call through to original function', () => {
@@ -2218,7 +2218,7 @@ describe('SdkMedia', () => {
     it('should skip calling the removeFn if one isnt found for the passed in id', () => {
       const removeFn = jest.fn();
       const track = new MockTrack('audio');
-      sdkMedia['defaultsBeingMonitored'].set(track.id, undefined);
+      sdkMedia['defaultsBeingMonitored'].set(track.id, () => {});
 
       sdkMedia['removeDefaultAudioMediaTrackListeners'](track.id);
       expect(removeFn).not.toHaveBeenCalled();
@@ -2243,5 +2243,14 @@ describe('SdkMedia', () => {
       const returnedDevice = sdkMedia.findCachedDeviceByIdAndKind('mockOutputDevice1', 'audiooutput');
       expect(returnedDevice).toStrictEqual(mockedDevices[4]);
     })
-  })
+  });
+
+  describe('removeDefaultAudioMediaTrackListeners()', () => {
+    it('should not blow up if removeFn not found', () => {
+      sdkMedia['defaultsBeingMonitored'].get = jest.fn().mockReturnValue(null);
+
+      expect(() => sdkMedia['removeDefaultAudioMediaTrackListeners']('testTrackId')).not.toThrow();
+    });
+  });
 });
+
