@@ -76,7 +76,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     connection.on('disconnected', handleDisconnectedEvent.bind(this));
   });
 
-  await connection.connect({ keepTryingOnFailure: true });
+  await connection.connect({ maxConnectionAttempts: Infinity });
   await initialPromise;
 }
 
