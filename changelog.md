@@ -3,7 +3,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.4...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.5...HEAD)
+# [v8.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.4...v8.0.5)
+### Fixed
+* [PCM-2089](https://inindca.atlassian.net/browse/PCM-2089) - Bump streaming client
+
 # [v8.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.3...v8.0.4)
 ### Changed
 * [PCM-2042](https://inindca.atlassian.net/browse/PCM-2042) - Updated streaming client to pull in the sdp over xmpp handling. This change should be backward compatible even though a lot of the tests changed to use the `id` property on the session instead of the `sid` property.
