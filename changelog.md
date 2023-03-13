@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.6...HEAD)
 # [v8.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.5...v8.0.6)
 ### Fixed
-* [PCM-2089](https://inindca.atlassian.net/browse/PCM-2089) - Bump streaming client
+* [PCM-2093](https://inindca.atlassian.net/browse/PCM-2093) - Bump streaming client
 
 # [v8.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.4...v8.0.5)
 ### Fixed
