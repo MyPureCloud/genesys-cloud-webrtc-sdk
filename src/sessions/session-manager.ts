@@ -26,6 +26,7 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
 import { Constants } from 'stanza';
 import ScreenRecordingSessionHandler from './screen-recording-session-handler';
+import { WebrtcExtensionAPI } from 'genesys-cloud-streaming-client/dist/es/webrtc';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
@@ -53,7 +54,7 @@ export class SessionManager {
     this.sdk.logger[level](message, details);
   }
 
-  get webrtcSessions () {
+  get webrtcSessions (): WebrtcExtensionAPI {
     return this.sdk._streamingConnection.webrtcSessions;
   }
 
@@ -61,7 +62,7 @@ export class SessionManager {
   //   return this.sdk._streamingConnection._webrtcSessions.getSessionManager();
   // }
 
-  handleConversationUpdate (update: ConversationUpdate) {
+  handleConversationUpdate (update: ConversationUpdate): void {
     const sessions = this.getAllSessions();
 
     /* let each enabled handler process updates */
@@ -91,7 +92,7 @@ export class SessionManager {
     return session;
   }
 
-  removePendingSession (params: ISessionIdAndConversationId | IPendingSession) {
+  removePendingSession (params: ISessionIdAndConversationId | IPendingSession): void {
     const pendingSession = this.getPendingSession(params);
 
     if (!pendingSession) {
@@ -103,14 +104,14 @@ export class SessionManager {
   }
 
   getSession (params: { conversationId: string, sessionType?: SessionTypes, searchScreenRecordingSessions?: boolean }): IExtendedMediaSession {
-    
+
     let sessionTypesToSearch: SessionTypes[];
 
     if (params.sessionType) {
       sessionTypesToSearch = [params.sessionType];
     } else {
       const sessionTypes = { ...SessionTypes };
-      
+
       if (!params.searchScreenRecordingSessions) {
         delete sessionTypes[SessionTypes.screenRecording]
       }
@@ -135,7 +136,7 @@ export class SessionManager {
     return session;
   }
 
-  getSessionBySessionId (sessionId: string) {
+  getSessionBySessionId (sessionId: string): IExtendedMediaSession {
     return this.getAllSessions().find(s => s.id === sessionId);
   }
 
@@ -279,6 +280,11 @@ export class SessionManager {
     const existingSession = this.getPendingSession(sessionInfo);
 
     if (existingSession) {
+      if (existingSession?.sessionId !== sessionInfo.sessionId) {
+        this.log('info', `found and existingSession matching propose's conversationId, updating existingSession.sessionId to match`,
+          { existingSessionId: existingSession.sessionId, proposeSessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId});
+        existingSession.sessionId = sessionInfo.sessionId;
+      }
       logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
       return;
     }
@@ -396,7 +402,7 @@ export class SessionManager {
 
   async forceTerminateSession (sessionId: string, reason?: Constants.JingleReasonCondition) {
     const session = this.getAllSessions().find((s: IExtendedMediaSession) => s.id === sessionId);
-    
+
     if (!session) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Failed to find session by sessionId', { sessionId });
     }

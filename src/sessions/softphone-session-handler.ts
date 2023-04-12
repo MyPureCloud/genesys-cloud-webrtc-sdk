@@ -87,11 +87,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         AND our client handled it.
         this can happen when LA > 1 and persistentConnection is ON
       */
-      if (
-        this.hasActiveSession() &&
-        !Object.values(this.conversations)
-          .find(c => c.session === this.activeSession)
-      ) {
+      if (this.hasActiveSession() && !Object.values(this.conversations).find(c => c.session === this.activeSession)) {
         session = this.activeSession;
         this.log('info', 'we have an active session that is not in use by another conversation. using that session', {
           conversationId: update.id,
@@ -122,12 +118,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
   }
 
-  handleSoftphoneConversationUpdate (
-    update: ConversationUpdate,
-    participant: IConversationParticipantFromEvent,
-    callState: ICallStateFromParticipant,
-    session?: IExtendedMediaSession
-  ) {
+  handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
     const conversationId = update.id;
     const lastConversationUpdate = this.conversations[conversationId];
 
@@ -263,7 +254,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     update: ConversationUpdate,
     participant: IConversationParticipantFromEvent,
     callState: ICallStateFromParticipant
-  ) {
+  ): void {
     if (callState.errorInfo) {
       this.debouncedEmitCallError(update, participant, callState);
     }
@@ -568,7 +559,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               endedSession,
               conversationId,
               session
-            }, { skipServer: true });
+            });
             this.sdk.off('sessionEnded', listener);
             return resolve(reason);
           } else {
@@ -576,7 +567,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               endedSession,
               conversationId,
               session
-            }, { skipServer: true });
+            });
           }
         }
 
