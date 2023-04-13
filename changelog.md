@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.6...HEAD)
 ### Fixed
-* [PCM-2116](https://inindca.atlassian.net/browse/PCM-2116) - Fixed issue where users were not able to answer incoming calls on LA=100 and persistent connection on - caused by not updating sessionId on pendingSession. If we already have a pendingSession for a given conversationId, we will update the session to match the incoming propose's sessionId.
+* [PCM-2116](https://inindca.atlassian.net/browse/PCM-2116) - Fixed issue where users were not able to answer incoming calls on LA=100 and persistent connection on - caused by not updating sessionId on pendingSession. If we already have a pendingSession for a given conversationId, we will update the session to match the incoming propose's sessionId. Updated to ES2020 from ES6.
 # [v8.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.5...v8.0.6)
 ### Fixed
 * [PCM-2093](https://inindca.atlassian.net/browse/PCM-2093) - Bump streaming client

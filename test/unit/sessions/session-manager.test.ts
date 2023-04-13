@@ -393,6 +393,39 @@ describe('onPropose', () => {
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
   });
 
+  it('should ignore if pendingSession already exists and sessionIds do not match', async () => {
+    const mockHandler: any = {
+      handlePropose: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+    const sessionInfo = createPendingSession();
+    const existingSession = createPendingSession();
+    existingSession.conversationId = sessionInfo.conversationId
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(existingSession as any);
+
+    await sessionManager.onPropose(sessionInfo);
+
+    expect(mockHandler.handlePropose).not.toHaveBeenCalled();
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(`found and existingSession matching propose's conversationId, updating existingSession.sessionId to match`),
+      expect.any(Object));
+    });
+
+    it('should ignore if pendingSession already exists and sessionIds DO match', async () => {
+      const mockHandler: any = {
+        handlePropose: jest.fn()
+      };
+      jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+      const sessionInfo = createPendingSession();
+      jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(sessionInfo as any);
+
+      await sessionManager.onPropose(sessionInfo);
+
+      expect(mockHandler.handlePropose).not.toHaveBeenCalled();
+      });
+
   it('should ignore if sessionHandler is disabled', async () => {
     jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue({} as any);
 
@@ -1074,13 +1107,13 @@ describe('updateAudioVolume', () => {
 describe('getAllActiveConversations', () => {
   it('should return a concat\'d list of conversations', () => {
     sessionManager.sessionHandlers = [
-      { 
+      {
         getActiveConversations: () => [
           { sessionId: 'session1', sessionType: SessionTypes.softphone, conversationId: 'convo1' },
           { sessionId: 'session2', sessionType: SessionTypes.softphone, conversationId: 'convo2' }
         ]
       } as unknown as SoftphoneSessionHandler,
-      { 
+      {
         getActiveConversations: () => [
           { sessionId: 'session3', sessionType: SessionTypes.softphone, conversationId: 'convo3' },
           { sessionId: 'session4', sessionType: SessionTypes.softphone, conversationId: 'convo4' }
