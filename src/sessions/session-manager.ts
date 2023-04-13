@@ -280,8 +280,8 @@ export class SessionManager {
     const existingSession = this.getPendingSession(sessionInfo);
 
     if (existingSession) {
-      if (existingSession?.sessionId !== sessionInfo.sessionId) {
-        this.log('info', `found and existingSession matching propose's conversationId, updating existingSession.sessionId to match`,
+      if (existingSession.sessionId !== sessionInfo.sessionId) {
+        this.log('info', `found an existingSession matching propose's conversationId, updating existingSession.sessionId to match`,
           { existingSessionId: existingSession.sessionId, proposeSessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId});
         existingSession.sessionId = sessionInfo.sessionId;
       }

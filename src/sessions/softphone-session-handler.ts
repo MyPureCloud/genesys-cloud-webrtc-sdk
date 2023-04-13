@@ -502,7 +502,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return super.proceedWithSession(pendingSession);
     }
 
-    this.log('info', '`proceedWithSession` called with an active session and LA == 1. sending proceed via HTTP request', {
+    this.log('info', '`proceedWithSession` called with an active session and/or LA == 1. sending proceed via HTTP request', {
       sessionId: pendingSession.id,
       conversationId: pendingSession.conversationId
     });
@@ -555,22 +555,15 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       const terminatedPromise = new Promise<JingleReason>((resolve) => {
         const listener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
           if (endedSession.id === session.id && endedSession.conversationId === conversationId) {
-            this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', {
-              endedSession,
-              conversationId,
-              session
-            });
+            this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', { endedSession, conversationId, session}, { skipServer: true });
             this.sdk.off('sessionEnded', listener);
             return resolve(reason);
           } else {
-            this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', {
-              endedSession,
-              conversationId,
-              session
-            });
+            this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', { endedSession, conversationId, session}, { skipServer: true});
           }
         }
 
+        this.log('info', 'received "sessionEnded event"', { sessionId: session.id, conversationId, sessionType: session.sessionType})
         this.sdk.on('sessionEnded', listener);
       });
 
