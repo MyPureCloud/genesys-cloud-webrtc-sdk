@@ -393,7 +393,7 @@ describe('onPropose', () => {
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
   });
 
-  fit('should ignore if pendingSession already exists and sessionIds do not match', async () => {
+  it('should ignore if pendingSession already exists and sessionIds do not match', async () => {
     const mockHandler: any = {
       handlePropose: jest.fn()
     };
