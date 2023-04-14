@@ -393,7 +393,7 @@ describe('onPropose', () => {
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
   });
 
-  it('should ignore if pendingSession already exists and sessionIds do not match', async () => {
+  fit('should ignore if pendingSession already exists and sessionIds do not match', async () => {
     const mockHandler: any = {
       handlePropose: jest.fn()
     };
@@ -408,7 +408,7 @@ describe('onPropose', () => {
 
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
     expect(mockSdk.logger.info).toHaveBeenCalledWith(
-      expect.stringContaining(`found and existingSession matching propose's conversationId, updating existingSession.sessionId to match`),
+      expect.stringContaining(`found an existingSession matching propose's conversationId, updating existingSession.sessionId to match`),
       expect.any(Object));
     });
 

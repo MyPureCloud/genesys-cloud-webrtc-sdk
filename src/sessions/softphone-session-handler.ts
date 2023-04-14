@@ -547,6 +547,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     try {
+      this.log("info", "ending session", {
+        sessionId: session.id,
+        sessionConversationId: session.conversationId,
+        sessionType: session.sessionType,
+        reason
+      });
       const participant = await this.getUserParticipantFromConversationId(conversationId);
 
       const patchPromise = this.patchPhoneCall(conversationId, participant.id, {
@@ -563,7 +569,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           }
         }
 
-        this.log('info', 'received "sessionEnded event"', { sessionId: session.id, conversationId, sessionType: session.sessionType})
         this.sdk.on('sessionEnded', listener);
       });
 
