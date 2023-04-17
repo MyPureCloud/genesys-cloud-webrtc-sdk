@@ -1165,65 +1165,81 @@ export interface IVideoResolution {
 export interface IMemberStatusMessage extends JsonRpcMessage {
   method: 'member.notify.status';
   params: {
-    speakers?: VideoSpeakerStatus[];
-    outgoingStreams?: OutgoingStreamStatus[];
-    incomingStreams?: IncomingStreamStatus[];
-  }
+      speakers?: VideoSpeakerStatus[];
+      outgoingStreams?: OutgoingStreamStatus[];
+      incomingStreams?: IncomingStreamStatus[];
+      bandwidthAndRates?: IDataChannelBandwidthAndRates;
+  };
 }
 
 export interface VideoSpeakerStatus {
   /** memberId of the conference member. */
   id: string;
-
   activity: 'speaking' | 'inactive' | 'non-speech';
-
   /** Audio level, in dB, in the range of -127.0 to 0.0 with 0.0 being the loudest */
   level: number;
-
+  /** active audio deemed to be non-speech */
+  noisy?: boolean;
   /** true to indicate the conference member is being heard, false to indicate they are not currently in the audio mix */
   included: boolean;
-
   /** Contains IDs of the speaker  */
-  appId: {
+  appId: IDataChannelAppId;
+  bandwidthAndRates: IDataChannelBandwidthAndRates;
+}
 
-    /** The speaker's jabberId. */
-    sourceJid: string;
-
-    /** The speaker's participantId. */
-    sourceParticipantId: string;
-
-    /** The speaker's userId. */
-    sourceUserId: string;
-  }
+export interface IDataChannelAppId {
+  /** The speaker's jabberId. */
+  sourceJid: string;
+  /** The speaker's participantId. */
+  sourceParticipantId: string;
+  /** The speaker's userId. */
+  sourceUserId: string;
 }
 
 export interface OutgoingStreamStatus {
   /** Stream ID of the outgoing stream (stream sent from member to MMS) */
   outgoingStreamId: string;
-
   /** Userids currently viewing this stream */
-  viewers: string[];
+  viewers: {
+      /** memberId of the conference member */
+      id: string;
+      appId: IDataChannelAppId;
+  }[];
 }
 
 export interface IncomingStreamStatus {
   /** Stream ID of the incoming stream on this member being described */
   sinkPinId: string;
-
   /** Track ID (from the SDP, local to this member) */
-  sinkTrackId: string;
-
+  sinkTrackId?: string;
   /** Client ID of the source being sent to this stream */
-  sourceId: string;
-
+  sourceId?: string;
   /** Pin ID of the stream on the viewed member's client */
   sourcePinId: string;
-
   /** Track ID from the SDP of the viewed member's client */
-  sourceTrackId: string;
-  contentType: 'camera' | 'screenshare' | 'playback';
+  sourceTrackId?: string;
+  //TODO: Remove this when the camelcase version is deployed for media service
+  appid?: IDataChannelAppId;
+  appId?: IDataChannelAppId;
+  contentType?: 'camera' | 'screenshare' | 'playback';
 }
+
 export interface IActiveConversationDescription {
   conversationId: string;
   sessionId: string;
   sessionType: SessionTypes;
+}
+
+export interface IDataChannelBandwidthAndRates {
+  /** bandwidth, in bits per second, from mms to the client */
+  bwToClient: number;
+
+  /** data rate, in bits per second, of the streams being sent from mms to the client */
+  rateToClient: number;
+
+  /** bandwidth, in bits per second, from the client to mms */
+  bwFromClient: number;
+
+  /** data rate, in bits per second, of the streams being sent from the client to mms */
+  rateFromClient: number;
 }
