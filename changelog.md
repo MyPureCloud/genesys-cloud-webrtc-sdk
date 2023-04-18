@@ -3,7 +3,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.7...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.8...HEAD)
+# [v8.0.8](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.7...v8.0.8)
 ### Fixed
 * [PCM-2116](https://inindca.atlassian.net/browse/PCM-2116) - Fixed issue where users were not able to answer incoming calls on LA=100 and persistent connection on - caused by not updating sessionId on pendingSession. If we already have a pendingSession for a given conversationId, we will update the session to match the incoming propose's sessionId. Updated to ES2020 from ES6.
 # [v8.0.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.6...v8.0.7)
