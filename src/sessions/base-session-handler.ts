@@ -27,7 +27,16 @@ export default abstract class BaseSessionHandler {
   disabled = true;
   abstract sessionType: SessionTypes;
 
-  constructor (protected sdk: GenesysCloudWebrtcSdk, protected sessionManager: SessionManager) { }
+  constructor (protected sdk: GenesysCloudWebrtcSdk, protected sessionManager: SessionManager) {
+    this.sdk.on("sessionEnded", (session, reason) => {
+      this.log("info", "sessionEnded event received", {
+        sessionId: session.id,
+        conversationId: session.conversationId,
+        sessionType: session.sessionType,
+        reason
+      });
+    });
+  }
 
   abstract shouldHandleSessionByJid (jid: string): boolean;
 

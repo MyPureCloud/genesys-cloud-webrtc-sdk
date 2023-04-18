@@ -210,7 +210,7 @@ For example:
   * The new session(s) will not receive standard session events, but instead will watch converversation events
   and emit "mocked" events based on the conversation events (meaning, `pendingSession`, `sessionStarted`, `sessionEnded`, etc
   will still be emitted from the SDK).
-* Persistent connection is not really effected when LA == 1. Having it enabled will keep the session alive after the call ends, making
+* Persistent connection is not really affected when LA == 1. Having it enabled will keep the session alive after the call ends, making
   the second bullet the more used case.
 
 ### How Does This Affect Clients Using the SDK?
@@ -224,7 +224,7 @@ not miss the necessary code for the migration.
   when Line Appearance == 1 (see conversationUpdate event docs for details). Please note that the normal SDK events
   (`sessionStarted`, `sessionEnded`, etc) will still always be emitted.
 1. If you _are_ using **persistent connection** (this is less common) – Since the SDK did not support persistent connection
-  until v7, your application would have had to listen to the conversation events and responded appropriately. Now that
+  until v7, your application would have had to listen to the conversation events and respond appropriately. Now that
   the SDK is configured to support persistent connection, there are two options:
     1. Cut over to completely rely on the `conversationUpdate` and normal SDK events (`sessionStarted`, `sessionEnded`, etc).
     2. If you would like your application to keep its own, already built logic for persistent connection, there are
@@ -233,7 +233,7 @@ not miss the necessary code for the migration.
       [isPersistentConnectionEnabled()](index.md#isPersistentConnectionEnabled) which is available.
 
 > Note: **Persistent connection** _with_ **Line Appearance > 1** is _not_ fully supported due to the imminent migration
-> to **Line Appearance == 1** as the default to Webrtc stations. It was taken into consideration and should work. However,
+> to **Line Appearance == 1** as the default for Webrtc stations. It was taken into consideration and should work. However,
 > there may still be edge cases that will not be covered. Feel free to open bug reports of any found issues, but it is
 > not guaranteed they will be fixed.
 
