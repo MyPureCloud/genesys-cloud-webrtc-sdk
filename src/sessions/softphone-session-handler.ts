@@ -87,11 +87,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         AND our client handled it.
         this can happen when LA > 1 and persistentConnection is ON
       */
-      if (
-        this.hasActiveSession() &&
-        !Object.values(this.conversations)
-          .find(c => c.session === this.activeSession)
-      ) {
+      if (this.hasActiveSession() && !Object.values(this.conversations).find(c => c.session === this.activeSession)) {
         session = this.activeSession;
         this.log('info', 'we have an active session that is not in use by another conversation. using that session', {
           conversationId: update.id,
@@ -122,12 +118,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
   }
 
-  handleSoftphoneConversationUpdate (
-    update: ConversationUpdate,
-    participant: IConversationParticipantFromEvent,
-    callState: ICallStateFromParticipant,
-    session?: IExtendedMediaSession
-  ) {
+  handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
     const conversationId = update.id;
     const lastConversationUpdate = this.conversations[conversationId];
 
@@ -263,7 +254,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     update: ConversationUpdate,
     participant: IConversationParticipantFromEvent,
     callState: ICallStateFromParticipant
-  ) {
+  ): void {
     if (callState.errorInfo) {
       this.debouncedEmitCallError(update, participant, callState);
     }
@@ -511,7 +502,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return super.proceedWithSession(pendingSession);
     }
 
-    this.log('info', '`proceedWithSession` called with an active session and LA == 1. sending proceed via HTTP request', {
+    this.log('info', '`proceedWithSession` called with an active session and/or LA == 1. sending proceed via HTTP request', {
       sessionId: pendingSession.id,
       conversationId: pendingSession.conversationId
     });
@@ -556,6 +547,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     try {
+      this.log("info", "ending session", {
+        sessionId: session.id,
+        sessionConversationId: session.conversationId,
+        sessionType: session.sessionType,
+        reason
+      });
       const participant = await this.getUserParticipantFromConversationId(conversationId);
 
       const patchPromise = this.patchPhoneCall(conversationId, participant.id, {
@@ -564,19 +561,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       const terminatedPromise = new Promise<JingleReason>((resolve) => {
         const listener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
           if (endedSession.id === session.id && endedSession.conversationId === conversationId) {
-            this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', {
-              endedSession,
-              conversationId,
-              session
-            }, { skipServer: true });
+            this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', { endedSession, conversationId, session}, { skipServer: true });
             this.sdk.off('sessionEnded', listener);
             return resolve(reason);
           } else {
-            this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', {
-              endedSession,
-              conversationId,
-              session
-            }, { skipServer: true });
+            this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', { endedSession, conversationId, session}, { skipServer: true});
           }
         }
 
