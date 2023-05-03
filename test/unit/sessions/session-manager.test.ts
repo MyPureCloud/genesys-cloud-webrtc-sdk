@@ -401,8 +401,8 @@ describe('onPropose', () => {
 
     const sessionInfo = createPendingSession();
     const existingSession = createPendingSession();
+    sessionManager.pendingSessions = [existingSession];
     existingSession.conversationId = sessionInfo.conversationId
-    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(existingSession as any);
 
     await sessionManager.onPropose(sessionInfo);
 
@@ -419,7 +419,7 @@ describe('onPropose', () => {
       jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
       const sessionInfo = createPendingSession();
-      jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(sessionInfo as any);
+      sessionManager.pendingSessions = [sessionInfo];
 
       await sessionManager.onPropose(sessionInfo);
 
