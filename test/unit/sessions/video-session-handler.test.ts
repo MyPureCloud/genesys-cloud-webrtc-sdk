@@ -1300,6 +1300,33 @@ describe('stopScreenShare', () => {
     expect(replaceSpy).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).toHaveBeenCalled();
   });
+
+  it('should toggle off of screen share AND keep video unmuted if something goes wrong when fetching device media', async () => {
+    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockRejectedValueOnce({ message: 'Could not start video source' }).mockResolvedValueOnce();
+    session._resurrectVideoOnScreenShareEnd = true;
+    session._screenShareStream = new MockStream({ video: true });
+
+    await handler.stopScreenShare(session);
+
+    expect(videoMuteSpy).toHaveBeenNthCalledWith(1, session, { conversationId: session.conversationId, mute: false }, true);
+    expect(videoMuteSpy).toHaveBeenNthCalledWith(2, session, { conversationId: session.conversationId, mute: true }, false);
+    expect(session._screenShareStream._tracks[0].stop).toHaveBeenCalled();
+    expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).toHaveBeenCalled();
+    jest.resetAllMocks();
+  });
+
+  it('should not proceed with toggling the screen share if something actually goes wrong', async () => {
+    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockImplementation(() => Promise.reject('HELP'));
+    session._resurrectVideoOnScreenShareEnd = true;
+    session._screenShareStream = new MockStream({ video: true });
+    try {
+      await handler.stopScreenShare(session);
+    } catch (err) {
+      expect(videoMuteSpy).toHaveBeenCalledTimes(1);
+      expect(session._screenShareStream._tracks[0].stop).not.toHaveBeenCalled();
+      expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).not.toHaveBeenCalled();
+    }
+  });
 });
 
 describe('attachIncomingTrackToElement', () => {
