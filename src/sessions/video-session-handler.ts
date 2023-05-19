@@ -642,14 +642,9 @@ export default class VideoSessionHandler extends BaseSessionHandler {
          * fetching the preferred device's media, we still stop screensharing
          * but return the user to a muted state
         */
-        if (err.message === 'Could not start video source') {
-          await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, false);
-          track.stop();
-          this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
-        } else {
-          // Otherwise something actually went wrong so we still throw the error
-          throw err;
-        }
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, false);
+        track.stop();
+        this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
       }
     } else {
       await sender.replaceTrack(null);

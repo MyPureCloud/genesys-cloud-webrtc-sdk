@@ -1314,19 +1314,6 @@ describe('stopScreenShare', () => {
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).toHaveBeenCalled();
     jest.resetAllMocks();
   });
-
-  it('should not proceed with toggling the screen share if something actually goes wrong', async () => {
-    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockImplementation(() => Promise.reject('HELP'));
-    session._resurrectVideoOnScreenShareEnd = true;
-    session._screenShareStream = new MockStream({ video: true });
-    try {
-      await handler.stopScreenShare(session);
-    } catch (err) {
-      expect(videoMuteSpy).toHaveBeenCalledTimes(1);
-      expect(session._screenShareStream._tracks[0].stop).not.toHaveBeenCalled();
-      expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).not.toHaveBeenCalled();
-    }
-  });
 });
 
 describe('attachIncomingTrackToElement', () => {
