@@ -29,6 +29,10 @@ export default abstract class BaseSessionHandler {
 
   constructor (protected sdk: GenesysCloudWebrtcSdk, protected sessionManager: SessionManager) {
     this.sdk.on("sessionEnded", (session, reason) => {
+      if (session.sessionType !== this.sessionType) {
+        return;
+      }
+
       this.log("info", "sessionEnded event received", {
         sessionId: session.id,
         conversationId: session.conversationId,
@@ -92,7 +96,10 @@ export default abstract class BaseSessionHandler {
     });
 
     session.on('terminated', this.onSessionTerminated.bind(this, session));
-    this.sdk.emit('sessionStarted', session);
+
+    if (!session.reinvite) {
+      this.sdk.emit('sessionStarted', session);
+    }
   }
 
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
@@ -139,7 +146,7 @@ export default abstract class BaseSessionHandler {
       session.once('terminated', (reason) => {
         resolve();
       });
-      session.end(reason);
+      return session.end(reason);
     });
   }
 
