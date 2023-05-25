@@ -277,7 +277,8 @@ export class SessionManager {
 
     logPendingSession(this.sdk.logger, 'onPendingSession', sessionInfo);
 
-    const existingSession = this.getPendingSession(sessionInfo);
+    const { conversationId, sessionType } = sessionInfo;
+    const existingSession = this.getPendingSession({ conversationId, sessionType });
 
     if (existingSession) {
       if (existingSession.sessionId !== sessionInfo.sessionId) {

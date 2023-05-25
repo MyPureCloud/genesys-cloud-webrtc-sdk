@@ -393,7 +393,7 @@ describe('onPropose', () => {
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
   });
 
-  it('should ignore if pendingSession already exists and sessionIds do not match', async () => {
+  it('should update session info and ignore propose if pending session already exists and sessionIds do not match', async () => {
     const mockHandler: any = {
       handlePropose: jest.fn()
     };
@@ -401,11 +401,12 @@ describe('onPropose', () => {
 
     const sessionInfo = createPendingSession();
     const existingSession = createPendingSession();
+    sessionManager.pendingSessions = [existingSession];
     existingSession.conversationId = sessionInfo.conversationId
-    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(existingSession as any);
 
     await sessionManager.onPropose(sessionInfo);
 
+    expect(sessionManager.pendingSessions[0].sessionId). toEqual(sessionInfo.sessionId);
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
     expect(mockSdk.logger.info).toHaveBeenCalledWith(
       expect.stringContaining(`found an existingSession matching propose's conversationId, updating existingSession.sessionId to match`),
@@ -419,7 +420,7 @@ describe('onPropose', () => {
       jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
       const sessionInfo = createPendingSession();
-      jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue(sessionInfo as any);
+      sessionManager.pendingSessions = [sessionInfo];
 
       await sessionManager.onPropose(sessionInfo);
 
