@@ -1008,6 +1008,7 @@ describe('setVideoMute', () => {
 
   it('mute: should respect skipServerUpdate param', async () => {
     const track = new MockTrack() as any;
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession ]);
 
     jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([
       { track }
@@ -1029,6 +1030,7 @@ describe('setVideoMute', () => {
   it('unmute: should respect skipServerUpdate param', async () => {
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession ]);
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
 
     session._outboundStream = {
@@ -1096,7 +1098,7 @@ describe('setVideoMute', () => {
       getVideoTracks: jest.fn().mockReturnValue([])
     } as any;
 
-    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false, unmuteDeviceId });
+    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false, unmuteDeviceId }, true);
 
     expect(spy).toHaveBeenCalledWith({ video: unmuteDeviceId, session });
     expect(session._outboundStream!.addTrack).not.toHaveBeenCalled();
