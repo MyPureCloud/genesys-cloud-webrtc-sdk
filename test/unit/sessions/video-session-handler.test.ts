@@ -1047,6 +1047,7 @@ describe('setVideoMute', () => {
   it('unmute: should add new media to session', async () => {
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession ]);
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
 
     session._outboundStream = {
@@ -1067,6 +1068,7 @@ describe('setVideoMute', () => {
     const unmuteDeviceId = 'device-id';
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession ]);
     jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
 
     session._outboundStream = {
@@ -1081,6 +1083,25 @@ describe('setVideoMute', () => {
     expect(session.unmute).toHaveBeenCalledWith(userId, 'video');
     expect(session.mute).not.toHaveBeenCalled();
     expect(session.videoMuted).toBeFalsy();
+  });
+
+  it('unmute: should not call unmute on the session and call addTrack on outbound stream; instead it stops the media on the track if the session has ended since starting media', async () => {
+    const unmuteDeviceId = 'device-id';
+    const stream = new MockStream(true);
+    const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
+
+    session._outboundStream = {
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([])
+    } as any;
+
+    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false, unmuteDeviceId });
+
+    expect(spy).toHaveBeenCalledWith({ video: unmuteDeviceId, session });
+    expect(session._outboundStream!.addTrack).not.toHaveBeenCalled();
+    expect(session.unmute).not.toHaveBeenCalled();
+    expect(stream.getVideoTracks()[0].stop).toHaveBeenCalled();
   });
 });
 
