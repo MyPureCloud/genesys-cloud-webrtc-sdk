@@ -384,6 +384,14 @@ export class SessionManager {
     }
 
     const session = this.getSession({ conversationId: params.conversationId, sessionType: params.sessionType, searchScreenRecordingSessions: true });
+
+    if (session._alreadyAccepted) {
+      this.log('info', 'acceptSession called for session that was already accepted, not accepting again.', { sessionId: session.id, conversationId: session.conversationId });
+      return;
+    }
+
+    session._alreadyAccepted = true;
+    
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }

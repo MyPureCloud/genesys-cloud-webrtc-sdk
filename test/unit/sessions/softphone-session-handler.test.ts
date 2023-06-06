@@ -1159,6 +1159,27 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
+  it('should not emit "sessionStarted" if it was already emitted', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+    session._emittedSessionStarteds = { [update.id]: true };
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(emitConversationEventSpy).toHaveBeenCalledWith(
+      'added',
+      handler.conversations[update.id],
+      session
+    );
+    expect(handler.conversations[update.id]).toBeTruthy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
   it('should handle pending sessions we rejected', () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.disconnected,
