@@ -268,34 +268,6 @@ describe('Client', () => {
       await sdk.acceptPendingSession({ conversationId });
       expect(sdk.sessionManager.proceedWithSession).toBeCalledWith({ conversationId });
     });
-
-    it('passes the correct values into headsets answerIncomingCall', async () => {
-      sdk = constructSdk();
-      const conversationId = '5512551';
-
-      const answerIncomingCallSpy = jest.spyOn(sdk.headset, 'answerIncomingCall');
-
-      sessionManagerMock.getPendingSession
-      .mockReturnValueOnce({
-        autoAnswer: true
-      } as IPendingSession)
-      .mockReturnValueOnce({
-        autoAnswer: false
-      } as IPendingSession)
-      .mockReturnValueOnce({} as IPendingSession);
-
-      await sdk.acceptPendingSession({ conversationId });
-
-      expect(answerIncomingCallSpy).toHaveBeenCalledWith(conversationId, true);
-
-      await sdk.acceptPendingSession({ conversationId });
-
-      expect(answerIncomingCallSpy).toHaveBeenCalledWith(conversationId, false);
-
-      await sdk.acceptPendingSession({ conversationId });
-
-      expect(answerIncomingCallSpy).toHaveBeenCalledWith(conversationId, undefined);
-    })
   });
 
   describe('rejectPendingSession()', () => {

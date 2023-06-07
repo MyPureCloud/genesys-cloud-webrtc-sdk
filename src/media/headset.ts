@@ -11,7 +11,7 @@ export interface ISdkHeadsetService {
   showRetry (): boolean;
   retryConnection (micLabel: string): Promise<void>;
   setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls: boolean): Promise<void>;
-  outgoingCall (callInfo: { conversationId: string, contactName: string }): Promise<void>;
+  outgoingCall (callInfo: { conversationId: string, contactName?: string }): Promise<void>;
   endCurrentCall (conversationId: string): Promise<void>;
   endAllCalls (): Promise<void>;
   answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void>;
@@ -74,7 +74,7 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
    * contactName for the call that is outgoing
    * @returns Promise<void>
    */
-  async outgoingCall (_callInfo: { conversationId: string, contactName: string }): Promise<void> { /* no-op */ }
+  async outgoingCall (_callInfo: { conversationId: string, contactName?: string }): Promise<void> { /* no-op */ }
 
   /**
    * Calls the headset library's endCall function to signal to the device
@@ -138,18 +138,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
     super(sdk);
     this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger, appName: sdk._config.originAppName });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
-    this.listenForSessionEvents();
     this.updateAudioInputDevice(this.sdk._config.defaults.audioDeviceId);
-  }
-
-  listenForSessionEvents (): void {
-    this.sdk.on('cancelPendingSession', ({ conversationId }) => this.rejectIncomingCall(conversationId));
-    this.sdk.on('sessionEnded', ({ conversationId }) => this.endCurrentCall(conversationId));
-    this.sdk.on('pendingSession', ({ conversationId, autoAnswer }) => {
-      if (!autoAnswer) {
-        this.setRinging({ conversationId, contactName: null }, !!this.sdk.sessionManager.getAllActiveSessions().length);
-      }
-    });
   }
 
   /**
