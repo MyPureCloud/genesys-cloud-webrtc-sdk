@@ -3,7 +3,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.10...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.11...HEAD)
+# [v8.0.11](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.10...v8.0.11)
+### Fixed
+* [PCM-2159](https://inindca.atlassian.net/browse/PCM-2159) - bump headsets dep; fix demo app.
+
 # [v8.0.10](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.0.9...v8.0.10)
 ### Fixed
 * [PCM-2156](https://inindca.atlassian.net/browse/PCM-2156) - Export headset library types

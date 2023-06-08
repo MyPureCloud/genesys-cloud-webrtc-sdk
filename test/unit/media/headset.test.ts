@@ -175,38 +175,6 @@ describe('SdkHeadsetService', () => {
       expect(setHoldSpy).toHaveBeenCalledWith('123', false);
     });
   });
-
-  describe('listenForSessionEvents', () => {
-    it('should end currentCall on sessionEnded', () => {
-      sdkHeadset.endCurrentCall = jest.fn();
-
-      const conversationId = 'myConvoId';
-      sdk.emit('sessionEnded', { conversationId } as any, null as any);
-
-      expect(sdkHeadset.endCurrentCall).toHaveBeenCalledWith(conversationId);
-    });
-
-    it('should set ringing if not autoanswer', () => {
-      sdkHeadset.setRinging = jest.fn();
-
-      sdk.emit('pendingSession', { autoAnswer: false, conversationId: '15215asdf'} as any);
-      expect(sdkHeadset.setRinging).toHaveBeenCalled();
-    });
-
-    it('should not set ringing if autoanswer', () => {
-      sdkHeadset.setRinging = jest.fn();
-
-      sdk.emit('pendingSession', { autoAnswer: true, conversationId: '15215asdf'} as any);
-      expect(sdkHeadset.setRinging).not.toHaveBeenCalled();
-    });
-
-    it('should not set ringing if autoanswer', () => {
-      sdkHeadset.rejectIncomingCall = jest.fn();
-
-      sdk.emit('cancelPendingSession', { conversationId: '123' });
-      expect(sdkHeadset.rejectIncomingCall).toHaveBeenCalledWith('123');
-    });
-  });
 });
 
 describe('SdkHeadsetServiceStub', () => {

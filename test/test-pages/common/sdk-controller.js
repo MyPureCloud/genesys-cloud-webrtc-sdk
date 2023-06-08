@@ -213,17 +213,16 @@ function setConversationHeld ({ held, conversationId }) {
   webrtcSdk.setConversationHeld({ held, conversationId });
 }
 
-function endSession () {
-  webrtcSdk.endSession({ conversationId: currentConversationId });
+function endSession (props) {
+  webrtcSdk.endSession(props);
 
   document.getElementById('video-actions').classList.add('hidden');
   const startControls = document.querySelectorAll('.start-controls');
   startControls.forEach(el => el.classList.remove('hidden'));
 }
 
-function setAudioMute (mute) {
-  webrtcSdk.setAudioMute({ conversationId: currentConversationId, mute });
-
+function setAudioMute (props) {
+  webrtcSdk.setAudioMute(props);
 }
 
 function requestWebhidPermissions ({ callback }) {
@@ -602,11 +601,9 @@ function handledPendingSession (params) {
     sessionId: ${params.sessionId}
     conversationId: ${params.conversationId}`;
 
-  const autoAnswer = pendingSessions.find(s => s.conversationId === params.conversationId).autoAnswer;
   pendingSessions = pendingSessions.filter(s => s.conversationId !== params.conversationId);
   renderPendingSessions();
   utils.writeToLog(output);
-  webrtcSdk.headset.answerIncomingCall(params.conversationId, autoAnswer);
 }
 
 function getDeviceId (type) {
@@ -689,7 +686,7 @@ function updateOutgoingMediaDevices (type = 'both'/* 'video' | 'audio' | 'both' 
   //   ? document.querySelector('select#video-devices').value || true
   //   : false;
 
-  webrtcSdk.updateOutgoingMedia({ conversationId: currentConversationId, videoDeviceId, audioDeviceId });
+  webrtcSdk.updateDefaultDevices({ videoDeviceId, audioDeviceId, updateActiveSessions: true });
 }
 
 function updateOutputMediaDevice () {

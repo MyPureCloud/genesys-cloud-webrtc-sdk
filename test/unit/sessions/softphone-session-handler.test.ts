@@ -38,10 +38,12 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
 import { SdkError } from '../../../src/utils';
+import { HeadsetProxyService, ISdkHeadsetService } from '../../../src/media/headset';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
+let mockHeadset: ISdkHeadsetService;
 
 beforeAll(() => {
   (window as any).MediaStream = MockStream;
@@ -53,6 +55,7 @@ beforeEach(() => {
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
+  mockSdk.headset = mockHeadset = new HeadsetProxyService(mockSdk);
 
   mockSessionManager = new SessionManager(mockSdk);
   handler = new SoftphoneSessionHandler(mockSdk, mockSessionManager);
@@ -829,6 +832,79 @@ describe('handleSoftphoneConversationUpdate()', () => {
     emitConversationEventSpy = jest.spyOn(handler, 'emitConversationEvent')
       .mockImplementation();
     sdkEmitSpy = jest.spyOn(mockSdk, 'emit').mockImplementation();
+  });
+
+  describe('headset functionality', () => {
+    it('should call outboundCall', async () => {
+      const spy = jest.spyOn(mockHeadset, 'outgoingCall');
+      const { update, participant, callState, session } = generateUpdate({
+        callState: CommunicationStates.contacting
+      });
+  
+      handler.activeSession = session;
+  
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should call setRinging', async () => {
+      const spy = jest.spyOn(mockHeadset, 'setRinging');
+      const { update, participant, callState, session } = generateUpdate({
+        callState: CommunicationStates.alerting
+      });
+
+      callState.direction = 'inbound';
+  
+      handler.activeSession = session;
+  
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should call answerIncomingCall', async () => {
+      const spy = jest.spyOn(mockHeadset, 'answerIncomingCall');
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.alerting }
+      });
+      callState.direction = 'inbound';
+  
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+  
+      handler.activeSession = session;
+  
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should call rejectIncomingCall', async () => {
+      const spy = jest.spyOn(mockHeadset, 'rejectIncomingCall');
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.disconnected,
+        previousCallState: { state: CommunicationStates.alerting }
+      });
+      callState.direction = 'inbound';
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+  
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should call endCurrentCall', async () => {
+      const spy = jest.spyOn(mockHeadset, 'endCurrentCall');
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.disconnected,
+        previousCallState: { state: CommunicationStates.connected }
+      });
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+  
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+      expect(spy).toHaveBeenCalled();
+    });
   });
 
   it('should return void if it is a non-pending session that this client did not answer it', () => {
