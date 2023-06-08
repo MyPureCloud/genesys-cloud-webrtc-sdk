@@ -341,7 +341,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
     (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
     const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
-    this.headset.outgoingCall({ conversationId: callInfo.id, contactName: null });
     return callInfo;
   }
 
@@ -707,7 +706,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the mute request has completed
    */
   async setAudioMute (muteOptions: ISessionMuteRequest): Promise<void> {
-    this.headset.setMute(muteOptions.mute);
     await this.sessionManager.setAudioMute(muteOptions);
   }
 
@@ -719,7 +717,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param heldOptions conversationId and desired held state
    */
   async setConversationHeld (heldOptions: IConversationHeldRequest): Promise<void> {
-    this.headset.setHold(heldOptions.conversationId, heldOptions.held);
     await this.sessionManager.setConversationHeld(heldOptions);
   }
 
@@ -769,7 +766,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (params: IPendingSessionActionParams): Promise<void> {
-    this.headset.answerIncomingCall(params.conversationId, this.sessionManager.getPendingSession(params)?.autoAnswer);
     await this.sessionManager.proceedWithSession(params);
   }
 

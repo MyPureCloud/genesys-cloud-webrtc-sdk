@@ -162,17 +162,27 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     const communicationStateChanged = previousCallState?.state !== callState.state;
     let eventToEmit: boolean | SdkConversationEvents = 'updated';
+    const isOutbound = callState.direction === 'outbound'
 
     /* only check for emitting if the state changes */
     if (communicationStateChanged) {
       /* `pendingSession` – only process these if we have a persistent connection */
       if (this.isPendingState(callState)) {
+        // Not always accurate. If inbound auto answer, we don't know about it from convo evt
+
+        // headset actions will be tied to conversation updates rather than session events so we want to react regardless
+        if (isOutbound) {
+          this.sdk.headset.outgoingCall({ conversationId });
+        } else {
+          this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
+        }
+
         /* only emit `pendingSession` if we already have an active session */
         if (session && session === this.activeSession) {
           const pendingSession: IPendingSession = {
             id: session.id,
             sessionId: session.id,
-            autoAnswer: callState.direction === 'outbound', // Not always accurate. If inbound auto answer, we don't know about it from convo evt
+            autoAnswer: isOutbound,
             conversationId,
             sessionType: this.sessionType,
             originalRoomJid: session.originalRoomJid,
@@ -204,6 +214,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
             delete this.conversations[conversationId];
             return;
           }
+
+          // if this was an inbound call, the headset needs to move from ringing to answered
+          if (!isOutbound) {
+            this.sdk.headset.answerIncomingCall(conversationId, false);
+          }
+
           /* only emit `sessionStarted` if we have an active session */
           if (session === this.activeSession) {
             session.conversationId = conversationId;
@@ -213,6 +229,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           eventToEmit = 'added';
         }
       } else if (this.isEndedState(callState)) {
+        if (this.isPendingState(previousCallState) && !isOutbound) {
+          this.sdk.headset.rejectIncomingCall(conversationId);
+        } else {
+          this.sdk.headset.endCurrentCall(conversationId);
+        }
+
         /* we don't want to emit events for (most of) these */
         eventToEmit = false;
         /* we rejected a pendingSession */
@@ -644,6 +666,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     });
 
     try {
+      this.sdk.headset.setMute(params.mute);
       const userParticipant = await this.getUserParticipantFromConversationId(conversationId);
 
       return await this.patchPhoneCall(conversationId, userParticipant.id, { muted: params.mute });
@@ -667,6 +690,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     });
 
     try {
+      this.sdk.headset.setHold(params.conversationId, params.held);
       const userParticipant = await this.getUserParticipantFromConversationId(params.conversationId);
 
       return await this.patchPhoneCall(
