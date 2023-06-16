@@ -149,6 +149,67 @@ describe('handleSessionInit()', () => {
     expect(superInit).toHaveBeenCalled();
     expect(acceptSessionSpy).not.toHaveBeenCalled();
   });
+
+  it('should auto accept reinvite sessions and mark previous session as replaced', async () => {
+    const superInit = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit');
+    const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
+    mockSdk._config.autoConnectSessions = false;
+
+    const oldSession = new MockSession();
+    oldSession.conversationId = 'covid20';
+    oldSession.sessionType = SessionTypes.softphone;
+    jest.spyOn(handler['sessionManager'], 'getAllSessions').mockReturnValue([oldSession as any]);
+
+    const session: any = new MockSession();
+    session.conversationId = 'covid20';
+    session.sessionType = SessionTypes.softphone;
+    session.reinvite = true;
+    await handler.handleSessionInit(session);
+
+    expect(superInit).toHaveBeenCalled();
+    expect(acceptSessionSpy).toHaveBeenCalled();
+    expect(oldSession.sessionReplacedByReinvite).toBeTruthy();
+  });
+
+  it('should auto accept reinvite sessions and not blow up if there\'s no existing session', async () => {
+    const superInit = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit');
+    const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
+    mockSdk._config.autoConnectSessions = false;
+
+    jest.spyOn(handler['sessionManager'], 'getAllSessions').mockReturnValue([]);
+
+    const session: any = new MockSession();
+    session.conversationId = 'covid20';
+    session.sessionType = SessionTypes.softphone;
+    session.reinvite = true;
+    await handler.handleSessionInit(session);
+
+    expect(superInit).toHaveBeenCalled();
+    expect(acceptSessionSpy).toHaveBeenCalled();
+  });
+
+  it('should not blow up if forceEndSession fails', async () => {
+    const superInit = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit');
+    const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
+    mockSdk._config.autoConnectSessions = false;
+
+    const oldSession = new MockSession();
+    oldSession.conversationId = 'covid20';
+    oldSession.sessionType = SessionTypes.softphone;
+    jest.spyOn(handler['sessionManager'], 'getAllSessions').mockReturnValue([oldSession as any]);
+
+    const session: any = new MockSession();
+    session.conversationId = 'covid20';
+    session.sessionType = SessionTypes.softphone;
+    session.reinvite = true;
+
+    jest.spyOn(handler as any, 'forceEndSession').mockRejectedValue('boom');
+    await handler.handleSessionInit(session);
+
+    expect(superInit).toHaveBeenCalled();
+    expect(acceptSessionSpy).toHaveBeenCalled();
+    expect(oldSession.sessionReplacedByReinvite).toBeTruthy();
+  });
 });
 
 describe('acceptSession()', () => {
