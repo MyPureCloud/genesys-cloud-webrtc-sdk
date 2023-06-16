@@ -445,8 +445,31 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
 
-    if (this.sdk._config.autoConnectSessions) {
-      return this.acceptSession(session, { conversationId: session.conversationId });
+    const acceptParams: IAcceptSessionRequest = { conversationId: session.conversationId };
+
+    // if this is a reinvite, we want to silently replace the old session and mark the old session as replaced
+    if (session.reinvite) {
+      this.log('info', 'received reinvite offer', { ...acceptParams, sessionId: session.id });
+      const oldSession = this.sessionManager.getAllSessions().find(s => {
+        return s.sessionType === SessionTypes.softphone &&
+        s.conversationId === session.conversationId
+      });
+
+      if (oldSession) {
+        oldSession.sessionReplacedByReinvite = true;
+        const oldSessionInfo = { conversationId: oldSession.conversationId, sessionId: oldSession.id, sessionType: this.sessionType };
+        this.log('info', 'force terminating session that was replaced by reinvite', oldSessionInfo);
+        
+        // if this fails, we don't want it to mess up anything up.
+        this.forceEndSession(oldSession, JingleReasons.alternativeSession)
+          .catch(e => {
+            this.log('warn', 'failed to force terminate the session that was replaced by a reinvite', oldSession);
+          });
+      }
+    }
+
+    if (this.sdk._config.autoConnectSessions || session.reinvite) {
+      return this.acceptSession(session, acceptParams);
     }
   }
 

@@ -825,6 +825,7 @@ export interface IConversationParticipant {
 export interface IExtendedMediaSession extends IMediaSession {
   originalRoomJid: string;
   active: boolean;
+  sessionReplacedByReinvite?: boolean;
   videoMuted?: boolean;
   audioMuted?: boolean;
   pcParticipant?: IConversationParticipant;

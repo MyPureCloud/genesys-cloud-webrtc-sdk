@@ -169,6 +169,7 @@ export class MockSession extends EventEmitter {
   videoMuted: boolean = false;
   audioMuted: boolean = false;
   state = 'active';
+  sessionReplacedByReinvite?: boolean;
 
   constructor (sessionType?: SessionTypes) {
     super();
