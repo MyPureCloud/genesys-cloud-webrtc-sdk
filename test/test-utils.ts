@@ -156,6 +156,7 @@ export class MockSession extends EventEmitter {
   peerConnection = new MockPC(this);
   pc: MockPC;
   pcParticipant: any;
+  _emittedSessionStarteds: { [conversationId: string]: true } = {};
   _statsGatherer: any;
   _outboundStream: any;
   _screenShareStream: MockStream;

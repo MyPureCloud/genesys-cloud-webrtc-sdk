@@ -616,6 +616,23 @@ describe('acceptSession', () => {
   it('should throw if called without a sessionId', async () => {
     await expect(sessionManager.acceptSession({} as any)).rejects.toThrowError(/A conversationId is required for acceptSession/);
   });
+
+  it('should do nothing if session was already accepted', async () => {
+    const session: any = {
+      _alreadyAccepted: true
+    };
+
+    const mockHandler: any = {
+      sessionType: SessionTypes.acdScreenShare,
+      acceptSession: jest.fn()
+    };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+    jest.spyOn(sessionManager, 'getSession').mockReturnValue(session);
+
+    await sessionManager.acceptSession({ conversationId: 'asdf' });
+
+    expect(mockHandler.acceptSession).not.toHaveBeenCalled();
+  });
 });
 
 describe('endSession', () => {

@@ -98,6 +98,7 @@ export default abstract class BaseSessionHandler {
     session.on('terminated', this.onSessionTerminated.bind(this, session));
 
     if (!session.reinvite) {
+      session._emittedSessionStarteds = {[session.conversationId]: true};
       this.sdk.emit('sessionStarted', session);
     }
   }
