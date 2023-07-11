@@ -829,6 +829,8 @@ export interface IExtendedMediaSession extends IMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   pcParticipant?: IConversationParticipant;
+  _alreadyAccepted?: boolean;
+  _emittedSessionStarteds?: { [conversationId: string]: true };
   _screenShareStream?: MediaStream;
   _outboundStream?: MediaStream;
   _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };

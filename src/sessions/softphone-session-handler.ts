@@ -223,7 +223,13 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           /* only emit `sessionStarted` if we have an active session */
           if (session === this.activeSession) {
             session.conversationId = conversationId;
-            this.sdk.emit('sessionStarted', session);
+            
+            // we only want to emit a single sessionStarted. We will track those because otherwise we have to make an educated
+            // guess which has the potential to be wrong
+            if (!session._emittedSessionStarteds[conversationId]) {
+              this.sdk.emit('sessionStarted', session);
+              session._emittedSessionStarteds[conversationId] = true;
+            }
             this.sessionManager.onHandledPendingSession(session.id, conversationId);
           }
           eventToEmit = 'added';
