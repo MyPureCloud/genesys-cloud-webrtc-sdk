@@ -1041,11 +1041,6 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     mediaRequestOptions: IMediaRequestOptions,
     retryOnFailure = true
   ): Promise<MediaStream> {
-    /* istanbul ignore next */
-    if ((window as any).strictlyTesting) {
-      retryOnFailure = false;
-      mediaRequestOptions.video = '7';
-    }
     const reqOptionsCopy = { ...mediaRequestOptions };
     const conversationId = reqOptionsCopy.session?.conversationId;
     const sessionId = reqOptionsCopy.session?.id;
