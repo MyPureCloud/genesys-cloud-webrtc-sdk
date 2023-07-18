@@ -635,7 +635,17 @@ export default class VideoSessionHandler extends BaseSessionHandler {
 
     if (session._resurrectVideoOnScreenShareEnd) {
       this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      await this.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
+      try {
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
+      } catch (err) {
+        /* This is to ensure that if something goes wrong while
+         * fetching the preferred device's media, we still stop screensharing
+         * but return the user to a muted state
+        */
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, false);
+        track.stop();
+        this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
+      }
     } else {
       await sender.replaceTrack(null);
     }
