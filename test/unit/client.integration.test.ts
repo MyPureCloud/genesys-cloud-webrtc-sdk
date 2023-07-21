@@ -37,6 +37,9 @@ describe('Client (integration)', () => {
   Object.defineProperty(window.navigator, 'hid', { get: () => ({
     getDevices: () => { return [] }
   })});
+  Object.defineProperty(navigator, "userAgentData", {
+    get: () => { return { platform: "MacOS" } }
+  });
   Object.defineProperty(window.navigator, 'locks', { get: () => ({})});
   (window as any).BroadcastChannel = BroadcastChannel;
   // check to make sure the server isn't running
