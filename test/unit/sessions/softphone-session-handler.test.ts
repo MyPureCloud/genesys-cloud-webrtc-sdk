@@ -680,6 +680,8 @@ describe('handleConversationUpdate()', () => {
   const userId = 'our-agent-user';
   const conversationId = 'convo-id';
   let session: IExtendedMediaSession;
+  let session2: IExtendedMediaSession;
+  let sessionsArray: IExtendedMediaSession[];
   let update: ConversationUpdate;
   let participant: IConversationParticipantFromEvent;
   let callState: ICallStateFromParticipant;
@@ -708,7 +710,10 @@ describe('handleConversationUpdate()', () => {
     });
 
     session = new MockSession() as any;
+    session2 = new MockSession() as any;
     session.conversationId = update.id;
+    session2.conversationId = '1234session2';
+    sessionsArray = [session, session2];
     mockSdk._personDetails = { id: userId } as IPersonDetails;
     handleSoftphoneConversationUpdateSpy = jest.spyOn(handler, 'handleSoftphoneConversationUpdate').mockImplementation();
   });
@@ -745,7 +750,7 @@ describe('handleConversationUpdate()', () => {
     );
   });
 
-  it('should use the actice session if lineAppearance == 1', () => {
+  it('should use the active session if lineAppearance == 1', () => {
     jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
     handler.activeSession = session;
 
@@ -756,6 +761,15 @@ describe('handleConversationUpdate()', () => {
       callState,
       session
     );
+  });
+
+  it('should hold other sessions if LA>1', () => {
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+
+    handler.handleConversationUpdate(update, sessionsArray);
+    expect(setHoldSpy).toHaveBeenCalledWith(session2, { conversationId: session2.conversationId, held: true });
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session and LA=100, holding other active sessions.', undefined, undefined);
   });
 
   it('should find the session from the passed in array of sessions', () => {
@@ -901,9 +915,9 @@ describe('handleSoftphoneConversationUpdate()', () => {
       const { update, participant, callState, session } = generateUpdate({
         callState: CommunicationStates.contacting
       });
-  
+
       handler.activeSession = session;
-  
+
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
       expect(spy).toHaveBeenCalled();
     });
@@ -915,9 +929,9 @@ describe('handleSoftphoneConversationUpdate()', () => {
       });
 
       callState.direction = 'inbound';
-  
+
       handler.activeSession = session;
-  
+
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
       expect(spy).toHaveBeenCalled();
     });
@@ -929,11 +943,11 @@ describe('handleSoftphoneConversationUpdate()', () => {
         previousCallState: { state: CommunicationStates.alerting }
       });
       callState.direction = 'inbound';
-  
+
       handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
-  
+
       handler.activeSession = session;
-  
+
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
       expect(spy).toHaveBeenCalled();
     });
@@ -948,7 +962,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
       handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
       handler.activeSession = session;
-  
+
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
       expect(spy).toHaveBeenCalled();
     });
@@ -962,7 +976,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
       handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
       handler.activeSession = session;
-  
+
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
       expect(spy).toHaveBeenCalled();
     });
@@ -2296,12 +2310,12 @@ describe('getActiveConversations', () => {
       { conversationId: 'convo2', sessionId: 'session2', sessionType: SessionTypes.softphone }
     ]);
   });
-  
+
   it('should return an empty list of not conversation events', () => {
     handler.lastEmittedSdkConversationEvent = null as any;
     expect(handler.getActiveConversations()).toEqual([]);
   });
-  
+
   it('should return an empty list of not conversation events', () => {
     handler.lastEmittedSdkConversationEvent = {} as any;
     expect(handler.getActiveConversations()).toEqual([]);
