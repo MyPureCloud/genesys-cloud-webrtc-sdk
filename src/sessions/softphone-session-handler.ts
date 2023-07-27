@@ -7,7 +7,6 @@ import {
   IPendingSession,
   IAcceptSessionRequest,
   ISessionMuteRequest,
-  IConversationParticipant,
   IExtendedMediaSession,
   IUpdateOutgoingMedia,
   IStartSoftphoneSessionParams,
@@ -50,7 +49,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return isSoftphoneJid(jid);
   }
 
-  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) {
+  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]): void {
     /* we will not have a user call participant if this is not a softphone conversation event */
     const participant = this.getUserParticipantFromConversationEvent(update);
     if (!participant) {
@@ -77,6 +76,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     /* lastly, look through our sessions */
     else {
       session = sessions.find(s => s.conversationId === update.id);
+      // Hold other sessions that were active
+      this.holdOtherSessions(session, sessions);
     }
 
     /* if we didn't find a session AND we have persistent connection, we need to do an extra check */
@@ -88,6 +89,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         this can happen when LA > 1 and persistentConnection is ON
       */
       if (this.hasActiveSession() && !Object.values(this.conversations).find(c => c.session === this.activeSession)) {
+        console.warn('here are all the sessions: ', sessions);
         session = this.activeSession;
         this.log('info', 'we have an active session that is not in use by another conversation. using that session', {
           conversationId: update.id,
@@ -98,6 +100,16 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     this.handleSoftphoneConversationUpdate(update, participant, callState, session);
+  }
+
+  holdOtherSessions(currentSession: IExtendedMediaSession, sessions: IExtendedMediaSession[]): void {
+    const otherSessions = sessions.filter(session => session !== currentSession);
+
+    this.log('debug', 'Received new session and LA=100, holding other active sessions.');
+
+    otherSessions.forEach(session => {
+      this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
+    });
   }
 
   hasActiveSession (): boolean {
@@ -223,7 +235,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           /* only emit `sessionStarted` if we have an active session */
           if (session === this.activeSession) {
             session.conversationId = conversationId;
-            
+
             // we only want to emit a single sessionStarted. We will track those because otherwise we have to make an educated
             // guess which has the potential to be wrong
             if (!session._emittedSessionStarteds[conversationId]) {
@@ -465,7 +477,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         oldSession.sessionReplacedByReinvite = true;
         const oldSessionInfo = { conversationId: oldSession.conversationId, sessionId: oldSession.id, sessionType: this.sessionType };
         this.log('info', 'force terminating session that was replaced by reinvite', oldSessionInfo);
-        
+
         // if this fails, we don't want it to mess up anything up.
         this.forceEndSession(oldSession, JingleReasons.alternativeSession)
           .catch(e => {
