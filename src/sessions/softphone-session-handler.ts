@@ -89,7 +89,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         this can happen when LA > 1 and persistentConnection is ON
       */
       if (this.hasActiveSession() && !Object.values(this.conversations).find(c => c.session === this.activeSession)) {
-        console.warn('here are all the sessions: ', sessions);
         session = this.activeSession;
         this.log('info', 'we have an active session that is not in use by another conversation. using that session', {
           conversationId: update.id,
