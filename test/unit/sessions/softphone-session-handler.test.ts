@@ -2165,6 +2165,26 @@ describe('setConversationHeld()', () => {
       }));
     }
   });
+
+  it('should hold other active sessions if LA>1 and unholding a session', async () => {
+    const params: IConversationHeldRequest = { conversationId, held: false };
+    const holdOtherSessionsSpy = jest.spyOn(handler, 'holdOtherSessions').mockImplementation();
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+
+    await handler.setConversationHeld(session, params);
+
+    expect(holdOtherSessionsSpy).toHaveBeenCalled();
+  })
+
+  it('should NOT hold active sessions if LA=1 and unholding a session', async () => {
+    const params: IConversationHeldRequest = { conversationId, held: false };
+    const holdOtherSessionsSpy = jest.spyOn(handler, 'holdOtherSessions').mockImplementation();
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(false);
+
+    await handler.setConversationHeld(session, params);
+
+    expect(holdOtherSessionsSpy).not.toHaveBeenCalled();
+  })
 });
 
 describe('patchPhoneCall()', () => {
