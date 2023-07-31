@@ -769,7 +769,7 @@ describe('handleConversationUpdate()', () => {
 
     handler.handleConversationUpdate(update, sessionsArray);
     expect(setHoldSpy).toHaveBeenCalledWith(session2, { conversationId: session2.conversationId, held: true });
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session and LA=100, holding other active sessions.', undefined, undefined);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session or unheld previously held session with LA>1, holding other active sessions.', undefined, undefined);
   });
 
   it('should find the session from the passed in array of sessions', () => {

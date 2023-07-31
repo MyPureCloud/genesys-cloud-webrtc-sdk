@@ -76,8 +76,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     /* lastly, look through our sessions */
     else {
       session = sessions.find(s => s.conversationId === update.id);
-      // Hold other sessions that were active
-      this.holdOtherSessions(session, sessions);
+      // Hold other sessions that were active in favor of latest.
+      this.holdOtherSessions(session);
     }
 
     /* if we didn't find a session AND we have persistent connection, we need to do an extra check */
@@ -101,10 +101,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     this.handleSoftphoneConversationUpdate(update, participant, callState, session);
   }
 
-  holdOtherSessions(currentSession: IExtendedMediaSession, sessions: IExtendedMediaSession[]): void {
+  holdOtherSessions(currentSession: IExtendedMediaSession): void {
+    const sessions = this.sessionManager.getAllActiveSessions();
     const otherSessions = sessions.filter(session => session !== currentSession);
 
-    this.log('debug', 'Received new session and LA=100, holding other active sessions.');
+    this.log('debug', 'Received new session or unheld previously held session with LA>1, holding other active sessions.');
 
     otherSessions.forEach(session => {
       this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
@@ -730,6 +731,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     });
 
     try {
+      // If we're unholding and LA > 1, we need to hold the other active sessions.
+      if (!params.held && this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
+        this.holdOtherSessions(session);
+      }
+
       this.sdk.headset.setHold(params.conversationId, params.held);
       const userParticipant = await this.getUserParticipantFromConversationId(params.conversationId);
 
