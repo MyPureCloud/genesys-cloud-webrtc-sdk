@@ -7,7 +7,6 @@ jest.mock('genesys-cloud-client-logger', () => {
 import StreamingClient, { IPendingSession } from 'genesys-cloud-streaming-client';
 import { Logger } from 'genesys-cloud-client-logger';
 import * as clientPrivate from '../../src/client-private';
-import * as windows11Utils from '../../src/windows11-first-session-hack';
 import jwtDecode from 'jwt-decode';
 import { HeadsetProxyService } from '../../src/media/headset';
 
@@ -1347,15 +1346,6 @@ describe('Client', () => {
 
       constructSdk({jwt: 'lsdjf'});
       setupSpys();
-      jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockResolvedValue();
-      proxySpy.mockImplementation(() => {
-        sdk._streamingConnection = {
-          _webrtcSessions: {
-            iceServers: []
-          },
-          disconnect: jest.fn()
-        } as any;
-      });
 
       await sdk.initialize();
 
@@ -1380,34 +1370,6 @@ describe('Client', () => {
       } catch (e) {
         expect(e.message).toContain('Failed to parse provided jwt');
       }
-    });
-
-    it('should call window11 setup', async () => {
-      jwtDecodeSpy.mockReturnValue({
-        name: 'scooby',
-        org: 'myorg',
-        data: {
-          uid: 'myuserid',
-          jid: 'myjid',
-        }
-      } as any);
-
-      constructSdk({ accessToken: 'fakeToken', optOutOfTelemetry: true, allowedSessionTypes: [SessionTypes.collaborateVideo] });
-      setupSpys();
-      orgSpy.mockResolvedValue({});
-      userSpy.mockResolvedValue({});
-      proxySpy.mockImplementation(() => {
-        sdk._streamingConnection = {
-          _webrtcSessions: {
-            iceServers: []
-          },
-          disconnect: jest.fn()
-        } as any;
-      });
-      const windows11Hack = jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockImplementation();
-      await sdk.initialize();
-
-      expect(windows11Hack).toHaveBeenCalled();
     });
   });
 
