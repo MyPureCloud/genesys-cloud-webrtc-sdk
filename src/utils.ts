@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-explicit-any: "off" */
-import { RequestApiOptions } from 'genesys-cloud-streaming-client';
+import { ConnectionState, RequestApiOptions } from 'genesys-cloud-streaming-client';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 
 import { GenesysCloudWebrtcSdk } from './client';
@@ -110,6 +110,11 @@ export const isPeerVideoJid = function (jid: string) {
 export const isVideoJid = function (jid: string): boolean {
   return jid && !!jid.match(/@conference/) && !isAcdJid(jid) && !isScreenRecordingJid(jid);
 };
+
+export const isPeerConnectionDisconnected = function (state: ConnectionState) {
+  const disconnectedStates: ConnectionState[] = ['interrupted', 'disconnected', 'failed', 'closed'];
+  return disconnectedStates.includes(state);
+}
 
 export const logPendingSession = function (
   logger: ILogger,
