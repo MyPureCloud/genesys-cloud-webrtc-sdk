@@ -765,10 +765,12 @@ describe('handleConversationUpdate()', () => {
 
   it('should hold other sessions if LA>1', () => {
     const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
     jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
 
     handler.handleConversationUpdate(update, sessionsArray);
     expect(setHoldSpy).toHaveBeenCalledWith(session2, { conversationId: session2.conversationId, held: true });
+    expect(getActiveSessionsSpy).toHaveBeenCalled();
     expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session or unheld previously held session with LA>1, holding other active sessions.', undefined, undefined);
   });
 
