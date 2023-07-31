@@ -40,7 +40,6 @@ import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
 import { HeadsetProxyService, ISdkHeadsetService, SdkHeadsetService } from './media/headset';
 import { Constants } from 'stanza';
-import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -260,7 +259,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       await setupStreamingClient.call(this);
       await proxyStreamingClientEvents.call(this);
-      await setupWebrtcForWindows11(this._streamingConnection._webrtcSessions['iceServers']);
 
     /* istanbul ignore next */
       window.addEventListener('beforeunload', () => {
