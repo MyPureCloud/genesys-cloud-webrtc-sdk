@@ -713,6 +713,7 @@ describe('handleConversationUpdate()', () => {
     session2 = new MockSession() as any;
     session.conversationId = update.id;
     session2.conversationId = '1234session2';
+    session2.sessionType = SessionTypes.softphone;
     sessionsArray = [session, session2];
     mockSdk._personDetails = { id: userId } as IPersonDetails;
     handleSoftphoneConversationUpdateSpy = jest.spyOn(handler, 'handleSoftphoneConversationUpdate').mockImplementation();
@@ -2174,7 +2175,7 @@ describe('setConversationHeld()', () => {
     await handler.setConversationHeld(session, params);
 
     expect(holdOtherSessionsSpy).toHaveBeenCalled();
-  })
+  });
 
   it('should NOT hold active sessions if LA=1 and unholding a session', async () => {
     const params: IConversationHeldRequest = { conversationId, held: false };
@@ -2184,7 +2185,7 @@ describe('setConversationHeld()', () => {
     await handler.setConversationHeld(session, params);
 
     expect(holdOtherSessionsSpy).not.toHaveBeenCalled();
-  })
+  });
 });
 
 describe('patchPhoneCall()', () => {
