@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.2...HEAD)
+### Changed
+* [PCM-2196](https://inindca.atlassian.net/browse/PCM-2196) - Send screen recording metadatas when session connects instead at session-accept
+
 # [v8.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.1...v8.1.2)
 ### Fixed
 * [PCM-2145](https://inindca.atlassian.net/browse/PCM-2145) - Able to leave screenshare if unable to spin up previously selected media
