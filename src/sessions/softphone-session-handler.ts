@@ -77,8 +77,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     /* lastly, look through our sessions */
     else {
       session = sessions.find(s => s.conversationId === update.id);
-      // Hold other sessions that were active in favor of latest.
-      this.holdOtherSessions(session);
     }
 
     /* if we didn't find a session AND we have persistent connection, we need to do an extra check */
@@ -100,18 +98,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     this.handleSoftphoneConversationUpdate(update, participant, callState, session);
-  }
-
-  holdOtherSessions(currentSession: IExtendedMediaSession): void {
-    const sessions = this.sessionManager.getAllActiveSessions();
-    // Hold only softphone sessions and sessions not currently held.
-    const otherSessions = sessions.filter(session => session.sessionType === SessionTypes.softphone && !session.pcParticipant?.calls[0].held && session !== currentSession);
-
-    this.log('debug', 'Received new session or unheld previously held session with LA>1, holding other active sessions.');
-
-    otherSessions.forEach(session => {
-      this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
-    });
   }
 
   hasActiveSession (): boolean {
@@ -495,6 +481,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
+
+    /* If LA>1, hold other active sessions in favor of the latest we're accepting. */
+    if (!lineAppearance1) {
+      this.holdOtherSessions(session);
+    }
     /* if we have an active non-concurrent session, we can drop this accept on the floor */
     if (lineAppearance1 && this.hasActiveSession() && session.id === this.activeSession.id) {
       return this.log('debug',
@@ -755,6 +746,22 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         error
       });
     }
+  }
+
+  holdOtherSessions(currentSession: IExtendedMediaSession): void {
+    const sessions = this.sessionManager.getAllActiveSessions();
+    /* Hold only softphone sessions and sessions not currently held. */
+    const otherSessions = sessions.filter(session => session.sessionType === SessionTypes.softphone && !this.isConversationHeld(session.conversationId) && session !== currentSession);
+
+    this.log('debug', 'Received new session or unheld previously held session with LA>1, holding other active sessions.');
+
+    otherSessions.forEach(session => {
+      this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
+    });
+  }
+
+  isConversationHeld(conversationId: string): boolean {
+    return this.conversations[conversationId].mostRecentCallState.held;
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera
