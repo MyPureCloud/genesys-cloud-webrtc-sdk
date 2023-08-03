@@ -213,6 +213,62 @@ describe('handleSessionInit()', () => {
 });
 
 describe('acceptSession()', () => {
+  let session: IExtendedMediaSession;
+  let session2: IExtendedMediaSession;
+  let sessionsArray: IExtendedMediaSession[];
+  let callState: ICallStateFromParticipant;
+  let update: ConversationUpdate;
+  let participant: IConversationParticipantFromEvent;
+
+  beforeEach(() => {
+    session = new MockSession() as any;
+    session2 = new MockSession() as any;
+    session.conversationId = '1234session1';
+    session2.conversationId = '1234session2';
+    session2.sessionType = SessionTypes.softphone;
+    sessionsArray = [session, session2];
+
+    callState = {
+      id: 'call-id',
+      state: CommunicationStates.contacting,
+      muted: false,
+      confined: false,
+      held: false,
+      direction: 'outbound',
+      provider: 'provider'
+    };
+
+    update = new ConversationUpdate({
+      id: '123conversationId',
+      participants: [{}]
+    });
+
+    participant = {
+      id: 'participants-1',
+      purpose: 'agent',
+      userId: '123',
+      calls: [callState],
+      videos: []
+    };
+
+    handler.conversations = {
+      [session.conversationId]: {
+        session,
+        conversationUpdate: update,
+        conversationId: update.id,
+        mostRecentUserParticipant: participant,
+        mostRecentCallState: callState
+      },
+      [session2.conversationId]: {
+        session: session2,
+        conversationUpdate: update,
+        conversationId: update.id,
+        mostRecentUserParticipant: participant,
+        mostRecentCallState: callState
+      }
+    };
+  })
+
   it('should drop it on the floor if we have an activeSession with lineAppearance of 1', async () => {
     const acceptSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
     const session: any = new MockSession();
@@ -504,6 +560,35 @@ describe('acceptSession()', () => {
 
     expect(mockAudioElement.parentNode!.removeChild).not.toHaveBeenCalledWith(mockAudioElement);
   });
+
+  it('should hold other sessions if LA>1', () => {
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
+    const mockAudioElement = {} as HTMLAudioElement;
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
+    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+    jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
+
+    const createdStream = new MockStream({ audio: true });
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
+
+    const mockIncomingStream = new MockStream({ audio: true });
+
+    const session: any = new MockSession();
+    session.peerConnection.getReceivers = jest.fn().mockReturnValue([
+      {
+        track: mockIncomingStream.getAudioTracks()[0]
+      }
+    ]);
+
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+
+    handler.acceptSession(session, { conversationId: session.conversationId });
+    expect(setHoldSpy).toHaveBeenCalledWith(session2, { conversationId: session2.conversationId, held: true });
+    expect(getActiveSessionsSpy).toHaveBeenCalled();
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session or unheld previously held session with LA>1, holding other active sessions.', undefined, undefined);
+  });
 });
 
 describe('proceedWithSession()', () => {
@@ -680,8 +765,6 @@ describe('handleConversationUpdate()', () => {
   const userId = 'our-agent-user';
   const conversationId = 'convo-id';
   let session: IExtendedMediaSession;
-  let session2: IExtendedMediaSession;
-  let sessionsArray: IExtendedMediaSession[];
   let update: ConversationUpdate;
   let participant: IConversationParticipantFromEvent;
   let callState: ICallStateFromParticipant;
@@ -710,11 +793,7 @@ describe('handleConversationUpdate()', () => {
     });
 
     session = new MockSession() as any;
-    session2 = new MockSession() as any;
     session.conversationId = update.id;
-    session2.conversationId = '1234session2';
-    session2.sessionType = SessionTypes.softphone;
-    sessionsArray = [session, session2];
     mockSdk._personDetails = { id: userId } as IPersonDetails;
     handleSoftphoneConversationUpdateSpy = jest.spyOn(handler, 'handleSoftphoneConversationUpdate').mockImplementation();
   });
@@ -762,17 +841,6 @@ describe('handleConversationUpdate()', () => {
       callState,
       session
     );
-  });
-
-  it('should hold other sessions if LA>1', () => {
-    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
-    const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
-    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
-
-    handler.handleConversationUpdate(update, sessionsArray);
-    expect(setHoldSpy).toHaveBeenCalledWith(session2, { conversationId: session2.conversationId, held: true });
-    expect(getActiveSessionsSpy).toHaveBeenCalled();
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session or unheld previously held session with LA>1, holding other active sessions.', undefined, undefined);
   });
 
   it('should find the session from the passed in array of sessions', () => {
