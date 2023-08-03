@@ -5,8 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.2...HEAD)
 ### Added
-* [PCM-2190](https://inindca.atlassian.net/browse/PCM-2190) - add a hack to workaround the windows 11 "first call after reboot" issue
 * [PCM-2187](https://inindca.atlassian.net/browse/PCM-2187) - hold other active sessions if line appearance is > 1.
+### Changed
+* [PCM-2196](https://inindca.atlassian.net/browse/PCM-2196) - Send screen recording metadatas when session connects instead at session-accept
 
 # [v8.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.1...v8.1.2)
 ### Fixed
