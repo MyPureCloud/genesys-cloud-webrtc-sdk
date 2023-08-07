@@ -3,7 +3,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.2...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.3...HEAD)
+# [v8.1.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.2...v8.1.3)
 ### Added
 * [PCM-2190](https://inindca.atlassian.net/browse/PCM-2190) - add a hack to workaround the windows 11 "first call after reboot" issue
 * [PCM-2187](https://inindca.atlassian.net/browse/PCM-2187) - hold other active sessions if line appearance is > 1.
