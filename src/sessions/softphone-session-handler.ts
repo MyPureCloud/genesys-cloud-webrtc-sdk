@@ -7,7 +7,6 @@ import {
   IPendingSession,
   IAcceptSessionRequest,
   ISessionMuteRequest,
-  IConversationParticipant,
   IExtendedMediaSession,
   IUpdateOutgoingMedia,
   IStartSoftphoneSessionParams,
@@ -24,6 +23,7 @@ import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
+import { Session } from 'inspector';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -50,7 +50,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return isSoftphoneJid(jid);
   }
 
-  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]) {
+  handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]): void {
     /* we will not have a user call participant if this is not a softphone conversation event */
     const participant = this.getUserParticipantFromConversationEvent(update);
     if (!participant) {
@@ -223,7 +223,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           /* only emit `sessionStarted` if we have an active session */
           if (session === this.activeSession) {
             session.conversationId = conversationId;
-            
+
             // we only want to emit a single sessionStarted. We will track those because otherwise we have to make an educated
             // guess which has the potential to be wrong
             if (!session._emittedSessionStarteds[conversationId]) {
@@ -465,7 +465,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         oldSession.sessionReplacedByReinvite = true;
         const oldSessionInfo = { conversationId: oldSession.conversationId, sessionId: oldSession.id, sessionType: this.sessionType };
         this.log('info', 'force terminating session that was replaced by reinvite', oldSessionInfo);
-        
+
         // if this fails, we don't want it to mess up anything up.
         this.forceEndSession(oldSession, JingleReasons.alternativeSession)
           .catch(e => {
@@ -481,6 +481,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
+
+    /* If LA>1, hold other active sessions in favor of the latest we're accepting. */
+    if (!lineAppearance1) {
+      this.holdOtherSessions(session);
+    }
     /* if we have an active non-concurrent session, we can drop this accept on the floor */
     if (lineAppearance1 && this.hasActiveSession() && session.id === this.activeSession.id) {
       return this.log('debug',
@@ -719,6 +724,11 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     });
 
     try {
+      // If we're unholding and LA > 1, we need to hold the other active sessions.
+      if (!params.held && this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
+        this.holdOtherSessions(session);
+      }
+
       this.sdk.headset.setHold(params.conversationId, params.held);
       const userParticipant = await this.getUserParticipantFromConversationId(params.conversationId);
 
@@ -736,6 +746,22 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         error
       });
     }
+  }
+
+  holdOtherSessions(currentSession: IExtendedMediaSession): void {
+    const sessions = this.sessionManager.getAllActiveSessions();
+    /* Hold only softphone sessions and sessions not currently held. */
+    const otherSessions = sessions.filter(session => session.sessionType === SessionTypes.softphone && !this.isConversationHeld(session.conversationId) && session !== currentSession);
+
+    this.log('debug', 'Received new session or unheld previously held session with LA>1, holding other active sessions.');
+
+    otherSessions.forEach(session => {
+      this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
+    });
+  }
+
+  isConversationHeld(conversationId: string): boolean {
+    return this.conversations[conversationId].mostRecentCallState.held;
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera

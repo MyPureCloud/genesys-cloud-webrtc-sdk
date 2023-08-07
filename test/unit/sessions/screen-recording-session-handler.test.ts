@@ -1,4 +1,4 @@
-import { SimpleMockSdk, random, MockStream, MockTrack } from '../../test-utils';
+import { SimpleMockSdk, random, MockStream, MockTrack, MockSession } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
@@ -35,6 +35,63 @@ describe('shouldHandleSessionByJid', () => {
 describe('handleConversationUpdate', () => {
   it('should do nothing', () => {
     handler.handleConversationUpdate();
+  });
+});
+
+describe('sendMetadataWhenSessionConnects', () => {
+  function createFakePc (): EventTarget & { connectionState: string } {
+    const fakePc: EventTarget & { connectionState: string } = new EventTarget() as any;
+    fakePc.connectionState = 'starting';
+    return fakePc;
+  }
+
+  it('should send metadata when peer connection connects', async () => {
+    const pc = createFakePc();
+
+    const session = {
+      peerConnection: pc
+    };
+
+    const spy = handler['updateScreenRecordingMetadatas'] = jest.fn();
+
+    handler['sendMetadataWhenSessionConnects'](session as any, []);
+
+    expect(spy).not.toHaveBeenCalled();
+
+    pc.connectionState = 'connecting';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    expect(spy).not.toHaveBeenCalled();
+
+    pc.connectionState = 'connected';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should not if peer connection never connects', async () => {
+    const pc = createFakePc();
+
+    const session = {
+      peerConnection: pc
+    };
+
+    const spy = handler['updateScreenRecordingMetadatas'] = jest.fn();
+
+    handler['sendMetadataWhenSessionConnects'](session as any, []);
+
+    expect(spy).not.toHaveBeenCalled();
+
+    pc.connectionState = 'connecting';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    expect(spy).not.toHaveBeenCalled();
+
+    pc.connectionState = 'disconnected';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    expect(spy).not.toHaveBeenCalled();
+    
+    // since the above state was disconnected, the observable should have ended and should no longer process changes
+    pc.connectionState = 'connected';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
@@ -97,15 +154,14 @@ describe('acceptSession', () => {
 
   it('should add _outboundStream to session and add each track and send metadatas', async () => {
     const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
-    const metadatasSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+    const metadatasSpy = jest.spyOn(handler as any, 'sendMetadataWhenSessionConnects');
     const addSpy = jest.fn();
 
-    const session = {
-      pc: {
-        getTransceivers: jest.fn().mockReturnValue([]),
-        addTrack: addSpy.mockResolvedValue(null)
-      }
-    };
+    const session = new MockSession();
+    session.peerConnection._transceivers = [];
+    (session.peerConnection as any).addTrack = addSpy.mockResolvedValue(null);
+
+    (session as any).peerConnection = session.pc;
 
     const media = new MockStream();
     media.addTrack(new MockTrack());
@@ -236,5 +292,28 @@ describe('updateScreenRecordingMetadatas', () => {
     ));
     expect(metas[0].trackId).toBe('3');
     expect((metas[0] as any)._trackId).toBe('trackId123');
-  })
+  });
+
+  it('should warn if no transceiver', async () => {
+    const metas = [
+      {
+        trackId: 'trackId123'
+      },
+      {
+        trackId: 'trackId456'
+      }
+    ];
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue([])
+      }
+    };
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+    const logSpy = jest.spyOn(handler as any, 'log');
+
+    await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
+
+    expect(logSpy).toHaveBeenCalledWith('warn', expect.stringContaining('Failed to find transceiver'), expect.anything());
+  });
 });

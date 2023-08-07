@@ -503,6 +503,12 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       ).getVideoTracks();
       const track = tracks[0];
 
+      if (!this.sessionManager.getAllActiveSessions().find((s) => s.id === session.id)) {
+        this.log('info', 'Session ended while spinning up media. Removing new tracks');
+        track.stop();
+        return;
+      }
+
       logDeviceChange(this.sdk, session, 'changingDevices', {
         toVideoTrack: track,
         requestedVideoDeviceId: videoDeviceConstraint

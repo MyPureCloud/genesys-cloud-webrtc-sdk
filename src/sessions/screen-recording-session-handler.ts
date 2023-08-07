@@ -10,7 +10,8 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
-import { createAndEmitSdkError, getBareJid, isScreenRecordingJid, requestApi } from '../utils';
+import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
+import { first, fromEvent, takeUntil, takeWhile } from 'rxjs';
 
 export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -58,9 +59,22 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
     await addMediaPromise;
 
+    this.sendMetadataWhenSessionConnects(session, params.screenRecordingMetadatas)
     await super.acceptSession(session, params);
-    await this.updateScreenRecordingMetadatas(session, params.screenRecordingMetadatas);
+  }
 
+  private sendMetadataWhenSessionConnects (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    fromEvent(session.peerConnection, 'connectionstatechange')
+      .pipe(
+        takeWhile(() => {
+          return !isPeerConnectionDisconnected(session.peerConnection.connectionState);
+        }),
+        first(() => {
+          return session.peerConnection.connectionState === 'connected';
+        })
+      ).subscribe(async () => {
+        await this.updateScreenRecordingMetadatas(session, metadatas);
+      });
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
@@ -73,6 +87,7 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
   }
 
   private updateScreenRecordingMetadatas (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    this.log('debug', 'sending screen metadatas', { conversationId: session.conversationId, sessionId: session.id, metadatas })
     metadatas.forEach((meta) => {
       // adding any here because I don't want to add this to the public interface
       (meta as any)._trackId = meta.trackId;
