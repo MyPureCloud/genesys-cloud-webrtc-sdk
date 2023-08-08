@@ -1,6 +1,6 @@
 import groovy.json.JsonBuilder
 
-@Library('pipeline-library@COMUI-857') _
+@Library('pipeline-library') _
 
 def MAIN_BRANCH = 'master'
 def DEVELOP_BRANCH = 'develop'
@@ -70,6 +70,7 @@ webappPipeline {
     team = 'Genesys Client Media (WebRTC)'
     mailer = 'genesyscloud-client-media@genesys.com'
     chatGroupId = chatGroupId
+    useSkynetV2 = true
 
     nodeVersion = '14.x'
     buildType = getBranchType
