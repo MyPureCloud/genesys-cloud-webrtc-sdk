@@ -101,14 +101,18 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   hasActiveSession (): boolean {
-    return this.activeSession?.state === 'active';
+    return this.activeSession?.peerConnection.connectionState === 'connected';
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     await super.handlePropose(pendingSession);
 
-    if (pendingSession.autoAnswer && !this.sdk._config.disableAutoAnswer) {
-      await this.proceedWithSession(pendingSession);
+    if (pendingSession.autoAnswer) {
+      if (this.sdk._config.disableAutoAnswer) {
+        this.log('info', 'received and autoAnswer tagged propose but sdk has disableAutoAnswer.', { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId });
+      } else {
+        await this.proceedWithSession(pendingSession);
+      }
     }
   }
 

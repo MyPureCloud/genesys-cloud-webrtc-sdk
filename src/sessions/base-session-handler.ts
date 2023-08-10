@@ -16,7 +16,7 @@ import {
   IExtendedMediaSession,
   IUpdateOutgoingMedia,
   IConversationHeldRequest,
-  IActiveConversationDescription
+  IActiveConversationDescription,
 } from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -91,6 +91,10 @@ export default abstract class BaseSessionHandler {
 
     session.peerConnection.addEventListener('negotiationneeded', this._warnNegotiationNeeded.bind(this, session));
 
+    const boundVisibilityHandler = this.handleVisibilityChange.bind(this, session);
+    session._visibilityHandler = boundVisibilityHandler;
+    document.addEventListener('visibilitychange', boundVisibilityHandler);
+
     session.on('connectionState' as any, (state: string) => {
       this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
     });
@@ -103,9 +107,32 @@ export default abstract class BaseSessionHandler {
     }
   }
 
+    /**
+   * This is somewhat of a hack unfortunately. If the peer connection dies while the computer is sleeping, the peer connection
+   * does not send connection updates so the session has no idea the session is dead. We do get a visibility change event 
+   * however, so we can use that as a manual queue to check the state of the peer connection and clean it up if needed.
+   */
+  private handleVisibilityChange (session: IExtendedMediaSession) {
+    if (document.visibilityState === 'visible') {
+      this.checkPeerConnectionState(session);
+    }
+  }
+
+  checkPeerConnectionState (session: IExtendedMediaSession): void {
+    const sessionState = session.state;
+    const peerConnectionState = session.peerConnection.connectionState;
+    if (sessionState === 'active' && peerConnectionState === 'closed') {
+      this.log('warn', 'peer connection state does not match session state. cleaning up.', { sessionState, peerConnectionState, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
+      this.onSessionTerminated(session, { condition: Constants.JingleReasonCondition.Gone });
+    }
+  }
+
   onSessionTerminated (session: IExtendedMediaSession, reason: JingleReason): void {
     this.endTracks(session._outboundStream);
     this.endTracks(session._screenShareStream);
+    if (session._visibilityHandler) {
+      document.removeEventListener('visibilitychange', session._visibilityHandler);
+    }
     this.sdk.emit('sessionEnded', session, reason);
   }
 
