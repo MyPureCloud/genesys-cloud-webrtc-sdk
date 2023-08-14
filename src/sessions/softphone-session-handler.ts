@@ -121,12 +121,14 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
     const conversationId = update.id;
     const lastConversationUpdate = this.conversations[conversationId];
+    const conversationUpdateForLogging = { ...lastConversationUpdate };
+    delete conversationUpdateForLogging.session
 
     if (session) {
       session.pcParticipant = participant as any;
     }
 
-    this.log('debug', 'about to process conversation event', { sessionId: session?.id, update, lastConversationUpdate, callState });
+    this.log('debug', 'about to process conversation event', { sessionId: session?.id, update, conversationUpdateForLogging, callState });
 
     /* if we didn't have a previous update and this one is NOT in a pending state, that means we are not responsible for this conversation (another client handled it or we have already emitted the `sessionEnded` for it) */
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
@@ -264,7 +266,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (eventToEmit) {
-      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, session }, { skipServer: true });
+      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, sessionId: session.id }, { skipServer: true });
       this.emitConversationEvent(eventToEmit, this.conversations[conversationId], session);
     }
   }
@@ -321,7 +323,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     currentEmittedEvent.activeConversationId = this.determineActiveConversationId(session);
 
-    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, session }, { skipServer: true });
+    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, sessionId: session.id }, { skipServer: true });
     this.lastEmittedSdkConversationEvent = currentEmittedEvent;
 
     this.sdk.emit('conversationUpdate', currentEmittedEvent);
