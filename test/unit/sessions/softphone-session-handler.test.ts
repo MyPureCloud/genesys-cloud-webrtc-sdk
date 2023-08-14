@@ -1478,7 +1478,7 @@ describe('emitConversationEvent()', () => {
     });
 
     expectedEvent.added.push(conversationState);
-    handler.emitConversationEvent('added', conversationState, undefined as any);
+    handler.emitConversationEvent('added', conversationState, { id: '123' } as IExtendedMediaSession);
   });
 
   it('should emit removed conversations', () => {
@@ -1497,7 +1497,7 @@ describe('emitConversationEvent()', () => {
 
     expectedEvent.removed.push(conversationState);
     handler.conversations = { [conversationState.conversationId]: conversationState };
-    handler.emitConversationEvent('removed', conversationState, undefined as any);
+    handler.emitConversationEvent('removed', conversationState, { id: '123' } as IExtendedMediaSession);
   });
 
   it('should emit updated conversations', () => {

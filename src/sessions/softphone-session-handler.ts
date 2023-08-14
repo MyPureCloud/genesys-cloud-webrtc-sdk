@@ -266,7 +266,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (eventToEmit) {
-      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, sessionId: session.id }, { skipServer: true });
+      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, sessionId: session?.id }, { skipServer: true });
       this.emitConversationEvent(eventToEmit, this.conversations[conversationId], session);
     }
   }
@@ -323,7 +323,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     currentEmittedEvent.activeConversationId = this.determineActiveConversationId(session);
 
-    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, sessionId: session.id }, { skipServer: true });
+    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, sessionId: session?.id }, { skipServer: true });
     this.lastEmittedSdkConversationEvent = currentEmittedEvent;
 
     this.sdk.emit('conversationUpdate', currentEmittedEvent);
