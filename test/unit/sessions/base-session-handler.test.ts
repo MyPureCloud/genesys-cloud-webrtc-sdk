@@ -557,6 +557,56 @@ describe('handleSessionInit', () => {
   });
 });
 
+describe('handleVisibilityChange', () => {
+  it('should do nothing if document is not visible', () => {
+    const session: any = new MockSession();
+
+    Object.defineProperty(document, 'visibilityState', {value: 'hidden', writable: true});
+    const spy = jest.spyOn(handler, 'checkPeerConnectionState').mockImplementation();
+
+    (handler as any).handleVisibilityChange(session);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+  
+  it('should checkPeerConnectionState if document is visible', () => {
+    const session: any = new MockSession();
+
+    Object.defineProperty(document, 'visibilityState', {value: 'visible', writable: true});
+    const spy = jest.spyOn(handler, 'checkPeerConnectionState').mockImplementation();
+
+    (handler as any).handleVisibilityChange(session);
+
+    expect(spy).toHaveBeenCalled();
+  });
+});
+
+describe('checkPeerConnectionState', () => {
+  it('should call onSessionTerminate if peerConnection is closed and session state is active', async () => {
+    const session: any = new MockSession();
+
+    session.state = 'active';
+    session.peerConnection.connectionState = 'closed';
+
+    const spy = jest.spyOn(handler, 'onSessionTerminated').mockImplementation();
+
+    handler.checkPeerConnectionState(session);
+    expect(spy).toHaveBeenCalled();
+  });
+  
+  it('should not call onSessionTerminate', async () => {
+    const session: any = new MockSession();
+
+    session.state = 'ended';
+    session.peerConnection.connectionState = 'closed';
+
+    const spy = jest.spyOn(handler, 'onSessionTerminated').mockImplementation();
+
+    handler.checkPeerConnectionState(session);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
 describe('onSessionTerminated', () => {
   it('should clean up outboundStream and screenStream and emit sessionEnded', () => {
     const session: any = new MockSession();

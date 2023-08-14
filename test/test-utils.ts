@@ -112,6 +112,8 @@ class MockPC extends EventTarget {
   _transceivers: MockTransceiver[] = [];
   _senders: MockSender[] = [];
   _receivers: MockReceiver[] = [];
+  connectionState = 'connected';
+
   constructor (session: MockSession) {
     super();
     // this._mockSession = session;

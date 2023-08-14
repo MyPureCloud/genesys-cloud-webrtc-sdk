@@ -58,10 +58,6 @@ export class SessionManager {
     return this.sdk._streamingConnection.webrtcSessions;
   }
 
-  // get jingle () {
-  //   return this.sdk._streamingConnection._webrtcSessions.getSessionManager();
-  // }
-
   handleConversationUpdate (update: ConversationUpdate): void {
     const sessions = this.getAllSessions();
 
