@@ -834,6 +834,7 @@ export interface IExtendedMediaSession extends IMediaSession {
   _screenShareStream?: MediaStream;
   _outboundStream?: MediaStream;
   _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
+  _visibilityHandler?: EventListener;
 }
 
 export interface IResolutionChange {
