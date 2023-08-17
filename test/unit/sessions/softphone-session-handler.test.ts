@@ -2239,6 +2239,7 @@ describe('setConversationHeld()', () => {
     const params: IConversationHeldRequest = { conversationId, held: false };
     const holdOtherSessionsSpy = jest.spyOn(handler, 'holdOtherSessions').mockImplementation();
     jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    handler.conversations = {'123': {}, '234': {} } as any;
 
     await handler.setConversationHeld(session, params);
 

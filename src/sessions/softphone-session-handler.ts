@@ -728,8 +728,8 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     });
 
     try {
-      // If we're unholding and LA > 1, we need to hold the other active sessions.
-      if (!params.held && this.sdk.isConcurrentSoftphoneSessionsEnabled()) {
+      // If we're unholding and LA > 1, we need to hold the other active sessions. If PC is on, we need to make sure there are other conversations.
+      if (!params.held && this.sdk.isConcurrentSoftphoneSessionsEnabled() && Object.keys(this.conversations).length > 1) {
         this.holdOtherSessions(session);
       }
 
