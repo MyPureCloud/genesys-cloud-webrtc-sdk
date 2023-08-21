@@ -281,6 +281,7 @@ export class SessionManager {
         this.log('info', `found an existingSession matching propose's conversationId, updating existingSession.sessionId to match`,
           { existingSessionId: existingSession.sessionId, proposeSessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId});
         existingSession.sessionId = sessionInfo.sessionId;
+        existingSession.id = sessionInfo.id;
       }
       logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
       return;
