@@ -1409,6 +1409,81 @@ describe('Client', () => {
 
       expect(windows11Hack).toHaveBeenCalled();
     });
+
+    it('should call addAllowedSessionType for each sessionType in the config', async () => {
+      constructSdk({ accessToken: 'fakeToken', optOutOfTelemetry: true, allowedSessionTypes: [SessionTypes.collaborateVideo] });
+      setupSpys();
+      orgSpy.mockResolvedValue(Promise.resolve());
+      userSpy.mockResolvedValue(Promise.resolve());
+      jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockImplementation();
+
+      const spy = jest.spyOn(sdk, 'addAllowedSessionType').mockResolvedValue();
+      sdk._streamingConnection = { _webrtcSessions: {iceServers: []}, disconnect: jest.fn() } as any;
+
+      await sdk.initialize();
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      spy.mockReset();
+      sdk._config.allowedSessionTypes = [SessionTypes.softphone, SessionTypes.acdScreenShare, SessionTypes.collaborateVideo];
+      await sdk.initialize();
+      expect(spy).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('addAllowedSessionType', () => {
+    let sessionManagerSpy;
+
+    beforeEach(() => {
+      constructSdk({ accessToken: 'fakeToken', optOutOfTelemetry: true, allowedSessionTypes: [] });
+      sessionManagerSpy = jest.spyOn(sdk.sessionManager, 'addAllowedSessionType').mockImplementation();
+    });
+
+    it('happy path - should call session manager', async () => {
+      expect(sdk._config.allowedSessionTypes).not.toContain(SessionTypes.screenRecording);
+      await sdk.addAllowedSessionType(SessionTypes.screenRecording);
+      expect(sessionManagerSpy).toHaveBeenCalled();
+      expect(sdk._config.allowedSessionTypes).toContain(SessionTypes.screenRecording);
+    });
+
+    it('should fetch station and subscribe for softphone', async () => {
+      const fetchSpy = jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue(null as any);
+      const subSpy = jest.spyOn(sdk as any, 'listenForStationEvents').mockResolvedValue(null as any);
+
+      expect(sdk._config.allowedSessionTypes).not.toContain(SessionTypes.softphone);
+      await sdk.addAllowedSessionType(SessionTypes.softphone);
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(subSpy).toHaveBeenCalled();
+      expect(sessionManagerSpy).toHaveBeenCalled();
+      expect(sdk._config.allowedSessionTypes).toContain(SessionTypes.softphone);
+    });
+
+    it('should not add if it is a duplicate', async () => {
+      sdk._config.allowedSessionTypes = [SessionTypes.screenRecording];
+      await sdk.addAllowedSessionType(SessionTypes.screenRecording);
+      expect(sessionManagerSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('removeAllowedSessionType', () => {
+    let sessionManagerSpy;
+
+    beforeEach(() => {
+      constructSdk({ accessToken: 'fakeToken', optOutOfTelemetry: true, allowedSessionTypes: [SessionTypes.screenRecording] });
+      sessionManagerSpy = jest.spyOn(sdk.sessionManager, 'removeAllowedSessionType').mockImplementation();
+    });
+
+    it('happy path - should call session manager', async () => {
+      expect(sdk._config.allowedSessionTypes).toContain(SessionTypes.screenRecording);
+      await sdk.removeAllowedSessionType(SessionTypes.screenRecording);
+      expect(sessionManagerSpy).toHaveBeenCalled();
+      expect(sdk._config.allowedSessionTypes).not.toContain(SessionTypes.screenRecording);
+    });
+
+    it('should not remove if it is not already allowed', async () => {
+      sdk._config.allowedSessionTypes = [];
+      await sdk.removeAllowedSessionType(SessionTypes.screenRecording);
+      expect(sessionManagerSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('setUseHeadsets', () => {

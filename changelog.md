@@ -3,7 +3,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.6...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.0...HEAD)
+# [v8.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.6...v8.2.0)
+* [PCM-2213](https://inindca.atlassian.net/browse/PCM-2213) - Allow dynamic adding and removing of supported session types
+
 # [v8.1.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.5...v8.1.6)
 * [PCM-2209](https://inindca.atlassian.net/browse/PCM-2209) - fixed issue where we incorrectly answer pending sessions which had their sessionIds updated due to a late propose (only affects persistent connection)
 * [PCM-2192](https://inindca.atlassian.net/browse/PCM-2192) - removed session object from certain logs to reduce size
@@ -15,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v8.1.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.3...v8.1.4)
 ### Fixed
 * [PCM-2203](https://inindca.atlassian.net/browse/PCM-2203) - fixed issue when trying to place or receive calls after cpu wake when persistent connection was active before sleep
+* [PCM-2192](https://inindca.atlassian.net/browse/PCM-2192) - removed session object from certain logs to reduce size
 
 # [v8.1.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.1.2...v8.1.3)
 ### Added

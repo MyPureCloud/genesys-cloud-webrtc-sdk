@@ -42,12 +42,6 @@ export class SessionManager {
 
   constructor (private sdk: GenesysCloudWebrtcSdk) {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
-
-    sdk._config.allowedSessionTypes.forEach((sessionType) => {
-      this.log('info', 'Allow session type', { sessionType });
-      const handler = this.getSessionHandler({ sessionType });
-      handler.disabled = false;
-    });
   }
 
   private log (level: LogLevels, message: any, details?: any): void {
@@ -56,6 +50,16 @@ export class SessionManager {
 
   get webrtcSessions (): WebrtcExtensionAPI {
     return this.sdk._streamingConnection.webrtcSessions;
+  }
+
+  async addAllowedSessionType (sessionType: SessionTypes): Promise<void> {
+    const handler = this.getSessionHandler({ sessionType });
+    handler.disabled = false;
+  }
+
+  async removeAllowedSessionType (sessionType: SessionTypes): Promise<void> {
+    const handler = this.getSessionHandler({ sessionType });
+    handler.disabled = true;
   }
 
   handleConversationUpdate (update: ConversationUpdate): void {

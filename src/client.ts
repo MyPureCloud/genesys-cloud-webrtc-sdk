@@ -267,23 +267,51 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         this.logger.info('window.beforeunload was called', { activeConversationsForClient: this.sessionManager.getAllActiveConversations() });
       });
 
-      /* if we are allowing softphone calls, we need station information */
-      if (this._config.allowedSessionTypes.includes(SessionTypes.softphone) && !this.isGuest) {
-        this.logger.info('SDK initialized to handle Softphone session. Requesting station');
-        const stationReq = this.fetchUsersStation()
-          .catch((err) => {
-            // these errors shouldn't halt initialization
-            this.logger.warn('error fetching users station', err);
-          });
-        const stationSub = this.listenForStationEvents();
-
-        await Promise.all([stationReq, stationSub]);
-      }
+      const sessionsToActivate = this._config.allowedSessionTypes;
+      this._config.allowedSessionTypes = [];
+      const activateSessionTypes = sessionsToActivate.map((allowedSessionType) => this.addAllowedSessionType(allowedSessionType));
+      await Promise.all(activateSessionTypes);
 
       this.emit('ready');
     } catch (err) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.initialization, err.message, err);
     }
+  }
+
+  async addAllowedSessionType(sessionType: SessionTypes): Promise<void> {
+    if (this._config.allowedSessionTypes.includes(sessionType)) {
+      this.logger.warn('addAllowedSessionType was called but the sessionType is already allowed', { sessionType });
+      return;
+    }
+
+    this.logger.info('adding sessionType', { sessionType });
+
+    if (sessionType === SessionTypes.softphone && !this.isGuest) {
+      this.logger.info('Softphone sessionType added, requesting station');
+      const stationReq = this.fetchUsersStation()
+        .catch((err) => {
+          // these errors shouldn't halt initialization
+          this.logger.warn('error fetching users station', err);
+        });
+      const stationSub = this.listenForStationEvents();
+
+      await Promise.all([stationReq, stationSub]);
+    }
+
+    await this.sessionManager.addAllowedSessionType(sessionType);
+    this._config.allowedSessionTypes.push(sessionType);
+  }
+
+  async removeAllowedSessionType(sessionType: SessionTypes): Promise<void> {
+    if (!this._config.allowedSessionTypes.includes(sessionType)) {
+      this.logger.warn('removeAllowedSessionType was called but the sessionType is already disallowed', { sessionType });
+      return;
+    }
+
+    this.logger.info('removing sessionType', { sessionType });
+
+    await this.sessionManager.removeAllowedSessionType(sessionType);
+    this._config.allowedSessionTypes = this._config.allowedSessionTypes.filter(st => st.toString() !== sessionType.toString());
   }
 
   isScreenRecordingSession (session: IExtendedMediaSession): session is ScreenRecordingMediaSession {
