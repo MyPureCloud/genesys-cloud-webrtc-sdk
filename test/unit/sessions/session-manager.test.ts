@@ -30,14 +30,25 @@ it('webrtcSessions should map to the sdk webrtcSession', () => {
   expect(sessionManager.webrtcSessions).toBe(webrtcSessions);
 });
 
-describe('allowedSessionTypes', () => {
-  it('should only enabled allowed session types', () => {
-    mockSdk._config.allowedSessionTypes = [SessionTypes.collaborateVideo];
+describe('addAllowedSessionType', () => {
+  it('should enable sessionType', async () => {
     sessionManager = new SessionManager(mockSdk);
-    sessionManager.sessionHandlers.forEach((handler) => {
-      expect(handler.disabled).toEqual(handler.sessionType !== SessionTypes.collaborateVideo);
-    });
-    expect.assertions(4);
+    const handler = sessionManager.getSessionHandler({ sessionType: 'softphone' });
+    expect(handler.disabled).toBeTruthy();
+
+    await sessionManager.addAllowedSessionType(SessionTypes.softphone);
+    expect(handler.disabled).toBeFalsy();
+  });
+});
+
+describe('removeAllowedSessionType', () => {
+  it('should enable sessionType', async () => {
+    sessionManager = new SessionManager(mockSdk);
+    const handler = sessionManager.getSessionHandler({ sessionType: 'softphone' });
+    handler.disabled = false;
+
+    await sessionManager.removeAllowedSessionType(SessionTypes.softphone);
+    expect(handler.disabled).toBeTruthy();
   });
 });
 
