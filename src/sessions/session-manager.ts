@@ -286,6 +286,11 @@ export class SessionManager {
           { existingSessionId: existingSession.sessionId, proposeSessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId});
         existingSession.sessionId = sessionInfo.sessionId;
         existingSession.id = sessionInfo.id;
+
+        if (existingSession.accepted) {
+          this.log('info', `updated existingSession was already accepted, "proceeding" again`, { sessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId });
+          return handler.proceedWithSession(existingSession);
+        }
       }
       logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
       return;
