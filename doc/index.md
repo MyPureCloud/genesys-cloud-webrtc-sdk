@@ -131,6 +131,7 @@ interface ISdkConfig {
     disableAutoAnswer?: boolean;
     logLevel?: LogLevels;
     logger?: ILogger;
+    logFormatters?: LogFormatterFn[];
     optOutOfTelemetry?: boolean;
     useHeadsets?: boolean;
     originAppName?: string;
