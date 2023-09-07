@@ -4,7 +4,8 @@ module.exports = {
     '<rootDir>/test'
   ],
   testMatch: [
-    '<rootDir>/test/unit/**/*.(ts|js)'
+    '<rootDir>/test/unit/**/*.(ts|js)',
+    '<rootDir>/test/integration/**/*.(ts|js)'
   ],
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
