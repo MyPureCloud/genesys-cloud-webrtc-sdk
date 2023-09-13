@@ -27,7 +27,8 @@ import {
   ScreenRecordingMediaSession,
   VideoMediaSession,
   IVideoResolution,
-  JWTDetails
+  JWTDetails,
+  ISdkFullConfig
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -38,9 +39,10 @@ import { setupLogging } from './logging';
 import { SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
-import { HeadsetProxyService, ISdkHeadsetService, SdkHeadsetService } from './media/headset';
+import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
 import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
+import { ISdkHeadsetService } from './headsets/headset-types';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -104,7 +106,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _clientId: string;
   _customerData: ICustomerData;
   _hasConnected: boolean;
-  _config: ISdkConfig;
+  _config: ISdkFullConfig;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -262,7 +264,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       await proxyStreamingClientEvents.call(this);
       await setupWebrtcForWindows11(this._streamingConnection._webrtcSessions['iceServers']);
 
-    /* istanbul ignore next */
+      /* istanbul ignore next */
       window.addEventListener('beforeunload', () => {
         this.logger.info('window.beforeunload was called', { activeConversationsForClient: this.sessionManager.getAllActiveConversations() });
       });
@@ -270,7 +272,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       const sessionsToActivate = this._config.allowedSessionTypes;
       this._config.allowedSessionTypes = [];
       const activateSessionTypes = sessionsToActivate.map((allowedSessionType) => this.addAllowedSessionType(allowedSessionType));
+
+      if (this._config.jidResource?.startsWith('mediahelper')) {
+        this._config.headsetRequestType = 'mediaHelper';
+      }
+
       await Promise.all(activateSessionTypes);
+      (this.headset as HeadsetProxyService).initialize();
 
       this.emit('ready');
     } catch (err) {

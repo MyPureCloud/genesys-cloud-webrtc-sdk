@@ -19,6 +19,10 @@ export class SimpleMockSdk extends EventEmitter {
     jest.spyOn(SdkMedia.prototype, 'initialize' as any).mockReturnValue(null);
     this.media = new SdkMedia(this as any as GenesysCloudWebrtcSdk);
     this._http = new HttpClient();
+
+    const messenger = new EventEmitter();
+    (messenger as any).broadcastMessage = jest.fn();
+    (this._streamingConnection as any).messenger = messenger;
   }
 
   media: SdkMedia;
@@ -48,6 +52,9 @@ export class SimpleMockSdk extends EventEmitter {
   _streamingConnection = {
     config: {
       jid: 'userjid@orgspan.com'
+    },
+    activeStanzaInstance: {
+      jid: 'myjid@genesys.com/resource'
     },
     notifications: {
       subscribe: jest.fn(),

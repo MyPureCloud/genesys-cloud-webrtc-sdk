@@ -14,7 +14,8 @@ import {
   IMediaRequestOptions,
   IStartVideoSessionParams,
   VideoMediaSession,
-  IMemberStatusMessage
+  GenesysDataChannelMessage,
+  GenesysDataChannelMessageParams
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
@@ -753,11 +754,11 @@ export default class VideoSessionHandler extends BaseSessionHandler {
       .find(s => s.startsWith('a=msid:'))?.split(' ')[1]?.trim();
   }
 
-  isMemberStatusMessage (message: JsonRpcMessage): message is IMemberStatusMessage {
+  isMemberStatusMessage (message: JsonRpcMessage<any>): message is JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>> {
     return message.method === 'member.notify.status';
   }
 
-  handleDataChannelMessage (session: VideoMediaSession, message: JsonRpcMessage): void {
+  handleDataChannelMessage (session: VideoMediaSession, message: JsonRpcMessage<any>): void {
     if (this.isMemberStatusMessage(message)) {
       this.handleMemberStatusMessage(message, session);
     } else {
@@ -765,7 +766,7 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     }
   }
 
-  handleMemberStatusMessage(message: IMemberStatusMessage, session: VideoMediaSession): void {
+  handleMemberStatusMessage(message: JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>>, session: VideoMediaSession): void {
     session.emit('memberStatusUpdate', message);
   }
 }

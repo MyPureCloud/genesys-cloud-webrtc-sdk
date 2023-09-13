@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.1...HEAD)
+### BREAKING CHANGES
+* Only one sdk instance will be allowed to have headset controls at any given time. Headset functionality is now orchestrated and negotiated between other instances of the sdk based on various factors. As such, we have changed the DeviceConnectionStatus type in order to union those states with orchestration states.
+
+### Added
+* [PCM-2224](https://inindca.atlassian.net/browse/PCM-2224) - Added headset orchestration flow
 
 # [v8.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.0...v8.2.1)
 * [PCM-2220](https://inindca.atlassian.net/browse/PCM-2220) - Automatically accept a pendingSession that comes in after the "fake" pendingSession was answered

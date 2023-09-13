@@ -38,7 +38,8 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
 import { SdkError } from '../../../src/utils';
-import { HeadsetProxyService, ISdkHeadsetService } from '../../../src/media/headset';
+import { ISdkHeadsetService } from '../../../src/headsets/headset-types';
+import { HeadsetProxyService } from '../../../src/headsets/headset';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -56,6 +57,7 @@ beforeEach(() => {
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
   mockSdk.headset = mockHeadset = new HeadsetProxyService(mockSdk);
+  (mockHeadset as HeadsetProxyService).setUseHeadsets(false);
 
   mockSessionManager = new SessionManager(mockSdk);
   handler = new SoftphoneSessionHandler(mockSdk, mockSessionManager);

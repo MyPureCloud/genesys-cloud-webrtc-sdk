@@ -9,7 +9,6 @@ import { Logger } from 'genesys-cloud-client-logger';
 import * as clientPrivate from '../../src/client-private';
 import * as windows11Utils from '../../src/windows11-first-session-hack';
 import jwtDecode from 'jwt-decode';
-import { HeadsetProxyService } from '../../src/media/headset';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockStream, MockSession, random } from '../test-utils';
@@ -33,6 +32,7 @@ import {
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
+import { HeadsetProxyService } from '../../src/headsets/headset';
 
 jest.mock('../../src/sessions/session-manager');
 jest.mock('../../src/media/media');
@@ -91,14 +91,14 @@ describe('Client', () => {
     jest.restoreAllMocks();
     if (sdk) {
       await sdk.destroy();
-      sdk = null;
+      sdk = null as any;
     }
   });
 
   describe('constructor()', () => {
     it('throws if options are not provided', () => {
       try {
-        constructSdk(null); // tslint:disable-line
+        constructSdk(null as any); // tslint:disable-line
         fail();
       } catch (err) {
         expect(err).toEqual(new SdkError(SdkErrorTypes.invalid_options, 'Options required to create an instance of the SDK'));
@@ -411,7 +411,7 @@ describe('Client', () => {
       };
 
       /* no user, even after trying to load one */
-      jest.spyOn(sdk, 'fetchAuthenticatedUser').mockResolvedValue(null);
+      jest.spyOn(sdk, 'fetchAuthenticatedUser').mockResolvedValue({} as any);
       await expectThrow();
 
       /* no station for the user */
@@ -451,23 +451,23 @@ describe('Client', () => {
     });
 
     it('should return "false" if there is no station', () => {
-      delete sdk.station;
+      delete (sdk as any).station;
       expect(sdk.isPersistentConnectionEnabled()).toBe(false);
     });
 
     it('should return "false" if persistent connection is not enabled', () => {
-      delete sdk.station.webRtcPersistentEnabled;
+      delete (sdk.station as any).webRtcPersistentEnabled;
       expect(sdk.isPersistentConnectionEnabled()).toBe(false);
 
-      sdk.station.webRtcPersistentEnabled = false;
+      (sdk as any).station.webRtcPersistentEnabled = false;
       expect(sdk.isPersistentConnectionEnabled()).toBe(false);
     });
 
     it('should return "false" if not a webrt softphone', () => {
-      sdk.station.type = 'inin_remote';
+      (sdk as any).station.type = 'inin_remote';
       expect(sdk.isPersistentConnectionEnabled()).toBe(false);
 
-      delete sdk.station.type;
+      delete (sdk as any).station.type;
       expect(sdk.isPersistentConnectionEnabled()).toBe(false);
     });
   });
@@ -485,12 +485,12 @@ describe('Client', () => {
     });
 
     it('should return "false" if station has lineCallAppearance === 1', () => {
-      sdk.station.webRtcCallAppearances = 1;
+      (sdk as any).station.webRtcCallAppearances = 1;
       expect(sdk.isConcurrentSoftphoneSessionsEnabled()).toBe(false);
     });
 
     it('should return "false" if there is no station', () => {
-      delete sdk.station;
+      delete (sdk as any).station;
       expect(sdk.isConcurrentSoftphoneSessionsEnabled()).toBe(false);
     });
   });
@@ -623,9 +623,9 @@ describe('Client', () => {
 
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk._config.defaults.audioDeviceId).toBe(null);
-      expect(sdk._config.defaults.videoDeviceId).toBe(null);
-      expect(sdk._config.defaults.outputDeviceId).toBe(null);
+      expect(sdk._config.defaults!.audioDeviceId).toBe(null);
+      expect(sdk._config.defaults!.videoDeviceId).toBe(null);
+      expect(sdk._config.defaults!.outputDeviceId).toBe(null);
     });
 
     it('should set defaultDevice Ids if values are passed in and sessionManager is not defined', async () => {
@@ -637,13 +637,13 @@ describe('Client', () => {
       };
 
       sdk.headset.updateAudioInputDevice = jest.fn();
-      sdk.sessionManager = null;
+      (sdk as any).sessionManager = null;
       await sdk.updateDefaultDevices({ ...options, updateActiveSessions: true });
 
-      expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk._config.defaults!.audioDeviceId).toBe(options.audioDeviceId);
       expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
-      expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
-      expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
+      expect(sdk._config.defaults!.videoDeviceId).toBe(options.videoDeviceId);
+      expect(sdk._config.defaults!.outputDeviceId).toBe(options.outputDeviceId);
     });
 
     it('should set defaultDevice Ids if values are passed in', async () => {
@@ -657,10 +657,10 @@ describe('Client', () => {
       sdk.headset.updateAudioInputDevice = jest.fn();
       await sdk.updateDefaultDevices(options);
 
-      expect(sdk._config.defaults.audioDeviceId).toBe(options.audioDeviceId);
+      expect(sdk._config.defaults!.audioDeviceId).toBe(options.audioDeviceId);
       expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
-      expect(sdk._config.defaults.videoDeviceId).toBe(options.videoDeviceId);
-      expect(sdk._config.defaults.outputDeviceId).toBe(options.outputDeviceId);
+      expect(sdk._config.defaults!.videoDeviceId).toBe(options.videoDeviceId);
+      expect(sdk._config.defaults!.outputDeviceId).toBe(options.outputDeviceId);
     });
 
     it('should call through to sessionManager to update active sessions', async () => {
@@ -990,7 +990,7 @@ describe('Client', () => {
       sdk = constructSdk();
 
       /* mock that we haven't initialized yet */
-      delete sdk._streamingConnection;
+      delete (sdk as any)._streamingConnection;
       expect(sdk._config.accessToken).toBe('secure');
 
       const newToken = 'hi-auth-token';
@@ -1023,7 +1023,7 @@ describe('Client', () => {
       const session2 = new MockSession();
 
       sessionManagerMock.getAllSessions.mockReturnValue([session1, session2] as any);
-      sessionManagerMock.forceTerminateSession.mockResolvedValue(null);
+      sessionManagerMock.forceTerminateSession.mockResolvedValue();
       mediaMock.destroy.mockReturnValue();
 
       jest.spyOn(sdk, 'removeAllListeners');
@@ -1060,7 +1060,7 @@ describe('Client', () => {
     });
 
     it('should return false if no customerData is present', () => {
-      let customerData: ICustomerData;
+      let customerData: any = undefined;
       expect(isCustomerData(customerData)).toBe(false);
     });
 
@@ -1145,7 +1145,7 @@ describe('Client', () => {
     });
 
     it('should only update specified defaults if no sessionManager', async () => {
-      sdk.sessionManager = null;
+      (sdk as any).sessionManager = null;
 
       await sdk.updateDefaultMediaSettings({
         micAutoGainControl: false,
@@ -1211,16 +1211,16 @@ describe('Client', () => {
     it('should validate allowed volume levels even if theres no session manager', async () => {
       expect(() => sdk.updateAudioVolume(-1)).toThrowError('Invalid volume level');
       expect(() => sdk.updateAudioVolume(101)).toThrowError('Invalid volume level');
-      sdk.sessionManager = null;
+      (sdk as any).sessionManager = null;
 
       sdk.updateAudioVolume(0);
-      expect(sdk._config.defaults.audioVolume).toBe(0);
+      expect((sdk as any)._config.defaults.audioVolume).toBe(0);
 
       sdk.updateAudioVolume(100);
-      expect(sdk._config.defaults.audioVolume).toBe(100);
+      expect((sdk as any)._config.defaults.audioVolume).toBe(100);
 
       sdk.updateAudioVolume(50);
-      expect(sdk._config.defaults.audioVolume).toBe(50);
+      expect((sdk as any)._config.defaults.audioVolume).toBe(50);
     });
   });
 
@@ -1277,7 +1277,7 @@ describe('Client', () => {
 
     it('should handle handle ASSOCIATED_EVENT', async () => {
       await listenForStationEventsFn();
-      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue(null);
+      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue({} as any);
 
       emitEvent({
         metadata: { action: 'Associated' },
@@ -1304,7 +1304,7 @@ describe('Client', () => {
     it('should ignore other events', async () => {
       await listenForStationEventsFn();
 
-      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue(null);
+      jest.spyOn(sdk, 'fetchUsersStation').mockResolvedValue({} as any);
       sdk.on('station', (_evt) => {
         fail('should not emit unknown events');
       });
@@ -1330,8 +1330,8 @@ describe('Client', () => {
     }
 
     beforeEach(() => {
-      setupScSpy = jest.spyOn(clientPrivate, 'setupStreamingClient').mockResolvedValue(null);
-      proxySpy = jest.spyOn(clientPrivate, 'proxyStreamingClientEvents').mockResolvedValue(null);
+      setupScSpy = jest.spyOn(clientPrivate, 'setupStreamingClient').mockResolvedValue();
+      proxySpy = jest.spyOn(clientPrivate, 'proxyStreamingClientEvents').mockResolvedValue();
       requestSpy = jest.spyOn(utils, 'requestApi');
     });
     
@@ -1352,6 +1352,9 @@ describe('Client', () => {
         sdk._streamingConnection = {
           _webrtcSessions: {
             iceServers: []
+          },
+          messenger: {
+            on: jest.fn()
           },
           disconnect: jest.fn()
         } as any;
@@ -1401,6 +1404,9 @@ describe('Client', () => {
           _webrtcSessions: {
             iceServers: []
           },
+          messenger: {
+            on: jest.fn()
+          },
           disconnect: jest.fn()
         } as any;
       });
@@ -1418,7 +1424,13 @@ describe('Client', () => {
       jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockImplementation();
 
       const spy = jest.spyOn(sdk, 'addAllowedSessionType').mockResolvedValue();
-      sdk._streamingConnection = { _webrtcSessions: {iceServers: []}, disconnect: jest.fn() } as any;
+      sdk._streamingConnection = {
+        _webrtcSessions: { iceServers: [] },
+        disconnect: jest.fn(),
+        messenger: {
+          on: jest.fn(),
+        },
+      } as any;
 
       await sdk.initialize();
       expect(spy).toHaveBeenCalledTimes(1);
@@ -1427,6 +1439,29 @@ describe('Client', () => {
       sdk._config.allowedSessionTypes = [SessionTypes.softphone, SessionTypes.acdScreenShare, SessionTypes.collaborateVideo];
       await sdk.initialize();
       expect(spy).toHaveBeenCalledTimes(3);
+    });
+
+    it('should set mediaHelper headsetRequestType if mediaHelper resource', async () => {
+      constructSdk({ accessToken: 'fakeToken', optOutOfTelemetry: true, allowedSessionTypes: [SessionTypes.collaborateVideo] });
+      setupSpys();
+      orgSpy.mockResolvedValue(Promise.resolve());
+      userSpy.mockResolvedValue(Promise.resolve());
+      jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockImplementation();
+
+      const spy = jest.spyOn(sdk, 'addAllowedSessionType').mockResolvedValue();
+      sdk._streamingConnection = {
+        _webrtcSessions: { iceServers: [] },
+        disconnect: jest.fn(),
+        messenger: {
+          on: jest.fn(),
+        },
+      } as any;
+
+      sdk._config.jidResource = 'mediahelper_sdlkf';
+      sdk._config.headsetRequestType = 'standard';
+
+      await sdk.initialize();
+      expect(sdk._config.headsetRequestType).toBe('mediaHelper');
     });
   });
 
