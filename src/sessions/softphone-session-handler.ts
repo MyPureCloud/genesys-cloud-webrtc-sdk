@@ -349,7 +349,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       return connectedConversations[0].conversationId;
     } else if (connectedConversations.length > 1) {
       /* if there are multiple, find the one that isn't held */
-      const nonHeldConversations = connectedConversations.find(c => c.mostRecentCallState.held === false);
+      const nonHeldConversations = connectedConversations.find(c => c?.mostRecentCallState.held === false);
       if (nonHeldConversations) {
         return nonHeldConversations.conversationId;
       }
@@ -769,7 +769,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   isConversationHeld(conversationId: string): boolean {
-    return this.conversations[conversationId].mostRecentCallState.held;
+    return !!this.conversations[conversationId]?.mostRecentCallState.held;
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera
