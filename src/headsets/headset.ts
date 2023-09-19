@@ -107,7 +107,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
       this.sendControlsChangedMessage(true);
       this.setOrchestrationState('hasControls');
-      this.updateAudioInputDevice(deviceToActiveOnSuccess.label);
+      this.updateAudioInputDevice(deviceToActiveOnSuccess.deviceId);
     }, ORCHESTRATION_WAIT_TIME) as unknown as NodeJS.Timeout;
 
     this.sdk.logger.info('Starting headsetCallControls orchestration');
