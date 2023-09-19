@@ -2415,3 +2415,31 @@ describe('getActiveConversations', () => {
     expect(handler.getActiveConversations()).toEqual([]);
   });
 });
+
+describe('isConversationHeld()', () => {
+  it('should return false if no conversation for conversationId', async () => {
+    handler.conversations = {};
+    expect(handler.isConversationHeld('asdfasdf')).toBeFalsy();
+  });
+
+  it('should return true', async () => {
+    const lastConversationUpdate: IStoredConversationState = {
+      conversationId: 'asdfasdf',
+      conversationUpdate: {
+        id: 'asdfasdf',
+        participants: []
+      },
+      mostRecentCallState: {
+        held: true,
+        confined: false,
+        direction: 'inbound',
+        id: 'callLeg',
+        muted: false,
+        provider: 'provider',
+        state: CommunicationStates.connected
+      }
+    };
+    handler.conversations = { 'asdfasdf': lastConversationUpdate };
+    expect(handler.isConversationHeld('asdfasdf')).toBeTruthy();
+  })
+});
