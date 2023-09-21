@@ -126,7 +126,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     const conversationId = update.id;
     const lastConversationUpdate = this.conversations[conversationId];
     const conversationUpdateForLogging = { ...lastConversationUpdate };
-    delete conversationUpdateForLogging.session
+    delete conversationUpdateForLogging.session;
 
     if (session) {
       session.pcParticipant = participant as any;
@@ -169,6 +169,19 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     const communicationStateChanged = previousCallState?.state !== callState.state;
     let eventToEmit: boolean | SdkConversationEvents = 'updated';
     const isOutbound = callState.direction === 'outbound'
+
+    /* These next couple of blocks will ensure that the headset device is set to the appropriate state */
+    /* It really should only matter for connected calls as ended calls should have the logic already in place in SVH */
+    if (this.isConnectedState(callState) && session) {
+      if (callState.muted !== previousCallState?.muted) {
+        this.sdk.headset.setMute(callState.muted);
+      }
+
+      if (callState.held !== previousCallState?.held) {
+        this.sdk.headset.setHold(conversationId, callState.held);
+      }
+    }
+
 
     /* only check for emitting if the state changes */
     if (communicationStateChanged) {
