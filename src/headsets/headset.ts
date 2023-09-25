@@ -195,7 +195,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
         this.setOrchestrationState('alternativeClient');
 
       // if we have persistent connection enabled and we have an active call, reject
-      } else if (this.sdk.station?.webRtcPersistentEnabled && this.sdk.sessionManager.getAllActiveSessions().filter(s => s.sessionType === 'softphone')) {
+      } else if (this.sdk.station?.webRtcPersistentEnabled && this.sdk.sessionManager.getAllActiveSessions().filter(s => s.sessionType === 'softphone').length) {
         this.sendControlsRejectionMessage(msg, 'activeCall');
       }
     }
