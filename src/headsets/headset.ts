@@ -59,7 +59,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
     if (useHeadsets) {
       this.currentHeadsetService = new SdkHeadsetService(this.sdk);
-      this.currentEventSubscription = this.currentHeadsetService.headsetEvents$.subscribe((event) => this.headsetEventsSub.next(event));
+      this.currentEventSubscription = this.currentHeadsetService.headsetEvents$.subscribe((event) => this.handleHeadsetEvent(event));
       this.setOrchestrationState('notStarted');
 
       // select sdk default device or system default if one exists
@@ -74,6 +74,14 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
   get currentSelectedImplementation (): VendorImplementation {
     return this.currentHeadsetService.currentSelectedImplementation;
+  }
+
+  private handleHeadsetEvent (event: ExpandedConsumedHeadsetEvents) {
+    if (event.event === HeadsetEvents.deviceConnectionStatusChanged && event.payload === 'noVendor' && this.orchestrationState === 'alternativeClient') {
+      return;
+    }
+
+    this.headsetEventsSub.next(event);
   }
 
   updateAudioInputDevice (newMicDeviceId: string): void {
@@ -93,8 +101,14 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     // it assign the device afterwards
     const device = this.sdk.media.findCachedDeviceByIdAndKind(newMicDeviceId, 'audioinput');
     const isSupported = device && this.currentHeadsetService.deviceIsSupported({ micLabel: device.label });
-    if (isSupported && (this.orchestrationState === 'notStarted' || this.orchestrationState === 'negotiating')) {
-      this.startHeadsetOrchestration(device);
+    if (isSupported) {
+      if (this.orchestrationState === 'notStarted' || this.orchestrationState === 'negotiating') {
+        this.startHeadsetOrchestration(device);
+      } else {
+        this.setOrchestrationState('alternativeClient', true);
+      }
+    } else {
+      this.headsetEventsSub.next({ event: HeadsetEvents.deviceConnectionStatusChanged, payload: 'noVendor' });
     }
   }
 
@@ -125,8 +139,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     });
   }
 
-  private setOrchestrationState (state: OrchestrationState) {
-    if (state === this.orchestrationState) {
+  private setOrchestrationState (state: OrchestrationState, forceUpdate = false) {
+    if (state === this.orchestrationState && !forceUpdate) {
       return;
     }
     
