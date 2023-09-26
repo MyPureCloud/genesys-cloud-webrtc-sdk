@@ -5,7 +5,7 @@ import { SimpleMockSdk, flushPromises } from '../../test-utils';
 import { SdkHeadsetService } from '../../../src/headsets/sdk-headset-service';
 import { SdkHeadsetServiceFake } from '../../../src/headsets/sdk-headset-service-fake';
 import { HeadsetProxyService } from '../../../src/headsets/headset';
-import { HeadsetControlsChanged, HeadsetRejection, HeadsetRequest, ISdkHeadsetService } from '../../../src/headsets/headset-types';
+import { ExpandedConsumedHeadsetEvents, HeadsetControlsChanged, HeadsetRejection, HeadsetRequest, ISdkHeadsetService } from '../../../src/headsets/headset-types';
 import { MediaMessageEvent, SessionTypes } from 'genesys-cloud-streaming-client';
 
 let sdk: GenesysCloudWebrtSdk;
@@ -453,6 +453,15 @@ describe('HeadsetProxyService', () => {
       expect(startOrchestrationSpy).toHaveBeenCalled();
       expect(proxySpy).not.toHaveBeenCalled();
     });
+
+    it('should emit alternativeClient when supported but no other orchestration states are true', () => {
+      (currentHeadsetService as SdkHeadsetServiceFake).deviceIsSupported = jest.fn().mockReturnValue(true);
+      proxyService['orchestrationState'] = 'alternativeClient';
+      proxyService['sdk'].media.findCachedDeviceByIdAndKind = jest.fn().mockReturnValue({ label: 'device1', id: 'device1id' });
+      proxyService['setOrchestrationState'] = jest.fn();
+      proxyService.updateAudioInputDevice('device1');
+      expect(proxyService['setOrchestrationState']).toHaveBeenCalledWith('alternativeClient', true);
+    });
   });
 
   // these are more like integration tests because we are testing the whole orchestration process, not just an individual piece
@@ -870,4 +879,34 @@ describe('HeadsetProxyService', () => {
       expect(spy).toHaveBeenCalledWith('123', true);
     });
   });
+
+  describe('handleHeadsetEvent', () => {
+    it('should pass the event to the headsetEventsSub if it does not meet proper conditions', () => {
+      /*
+        Proper conditions
+        - passed in event is not 'deviceConnectionStatusChanged'
+        - passed in payload is not 'noVendor'
+        - orchestrationState is not 'alternativeClient'
+      */
+      const nextSpy = jest.spyOn(proxyService['headsetEventsSub'], 'next');
+      const fakeEvent = {
+        event: 'loggableEvent',
+        payload: 'Doing great'
+      };
+      proxyService['handleHeadsetEvent'](fakeEvent as ExpandedConsumedHeadsetEvents);
+      expect(nextSpy).toHaveBeenCalledWith(fakeEvent);
+
+      fakeEvent.event = 'deviceConnectionStatusChanged';
+      proxyService['handleHeadsetEvent'](fakeEvent as ExpandedConsumedHeadsetEvents);
+      expect(nextSpy).toHaveBeenCalledWith(fakeEvent);
+
+      fakeEvent.payload = 'noVendor';
+      proxyService['handleHeadsetEvent'](fakeEvent as ExpandedConsumedHeadsetEvents);
+      expect(nextSpy).toHaveBeenCalledWith(fakeEvent);
+
+      proxyService['orchestrationState'] = 'alternativeClient';
+      proxyService['handleHeadsetEvent'](fakeEvent as ExpandedConsumedHeadsetEvents);
+      expect(nextSpy).not.toHaveBeenCalledTimes(4);
+    });
+  })
 });
