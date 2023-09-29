@@ -758,8 +758,16 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
   holdOtherSessions(currentSession: IExtendedMediaSession): void {
     const sessions = this.sessionManager.getAllActiveSessions();
-    /* Hold only softphone sessions and sessions not currently held. */
-    const otherSessions = sessions.filter(session => session.sessionType === SessionTypes.softphone && !this.isConversationHeld(session.conversationId) && session !== currentSession);
+    /* Hold only softphone sessions and sessions not currently held.
+    * This needs to be cross referenced with the active conversations because it's possible to have an idle persistent
+    * connection that will attempt to hold the previous ended call
+    */
+    const otherSessions = sessions.filter(session => {
+      return session.sessionType === SessionTypes.softphone && 
+        this.conversations[session.conversationId] &&
+        !this.isConversationHeld(session.conversationId) &&
+        session !== currentSession;
+    });
 
     this.log('debug', 'Received new session or unheld previously held session with LA>1, holding other active sessions.');
 
