@@ -1010,6 +1010,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     });
 
     it('should call answerIncomingCall', async () => {
+      (mockHeadset as HeadsetProxyService).orchestrationState = 'hasControls';
       const spy = jest.spyOn(mockHeadset, 'answerIncomingCall');
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,

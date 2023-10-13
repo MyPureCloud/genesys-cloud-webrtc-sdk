@@ -91,9 +91,9 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * @param conversationId a string representing the conversation that needs to be ended
    * @returns Promise<void>
    */
-  async endCurrentCall (conversationId: string): Promise<void> {
+  async endCurrentCall (conversationId: string, expectExistingConversation = true): Promise<void> {
     if (conversationId) {
-      return this.headsetLibrary.endCall(conversationId);
+      return this.headsetLibrary.endCall(conversationId, false, expectExistingConversation);
     }
   }
 
