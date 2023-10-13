@@ -24,6 +24,7 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
 import { Session } from 'inspector';
+import { HeadsetProxyService } from '../headsets/headset';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -136,7 +137,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
 
     /* if we didn't have a previous update and this one is NOT in a pending state, that means we are not responsible for this conversation (another client handled it or we have already emitted the `sessionEnded` for it) */
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
-      return this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, { skipServer: true });
+      this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, { skipServer: true });
+      this.sdk.headset.endCurrentCall(conversationId, false);
+      return;
     }
 
     this.checkForCallErrors(update, participant, callState);
@@ -174,8 +177,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     if (communicationStateChanged) {
       /* `pendingSession` – only process these if we have a persistent connection */
       if (this.isPendingState(callState)) {
-        // Not always accurate. If inbound auto answer, we don't know about it from convo evt
-
         // headset actions will be tied to conversation updates rather than session events so we want to react regardless
         if (isOutbound) {
           this.sdk.headset.outgoingCall({ conversationId });
@@ -222,7 +223,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           }
 
           // if this was an inbound call, the headset needs to move from ringing to answered
-          if (!isOutbound) {
+          if (!isOutbound && (this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
             this.sdk.headset.answerIncomingCall(conversationId, false);
           }
 
