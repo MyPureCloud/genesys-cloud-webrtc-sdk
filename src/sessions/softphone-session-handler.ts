@@ -24,6 +24,7 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
 import { Session } from 'inspector';
+import { HeadsetProxyService } from '../headsets/headset';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -177,10 +178,12 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         // Not always accurate. If inbound auto answer, we don't know about it from convo evt
 
         // headset actions will be tied to conversation updates rather than session events so we want to react regardless
-        if (isOutbound) {
-          this.sdk.headset.outgoingCall({ conversationId });
-        } else {
-          this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
+        if ((this.sdk.headset as HeadsetProxyService).orchestrationState !== 'alternativeClient') {
+          if (isOutbound) {
+            this.sdk.headset.outgoingCall({ conversationId });
+          } else {
+            this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
+          }
         }
 
         /* only emit `pendingSession` if we already have an active session */
@@ -213,6 +216,14 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         ) {
           /* if we are adding a session, but we don't have a session – it means another client took the conversation */
           if (!session) {
+            if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
+              this.log('info', 'Client has call controls but does not have the session, attempting to signal headset');
+              // if this was an inbound call, the headset needs to move from ringing to answered
+              if (!isOutbound) {
+                this.sdk.headset.answerIncomingCall(conversationId, false);
+              }
+            }
+
             this.log('info', 'incoming conversation started, but we do not have a session. assuming it was handled by a different client. ignoring', {
               ignoredConversation: this.conversations[conversationId],
               update
@@ -222,7 +233,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
           }
 
           // if this was an inbound call, the headset needs to move from ringing to answered
-          if (!isOutbound) {
+          if (!isOutbound && (this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
             this.sdk.headset.answerIncomingCall(conversationId, false);
           }
 

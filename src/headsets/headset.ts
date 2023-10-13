@@ -21,9 +21,9 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   private currentHeadsetService: SdkHeadsetBase;
   private currentEventSubscription: Subscription;
   private headsetEventsSub: Subject<ExpandedConsumedHeadsetEvents>;
-  private orchestrationState: OrchestrationState = 'notStarted';
   private orchestrationWaitTimer: NodeJS.Timeout;
   headsetEvents$: Observable<ExpandedConsumedHeadsetEvents>;
+  orchestrationState: OrchestrationState = 'notStarted';
 
   constructor (protected sdk: GenesysCloudWebrtcSdk) {
     this.headsetEventsSub = new Subject();
