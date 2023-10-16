@@ -25,13 +25,13 @@ try {
           return;
         }
         manifest.indexFiles.push({
-          file: '/demo/' + file + '/' + dirFile
+          file: 'demo/' + file + '/' + dirFile
         });
       });
       return;
     }
     manifest.indexFiles.push({
-      file: '/demo/' + file
+      file: 'demo/' + file
     });
   });
 } catch (e) {
@@ -54,6 +54,6 @@ function dirWalk (dir) {
 }
 
 [...dirWalk(versionDir), ...dirWalk(majorVersionDir)]
-  .forEach(filename => manifest.indexFiles.push({ file: filename.replace('dist', '') }));
+  .forEach(filename => manifest.indexFiles.push({ file: filename.replace('dist/', '') }));
 
 fs.writeFileSync('./dist/manifest.json', JSON.stringify(manifest, null, 2), { encoding: 'utf8' });
