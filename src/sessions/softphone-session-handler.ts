@@ -138,8 +138,6 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     /* if we didn't have a previous update and this one is NOT in a pending state, that means we are not responsible for this conversation (another client handled it or we have already emitted the `sessionEnded` for it) */
     if (!lastConversationUpdate && !this.isPendingState(callState)) {
       this.log('debug', 'received a conversation event for a conversation we are not responsible for. not processing', { update, callState }, { skipServer: true });
-      this.sdk.headset.endCurrentCall(conversationId, false);
-      return;
     }
 
     this.checkForCallErrors(update, participant, callState);
@@ -178,12 +176,10 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       /* `pendingSession` – only process these if we have a persistent connection */
       if (this.isPendingState(callState)) {
         // headset actions will be tied to conversation updates rather than session events so we want to react regardless
-        if ((this.sdk.headset as HeadsetProxyService).orchestrationState !== 'alternativeClient') {
-          if (isOutbound) {
-            this.sdk.headset.outgoingCall({ conversationId });
-          } else {
-            this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
-          }
+        if (isOutbound) {
+          this.sdk.headset.outgoingCall({ conversationId });
+        } else {
+          this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
         }
 
         /* only emit `pendingSession` if we already have an active session */
@@ -216,26 +212,19 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         ) {
           /* if we are adding a session, but we don't have a session – it means another client took the conversation */
           if (!session) {
-            if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
-              this.log('info', 'Client has call controls but does not have the session, attempting to signal headset');
-              // if this was an inbound call, the headset needs to move from ringing to answered
-              if (!isOutbound) {
-                this.sdk.headset.answerIncomingCall(conversationId, false);
-              }
-            }
-
             this.log('info', 'incoming conversation started, but we do not have a session. assuming it was handled by a different client. ignoring', {
               ignoredConversation: this.conversations[conversationId],
               update
             });
+            if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
+              this.sdk.headset.rejectIncomingCall(conversationId);
+            }
             delete this.conversations[conversationId];
             return;
           }
 
           // if this was an inbound call, the headset needs to move from ringing to answered
-          if (!isOutbound && (this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
-            this.sdk.headset.answerIncomingCall(conversationId, false);
-          }
+          this.sdk.headset.answerIncomingCall(conversationId, false);
 
           /* only emit `sessionStarted` if we have an active session */
           if (session === this.activeSession) {
