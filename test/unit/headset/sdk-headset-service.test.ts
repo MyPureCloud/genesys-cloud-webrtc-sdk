@@ -17,3 +17,11 @@ describe('deviceIsSupported', () => {
     expect(spy).toHaveBeenCalled();
   });
 });
+
+describe('rejectIncomingCall', () => {
+  it('should default expectExistingConversation to true if nothing passed in', () => {
+    const spy = service['headsetLibrary'].rejectCall = jest.fn();
+    service.rejectIncomingCall('123');
+    expect(spy).toHaveBeenCalledWith('123', true);
+  })
+})

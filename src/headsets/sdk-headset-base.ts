@@ -72,7 +72,7 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
    * @param conversationId a string representing the conversation that needs to be ended
    * @returns Promise<void>
    */
-  async endCurrentCall (_conversationId: string, expectExistingConversation: boolean): Promise<void> { /* no-op */ }
+  async endCurrentCall (_conversationId: string): Promise<void> { /* no-op */ }
 
   /**
    * Calls the headset library's endAllCalls() function to signal the device
@@ -97,7 +97,7 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
    * rejected
    * @returns Promise<void>
    */
-  async rejectIncomingCall (_conversationId: string): Promise<void> { /* no-op */ }
+  async rejectIncomingCall (_conversationId: string, expectExistingConversation: boolean): Promise<void> { /* no-op */ }
 
   /**
    * Calls the headset library's setMute function to signal the device to switch on

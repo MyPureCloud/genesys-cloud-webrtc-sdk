@@ -31,10 +31,10 @@ export interface ISdkHeadsetService {
   retryConnection (micLabel: string): Promise<void>;
   setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls: boolean): Promise<void>;
   outgoingCall (callInfo: { conversationId: string, contactName?: string }): Promise<void>;
-  endCurrentCall (conversationId: string, expectExistingConversation?: boolean): Promise<void>;
+  endCurrentCall (conversationId: string): Promise<void>;
   endAllCalls (): Promise<void>;
   answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void>;
-  rejectIncomingCall (conversationId: string): Promise<void>;
+  rejectIncomingCall (conversationId: string, expectExistingConversation?: boolean): Promise<void>;
   setMute (isMuted: boolean): Promise<void>;
   setHold (conversationId: string, isHeld: boolean): Promise<void>;
 }

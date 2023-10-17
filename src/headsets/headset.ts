@@ -282,8 +282,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     return this.currentHeadsetService.outgoingCall(callInfo);
   }
 
-  endCurrentCall (conversationId: string, expectExistingConversation = true): Promise<void> {
-    return this.currentHeadsetService.endCurrentCall(conversationId, expectExistingConversation);
+  endCurrentCall (conversationId: string): Promise<void> {
+    return this.currentHeadsetService.endCurrentCall(conversationId);
   }
 
   endAllCalls (): Promise<void> {
@@ -294,8 +294,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     return this.currentHeadsetService.answerIncomingCall(conversationId, autoAnswer);
   }
 
-  rejectIncomingCall (conversationId: string): Promise<void> {
-    return this.currentHeadsetService.rejectIncomingCall(conversationId);
+  rejectIncomingCall (conversationId: string, expectExistingConversation = true): Promise<void> {
+    return this.currentHeadsetService.rejectIncomingCall(conversationId, expectExistingConversation);
   }
 
   setMute (isMuted: boolean): Promise<void> {

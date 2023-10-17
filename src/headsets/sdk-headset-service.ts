@@ -91,9 +91,9 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * @param conversationId a string representing the conversation that needs to be ended
    * @returns Promise<void>
    */
-  async endCurrentCall (conversationId: string, expectExistingConversation = true): Promise<void> {
+  async endCurrentCall (conversationId: string): Promise<void> {
     if (conversationId) {
-      return this.headsetLibrary.endCall(conversationId, false, expectExistingConversation);
+      return this.headsetLibrary.endCall(conversationId, false);
     }
   }
 
@@ -124,8 +124,8 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * rejected
    * @returns Promise<void>
    */
-  rejectIncomingCall (conversationId: string): Promise<void> {
-    return this.headsetLibrary.rejectCall(conversationId);
+  rejectIncomingCall (conversationId: string, expectExistingConversation = true): Promise<void> {
+    return this.headsetLibrary.rejectCall(conversationId, expectExistingConversation);
   }
 
   /**
