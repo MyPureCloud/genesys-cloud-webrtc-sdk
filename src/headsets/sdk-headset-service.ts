@@ -93,7 +93,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    */
   async endCurrentCall (conversationId: string): Promise<void> {
     if (conversationId) {
-      return this.headsetLibrary.endCall(conversationId, false);
+      return this.headsetLibrary.endCall(conversationId);
     }
   }
 

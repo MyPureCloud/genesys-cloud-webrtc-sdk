@@ -140,7 +140,7 @@ describe('SdkHeadsetService', () => {
       expect(endCurrentCallSpy).not.toHaveBeenCalled();
 
       sdkHeadset.endCurrentCall('123');
-      expect(endCurrentCallSpy).toHaveBeenCalledWith('123', false);
+      expect(endCurrentCallSpy).toHaveBeenCalledWith('123');
 
       const endAllCallsSpy = jest.spyOn(headsetLibrary, 'endAllCalls');
       sdkHeadset.endAllCalls();
