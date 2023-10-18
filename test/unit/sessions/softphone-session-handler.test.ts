@@ -1010,6 +1010,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     });
 
     it('should call answerIncomingCall', async () => {
+      (mockHeadset as HeadsetProxyService).orchestrationState = 'hasControls';
       const spy = jest.spyOn(mockHeadset, 'answerIncomingCall');
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
@@ -1198,6 +1199,24 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
 
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not emit for conversationUpdates that we do not have a session for but call reject incoming call if orchestrationState===hasControls', () => {
+    (mockSdk.headset as HeadsetProxyService).orchestrationState = 'hasControls';
+    const rejectCallSpy = jest.spyOn(mockHeadset, 'rejectIncomingCall');
+    const { update, participant, callState, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
+
+    expect(rejectCallSpy).toHaveBeenCalled();
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
     expect(handler.conversations[update.id]).toBeFalsy();
     expect(sdkEmitSpy).not.toHaveBeenCalled();

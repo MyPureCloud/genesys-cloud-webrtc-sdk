@@ -159,8 +159,8 @@ describe('SdkHeadsetService', () => {
   describe('rejectIncomingCall', () => {
     it('should call the proper function in the headset library', () => {
       const rejectCallSpy = jest.spyOn(headsetLibrary, 'rejectCall');
-      sdkHeadset.rejectIncomingCall('123');
-      expect(rejectCallSpy).toHaveBeenCalledWith('123');
+      sdkHeadset.rejectIncomingCall('123', false);
+      expect(rejectCallSpy).toHaveBeenCalledWith('123', false);
     });
   });
 
@@ -244,7 +244,7 @@ describe('SdkHeadsetServiceStub', () => {
 
   describe('rejectIncomingCall()', () => {
     it('should return an empty promise', async () => {
-      expect(await headsetStub.rejectIncomingCall('')).toBe(undefined);
+      expect(await headsetStub.rejectIncomingCall('', false)).toBe(undefined);
     });
   });
 
@@ -859,8 +859,8 @@ describe('HeadsetProxyService', () => {
   describe('rejectIncomingCall', () => {
     it('should proxy to headsetService', () => {
       const spy = currentHeadsetService.rejectIncomingCall = jest.fn();
-      proxyService.rejectIncomingCall('123');
-      expect(spy).toHaveBeenCalledWith('123');
+      proxyService.rejectIncomingCall('123', false);
+      expect(spy).toHaveBeenCalledWith('123', false);
     });
   });
 

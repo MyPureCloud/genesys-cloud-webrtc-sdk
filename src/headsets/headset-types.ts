@@ -34,7 +34,7 @@ export interface ISdkHeadsetService {
   endCurrentCall (conversationId: string): Promise<void>;
   endAllCalls (): Promise<void>;
   answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void>;
-  rejectIncomingCall (conversationId: string): Promise<void>;
+  rejectIncomingCall (conversationId: string, expectExistingConversation?: boolean): Promise<void>;
   setMute (isMuted: boolean): Promise<void>;
   setHold (conversationId: string, isHeld: boolean): Promise<void>;
 }
