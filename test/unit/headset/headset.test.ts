@@ -462,6 +462,18 @@ describe('HeadsetProxyService', () => {
       proxyService.updateAudioInputDevice('device1');
       expect(proxyService['setOrchestrationState']).toHaveBeenCalledWith('alternativeClient', true);
     });
+
+    it('should clear timer if device changes to an unsupported device while negotiating', () => {
+      (currentHeadsetService as SdkHeadsetServiceFake).deviceIsSupported = jest.fn().mockReturnValue(false);
+      proxyService['orchestrationState'] = 'negotiating';
+      proxyService['sdk'].media.findCachedDeviceByIdAndKind = jest.fn().mockReturnValue({ label: 'device1', id: 'device1id' });
+      const setOrchestrationSpy = proxyService['setOrchestrationState'] = jest.fn();
+      const clearSpy = jest.spyOn(window, 'clearTimeout');
+      proxyService.updateAudioInputDevice('device1');
+      expect(setOrchestrationSpy).not.toHaveBeenCalled();
+      expect(clearSpy).toHaveBeenCalled();
+      expect(proxyService.orchestrationState).toEqual('notStarted');
+    });
   });
 
   // these are more like integration tests because we are testing the whole orchestration process, not just an individual piece
