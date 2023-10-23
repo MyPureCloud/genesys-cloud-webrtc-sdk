@@ -24,6 +24,7 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
 import { Session } from 'inspector';
+import { HeadsetProxyService } from '../headsets/headset';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -217,6 +218,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               ignoredConversation: this.conversations[conversationId],
               update
             });
+            if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
+              this.sdk.headset.rejectIncomingCall(conversationId, true);
+            }
             delete this.conversations[conversationId];
             return;
           }

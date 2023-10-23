@@ -124,8 +124,8 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * rejected
    * @returns Promise<void>
    */
-  rejectIncomingCall (conversationId: string): Promise<void> {
-    return this.headsetLibrary.rejectCall(conversationId);
+  rejectIncomingCall (conversationId: string, expectExistingConversation = true): Promise<void> {
+    return this.headsetLibrary.rejectCall(conversationId, expectExistingConversation);
   }
 
   /**

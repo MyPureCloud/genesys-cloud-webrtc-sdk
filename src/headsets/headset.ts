@@ -21,9 +21,9 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   private currentHeadsetService: SdkHeadsetBase;
   private currentEventSubscription: Subscription;
   private headsetEventsSub: Subject<ExpandedConsumedHeadsetEvents>;
-  private orchestrationState: OrchestrationState = 'notStarted';
   private orchestrationWaitTimer: NodeJS.Timeout;
   headsetEvents$: Observable<ExpandedConsumedHeadsetEvents>;
+  orchestrationState: OrchestrationState = 'notStarted';
 
   constructor (protected sdk: GenesysCloudWebrtcSdk) {
     this.headsetEventsSub = new Subject();
@@ -108,6 +108,13 @@ export class HeadsetProxyService implements ISdkHeadsetService {
         this.setOrchestrationState('alternativeClient', true);
       }
     } else {
+      // this can happen particularly during initialization where we might start negotiating a sys default
+      // then change to an actual device. If this happens, we need to cancel the negotiation timer.
+      if (this.orchestrationState === 'negotiating') {
+        this.orchestrationState = 'notStarted';
+        clearTimeout(this.orchestrationWaitTimer);
+      }
+
       this.headsetEventsSub.next({ event: HeadsetEvents.deviceConnectionStatusChanged, payload: 'noVendor' });
     }
   }
@@ -294,8 +301,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     return this.currentHeadsetService.answerIncomingCall(conversationId, autoAnswer);
   }
 
-  rejectIncomingCall (conversationId: string): Promise<void> {
-    return this.currentHeadsetService.rejectIncomingCall(conversationId);
+  rejectIncomingCall (conversationId: string, expectExistingConversation = true): Promise<void> {
+    return this.currentHeadsetService.rejectIncomingCall(conversationId, expectExistingConversation);
   }
 
   setMute (isMuted: boolean): Promise<void> {
