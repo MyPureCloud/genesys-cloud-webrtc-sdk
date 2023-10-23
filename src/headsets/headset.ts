@@ -108,6 +108,13 @@ export class HeadsetProxyService implements ISdkHeadsetService {
         this.setOrchestrationState('alternativeClient', true);
       }
     } else {
+      // this can happen particularly during initialization where we might start negotiating a sys default
+      // then change to an actual device. If this happens, we need to cancel the negotiation timer.
+      if (this.orchestrationState === 'negotiating') {
+        this.orchestrationState = 'notStarted';
+        clearTimeout(this.orchestrationWaitTimer);
+      }
+
       this.headsetEventsSub.next({ event: HeadsetEvents.deviceConnectionStatusChanged, payload: 'noVendor' });
     }
   }
