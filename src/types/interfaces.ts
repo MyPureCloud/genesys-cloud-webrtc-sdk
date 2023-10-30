@@ -218,6 +218,15 @@ export interface ISdkFullConfig {
    */
   allowedSessionTypes?: SessionTypes[];
 
+  /**
+   * disables the negotiation between the user's different client which ensures
+   * that only one client effectively has headset call controls. This flag will
+   * be temporary and may be removed without notice.
+   * 
+   * Optional: defaults to `false`
+   */
+  disableHeadsetControlsOrchestration?: boolean;
+
   /** defaults for various SDK functionality */
   defaults?: {
 

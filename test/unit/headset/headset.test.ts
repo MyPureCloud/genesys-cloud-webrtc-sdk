@@ -494,6 +494,17 @@ describe('HeadsetProxyService', () => {
       device = { deviceId: 'device1Id', groupId: 'device1GroupId', label: 'device1Label', kind: 'audioinput' } as any;
     });
 
+    describe('setOrchestrationState', () => {
+      it('should do nothing if !useHeadsetOrchestration', () => {
+        proxyService['useHeadsetOrchestration'] = false;
+        proxyService.orchestrationState = 'notStarted';
+
+        proxyService['setOrchestrationState']('negotiating');
+
+        expect(proxyService.orchestrationState).toEqual('notStarted');
+      });
+    });
+
     it('happy path - should take controls if no rejection is received with 2 seconds', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
       const promise = proxyService['startHeadsetOrchestration'](device);
