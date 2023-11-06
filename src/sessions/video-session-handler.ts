@@ -14,7 +14,6 @@ import {
   IMediaRequestOptions,
   IStartVideoSessionParams,
   VideoMediaSession,
-  GenesysDataChannelMessage,
   GenesysDataChannelMessageParams
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';

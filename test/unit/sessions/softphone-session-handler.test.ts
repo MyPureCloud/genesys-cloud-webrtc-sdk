@@ -8,7 +8,6 @@ import {
   random
 } from '../../test-utils';
 import {
-  createNock,
   PARTICIPANT_ID,
   mockPostConversationApi
 } from '../../mock-apis';
@@ -2079,15 +2078,13 @@ describe('updateOutgoingMedia', () => {
 
 describe('startSession', () => {
   it('should start a softphone call', async () => {
-    const scope = createNock();
-    const postConversation = mockPostConversationApi({ nockScope: scope });
+    const response = { id: '123', selfUri: 'whatever' };
+    mockPostConversationApi({ response });
     const opts = {
       sessionType: 'softphone',
       phoneNumber: '3172222222',
     }
-    let response = { id: undefined, selfUri: undefined };
     await expect(handler.startSession(opts as any)).resolves.toEqual(response);
-    expect(postConversation.isDone()).toBeTruthy();
   });
 });
 

@@ -10,7 +10,7 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession } from '../../../src/types/interfaces';
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import { ConversationUpdate, MemberStatusMessage } from '../../../src/';
+import { ConversationUpdate, GenesysDataChannelMessageParams } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 
 let handler: VideoSessionHandler;
@@ -1493,7 +1493,7 @@ describe('handleDataChannelMessage', () => {
   it('should call handleMemberStatusMessage', () => {
     const spy = handler.handleMemberStatusMessage = jest.fn();
 
-    const message: MemberStatusMessage = {
+    const message: JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>> = {
       jsonrpc: 'v2',
       method: 'member.notify.status',
       params: {
@@ -1529,7 +1529,7 @@ describe('handleMemberStatusMessage', () => {
       emit: jest.fn()
     };
     const spy = session.emit = jest.fn();
-    const message: MemberStatusMessage = {
+    const message: JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>> = {
       jsonrpc: 'v2',
       method: 'member.notify.status',
       params: {
