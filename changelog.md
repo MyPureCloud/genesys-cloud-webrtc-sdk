@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Only one sdk instance will be allowed to have headset controls at any given time. Headset functionality is now orchestrated and negotiated between other instances of the sdk based on various factors. As such, we have changed the DeviceConnectionStatus type in order to union those states with orchestration states.
 
 ### Added
-* [PCM-2224](https://inindca.atlassian.net/browse/PCM-2224) - Added headset orchestration flow
+* [PCM-2224](https://inindca.atlassian.net/browse/PCM-2224) - Added headset orchestration flow. Opt out with `config.disableHeadsetControlsOrchestration`, but this will be temporary and will be removed without notice.
 
 # [v8.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.2...v8.2.3)
 ### Fixed

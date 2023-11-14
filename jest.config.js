@@ -16,7 +16,6 @@ module.exports = {
     // '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
   ],
   setupFiles: [
-    '<rootDir>/test/setup.js'
   ],
   collectCoverage: true,
   collectCoverageFrom: [

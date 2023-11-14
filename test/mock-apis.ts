@@ -1,8 +1,9 @@
 import WebSocket from 'ws';
-import nock from 'nock';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import AxiosMockAdapter from 'axios-mock-adapter';
+import axios from 'axios';
 
 import { MockStream, random } from './test-utils';
 import { GenesysCloudWebrtcSdk, ICustomerData, ISdkConfig, IPersonDetails, IStation } from '../src';
@@ -44,7 +45,6 @@ interface MockApiOptions {
 }
 
 interface MockSingleApiOptions {
-  nockScope: nock.Scope;
   response?: any;
   conversationId?: string;
   participantId?: string;
@@ -52,18 +52,8 @@ interface MockSingleApiOptions {
 }
 
 interface MockApiReturns {
-  getOrg: nock.Scope;
-  getUser: nock.Scope;
-  getConversation: nock.Scope;
-  getChannel: nock.Scope;
-  getStation: nock.Scope;
-  notificationSubscription: nock.Scope;
-  getJwt: nock.Scope;
-  sendLogs: nock.Scope;
-  patchConversation: nock.Scope;
   sdk: GenesysCloudWebrtcSdk;
-  mockCustomerData: ICustomerData;
-  postConversation: nock.Scope;
+  mockCustomerData?: ICustomerData;
 }
 
 // polyfill window.getRandomValues() for node (because we are using jest)
@@ -79,14 +69,25 @@ Object.defineProperty(global, 'crypto', {
 });
 
 
-let wss: WebSocket.Server;
+let wss: WebSocket.Server | undefined;
 let ws: WebSocket;
-
+let mockAxios: AxiosMockAdapter;
 
 const USER_ID = random();
 const PARTICIPANT_ID = random();
 const PARTICIPANT_ID_2 = random();
 
+export function resetMocks () {
+  mockAxios = new AxiosMockAdapter(axios)
+}
+
+export function getAxiosAdapter () {
+  if (!mockAxios) {
+    resetMocks();
+  }
+
+  return mockAxios;
+}
 
 export const MOCK_STATION: IStation = {
   id: 'luke-skywalker-123',
@@ -140,12 +141,12 @@ function getMockConversation (): MockConversation {
   return JSON.parse(JSON.stringify(MOCK_CONVERSATION));
 }
 
-export function createNock (hostUri?: string): nock.Scope {
-  return nock(hostUri || 'https://api.mypurecloud.com');
+export function getDefaultHostUri () {
+  return 'https://api.mypurecloud.com';
 }
 
-export function mockGetConversationApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.get(`/api/v2/conversations/calls/${params.conversationId}`);
+export function mockGetConversationApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onGet(`${getDefaultHostUri()}/api/v2/conversations/calls/${params.conversationId}`);
 
   if (params.shouldFail) {
     return intercept.reply(500, params.response);
@@ -154,8 +155,8 @@ export function mockGetConversationApi (params: MockSingleApiOptions): nock.Scop
   return intercept.reply(200, params.response || getMockConversation());
 }
 
-export function mockPatchConversationApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.patch(`/api/v2/conversations/calls/${params.conversationId}/participants/${params.participantId}`);
+export function mockPatchConversationApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onPatch(`${getDefaultHostUri()}/api/v2/conversations/calls/${params.conversationId}/participants/${params.participantId}`);
 
   if (params.shouldFail) {
     return intercept.reply(401);
@@ -163,8 +164,8 @@ export function mockPatchConversationApi (params: MockSingleApiOptions): nock.Sc
   return intercept.reply(202, {});
 }
 
-export function mockPostConversationApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.post(`/api/v2/conversations/calls`);
+export function mockPostConversationApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/conversations/calls`);
 
   if (params.shouldFail) {
     return intercept.reply(401);
@@ -173,8 +174,8 @@ export function mockPostConversationApi (params: MockSingleApiOptions): nock.Sco
   return intercept.reply(202, params.response);
 }
 
-export function mockGetOrgApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.get(`/api/v2/organizations/me`);
+export function mockGetOrgApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onGet(`${getDefaultHostUri()}/api/v2/organizations/me`);
 
   if (params.shouldFail) {
     return intercept.reply(401);
@@ -182,8 +183,8 @@ export function mockGetOrgApi (params: MockSingleApiOptions): nock.Scope {
   return intercept.reply(200, MOCK_ORG);
 }
 
-export function mockGetUserApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.get(`/api/v2/users/me?expand=station`);
+export function mockGetUserApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onGet(`${getDefaultHostUri()}/api/v2/users/me?expand=station`);
 
   if (params.shouldFail) {
     return intercept.reply(401);
@@ -191,8 +192,8 @@ export function mockGetUserApi (params: MockSingleApiOptions): nock.Scope {
   return intercept.reply(200, MOCK_USER);
 }
 
-export function mockGetChannelApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.post(`/api/v2/notifications/channels?connectionType=streaming`);
+export function mockGetChannelApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/notifications/channels?connectionType=streaming`);
 
   if (params.shouldFail) {
     return intercept.reply(401);
@@ -200,8 +201,8 @@ export function mockGetChannelApi (params: MockSingleApiOptions): nock.Scope {
   return intercept.reply(200, { id: 'somechannelid' });
 }
 
-export function mockGetStationApi (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.get(`/api/v2/stations/${MOCK_STATION.id}`);
+export function mockGetStationApi (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onGet(`${getDefaultHostUri()}/api/v2/stations/${MOCK_STATION.id}`);
 
   if (params.shouldFail) {
     return intercept.reply(404);
@@ -209,16 +210,16 @@ export function mockGetStationApi (params: MockSingleApiOptions): nock.Scope {
   return intercept.reply(200, MOCK_STATION);
 }
 
-export function mockNotificationSubscription (params: MockSingleApiOptions): nock.Scope {
-  const intercept = params.nockScope.put(`/api/v2/notifications/channels/somechannelid/subscriptions`);
+export function mockNotificationSubscription (params: MockSingleApiOptions): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onPut(`${getDefaultHostUri()}/api/v2/notifications/channels/somechannelid/subscriptions`);
   return intercept.reply(200);
 }
 
 export function closeWebSocketServer (): Promise<void> {
   if (wss) {
     return new Promise(resolve => {
-      wss.clients.forEach(wsClient => wsClient.close());
-      wss.close(() => {
+      wss!.clients.forEach(wsClient => wsClient.close());
+      wss!.close(() => {
         console.log('Closed the server...');
         resolve();
       });
@@ -246,26 +247,18 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     withCustomerData,
     conversation
   } = options;
-  nock.cleanAll();
-  const api = nock('https://api.mypurecloud.com');
+  resetMocks();
 
   // easy to debug nock
   // api.log(console.error);
 
-  const mockCustomerData: ICustomerData = withCustomerData ? MOCK_CUSTOMER_DATA : null;
-
-  let getJwt: nock.Scope;
-  let getOrg: nock.Scope;
-  let getUser: nock.Scope;
-  let getChannel: nock.Scope;
-  let getStation: nock.Scope;
-  let notificationSubscription: nock.Scope;
+  const mockCustomerData: ICustomerData | undefined = withCustomerData ? MOCK_CUSTOMER_DATA : undefined;
 
   if (guestSdk) {
     if (failSecurityCode) {
-      getJwt = api.post('/api/v2/conversations/codes').reply(401);
+      getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/conversations/codes`).reply(401);
     } else {
-      getJwt = api.post('/api/v2/conversations/codes').reply(200, MOCK_CUSTOMER_DATA);
+      getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/conversations/codes`).reply(200, MOCK_CUSTOMER_DATA);
     }
 
     // getChannel = api
@@ -273,25 +266,24 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     //   .reply(200, { id: 'someguestchangeid' });
 
   } else {
-    getOrg = mockGetOrgApi({ nockScope: api, shouldFail: failOrg });
-    getUser = mockGetUserApi({ nockScope: api, shouldFail: failUser });
-    getChannel = mockGetChannelApi({ nockScope: api });
-    notificationSubscription = mockNotificationSubscription({ nockScope: api });
-    getStation = mockGetStationApi({ nockScope: api, shouldFail: failStation });
+    mockGetOrgApi({ shouldFail: failOrg });
+    mockGetUserApi({ shouldFail: failUser });
+    mockGetChannelApi({ });
+    mockNotificationSubscription({ });
+    mockGetStationApi({ shouldFail: failStation });
   }
 
-  const conversationsApi = nock('https://api.mypurecloud.com');
-  let getConversation: nock.Scope;
+  let getConversation: AxiosMockAdapter;
   if (conversationId) {
-    getConversation = mockGetConversationApi({ conversationId, response: conversation, nockScope: conversationsApi });
+    getConversation = mockGetConversationApi({ conversationId, response: conversation });
   }
 
-  let patchConversation: nock.Scope;
+  let patchConversation: AxiosMockAdapter;
   if (conversationId && participantId) {
-    patchConversation = mockPatchConversationApi({ conversationId, nockScope: conversationsApi, participantId, shouldFail: failConversationPatch });
+    patchConversation = mockPatchConversationApi({ conversationId, participantId, shouldFail: failConversationPatch });
   }
 
-  let postConversation = mockPostConversationApi({ nockScope: conversationsApi });
+  let postConversation = mockPostConversationApi({ });
   Object.defineProperty(global, 'window', { value: global.window || {}, writable: true });
 
   Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true });
@@ -315,16 +307,14 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   } as ISdkConfig;
 
 
-  let sendLogs: nock.Scope;
+  let sendLogs: AxiosMockAdapter;
   if (withLogs) {
-    const logsApi = nock('https://api.mypurecloud.com').persist();
-
     if (failLogsPayload) {
-      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({ status: 413, message: 'test fail' });
+      sendLogs = getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/diagnostics/trace`).reply(413, { status: 413, message: 'test fail' });
     } else if (failLogs) {
-      sendLogs = logsApi.post('/api/v2/diagnostics/trace').replyWithError({ status: 419, message: 'test fail' });
+      sendLogs = getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/diagnostics/trace`).reply(413, { status: 419, message: 'test fail' });
     } else {
-      sendLogs = logsApi.post('/api/v2/diagnostics/trace').reply(200);
+      sendLogs = getAxiosAdapter().onPost(`${getDefaultHostUri()}/api/v2/diagnostics/trace`).reply(200);
     }
   } else {
     sdkOpts.optOutOfTelemetry = true;
@@ -334,13 +324,13 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
 
   setupWss({ guestSdk, failStreaming });
 
-  return { getOrg, getUser, getChannel, getStation, getConversation, getJwt, sendLogs, patchConversation, sdk, mockCustomerData, notificationSubscription, postConversation };
+  return { sdk, mockCustomerData };
 }
 
 function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
   if (wss) {
     wss.close();
-    wss = null;
+    wss = undefined;
   }
   wss = new WebSocket.Server({
     port: 1234
@@ -405,24 +395,24 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
         websocket.__authSent = true;
       } else if (msg.indexOf('<bind') !== -1) {
         const idRegexp = /id="(.*?)"/;
-        const id = idRegexp.exec(msg)[1];
+        const id = idRegexp.exec(msg)![1];
         send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}" type="result"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>${MOCK_USER.chat.jabberId}/d6f681a3-358c-49df-819f-b231adb3cb97</jid></bind></iq>`);
       } else if (msg.indexOf('<session') !== -1) {
         const idRegexp = /id="(.*?)"/;
-        const id = idRegexp.exec(msg)[1];
+        const id = idRegexp.exec(msg)![1];
         send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}/d6f681a3-358c-49df-819f-b231adb3cb97" type="result"></iq>`);
       } else if (msg.indexOf('ping') !== -1) {
         const idRegexp = /id="(.*?)"/;
-        const id = idRegexp.exec(msg)[1];
+        const id = idRegexp.exec(msg)![1];
         send(`<iq xmlns="jabber:client" to="${MOCK_USER.chat.jabberId}" type="result" id="${id}"></iq>`);
       } else if (msg.indexOf('<pubsub') !== -1) {
         const idRegexp = /id="(.*?)"/;
-        const id = idRegexp.exec(msg)[1];
+        const id = idRegexp.exec(msg)![1];
         send(`<iq xmlns="jabber:client" id="${id}" to="${MOCK_USER.chat.jabberId}" type="result"><pubsub xmlns="http://jabber.org/protocol/pubsub">
         <subscription node="v2.users.1c280af5-c623-4a5b-bf00-aafa7f6c0a03.conversations" jid="601d95fb6c8be51b97b54089@genesys.orgspan.com/mediahelper_0bd8f077-b2ec-43f5-9764-04f683c78d77" subscription="subscribed" /></pubsub></iq>`);
       } else if (msg.indexOf('extdisco') !== -1) {
         const idRegexp = / id="(.*?)"/;
-        const id = idRegexp.exec(msg)[1];
+        const id = idRegexp.exec(msg)![1];
         if (msg.indexOf('type="turn"') > -1) {
           send(`<iq xmlns="jabber:client" type="result" to="${MOCK_USER.chat.jabberId}" id="${id}"><services xmlns="urn:xmpp:extdisco:1"><service transport="udp" port="3456" type="turn" username="turnuser:12395" password="akskdfjka=" host="turn.us-east-1.mypurecloud.com"/></services></iq>`);
         } else {

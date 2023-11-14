@@ -22,6 +22,9 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   private currentEventSubscription: Subscription;
   private headsetEventsSub: Subject<ExpandedConsumedHeadsetEvents>;
   private orchestrationWaitTimer: NodeJS.Timeout;
+  // TODO: PCM-2060 - remove this
+  private useHeadsetOrchestration = true;
+
   headsetEvents$: Observable<ExpandedConsumedHeadsetEvents>;
   orchestrationState: OrchestrationState = 'notStarted';
 
@@ -41,6 +44,9 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
   // this is to be called externally to start/stop headsets, not internally
   setUseHeadsets (useHeadsets: boolean) {
+    // TODO: PCM-2060 - remove this
+    this.useHeadsetOrchestration = !this.sdk._config.disableHeadsetControlsOrchestration;
+
     // currently only softphone is supported
     const headsetsIsSupported = this.sdk._config.allowedSessionTypes.includes(SessionTypes.softphone);
     if (useHeadsets && !headsetsIsSupported) {
@@ -93,7 +99,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     //
     // updating the input device to a supported device triggers the activation of the headset controls so
     // we only want to update the device if we have headset controls
-    if (!newMicDeviceId || this.orchestrationState === 'hasControls') {
+    // TODO: PCM-2060 - remove !this.useHeadsetOrchestration condition
+    if (!newMicDeviceId || this.orchestrationState === 'hasControls' || !this.useHeadsetOrchestration) {
       return this.currentHeadsetService.updateAudioInputDevice(newMicDeviceId);
     }
 
@@ -147,6 +154,11 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   }
 
   private setOrchestrationState (state: OrchestrationState, forceUpdate = false) {
+    // TODO: PCM-2060 - remove this
+    if (!this.useHeadsetOrchestration) {
+      return;
+    }
+
     if (state === this.orchestrationState && !forceUpdate) {
       return;
     }
@@ -166,7 +178,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
   // this fn handles xmpp messages needed to orchestrate which client/instance gets to have headset controls
   private handleMediaMessage (msg: MediaMessageEvent) {
-    if (!this.sdk._config.useHeadsets) {
+    // TODO: PCM-2060 - remove !this.useHeadsetOrchestration condition
+    if (!this.sdk._config.useHeadsets || !this.useHeadsetOrchestration) {
       return;
     }
 
