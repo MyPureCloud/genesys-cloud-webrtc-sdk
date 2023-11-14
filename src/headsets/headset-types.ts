@@ -37,6 +37,7 @@ export interface ISdkHeadsetService {
   rejectIncomingCall (conversationId: string, expectExistingConversation?: boolean): Promise<void>;
   setMute (isMuted: boolean): Promise<void>;
   setHold (conversationId: string, isHeld: boolean): Promise<void>;
+  resetHeadsetStateForCall (conversationId: string): Promise<void>;
 }
 
 export type HeadsetRequest = JsonRpcMessage<Pick<GenesysMediaMessageParams, 'headsetControlsRequest'>>;

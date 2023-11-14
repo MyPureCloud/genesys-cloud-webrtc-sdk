@@ -117,5 +117,14 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
    * @returns Promise<void>
    */
   async setHold (_conversationId: string, _isHeld: boolean): Promise<void> { /* no-op */ }
+
+  /**
+   * Calls the headset library's resetHeadsetStateForCall function to effectively rest
+   * the selected device's state.  This is to help with certain scenarios around headset
+   * orchestration where a device is signaled to start ringing but never stops ringing
+   * @param conversationId string representing the call whose state will be reset
+   * @returns Promise<void>
+   */
+  async resetHeadsetStateForCall(_conversationId: string): Promise<void> { /* no-op */}
   /* eslint-enable */
 }

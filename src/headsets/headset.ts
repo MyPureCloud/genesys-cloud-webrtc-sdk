@@ -325,4 +325,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   setHold (conversationId: string, isHeld: boolean): Promise<void> {
     return this.currentHeadsetService.setHold(conversationId, isHeld);
   }
+
+  resetHeadsetStateForCall(conversationId: string): Promise<void> {
+    return this.currentHeadsetService.resetHeadsetStateForCall(conversationId);
+  }
 }

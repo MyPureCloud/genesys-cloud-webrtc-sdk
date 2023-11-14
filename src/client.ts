@@ -53,7 +53,10 @@ const ENVIRONMENTS = [
   'usw2.pure.cloud',
   'cac1.pure.cloud',
   'euw2.pure.cloud',
-  'apne2.pure.cloud'
+  'apne2.pure.cloud',
+  'use2.us-gov-pure.cloud',
+  'sae1.pure.cloud',
+  'aps1.pure.cloud'
 ];
 
 const DISASSOCIATED_EVENT = 'Disassociated';

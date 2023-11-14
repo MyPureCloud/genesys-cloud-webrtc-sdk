@@ -48,6 +48,7 @@
     "test": "npm run lint && npm run test:unit",
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
+    "test:coverage": "jest --collectCoverage=true --runInBand",
     "lint": "eslint -c .eslintrc.json --ext .ts src",
     "lint:fix": "npm run lint -- --fix",
     "greenkeep": "npx npm-check --update",
@@ -67,7 +68,7 @@
     "process-fast": "^1.0.0",
     "rxjs": "^7.5.5",
     "safe-json-stringify": "^1.2.0",
-    "softphone-vendor-headsets": "^2.4.1",
+    "softphone-vendor-headsets": "^2.4.2-PCM-2224.4",
     "strict-event-emitter-types": "^2.0.0",
     "typescript": "^4.0.5",
     "uuid": "^3.4.0"

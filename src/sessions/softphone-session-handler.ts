@@ -167,6 +167,18 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
     }
 
+    /* These next couple of blocks will ensure that the headset device is set to the appropriate state */
+    /* It really should only matter for connected calls as ended calls should have the logic already in place in SVH */
+    if (this.isConnectedState(callState) && session) {
+      if (callState.muted !== previousCallState?.muted) {
+        this.sdk.headset.setMute(callState.muted);
+      }
+
+      if (callState.held !== previousCallState?.held) {
+        this.sdk.headset.setHold(conversationId, callState.held);
+      }
+    }
+
     const communicationStateChanged = previousCallState?.state !== callState.state;
     let eventToEmit: boolean | SdkConversationEvents = 'updated';
     const isOutbound = callState.direction === 'outbound'
@@ -219,7 +231,7 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               update
             });
             if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
-              this.sdk.headset.rejectIncomingCall(conversationId, true);
+              this.sdk.headset.resetHeadsetStateForCall(conversationId);
             }
             delete this.conversations[conversationId];
             return;
