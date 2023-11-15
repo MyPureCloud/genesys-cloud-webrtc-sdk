@@ -48,7 +48,6 @@
     "test": "npm run lint && npm run test:unit",
     "test:unit": "NODE_ENV=test jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
-    "test:coverage": "jest --collectCoverage=true --runInBand",
     "lint": "eslint -c .eslintrc.json --ext .ts src",
     "lint:fix": "npm run lint -- --fix",
     "greenkeep": "npx npm-check --update",
