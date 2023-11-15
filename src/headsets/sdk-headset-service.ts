@@ -151,4 +151,14 @@ export class SdkHeadsetService extends SdkHeadsetBase {
     return this.headsetLibrary.setHold(conversationId, isHeld);
   }
 
+  /**
+   * Calls the headset library's resetHeadsetStateForCall function to effectively rest
+   * the selected device's state.  This is to help with certain scenarios around headset
+   * orchestration where a device is signaled to start ringing but never stops ringing
+   * @param conversationId string representing the call whose state will be reset
+   * @returns Promise<void>
+   */
+    async resetHeadsetStateForCall(conversationId: string): Promise<void> {
+      return this.headsetLibrary.resetHeadsetStateForCall(conversationId);
+    }
 }
