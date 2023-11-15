@@ -24,4 +24,12 @@ describe('rejectIncomingCall', () => {
     service.rejectIncomingCall('123');
     expect(spy).toHaveBeenCalledWith('123', true);
   })
+});
+
+describe('resetHeadsetStateForCall', () => {
+  it('should call the SVHs resetHeadsetStateForCall', () => {
+    const spy = service['headsetLibrary'].resetHeadsetStateForCall = jest.fn();
+    service.resetHeadsetStateForCall('test123');
+    expect(spy).toHaveBeenCalledWith('test123');
+  })
 })

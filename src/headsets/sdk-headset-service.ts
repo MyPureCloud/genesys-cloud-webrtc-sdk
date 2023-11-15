@@ -158,7 +158,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * @param conversationId string representing the call whose state will be reset
    * @returns Promise<void>
    */
-    async resetHeadsetStateForCall(conversationId: string): Promise<void> {
+    resetHeadsetStateForCall(conversationId: string): Promise<void> {
       return this.headsetLibrary.resetHeadsetStateForCall(conversationId);
     }
 }
