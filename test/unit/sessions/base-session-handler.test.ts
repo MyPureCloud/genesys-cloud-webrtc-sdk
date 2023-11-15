@@ -524,6 +524,21 @@ describe('handleSessionInit', () => {
     expect(logSpy).toHaveBeenCalledWith('info', 'connection state change', { state: 'connected', conversationId, sid: sessionId });
   });
 
+  it('should emit sessionInterrupted when connectionState becomes interrupted.', async () => {
+    const session: any = new MockSession();
+    const eventSpy = jest.fn();
+    mockSdk.on('sessionInterrupted', eventSpy);
+
+    session.id = '123abc';
+    session.conversationId = 'convoabc';
+    session.state = 'active';
+
+    await handler.handleSessionInit(session);
+    session.emit('connectionState', 'interrupted');
+
+    expect(eventSpy).toHaveBeenCalled();
+  });
+
   it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {
     const session: any = new MockSession();
     session.conversationId = null;
@@ -568,7 +583,7 @@ describe('handleVisibilityChange', () => {
 
     expect(spy).not.toHaveBeenCalled();
   });
-  
+
   it('should checkPeerConnectionState if document is visible', () => {
     const session: any = new MockSession();
 
@@ -593,7 +608,7 @@ describe('checkPeerConnectionState', () => {
     handler.checkPeerConnectionState(session);
     expect(spy).toHaveBeenCalled();
   });
-  
+
   it('should not call onSessionTerminate', async () => {
     const session: any = new MockSession();
 
