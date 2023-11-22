@@ -52,7 +52,7 @@ export interface IMediaChangeEventParticipant {
   }[];
 }
 
-export default class VideoSessionHandler extends BaseSessionHandler {
+export class VideoSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
@@ -769,3 +769,5 @@ export default class VideoSessionHandler extends BaseSessionHandler {
     session.emit('memberStatusUpdate', message);
   }
 }
+
+export default VideoSessionHandler;

@@ -28,7 +28,7 @@ import { HeadsetProxyService } from '../headsets/headset';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
-export default class SoftphoneSessionHandler extends BaseSessionHandler {
+export class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
   /* Could be active persistent connection or non concurrent session */
   activeSession?: IExtendedMediaSession;
@@ -834,3 +834,5 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return call?.state === CommunicationStates.disconnected || call?.state === CommunicationStates.terminated;
   }
 }
+
+export default SoftphoneSessionHandler;

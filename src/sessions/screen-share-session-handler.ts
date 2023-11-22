@@ -8,7 +8,7 @@ import { createAndEmitSdkError, isAcdJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JingleReason } from '..';
 
-export default class ScreenShareSessionHandler extends BaseSessionHandler {
+export class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;
   sessionType = SessionTypes.acdScreenShare;
 
@@ -116,3 +116,5 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }
 }
+
+export default ScreenShareSessionHandler;
