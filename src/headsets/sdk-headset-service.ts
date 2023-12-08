@@ -3,6 +3,7 @@ import { SdkHeadsetBase } from "./sdk-headset-base";
 import { ExpandedConsumedHeadsetEvents } from "./headset-types";
 import { Observable } from "rxjs";
 import GenesysCloudWebrtcSdk from "../client";
+import { ILogMessageOptions, ILogger } from "genesys-cloud-client-logger";
 
 export class SdkHeadsetService extends SdkHeadsetBase {
   private headsetLibrary: HeadsetService;
@@ -10,8 +11,22 @@ export class SdkHeadsetService extends SdkHeadsetBase {
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super(sdk);
-    this.headsetLibrary = HeadsetService.getInstance({ logger: sdk.logger, appName: sdk._config.originAppName });
+    this.headsetLibrary = HeadsetService.getInstance({ logger: this.createDecoratedLogger(), appName: sdk._config.originAppName });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
+  }
+
+  private createDecoratedLogger (): ILogger {
+    const fns = ['debug', 'log', 'info', 'warn', 'error'];
+
+    const customLogger: any = {};
+    fns.forEach(fn => {
+      const orig = this.sdk.logger[fn].bind(this.sdk.logger);
+      customLogger[fn] = (message: string | Error, details?: any, opts?: ILogMessageOptions) => {
+        orig(message, {...details, conversationInfo: this.sdk.sessionManager.getAllActiveConversations()}, opts);
+      }
+    });
+
+    return customLogger;
   }
 
   deviceIsSupported (params: { micLabel: string }): boolean {
