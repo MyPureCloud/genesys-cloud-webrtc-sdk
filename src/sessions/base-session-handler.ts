@@ -97,6 +97,10 @@ export default abstract class BaseSessionHandler {
 
     session.on('connectionState' as any, (state: string) => {
       this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
+      /* Emit sessionInterrupted when the connection is interrupted so that consuming apps can inform users (e.g. Volt). */
+      if (state === 'interrupted') {
+        this.sdk.emit('sessionInterrupted', { sessionId: session.id, sessionType: session.sessionType, conversationId: session.conversationId });
+      }
     });
 
     session.on('terminated', this.onSessionTerminated.bind(this, session));
@@ -109,7 +113,7 @@ export default abstract class BaseSessionHandler {
 
     /**
    * This is somewhat of a hack unfortunately. If the peer connection dies while the computer is sleeping, the peer connection
-   * does not send connection updates so the session has no idea the session is dead. We do get a visibility change event 
+   * does not send connection updates so the session has no idea the session is dead. We do get a visibility change event
    * however, so we can use that as a manual queue to check the state of the peer connection and clean it up if needed.
    */
   private handleVisibilityChange (session: IExtendedMediaSession) {
