@@ -5,8 +5,8 @@ import { SimpleMockSdk, flushPromises } from '../../test-utils';
 import { SdkHeadsetService } from '../../../src/headsets/sdk-headset-service';
 import { SdkHeadsetServiceFake } from '../../../src/headsets/sdk-headset-service-fake';
 import { HeadsetProxyService } from '../../../src/headsets/headset';
-import { ExpandedConsumedHeadsetEvents, HeadsetControlsChanged, HeadsetRejection, HeadsetRequest, ISdkHeadsetService } from '../../../src/headsets/headset-types';
-import { MediaMessageEvent, SessionTypes } from 'genesys-cloud-streaming-client';
+import { ExpandedConsumedHeadsetEvents, ISdkHeadsetService } from '../../../src/headsets/headset-types';
+import { HeadsetControlsChanged, HeadsetControlsRejection, HeadsetControlsRequest, MediaMessageEvent, SessionTypes } from 'genesys-cloud-streaming-client';
 
 let sdk: GenesysCloudWebrtSdk;
 let sdkHeadset: SdkHeadsetService;
@@ -364,7 +364,7 @@ describe('HeadsetProxyService', () => {
     it('should do nothing if fromMyClient', () => {
       proxyService['sdk']._config.useHeadsets = true;
 
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -381,7 +381,7 @@ describe('HeadsetProxyService', () => {
     it('should do nothing if not useHeadsets', () => {
       proxyService['sdk']._config.useHeadsets = false;
 
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -535,7 +535,7 @@ describe('HeadsetProxyService', () => {
 
       // rejection is received 1 second after starting
       jest.advanceTimersByTime(1000);
-      const rejection: HeadsetRejection = {
+      const rejection: HeadsetControlsRejection = {
         jsonrpc: '2.0',
         method: 'headsetControlsRejection',
         params: {
@@ -564,7 +564,7 @@ describe('HeadsetProxyService', () => {
 
       // request is received 1 second after starting
       jest.advanceTimersByTime(1000);
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -595,7 +595,7 @@ describe('HeadsetProxyService', () => {
 
       // request is received 1 second after starting
       jest.advanceTimersByTime(1000);
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -606,7 +606,7 @@ describe('HeadsetProxyService', () => {
 
       jest.advanceTimersByTime(1500);
 
-      const rejection: HeadsetRejection = {
+      const rejection: HeadsetControlsRejection = {
         jsonrpc: '2.0',
         method: 'headsetControlsRejection',
         params: {
@@ -642,7 +642,7 @@ describe('HeadsetProxyService', () => {
 
       // request is received 1 second after starting
       jest.advanceTimersByTime(1000);
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -653,7 +653,7 @@ describe('HeadsetProxyService', () => {
 
       jest.advanceTimersByTime(1500);
 
-      const rejection: HeadsetRejection = {
+      const rejection: HeadsetControlsRejection = {
         jsonrpc: '2.0',
         method: 'headsetControlsRejection',
         params: {
@@ -684,7 +684,7 @@ describe('HeadsetProxyService', () => {
 
       proxyService['orchestrationState'] = 'hasControls';
 
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -693,7 +693,7 @@ describe('HeadsetProxyService', () => {
       };
       triggerMediaMessageEvent({ id:'req1', to: 'to', from: 'from', mediaMessage: request, fromMyClient: false, fromMyUser: true });
 
-      const rejection: HeadsetRejection = {
+      const rejection: HeadsetControlsRejection = {
         jsonrpc: '2.0',
         method: 'headsetControlsRejection',
         params: {
@@ -713,7 +713,7 @@ describe('HeadsetProxyService', () => {
 
       proxyService['orchestrationState'] = 'hasControls';
 
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -733,7 +733,7 @@ describe('HeadsetProxyService', () => {
 
       proxyService['orchestrationState'] = 'hasControls';
 
-      const request: HeadsetRequest = {
+      const request: HeadsetControlsRequest = {
         jsonrpc: '2.0',
         method: 'headsetControlsRequest',
         params: {
@@ -808,7 +808,7 @@ describe('HeadsetProxyService', () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
       proxyService['orchestrationState'] = 'hasControls';
 
-      const rejection: HeadsetRejection = {
+      const rejection: HeadsetControlsRejection = {
         jsonrpc: '2.0',
         method: 'headsetControlsRejection',
         params: {

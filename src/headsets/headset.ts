@@ -2,12 +2,12 @@ import { Observable, Subject, Subscription } from 'rxjs';
 import { HeadsetEvents, VendorImplementation } from 'softphone-vendor-headsets';
 
 import GenesysCloudWebrtcSdk from '../client';
-import { ExpandedConsumedHeadsetEvents, HeadsetControlsChanged, HeadsetRejection, HeadsetRequest, ISdkHeadsetService, OrchestrationState } from './headset-types';
 import { SdkHeadsetBase } from './sdk-headset-base';
 import { SdkHeadsetServiceFake } from './sdk-headset-service-fake';
-import { HeadsetControlsRejectionReason, HeadsetControlsRequestType, MediaMessageEvent, SessionTypes } from 'genesys-cloud-streaming-client';
+import { HeadsetControlsChanged, HeadsetControlsRejection, HeadsetControlsRejectionReason, HeadsetControlsRequest, HeadsetControlsRequestType, MediaMessageEvent, SessionTypes } from 'genesys-cloud-streaming-client';
 import { SdkHeadsetService } from './sdk-headset-service';
 import { HeadsetRequestType } from '../types/interfaces';
+import { ExpandedConsumedHeadsetEvents, ISdkHeadsetService, OrchestrationState } from './headset-types';
 
 const REQUEST_PRIORITY: {[key in HeadsetControlsRequestType]: number} = {
   'mediaHelper': 30,
@@ -140,7 +140,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
     this.sdk.logger.info('Starting headsetCallControls orchestration');
 
-    const headsetControlsRequest: HeadsetRequest = {
+    const headsetControlsRequest: HeadsetControlsRequest = {
       jsonrpc: '2.0',
       method: 'headsetControlsRequest',
       params: {
@@ -213,7 +213,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
   // in all these handlers we need to handle if we are receiving the message during negotiation or during a headset connected state
   private handleHeadsetControlsRequest (msg: MediaMessageEvent) {
-    const mediaMessage = msg.mediaMessage as HeadsetRequest;
+    const mediaMessage = msg.mediaMessage as HeadsetControlsRequest;
     this.sdk.logger.debug('Received headsetControlsRequest message', { requestType: mediaMessage.params.requestType });
 
     // if incoming request is lower priority, reject
@@ -236,7 +236,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   }
 
   private handleHeadsetControlsRejection (msg: MediaMessageEvent) {
-    const mediaMessage = msg.mediaMessage as HeadsetRejection;
+    const mediaMessage = msg.mediaMessage as HeadsetControlsRejection;
 
     if (this.orchestrationState === 'negotiating') {
       this.sdk.logger.info('Received headsetControlsRejection message', { reason: mediaMessage.params.reason });

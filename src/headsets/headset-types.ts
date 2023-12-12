@@ -39,7 +39,3 @@ export interface ISdkHeadsetService {
   setHold (conversationId: string, isHeld: boolean): Promise<void>;
   resetHeadsetStateForCall (conversationId: string): Promise<void>;
 }
-
-export type HeadsetRequest = TypedJsonRpcMessage<'headsetControlsRequest', GenesysMediaMessage>;
-export type HeadsetRejection = TypedJsonRpcMessage<'headsetControlsRejection', GenesysMediaMessage>;
-export type HeadsetControlsChanged = TypedJsonRpcMessage<'headsetControlsChanged', GenesysMediaMessage>;
