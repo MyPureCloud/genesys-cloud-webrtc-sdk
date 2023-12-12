@@ -1,5 +1,5 @@
 /* istanbul ignore file */
-import { GenesysMediaMessageParams, JsonRpcMessage } from "genesys-cloud-streaming-client";
+import { GenesysMediaMessage, TypedJsonRpcMessage } from "genesys-cloud-streaming-client";
 import { Observable } from "rxjs";
 import { DeviceConnectionStatus, EventInfoWithConversationId, HeadsetEvents, HoldEventInfo, MutedEventInfo, VendorImplementation, WebHidPermissionRequest } from "softphone-vendor-headsets";
 
@@ -40,6 +40,6 @@ export interface ISdkHeadsetService {
   resetHeadsetStateForCall (conversationId: string): Promise<void>;
 }
 
-export type HeadsetRequest = JsonRpcMessage<Pick<GenesysMediaMessageParams, 'headsetControlsRequest'>>;
-export type HeadsetRejection = JsonRpcMessage<Pick<GenesysMediaMessageParams, 'headsetControlsRejection'>>;
-export type HeadsetControlsChanged = JsonRpcMessage<Pick<GenesysMediaMessageParams, 'headsetControlsChanged'>>;
+export type HeadsetRequest = TypedJsonRpcMessage<'headsetControlsRequest', GenesysMediaMessage>;
+export type HeadsetRejection = TypedJsonRpcMessage<'headsetControlsRejection', GenesysMediaMessage>;
+export type HeadsetControlsChanged = TypedJsonRpcMessage<'headsetControlsChanged', GenesysMediaMessage>;

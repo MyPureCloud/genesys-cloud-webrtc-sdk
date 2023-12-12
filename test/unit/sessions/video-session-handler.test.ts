@@ -8,7 +8,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
-import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession } from '../../../src/types/interfaces';
+import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
 import { ConversationUpdate, GenesysDataChannelMessageParams } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
@@ -1493,7 +1493,7 @@ describe('handleDataChannelMessage', () => {
   it('should call handleMemberStatusMessage', () => {
     const spy = handler.handleMemberStatusMessage = jest.fn();
 
-    const message: JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>> = {
+    const message: JsonRpcMessage = {
       jsonrpc: 'v2',
       method: 'member.notify.status',
       params: {
@@ -1509,7 +1509,7 @@ describe('handleDataChannelMessage', () => {
   it('should log a warning if there is no message handler', () => {
     const spy = handler.handleMemberStatusMessage = jest.fn();
     const logSpy = jest.spyOn(handler as any, 'log');
-    const message: JsonRpcMessage<any> = {
+    const message: JsonRpcMessage = {
       jsonrpc: 'v2',
       method: 'myDummyMessage',
       params: {
@@ -1529,7 +1529,7 @@ describe('handleMemberStatusMessage', () => {
       emit: jest.fn()
     };
     const spy = session.emit = jest.fn();
-    const message: JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>> = {
+    const message: MemberStatusMessage = {
       jsonrpc: 'v2',
       method: 'member.notify.status',
       params: {

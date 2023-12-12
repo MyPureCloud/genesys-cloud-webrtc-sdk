@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { GenesysCloudMediaSession, ISessionInfo, IPendingSession, JsonRpcMessage, IMediaSession, GenesysWebrtcJsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -17,7 +17,7 @@ declare module 'genesys-cloud-streaming-client' {
     speakersUpdate: ISpeakersUpdate;
     incomingMedia: void;
     pinnedParticipant: { participantId: string | null };
-    memberStatusUpdate: JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>>;
+    memberStatusUpdate: MemberStatusMessage;
   }
 }
 
@@ -1203,7 +1203,7 @@ export type NotifyStatusParams = {
   bandwidthAndRates?: IDataChannelBandwidthAndRates;
 };
 
-export type GenesysDataChannelMessage = JsonRpcMessage<GenesysDataChannelMessageParams>;
+export type MemberStatusMessage = TypedJsonRpcMessage<'member.notify.status', NotifyStatusParams>;
 
 export interface VideoSpeakerStatus {
   /** memberId of the conference member. */
@@ -1279,5 +1279,3 @@ export interface IDataChannelBandwidthAndRates {
 
 export type DefaultHeadsetRequestType = 'prioritized' | 'standard';
 export type HeadsetRequestType = 'mediaHelper' | DefaultHeadsetRequestType;
-
-export type MemberStatusMessage = JsonRpcMessage<Pick<GenesysDataChannelMessageParams, 'member.notify.status'>>;
