@@ -13,7 +13,7 @@ import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
 import { first, fromEvent, takeUntil, takeWhile } from 'rxjs';
 
-export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
+export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
 
   sessionType = SessionTypes.screenRecording;
@@ -123,3 +123,5 @@ export default class ScreenRecordingSessionHandler extends BaseSessionHandler {
     });
   }
 }
+
+export default ScreenRecordingSessionHandler;

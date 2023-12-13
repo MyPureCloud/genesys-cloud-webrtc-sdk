@@ -1,7 +1,7 @@
-import nock = require('nock');
 import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/interfaces';
 import { parseJwt, ISessionInfo } from 'genesys-cloud-streaming-client';
-
+import AxiosMockAdapter from 'axios-mock-adapter';
+import axios from 'axios';
 import { SimpleMockSdk } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
@@ -137,19 +137,9 @@ describe('requestApiWithRetry', () => {
 });
 
 describe('requestApi', () => {
-  let scope: nock.Scope;
-  let intercept;
-
   beforeEach(() => {
-    nock.cleanAll();
-
-    scope = nock(baseUri);
-    intercept = scope.get('/');
-    intercept.reply(200, {});
-  });
-
-  afterAll(() => {
-    nock.cleanAll();
+    const mockAxios = new AxiosMockAdapter(axios)
+    mockAxios.onGet('/path').reply(200, {});
   });
 
   it('should set defaults', async () => {
@@ -186,8 +176,9 @@ describe('requestApi', () => {
   it('should make request with auth', async () => {
     const token = 'abrakadabra';
     sdk._config.accessToken = token;
+    const httpSpy = jest.spyOn(sdk._http, 'requestApi').mockResolvedValue({});
     await utils.requestApi.call(sdk, '/');
-    expect(intercept.req._headers['authorization']).toEqual(`Bearer ${token}`);
+    expect(httpSpy).toHaveBeenCalledWith('/', expect.objectContaining({ authToken: token}));
   });
 
   it('should make request without auth', async () => {
