@@ -44,7 +44,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     this._screenStreamPromise = null;
 
     /* request the display now, but handle it on session-init */
-    this._screenStreamPromise = this.sdk.media.startDisplayMedia();
+    this._screenStreamPromise = this.sdk.media.startDisplayMedia({ conversationId: conversation.id });
 
     await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
 

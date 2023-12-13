@@ -6,7 +6,7 @@ import browserama from 'browserama';
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
 import { SdkErrorTypes } from '../types/enums';
-import { v4 } from 'uuid';
+import uuid, { v4 } from 'uuid';
 import {
   IExtendedMediaSession,
   IMediaRequestOptions,
@@ -15,6 +15,7 @@ import {
   SdkMediaEventTypes,
   SdkMediaTypesToRequest
 } from '../types/interfaces';
+import { MediaStat } from 'genesys-cloud-streaming-client';
 
 declare const window: {
   navigator: {
@@ -436,8 +437,30 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    *
    * @returns a promise containing a `MediaStream` with the requested screen media
    */
-  async startDisplayMedia (): Promise<MediaStream> {
+  async startDisplayMedia (opts: { conversationId?: string, sessionId?: string } = {}): Promise<MediaStream> {
     const constraints = this.getScreenShareConstraints();
+
+    const baseNrStatInfo = {
+      requestId: uuid.v4(),
+      audioRequested: false,
+      videoRequested: false,
+      displayRequested: true,
+      conversationId: opts.conversationId,
+      sessionId: opts.sessionId,
+      _appId: this.sdk.logger.clientId,
+      _appName: this.sdk.logger.config.appName,
+      _appVersion: this.sdk.VERSION,
+    }
+
+    this.sdk._streamingConnection._webrtcSessions.proxyNRStat({
+      actionName: 'WebrtcStats',
+      details: {
+        ...baseNrStatInfo,
+        _eventTimestamp: new Date().toISOString(),
+        _eventType: 'mediaRequested',
+      }
+    });
+
     const promise = this.hasGetDisplayMedia()
       ? window.navigator.mediaDevices.getDisplayMedia(constraints)
       : window.navigator.mediaDevices.getUserMedia(constraints);
@@ -445,8 +468,29 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const stream = await promise.catch(e => {
       /* we want to emit errors on `sdk.on('sdkError')` */
       createAndEmitSdkError.call(this.sdk, SdkErrorTypes.media, e);
+
+      this.sdk._streamingConnection._webrtcSessions.proxyNRStat({
+        actionName: 'WebrtcStats',
+        details: {
+          ...baseNrStatInfo,
+          _eventTimestamp: new Date().toISOString(),
+          _eventType: 'mediaError',
+          message: `${e.name} - ${e.message}`,
+        }
+      });
+
       throw e;
     });
+
+    this.sdk._streamingConnection._webrtcSessions.proxyNRStat({
+      actionName: 'WebrtcStats',
+      details: {
+        ...baseNrStatInfo,
+        _eventTimestamp: new Date().toISOString(),
+        _eventType: 'mediaStarted',
+      }
+    });
+
     stream.getVideoTracks().forEach(track => {
       if (track.muted) {
         this.sdk.logger.warn('Track was removed because it was muted', track);
@@ -1092,8 +1136,29 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     };
 
     this.sdk.logger.info('requesting getUserMedia', getLoggingExtras());
+    const baseNrStatInfo = {
+      requestId: `${mediaRequestOptions.uuid}`,
+      audioRequested: mediaType === 'audio',
+      videoRequested: mediaType === 'video',
+      displayRequested: false,
+      conversationId,
+      sessionId,
+      _appId: this.sdk.logger.clientId,
+      _appName: this.sdk.logger.config.appName,
+      _appVersion: this.sdk.VERSION,
+    }
 
     try {
+      // nr stat
+      this.sdk._streamingConnection._webrtcSessions.proxyNRStat({
+        actionName: 'WebrtcStats',
+        details: {
+          ...baseNrStatInfo,
+          _eventTimestamp: new Date().toISOString(),
+          _eventType: 'mediaRequested',
+        }
+      });
+
       const gumPromise = window.navigator.mediaDevices.getUserMedia(constraints);
 
       this.emit('gumRequest', { gumPromise, constraints, mediaRequestOptions });
@@ -1117,10 +1182,29 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         this.setPermissions({ [permissionsKey]: true, [requestedPermissionsKey]: true });
       }
 
+      this.sdk._streamingConnection._webrtcSessions.proxyNRStat({
+        actionName: 'WebrtcStats',
+        details: {
+          ...baseNrStatInfo,
+          _eventTimestamp: new Date().toISOString(),
+          _eventType: 'mediaStarted',
+        }
+      });
+
       return stream;
     } catch (e) {
       /* refetch the sdk default because it could have changed by the time we get here */
       sdkDefaultDeviceId = getCurrentSdkDefault();
+
+      this.sdk._streamingConnection._webrtcSessions.proxyNRStat({
+        actionName: 'WebrtcStats',
+        details: {
+          ...baseNrStatInfo,
+          _eventType: 'mediaError',
+          _eventTimestamp: new Date().toISOString(),
+          message: `${e.name} - ${e.message}`,
+        }
+      });
 
       /* PERMISSIONS ERRORS */
       if (this.isPermissionsError(e)) {

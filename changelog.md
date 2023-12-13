@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.3...HEAD)
 ### Added
 * [PCM-2250](https://inindca.atlassian.net/browse/PCM-2250) - Emit `sessionInterrupted` event when a session's `connectionState` becomes `interrupted`.
+* [PCM-2276](https://inindca.atlassian.net/browse/PCM-2276) - Added nr events for media actions and first alerting conversation update
+
 # [v8.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.2...v8.2.3)
 ### Fixed
 * [PCM-2232](https://inindca.atlassian.net/browse/PCM-2232) - Fixed unholding a call and the sdk tries to hold ended session on persistent connection
