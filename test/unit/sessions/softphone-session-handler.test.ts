@@ -8,7 +8,6 @@ import {
   random
 } from '../../test-utils';
 import {
-  createNock,
   PARTICIPANT_ID,
   mockPostConversationApi
 } from '../../mock-apis';
@@ -38,7 +37,8 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
 import { SdkError } from '../../../src/utils';
-import { HeadsetProxyService, ISdkHeadsetService } from '../../../src/media/headset';
+import { ISdkHeadsetService } from '../../../src/headsets/headset-types';
+import { HeadsetProxyService } from '../../../src/headsets/headset';
 
 let handler: SoftphoneSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -56,6 +56,7 @@ beforeEach(() => {
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
   mockSdk.headset = mockHeadset = new HeadsetProxyService(mockSdk);
+  (mockHeadset as HeadsetProxyService).setUseHeadsets(false);
 
   mockSessionManager = new SessionManager(mockSdk);
   handler = new SoftphoneSessionHandler(mockSdk, mockSessionManager);
@@ -1008,6 +1009,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     });
 
     it('should call answerIncomingCall', async () => {
+      (mockHeadset as HeadsetProxyService).orchestrationState = 'hasControls';
       const spy = jest.spyOn(mockHeadset, 'answerIncomingCall');
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
@@ -1196,6 +1198,24 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
 
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not emit for conversationUpdates that we do not have a session for but call resetHeadsetStateForCall if orchestrationState===hasControls', () => {
+    (mockSdk.headset as HeadsetProxyService).orchestrationState = 'hasControls';
+    const resetCallSpy = jest.spyOn(mockHeadset, 'resetHeadsetStateForCall');
+    const { update, participant, callState, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
+
+    expect(resetCallSpy).toHaveBeenCalled();
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
     expect(handler.conversations[update.id]).toBeFalsy();
     expect(sdkEmitSpy).not.toHaveBeenCalled();
@@ -2058,15 +2078,13 @@ describe('updateOutgoingMedia', () => {
 
 describe('startSession', () => {
   it('should start a softphone call', async () => {
-    const scope = createNock();
-    const postConversation = mockPostConversationApi({ nockScope: scope });
+    const response = { id: '123', selfUri: 'whatever' };
+    mockPostConversationApi({ response });
     const opts = {
       sessionType: 'softphone',
       phoneNumber: '3172222222',
     }
-    let response = { id: undefined, selfUri: undefined };
     await expect(handler.startSession(opts as any)).resolves.toEqual(response);
-    expect(postConversation.isDone()).toBeTruthy();
   });
 });
 

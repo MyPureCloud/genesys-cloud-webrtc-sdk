@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { GenesysCloudMediaSession, ISessionInfo, IPendingSession, JsonRpcMessage, IMediaSession } from 'genesys-cloud-streaming-client';
+import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -17,7 +17,7 @@ declare module 'genesys-cloud-streaming-client' {
     speakersUpdate: ISpeakersUpdate;
     incomingMedia: void;
     pinnedParticipant: { participantId: string | null };
-    memberStatusUpdate: IMemberStatusMessage;
+    memberStatusUpdate: MemberStatusMessage;
   }
 }
 
@@ -26,7 +26,7 @@ export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key
 /**
  * SDK configuration options for construction a new instance
  */
-export interface ISdkConfig {
+export interface ISdkFullConfig {
   /**
    * Domain to use.
    *
@@ -181,6 +181,18 @@ export interface ISdkConfig {
   useHeadsets?: boolean;
 
   /**
+   * When the sdk initializes, it will negotiate with other sdk instances to determine which will
+   * get call controls. The instance that is instantiated last and with the highest priority
+   * will be the one that gets call controls.
+   *
+   * Note: There is a third type called 'mediaHelper' which is set by the sdk at runtime if it
+   * is running as a media helper.
+   *
+   * Optional: default `standard`
+   */
+  headsetRequestType?: HeadsetRequestType;
+
+  /**
    * Allowed session types the sdk instance should handle.
    *  Only session types listed here will be handled.
    * Available options passed in as an array:
@@ -205,6 +217,15 @@ export interface ISdkConfig {
    * Optional: defaults to all session types.
    */
   allowedSessionTypes?: SessionTypes[];
+
+  /**
+   * disables the negotiation between the user's different client which ensures
+   * that only one client effectively has headset call controls. This flag will
+   * be temporary and may be removed without notice.
+   * 
+   * Optional: defaults to `false`
+   */
+  disableHeadsetControlsOrchestration?: boolean;
 
   /** defaults for various SDK functionality */
   defaults?: {
@@ -368,6 +389,10 @@ export interface ISdkConfig {
      */
     monitorMicVolume?: boolean;
   };
+}
+
+export interface ISdkConfig extends ISdkFullConfig{
+  headsetRequestType?: DefaultHeadsetRequestType;
 }
 
 /**
@@ -1167,15 +1192,18 @@ export interface IVideoResolution {
   height: ConstrainULong
 }
 
-export interface IMemberStatusMessage extends JsonRpcMessage {
-  method: 'member.notify.status';
-  params: {
-      speakers?: VideoSpeakerStatus[];
-      outgoingStreams?: OutgoingStreamStatus[];
-      incomingStreams?: IncomingStreamStatus[];
-      bandwidthAndRates?: IDataChannelBandwidthAndRates;
-  };
-}
+export type GenesysDataChannelMessageParams = {
+  'member.notify.status': NotifyStatusParams;
+};
+
+export type NotifyStatusParams = {
+  speakers?: VideoSpeakerStatus[];
+  outgoingStreams?: OutgoingStreamStatus[];
+  incomingStreams?: IncomingStreamStatus[];
+  bandwidthAndRates?: IDataChannelBandwidthAndRates;
+};
+
+export type MemberStatusMessage = TypedJsonRpcMessage<'member.notify.status', NotifyStatusParams>;
 
 export interface VideoSpeakerStatus {
   /** memberId of the conference member. */
@@ -1248,3 +1276,6 @@ export interface IDataChannelBandwidthAndRates {
   /** data rate, in bits per second, of the streams being sent from the client to mms */
   rateFromClient: number;
 }
+
+export type DefaultHeadsetRequestType = 'prioritized' | 'standard';
+export type HeadsetRequestType = 'mediaHelper' | DefaultHeadsetRequestType;
