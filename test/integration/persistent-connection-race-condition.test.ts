@@ -34,10 +34,13 @@ jest.mock('genesys-cloud-streaming-client', () => {
       this.webrtcSessions = Object.assign(
         new EventEmitter(),
         {
-            getAllSessions: jest.fn().mockReturnValue([])
+          getAllSessions: jest.fn().mockReturnValue([]),
+          proxyNRStat: jest.fn()
         }
       );
       this._webrtcSessions = this.webrtcSessions;
+
+      this.messenger = Object.assign(new EventEmitter(), { broadcastMessage: jest.fn() });
 
       this.connect = jest.fn().mockImplementation(() => {
         this.emit('connected');

@@ -64,7 +64,7 @@ describe('Client (integration)', () => {
 
   describe('initialize()', () => {
     it('fetches org and person details, sets up the streaming connection, and fetches the station', async () => {
-      const { getOrg, getUser, getChannel, sdk, notificationSubscription, getStation } = mockApis();
+      const { sdk } = mockApis();
       await sdk.initialize();
 
       expect(sdk._streamingConnection).toBeTruthy();
@@ -73,16 +73,16 @@ describe('Client (integration)', () => {
     }, 30000);
 
     it('should disconnect if initialize is called again', async () => {
-      const { getOrg, getUser, getChannel, getStation, sdk, notificationSubscription } = mockApis();
+      const { sdk } = mockApis();
       await sdk.initialize();
       expect(sdk._streamingConnection).toBeTruthy();
       expect(sdk.isInitialized).toBeTruthy();
       const disconnectSpy = jest.spyOn(sdk._streamingConnection, 'disconnect');
-      mockGetOrgApi({ nockScope: getOrg });
-      mockGetUserApi({ nockScope: getUser });
-      mockGetChannelApi({ nockScope: getChannel });
-      mockNotificationSubscription({ nockScope: notificationSubscription });
-      mockGetStationApi({ nockScope: getStation });
+      mockGetOrgApi({ });
+      mockGetUserApi({ });
+      mockGetChannelApi({ });
+      mockNotificationSubscription({ });
+      mockGetStationApi({ });
       const promise = new Promise<void>((resolve) => {
         sdk.once('disconnected', async () => {
           setupWss();
@@ -97,9 +97,8 @@ describe('Client (integration)', () => {
     });
 
     it('fetches jwt for guest users, sets up the streaming connection', async () => {
-      const { getJwt, sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
+      const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       await sdk.initialize({ securityCode: '123456' });
-      getJwt.done();
       expect(sdk._streamingConnection).toBeTruthy();
 
       await disconnectSdk(sdk);

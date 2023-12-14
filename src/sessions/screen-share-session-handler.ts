@@ -8,7 +8,7 @@ import { createAndEmitSdkError, isAcdJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JingleReason } from '..';
 
-export default class ScreenShareSessionHandler extends BaseSessionHandler {
+export class ScreenShareSessionHandler extends BaseSessionHandler {
   private _screenStreamPromise: Promise<MediaStream>;
   sessionType = SessionTypes.acdScreenShare;
 
@@ -44,7 +44,7 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     this._screenStreamPromise = null;
 
     /* request the display now, but handle it on session-init */
-    this._screenStreamPromise = this.sdk.media.startDisplayMedia();
+    this._screenStreamPromise = this.sdk.media.startDisplayMedia({ conversationId: conversation.id });
 
     await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
 
@@ -116,3 +116,5 @@ export default class ScreenShareSessionHandler extends BaseSessionHandler {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }
 }
+
+export default ScreenShareSessionHandler;

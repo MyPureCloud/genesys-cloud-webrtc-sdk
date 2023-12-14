@@ -23,11 +23,12 @@ import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
-import { Session } from 'inspector';
+import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
+import { HeadsetProxyService } from '../headsets/headset';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
-export default class SoftphoneSessionHandler extends BaseSessionHandler {
+export class SoftphoneSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.softphone;
   /* Could be active persistent connection or non concurrent session */
   activeSession?: IExtendedMediaSession;
@@ -166,6 +167,18 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
       });
     }
 
+    /* These next couple of blocks will ensure that the headset device is set to the appropriate state */
+    /* It really should only matter for connected calls as ended calls should have the logic already in place in SVH */
+    if (this.isConnectedState(callState) && session) {
+      if (callState.muted !== previousCallState?.muted) {
+        this.sdk.headset.setMute(callState.muted);
+      }
+
+      if (callState.held !== previousCallState?.held) {
+        this.sdk.headset.setHold(conversationId, callState.held);
+      }
+    }
+
     const communicationStateChanged = previousCallState?.state !== callState.state;
     let eventToEmit: boolean | SdkConversationEvents = 'updated';
     const isOutbound = callState.direction === 'outbound'
@@ -180,6 +193,21 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
         if (isOutbound) {
           this.sdk.headset.outgoingCall({ conversationId });
         } else {
+          const nrStat: FirstAlertingConversationStat = {
+            actionName: 'WebrtcStats',
+            details: {
+              _eventType: 'firstAlertingConversationUpdate',
+              _eventTimestamp: new Date().toISOString(),
+              _appId: this.sdk.logger.clientId,
+              _appName: this.sdk.logger.config.appName,
+              _appVersion: this.sdk.VERSION,
+              conversationId,
+              participantId: participant.id,
+            }
+          };
+  
+          this.sdk._streamingConnection._webrtcSessions.proxyNRStat(nrStat);
+
           this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
         }
 
@@ -217,6 +245,9 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
               ignoredConversation: this.conversations[conversationId],
               update
             });
+            if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
+              this.sdk.headset.resetHeadsetStateForCall(conversationId);
+            }
             delete this.conversations[conversationId];
             return;
           }
@@ -818,3 +849,5 @@ export default class SoftphoneSessionHandler extends BaseSessionHandler {
     return call?.state === CommunicationStates.disconnected || call?.state === CommunicationStates.terminated;
   }
 }
+
+export default SoftphoneSessionHandler;
