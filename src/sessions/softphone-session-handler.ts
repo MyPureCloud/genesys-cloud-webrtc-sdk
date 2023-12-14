@@ -23,7 +23,7 @@ import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
-import { Session } from 'inspector';
+import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
 import { HeadsetProxyService } from '../headsets/headset';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
@@ -193,6 +193,21 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         if (isOutbound) {
           this.sdk.headset.outgoingCall({ conversationId });
         } else {
+          const nrStat: FirstAlertingConversationStat = {
+            actionName: 'WebrtcStats',
+            details: {
+              _eventType: 'firstAlertingConversationUpdate',
+              _eventTimestamp: new Date().toISOString(),
+              _appId: this.sdk.logger.clientId,
+              _appName: this.sdk.logger.config.appName,
+              _appVersion: this.sdk.VERSION,
+              conversationId,
+              participantId: participant.id,
+            }
+          };
+  
+          this.sdk._streamingConnection._webrtcSessions.proxyNRStat(nrStat);
+
           this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
         }
 

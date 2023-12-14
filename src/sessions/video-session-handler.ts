@@ -603,7 +603,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     try {
       this.log('info', 'Starting screen media', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
 
-      const stream = await this.sdk.media.startDisplayMedia();
+      const stream = await this.sdk.media.startDisplayMedia({ conversationId: session.conversationId, sessionId: session.id });
       session._screenShareStream = stream;
 
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);

@@ -47,7 +47,10 @@ export class SimpleMockSdk extends EventEmitter {
     log: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
+    config: {
+      appName: 'MockSdkApp'
+    }
   };
   _streamingConnection = {
     config: {
@@ -71,7 +74,8 @@ export class SimpleMockSdk extends EventEmitter {
     },
     _webrtcSessions: {
       refreshIceServers: jest.fn(),
-      getSessionManager: jest.fn()
+      getSessionManager: jest.fn(),
+      proxyNRStat: jest.fn()
     }
   };
   sessionManager = {
