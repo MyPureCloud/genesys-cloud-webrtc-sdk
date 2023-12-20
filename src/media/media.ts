@@ -456,7 +456,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       actionName: 'WebrtcStats',
       details: {
         ...baseNrStatInfo,
-        _eventTimestamp: new Date().toISOString(),
+        _eventTimestamp: new Date().getTime(),
         _eventType: 'mediaRequested',
       }
     });
@@ -473,7 +473,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         actionName: 'WebrtcStats',
         details: {
           ...baseNrStatInfo,
-          _eventTimestamp: new Date().toISOString(),
+          _eventTimestamp: new Date().getTime(),
           _eventType: 'mediaError',
           message: `${e.name} - ${e.message}`,
         }
@@ -486,7 +486,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       actionName: 'WebrtcStats',
       details: {
         ...baseNrStatInfo,
-        _eventTimestamp: new Date().toISOString(),
+        _eventTimestamp: new Date().getTime(),
         _eventType: 'mediaStarted',
       }
     });
@@ -1154,7 +1154,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         actionName: 'WebrtcStats',
         details: {
           ...baseNrStatInfo,
-          _eventTimestamp: new Date().toISOString(),
+          _eventTimestamp: new Date().getTime(),
           _eventType: 'mediaRequested',
         }
       });
@@ -1186,7 +1186,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         actionName: 'WebrtcStats',
         details: {
           ...baseNrStatInfo,
-          _eventTimestamp: new Date().toISOString(),
+          _eventTimestamp: new Date().getTime(),
           _eventType: 'mediaStarted',
         }
       });
@@ -1201,7 +1201,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         details: {
           ...baseNrStatInfo,
           _eventType: 'mediaError',
-          _eventTimestamp: new Date().toISOString(),
+          _eventTimestamp: new Date().getTime(),
           message: `${e.name} - ${e.message}`,
         }
       });

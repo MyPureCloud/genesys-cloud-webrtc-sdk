@@ -667,7 +667,7 @@ describe('HeadsetProxyService', () => {
       const expectedMediaMessage: HeadsetControlsChanged = {
         jsonrpc: '2.0',
         method: 'headsetControlsChanged',
-        params: {
+        params: { 
           hasControls: true
         }
       };
