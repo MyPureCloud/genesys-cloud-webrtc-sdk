@@ -197,7 +197,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
             actionName: 'WebrtcStats',
             details: {
               _eventType: 'firstAlertingConversationUpdate',
-              _eventTimestamp: new Date().toISOString(),
+              _eventTimestamp: new Date().getTime(),
               _appId: this.sdk.logger.clientId,
               _appName: this.sdk.logger.config.appName,
               _appVersion: this.sdk.VERSION,
