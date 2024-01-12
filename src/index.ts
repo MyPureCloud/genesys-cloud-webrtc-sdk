@@ -8,6 +8,7 @@ export * from './sessions/softphone-session-handler';
 export * from './sessions/video-session-handler';
 export * from './sessions/screen-recording-session-handler';
 export * from './sessions/screen-share-session-handler';
+export { ExpandedDeviceConnectionStatus } from './headsets/headset-types';
 
 import * as utils from './utils';
 import * as mediaUtils from './media/media-utils';
