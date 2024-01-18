@@ -251,7 +251,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
     // if some other client has taken control, we yield
     if (mediaMessage.params.hasControls && hasControlOrWaitingForControl) {
-      this.currentHeadsetService.updateAudioInputDevice(null);
+      this.currentHeadsetService.updateAudioInputDevice(null, 'alternativeClient');
 
       if (this.orchestrationState === 'hasControls') {
         this.sendControlsChangedMessage(false);
