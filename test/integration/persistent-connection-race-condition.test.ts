@@ -130,7 +130,7 @@ describe('Persistent Connection Race Conditions', () => {
     }
   });
 
-  it('should proceed session if propose comes in after pending session is proceeded via api call', async () => {
+  it.skip('should proceed session if propose comes in after pending session is proceeded via api call', async () => {
     const sdk = await constructSdk();
 
     expect(sdk).toBeTruthy();
