@@ -5,7 +5,8 @@ import {
   MockSession,
   createPendingSession,
   MockStream,
-  random
+  random,
+  flushPromises
 } from '../../test-utils';
 import {
   PARTICIPANT_ID,
@@ -1089,7 +1090,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
-  it('should emit an update if our users state changed, but not their communication state', () => {
+  it('should emit an update if our users state changed, but not their communication state', async () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.connected,
       previousCallState: { muted: true }
@@ -1098,7 +1099,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
-
+    await flushPromises();
     expect(emitConversationEventSpy).toHaveBeenCalledWith(
       'updated',
       handler.conversations[update.id],
@@ -1106,7 +1107,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
-  it('should emit a pending session if we already have an active session', () => {
+  it('should emit a pending session if we already have an active session', async () => {
     const { update, participant, callState, session } = generateUpdate({
       callState: CommunicationStates.alerting
     });
@@ -1126,6 +1127,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
       fromJid: session.peerID,
       toJid: userJid
     }
+
+    await flushPromises();
 
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
     expect(sdkEmitSpy).toHaveBeenCalledWith(
@@ -1221,7 +1224,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
-  it('should emit "updated" event if we did not have a previous call but have a connection call now', () => {
+  it('should emit "updated" event if we did not have a previous call but have a connection call now', async () => {
     const { session, update, participant, callState } = generateUpdate({
       callState: CommunicationStates.connected,
       previousCallState: { state: CommunicationStates.contacting }
@@ -1231,6 +1234,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
     handler.activeSession = session;
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
 
     expect(emitConversationEventSpy).toHaveBeenCalledWith(
       'updated',
@@ -1285,7 +1290,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
-  it('should handle pending sessions we rejected', () => {
+  it('should handle pending sessions we rejected', async () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.disconnected,
       previousCallState: { state: CommunicationStates.contacting }
@@ -1297,6 +1302,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
+    await flushPromises();
+
     expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(
       session.id,
       update.id
@@ -1306,7 +1313,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
-  it('should delete conversationState, not emit an event, and not cancelPendingSession if session does not match active session', () => {
+  it('should delete conversationState, not emit an event, and not cancelPendingSession if session does not match active session', async () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.disconnected,
       previousCallState: { state: CommunicationStates.contacting }
@@ -1317,6 +1324,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
     handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
     handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
 
+    await flushPromises();
+
     expect(onCancelPendingSessionSpy).not.toHaveBeenCalled();
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
     expect(handler.conversations[update.id]).toBeFalsy();
@@ -1325,6 +1334,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
     /* 2nd: our session does not match our current active session */
     handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
 
     expect(onCancelPendingSessionSpy).not.toHaveBeenCalled();
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
@@ -1347,7 +1358,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
-  it('should emit removed event if we were responsible for the call', () => {
+  it('should emit removed event if we were responsible for the call', async () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.disconnected,
       previousCallState: { state: CommunicationStates.connected }
@@ -1356,6 +1367,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
     handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
 
     expect(emitConversationEventSpy).toHaveBeenCalledWith(
       'removed',
@@ -1365,7 +1378,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
-  it('should emit removed event and "sessionEnded" if we had an activeSession', () => {
+  it('should emit removed event and "sessionEnded" if we had an activeSession', async () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.disconnected,
       previousCallState: { state: CommunicationStates.connected }
@@ -1375,6 +1388,8 @@ describe('handleSoftphoneConversationUpdate()', () => {
     handler.activeSession = session;
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
 
     expect(emitConversationEventSpy).toHaveBeenCalledWith(
       'removed',

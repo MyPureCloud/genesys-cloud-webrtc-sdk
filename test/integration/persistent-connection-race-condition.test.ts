@@ -14,6 +14,7 @@ import {
 import { EventEmitter } from 'events';
 import SoftphoneSessionHandler from '../../src/sessions/softphone-session-handler';
 import uuid from 'uuid';
+import { flushPromises } from '../test-utils';
 jest.mock('../../src/media/media');
 
 jest.mock('genesys-cloud-streaming-client', () => {
@@ -130,7 +131,7 @@ describe('Persistent Connection Race Conditions', () => {
     }
   });
 
-  it.skip('should proceed session if propose comes in after pending session is proceeded via api call', async () => {
+  it('should proceed session if propose comes in after pending session is proceeded via api call', async () => {
     const sdk = await constructSdk();
 
     expect(sdk).toBeTruthy();
@@ -172,6 +173,8 @@ describe('Persistent Connection Race Conditions', () => {
       }
     ];
     sdk.sessionManager.handleConversationUpdate(fakeConversationUpdate);
+
+    await flushPromises();
 
     expect(pendingSessionSpy).toHaveBeenCalled();
 

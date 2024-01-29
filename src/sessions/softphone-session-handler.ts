@@ -171,11 +171,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     /* It really should only matter for connected calls as ended calls should have the logic already in place in SVH */
     if (this.isConnectedState(callState) && session) {
       if (callState.muted !== previousCallState?.muted) {
-        this.sdk.headset.setMute(callState.muted);
+        await HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.setMute(callState.muted));
       }
 
       if (callState.held !== previousCallState?.held) {
-        this.sdk.headset.setHold(conversationId, callState.held);
+        await HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.setHold(conversationId, callState.held));
       }
     }
 
@@ -191,7 +191,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
         // headset actions will be tied to conversation updates rather than session events so we want to react regardless
         if (isOutbound) {
-          this.sdk.headset.outgoingCall({ conversationId });
+          await HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.outgoingCall({ conversationId }));
         } else {
           const nrStat: FirstAlertingConversationStat = {
             actionName: 'WebrtcStats',
@@ -205,7 +205,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
               participantId: participant.id,
             }
           };
-  
+
           this.sdk._streamingConnection._webrtcSessions.proxyNRStat(nrStat);
 
           await HeadsetChangesQueue.queueHeadsetChanges(() =>
@@ -279,10 +279,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         }
       } else if (this.isEndedState(callState)) {
         if (this.isPendingState(previousCallState) && !isOutbound) {
-          this.sdk.headset.rejectIncomingCall(conversationId);
+          await HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.rejectIncomingCall(conversationId));
         } else {
-          this.sdk.headset.endCurrentCall(conversationId);
+          await HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.endCurrentCall(conversationId));
         }
+        HeadsetChangesQueue.clearQueue();
 
         /* we don't want to emit events for (most of) these */
         eventToEmit = false;

@@ -141,7 +141,6 @@ export function getBareJid (sdk: GenesysCloudWebrtcSdk) {
   return sdk._streamingConnection.config.jid;
 }
 
-/* istanbul ignore next */
 export class HeadsetChangesQueue {
   static toDoQueue = [];
   static processingPromise = false;
