@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.1...HEAD)
 ### Changed
-* [PCM-2297](https://inindca.atlassian.net/browse/PCM-2297) Update genesys-cloud-client-logger to fix Snyk vulnerabilities.
+* [PCM-2297](https://inindca.atlassian.net/browse/PCM-2297) Update genesys-cloud-client-logger and genesys-cloud-streaming-client to fix Snyk vulnerabilities.
 ### Fixed
 * [PCM-2293](https://inindca.atlassian.net/browse/PCM-2293) - Fixed issue where multiple instances of the sdk caused conflict with poly/plantronics headsets
 * fix snyk vulnerabilities: axios and follow-redirects
