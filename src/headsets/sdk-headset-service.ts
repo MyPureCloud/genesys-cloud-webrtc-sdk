@@ -42,7 +42,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
   updateAudioInputDevice (newMicId: string, changeReason?: UpdateReasons): void {
     const completeDeviceInfo = this.sdk.media.findCachedDeviceByIdAndKind(newMicId, 'audioinput');
     HeadsetChangesQueue.clearQueue();
-    this.headsetLibrary.activeMicChange(completeDeviceInfo?.label?.toLowerCase());
+    this.headsetLibrary.activeMicChange(completeDeviceInfo?.label?.toLowerCase(), changeReason);
   }
 
   /**

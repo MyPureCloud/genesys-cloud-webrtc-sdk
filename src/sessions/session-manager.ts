@@ -287,11 +287,8 @@ export class SessionManager {
         existingSession.sessionId = sessionInfo.sessionId;
         existingSession.id = sessionInfo.id;
         
-        /* istanbul ignore next */
         if (existingSession.accepted) {
-          /* istanbul ignore next */
           this.log('info', `updated existingSession was already accepted, "proceeding" again`, { sessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId });
-          /* istanbul ignore next */
           return handler.proceedWithSession(existingSession);
         }
       }
