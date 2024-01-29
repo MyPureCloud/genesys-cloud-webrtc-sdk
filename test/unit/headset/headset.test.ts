@@ -46,7 +46,7 @@ describe('SdkHeadsetService', () => {
       const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
       sdkHeadset.updateAudioInputDevice(testId);
       expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
-      expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v');
+      expect(activeMicChangeSpy).toHaveBeenCalledWith('test device mark v', undefined);
     });
     it('should properly handle if NO device is returned from findCachedDeviceByIdAndKind', () => {
       const testId = "testId";
@@ -55,10 +55,19 @@ describe('SdkHeadsetService', () => {
       const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
       sdkHeadset.updateAudioInputDevice(testId);
       expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
-      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
+      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined, undefined);
 
       sdkHeadset.updateAudioInputDevice(testId);
-      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined);
+      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined, undefined);
+    });
+    it('should pass disconnect reason to headset service', () => {
+      const testId = "testId";
+      const findCachedDeviceByIdAndKindSpy = jest.spyOn(sdk.media, 'findCachedDeviceByIdAndKind').mockReturnValueOnce(undefined as any)
+        .mockReturnValueOnce({} as MediaDeviceInfo);
+      const activeMicChangeSpy = jest.spyOn(headsetLibrary, 'activeMicChange');
+      sdkHeadset.updateAudioInputDevice(testId, 'alternativeClient');
+      expect(findCachedDeviceByIdAndKindSpy).toHaveBeenCalledWith(testId, 'audioinput');
+      expect(activeMicChangeSpy).toHaveBeenCalledWith(undefined, 'alternativeClient');
     });
   });
 
@@ -667,7 +676,7 @@ describe('HeadsetProxyService', () => {
       const expectedMediaMessage: HeadsetControlsChanged = {
         jsonrpc: '2.0',
         method: 'headsetControlsChanged',
-        params: {
+        params: { 
           hasControls: true
         }
       };

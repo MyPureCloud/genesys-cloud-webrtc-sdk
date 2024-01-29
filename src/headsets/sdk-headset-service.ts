@@ -1,4 +1,4 @@
-import HeadsetService, { VendorImplementation } from "softphone-vendor-headsets";
+import HeadsetService, { UpdateReasons, VendorImplementation } from "softphone-vendor-headsets";
 import { SdkHeadsetBase } from "./sdk-headset-base";
 import { ExpandedConsumedHeadsetEvents } from "./headset-types";
 import { Observable } from "rxjs";
@@ -39,7 +39,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * @param newMicId ID associated with the newly selected device
    * @returns void
    */
-  updateAudioInputDevice (newMicId: string): void {
+  updateAudioInputDevice (newMicId: string, changeReason?: UpdateReasons): void {
     const completeDeviceInfo = this.sdk.media.findCachedDeviceByIdAndKind(newMicId, 'audioinput');
     HeadsetChangesQueue.clearQueue();
     this.headsetLibrary.activeMicChange(completeDeviceInfo?.label?.toLowerCase());

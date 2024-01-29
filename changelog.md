@@ -3,7 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.4...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.1...HEAD)
+### Fixed
+* [PCM-2293](https://inindca.atlassian.net/browse/PCM-2293) - Fixed issue where multiple instances of the sdk caused conflict with poly/plantronics headsets
+* fix snyk vulnerabilities: axios and follow-redirects
+
+# [v9.0.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.0...v9.0.1)
+* [PCM-2276](https://inindca.atlassian.net/browse/PCM-2276) - update streaming client for nrproxy changes
+
+# [v9.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v8.2.4...v9.0.0)
 ### BREAKING CHANGES
 * Only one sdk instance will be allowed to have headset controls at any given time. Headset functionality is now orchestrated and negotiated between other instances of the sdk based on various factors. As such, we have changed the DeviceConnectionStatus type in order to union those states with orchestration states.
 

@@ -1,7 +1,7 @@
 import { Observable } from "rxjs";
 import GenesysCloudWebrtcSdk from "../client";
 import { ExpandedConsumedHeadsetEvents, ISdkHeadsetService } from "./headset-types";
-import { VendorImplementation } from "softphone-vendor-headsets";
+import { UpdateReasons, VendorImplementation } from "softphone-vendor-headsets";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export abstract class SdkHeadsetBase implements ISdkHeadsetService {
@@ -31,7 +31,7 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
    * @param newMicId ID associated with the newly selected device
    * @returns void
    */
-  updateAudioInputDevice (_newMicId: string): void { /* no-op  */ }
+  updateAudioInputDevice (_newMicId: string, changeReason?: UpdateReasons): void { /* no-op  */ }
 
   /**
    * Determines if the retry button is necessary to be rendered
