@@ -2,7 +2,7 @@ import { RequestApiOptions } from 'genesys-cloud-streaming-client/dist/es/types/
 import { parseJwt, ISessionInfo } from 'genesys-cloud-streaming-client';
 import AxiosMockAdapter from 'axios-mock-adapter';
 import axios from 'axios';
-import { SimpleMockSdk, flushPromises } from '../test-utils';
+import { SimpleMockSdk } from '../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import * as utils from '../../src/utils';
 import { SdkErrorTypes, SessionTypes, SdkError } from '../../src/';
@@ -344,66 +344,3 @@ describe('getBareJid', () => {
     expect(utils.getBareJid(sdk as any)).toEqual(jid);
   });
 });
-
-describe('HeadsetChangesQueue', () => {
-  it ('should reject with err if something goes wrong trying to run the passed in function', async () => {
-    const error = new Error('Uh oh');
-    const rejectTest = jest.fn().mockImplementation(() => {
-      throw error;
-    });
-
-    await utils.HeadsetChangesQueue.queueHeadsetChanges(() => rejectTest()).catch((err) => {
-      expect(err).toBeTruthy();
-    });
-  });
-
-  it('should properly queue up events that are passed in and dequeue them in the order in which they were passed in', async () => {
-    const printTest = jest.fn().mockImplementation((testNumber, testDelay) => {
-      return `This is test number ${testNumber}`;
-    });
-
-    utils.HeadsetChangesQueue.queueHeadsetChanges(() => printTest(1));
-    await flushPromises();
-
-    utils.HeadsetChangesQueue.queueHeadsetChanges(() => printTest(2));
-    await flushPromises();
-
-    utils.HeadsetChangesQueue.queueHeadsetChanges(() => printTest(3));
-    await flushPromises();
-
-    expect(printTest).toHaveNthReturnedWith(1, 'This is test number 1');
-    expect(printTest).toHaveNthReturnedWith(2, 'This is test number 2');
-    expect(printTest).toHaveNthReturnedWith(3, 'This is test number 3');
-  });
-
-  it('should return false during dequeueHeadsetChanges if processingPromise is true', async () => {
-    (utils.HeadsetChangesQueue.toDoQueue as any[]) = [
-      () => console.log('test 1')
-    ];
-    utils.HeadsetChangesQueue.processingPromise = true;
-
-    const dequeueResult = await utils.HeadsetChangesQueue.dequeueHeadsetChanges();
-
-    expect(dequeueResult).toBe(false);
-  });
-
-  it('should set the toDoQueue to an empty array when clearQueue is called', () => {
-    (utils.HeadsetChangesQueue.toDoQueue as any[]) = [
-      () => console.log('test 1'),
-      () => console.log('test 2')
-    ];
-    expect(utils.HeadsetChangesQueue.toDoQueue.length).toBe(2);
-    utils.HeadsetChangesQueue.clearQueue();
-    expect(utils.HeadsetChangesQueue.toDoQueue.length).toBe(0);
-  });
-
-  it('should not call dequeueHeadsetChanges if processingPromise is true', () => {
-    utils.HeadsetChangesQueue.processingPromise = true;
-    const printTest = jest.fn().mockImplementation((testNumber, testDelay) => {
-      return `This is test number ${testNumber}`;
-    });
-    const dequeueSpy = jest.spyOn(utils.HeadsetChangesQueue, 'dequeueHeadsetChanges');
-    utils.HeadsetChangesQueue.queueHeadsetChanges(() => printTest(1));
-    expect(dequeueSpy).not.toBeCalled();
-  })
-})

@@ -67,7 +67,7 @@
     "process-fast": "^1.0.0",
     "rxjs": "^7.5.5",
     "safe-json-stringify": "^1.2.0",
-    "softphone-vendor-headsets": "^2.4.5",
+    "softphone-vendor-headsets": "^2.4.5-PCM-2302.5",
     "strict-event-emitter-types": "^2.0.0",
     "typescript": "^4.0.5",
     "uuid": "^3.4.0"
