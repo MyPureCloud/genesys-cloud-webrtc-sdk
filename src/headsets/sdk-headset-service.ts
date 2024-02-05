@@ -4,6 +4,7 @@ import { ExpandedConsumedHeadsetEvents } from "./headset-types";
 import { Observable } from "rxjs";
 import GenesysCloudWebrtcSdk from "../client";
 import { ILogMessageOptions, ILogger } from "genesys-cloud-client-logger";
+import { HeadsetChangesQueue } from '../utils';
 
 export class SdkHeadsetService extends SdkHeadsetBase {
   private headsetLibrary: HeadsetService;
@@ -40,6 +41,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    */
   updateAudioInputDevice (newMicId: string, changeReason?: UpdateReasons): void {
     const completeDeviceInfo = this.sdk.media.findCachedDeviceByIdAndKind(newMicId, 'audioinput');
+    HeadsetChangesQueue.clearQueue();
     this.headsetLibrary.activeMicChange(completeDeviceInfo?.label?.toLowerCase(), changeReason);
   }
 
