@@ -4,7 +4,7 @@ import { ExpandedConsumedHeadsetEvents } from "./headset-types";
 import { Observable } from "rxjs";
 import GenesysCloudWebrtcSdk from "../client";
 import { ILogMessageOptions, ILogger } from "genesys-cloud-client-logger";
-import { HeadsetChangesQueue } from '../utils';
+import { HeadsetChangesQueue } from '../headsets/headset-utils';
 
 export class SdkHeadsetService extends SdkHeadsetBase {
   private headsetLibrary: HeadsetService;
