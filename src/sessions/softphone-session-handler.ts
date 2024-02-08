@@ -124,7 +124,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
   }
 
-  async handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): Promise<void> {
+  handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
     const conversationId = update.id;
     const lastConversationUpdate = this.conversations[conversationId];
     const conversationUpdateForLogging = { ...lastConversationUpdate };
