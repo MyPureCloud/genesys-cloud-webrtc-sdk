@@ -20,6 +20,7 @@ import {
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
+import { HeadsetChangesQueue } from '../headsets/headset-utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
@@ -171,11 +172,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     /* It really should only matter for connected calls as ended calls should have the logic already in place in SVH */
     if (this.isConnectedState(callState) && session) {
       if (callState.muted !== previousCallState?.muted) {
-        this.sdk.headset.setMute(callState.muted);
+        HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.setMute(callState.muted));
       }
 
       if (callState.held !== previousCallState?.held) {
-        this.sdk.headset.setHold(conversationId, callState.held);
+        HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.setHold(conversationId, callState.held));
       }
     }
 
@@ -191,7 +192,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
         // headset actions will be tied to conversation updates rather than session events so we want to react regardless
         if (isOutbound) {
-          this.sdk.headset.outgoingCall({ conversationId });
+          HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.outgoingCall({ conversationId }));
         } else {
           const nrStat: FirstAlertingConversationStat = {
             actionName: 'WebrtcStats',
@@ -205,10 +206,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
               participantId: participant.id,
             }
           };
-  
+
           this.sdk._streamingConnection._webrtcSessions.proxyNRStat(nrStat);
 
-          this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length);
+          HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.setRinging({ conversationId, contactName: null }, !!this.lastEmittedSdkConversationEvent.current.length));
         }
 
         /* only emit `pendingSession` if we already have an active session */
@@ -254,7 +255,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
           // if this was an inbound call, the headset needs to move from ringing to answered
           if (!isOutbound) {
-            this.sdk.headset.answerIncomingCall(conversationId, false);
+            HeadsetChangesQueue.queueHeadsetChanges(() => this.sdk.headset.answerIncomingCall(conversationId, false));
           }
 
           /* only emit `sessionStarted` if we have an active session */
@@ -278,6 +279,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           this.sdk.headset.endCurrentCall(conversationId);
         }
 
+        HeadsetChangesQueue.clearQueue();
         /* we don't want to emit events for (most of) these */
         eventToEmit = false;
         /* we rejected a pendingSession */

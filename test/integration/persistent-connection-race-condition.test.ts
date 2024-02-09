@@ -14,6 +14,7 @@ import {
 import { EventEmitter } from 'events';
 import SoftphoneSessionHandler from '../../src/sessions/softphone-session-handler';
 import uuid from 'uuid';
+import { flushPromises } from '../test-utils';
 jest.mock('../../src/media/media');
 
 jest.mock('genesys-cloud-streaming-client', () => {
@@ -172,6 +173,8 @@ describe('Persistent Connection Race Conditions', () => {
       }
     ];
     sdk.sessionManager.handleConversationUpdate(fakeConversationUpdate);
+
+    await flushPromises();
 
     expect(pendingSessionSpy).toHaveBeenCalled();
 
