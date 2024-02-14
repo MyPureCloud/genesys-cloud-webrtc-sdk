@@ -6,8 +6,6 @@ def MAIN_BRANCH = 'master'
 def DEVELOP_BRANCH = 'develop'
 def isBitbucket = false
 
-//Set up environment variable to point to nexus
-env.NPM_CONFIG_USERCONFIG = '/var/build/npmrc-nexus';
 
 def isMain = {
   env.BRANCH_NAME == MAIN_BRANCH
