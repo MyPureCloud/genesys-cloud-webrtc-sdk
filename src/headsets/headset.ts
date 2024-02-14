@@ -8,6 +8,7 @@ import { HeadsetControlsChanged, HeadsetControlsRejection, HeadsetControlsReject
 import { SdkHeadsetService } from './sdk-headset-service';
 import { HeadsetRequestType } from '../types/interfaces';
 import { ExpandedConsumedHeadsetEvents, ISdkHeadsetService, OrchestrationState } from './headset-types';
+import { HeadsetChangesQueue } from './headset-utils';
 
 const REQUEST_PRIORITY: {[key in HeadsetControlsRequestType]: number} = {
   'mediaHelper': 30,
@@ -251,6 +252,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
     // if some other client has taken control, we yield
     if (mediaMessage.params.hasControls && hasControlOrWaitingForControl) {
+      HeadsetChangesQueue.clearQueue();
       this.currentHeadsetService.updateAudioInputDevice(null, 'alternativeClient');
 
       if (this.orchestrationState === 'hasControls') {

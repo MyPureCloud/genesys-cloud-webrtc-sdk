@@ -3,7 +3,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.3...HEAD)
+
+# [v9.0.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.1...v9.0.3)
+### Added
+* [PCM-2302](https://inindca.atlassian.net/browse/PCM-2302) Added queue for headset events to prevent issues brought on by race conditions between events
+### Changed
+* [PCM-2297](https://inindca.atlassian.net/browse/PCM-2297) Update genesys-cloud-client-logger and genesys-cloud-streaming-client to fix Snyk vulnerabilities.
 ### Fixed
 * [PCM-2293](https://inindca.atlassian.net/browse/PCM-2293) - Fixed issue where multiple instances of the sdk caused conflict with poly/plantronics headsets
 * fix snyk vulnerabilities: axios and follow-redirects
