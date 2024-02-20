@@ -1,6 +1,6 @@
 {
   "name": "genesys-cloud-webrtc-sdk",
-  "version": "9.0.3",
+  "version": "9.0.4",
   "description": "client for the interfacing with Genesys Cloud WebRTC",
   "repository": "https://github.com/mypurecloud/genesys-cloud-webrtc-sdk",
   "license": "MIT",
@@ -61,7 +61,7 @@
     "browserama": "^3.1.1",
     "core-js": "^3.7.0",
     "genesys-cloud-client-logger": "^4.2.10",
-    "genesys-cloud-streaming-client": "^17.0.1",
+    "genesys-cloud-streaming-client": "^17.0.2",
     "jwt-decode": "^3.1.2",
     "lodash": "^4.17.15",
     "process-fast": "^1.0.0",
