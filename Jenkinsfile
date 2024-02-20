@@ -6,7 +6,6 @@ def MAIN_BRANCH = 'master'
 def DEVELOP_BRANCH = 'develop'
 def isBitbucket = false
 
-
 def isMain = {
   env.BRANCH_NAME == MAIN_BRANCH
 }
