@@ -140,3 +140,9 @@ export const logPendingSession = function (
 export function getBareJid (sdk: GenesysCloudWebrtcSdk) {
   return sdk._streamingConnection.config.jid;
 }
+
+export async function delay (timeMs: number): Promise<void> {
+  await new Promise((resolve) => {
+    setTimeout(resolve, timeMs);
+  });
+}

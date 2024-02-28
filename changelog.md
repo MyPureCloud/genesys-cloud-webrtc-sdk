@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.4...HEAD)
 ### Fixed
 * [PCM-2319](https://inindca.atlassian.net/browse/PCM-2319) - move typescript to a dev dependency
+* [PCM-1826](https://inindca.atlassian.net/browse/PCM-1826) - Fixed screen sharing in safari
 
 # [v9.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.3...v9.0.4)
 ### Changed

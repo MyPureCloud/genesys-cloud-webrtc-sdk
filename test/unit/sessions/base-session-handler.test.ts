@@ -997,3 +997,74 @@ describe('getActiveConversations', () => {
     expect(handler.getActiveConversations()).toEqual([{ sessionType: SessionTypes.softphone, conversationId: sessions[1].conversationId, sessionId: sessions[1].id }]);
   });
 });
+
+describe('applyTrackConstraints()', () => {
+  let spy: jest.SpyInstance;
+  let sender: RTCRtpSender;
+  let getSettingsSpy: jest.Mock<MediaTrackSettings>
+  let applySpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    spy = jest.spyOn(handler as any, 'applyTrackConstraints');
+    getSettingsSpy = jest.fn();
+    applySpy = jest.fn().mockResolvedValue(null);
+    sender = {
+      track: {
+        getSettings: getSettingsSpy,
+        applyConstraints: applySpy
+      }
+    } as any;
+
+  });
+
+  it('should retry if no width', async () => {
+    getSettingsSpy
+      .mockReturnValueOnce({ height: 0, width: 0 })
+      .mockReturnValue({ height: 100, width: 110, frameRate: 10 });
+    
+    await handler['applyTrackConstraints'](sender);
+
+    expect(applySpy).toHaveBeenCalledWith({
+      width: {
+        ideal: 110
+      },
+      height: {
+        ideal: 100
+      },
+      frameRate: {
+        ideal: 10
+      }
+    });
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not retry more than once', async () => {
+    getSettingsSpy
+      .mockReturnValue({ height: 0, width: 0 });
+  
+    await handler['applyTrackConstraints'](sender);
+
+    expect(applySpy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should apply constraints if track has settings', async () => {
+    getSettingsSpy
+      .mockReturnValue({ height: 100, width: 110, frameRate: 10 });
+    
+    await handler['applyTrackConstraints'](sender);
+
+    expect(applySpy).toHaveBeenCalledWith({
+      width: {
+        ideal: 110
+      },
+      height: {
+        ideal: 100
+      },
+      frameRate: {
+        ideal: 10
+      }
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
