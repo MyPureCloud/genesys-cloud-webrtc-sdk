@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.4...HEAD)
+### Fixed
+* [PCM-2319](https://inindca.atlassian.net/browse/PCM-2319) - move typescript to a dev dependency
+
 # [v9.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.3...v9.0.4)
 ### Changed
 * [PCM-2312](https://inindca.atlassian.net/browse/PCM-2312) bump logger version
