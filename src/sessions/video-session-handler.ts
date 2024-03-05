@@ -54,6 +54,7 @@ export interface IMediaChangeEventParticipant {
 
 export class VideoSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
+  requestedMeetingSessions: { [meetingId: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
 
@@ -225,24 +226,46 @@ export class VideoSessionHandler extends BaseSessionHandler {
       participant = { address: this.sdk._personDetails.chat.jabberId };
     }
 
-    const data = JSON.stringify({
-      roomId: startParams.jid,
-      participant
-    });
-
-    this.requestedSessions[startParams.jid] = true;
-
-    try {
-      const response = await requestApi.call(this.sdk, `/conversations/videos`, {
-        method: 'post',
-        data
+    if (startParams.jid != null) {
+      const data = JSON.stringify({
+        roomId: startParams.jid,
+        participant
       });
 
-      return { conversationId: response.data.conversationId };
-    } catch (err) {
-      delete this.requestedSessions[startParams.jid];
-      this.log('error', 'Failed to request video session', err);
-      throw err;
+      this.requestedSessions[startParams.jid] = true;
+
+      try {
+        const response = await requestApi.call(this.sdk, `/conversations/videos`, {
+          method: 'post',
+          data
+        });
+
+        return { conversationId: response.data.conversationId };
+      } catch (err) {
+        delete this.requestedSessions[startParams.jid];
+        this.log('error', 'Failed to request video session', err);
+        throw err;
+      }
+    } else if (startParams.meetingId != null) {
+      const data = JSON.stringify({
+        meetingId: startParams.meetingId,
+        participant
+      });
+
+      this.requestedMeetingSessions[startParams.meetingId] = true;
+
+      try {
+        const response = await requestApi.call(this.sdk, `/conversations/videos/participants`, {
+          method: 'post',
+          data
+        });
+
+        return { conversationId: response.data.conversationId };
+      } catch (err) {
+        delete this.requestedMeetingSessions[startParams.meetingId];
+        this.log('error', 'Failed to request video session', err);
+        throw err;
+      }
     }
   }
 
@@ -252,6 +275,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
       logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
       delete this.requestedSessions[pendingSession.originalRoomJid];
       await this.proceedWithSession(pendingSession);
+      return;
+    }
+
+    if (this.requestedMeetingSessions[pendingSession.meetingId]) {
+      logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
+      delete this.requestedMeetingSessions[pendingSession.meetingId];
+      await this.proceedWithSession(pendingSession);
+      this.sdk.emit('hjonChangeRoom', { roomJid: pendingSession.fromJid });
       return;
     }
 

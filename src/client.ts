@@ -373,6 +373,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     }
   }
 
+  async startVideoConference2 (meetingId: string): Promise<{ conversationId: string }> {
+    if (!this.isGuest) {
+      return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
+    } else {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
+    }
+  }
+
   /**
    * Start a softphone session with the given peer or peers.
    *  `initialize()` must be called first.

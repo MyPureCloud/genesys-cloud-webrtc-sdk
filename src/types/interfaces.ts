@@ -805,7 +805,8 @@ export interface IStartSessionParams extends ISdkMediaDeviceIds {
 }
 
 export interface IStartVideoSessionParams extends IStartSessionParams {
-  jid: string;
+  jid?: string;
+  meetingId?: string;
   /** userJid to be used when inviting a user to a conference */
   inviteeJid?: string;
 }
@@ -981,6 +982,7 @@ export interface SdkEvents {
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
   sessionInterrupted: (event) => { sessionId: string, sessionType: string, conversationId: string };
+  hjonChangeRoom: { roomJid: string };
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;
   conversationUpdate: ISdkConversationUpdateEvent;
