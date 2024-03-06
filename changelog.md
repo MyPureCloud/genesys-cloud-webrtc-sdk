@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.4...HEAD)
+### Added
+* [no-jira] Bump to `Softphone Vendor Headsets` to support two new vendors: VBeT and CyberAcoustics
 ### Fixed
 * [no-jira] Removed check for persistent connection to allow orchestration rejection for active calls and idle persistent connection
 * [PCM-2319](https://inindca.atlassian.net/browse/PCM-2319) - move typescript to a dev dependency
