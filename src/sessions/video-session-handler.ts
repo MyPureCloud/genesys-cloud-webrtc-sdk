@@ -605,6 +605,8 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       const stream = await this.sdk.media.startDisplayMedia({ conversationId: session.conversationId, sessionId: session.id });
       session._screenShareStream = stream;
+      
+      this.log('info', 'Screen media created', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
 
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
 

@@ -6,7 +6,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, requestApi } from '../utils';
+import { createAndEmitSdkError, delay, requestApi } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
@@ -515,7 +515,26 @@ export default abstract class BaseSessionHandler {
       return;
     }
 
+    return this.applyTrackConstraints(sender);
+  }
+
+  // we want to apply track constraints but in safari specifically for screen share streams the settings don't immediately populate
+  // if the settings have a zero height or width, we will wait and retry one time. If the settings are still zeroed we will just give up
+  private async applyTrackConstraints (sender: RTCRtpSender, attempt = 1): Promise<void> {
     const { height, width, frameRate } = sender.track.getSettings();
+
+    if (!height || !width) {
+      if (attempt > 1) {
+        this.log('debug', 'Not applying video track constraints due to zero height or width track setting', { height, width });
+        return;
+      }
+
+      this.log('debug', 'Zero height or width track setting, will retry after wait time', { height, width });
+      await delay(300);
+      return this.applyTrackConstraints(sender, attempt + 1);
+    }
+
+    this.log('debug', 'Applying video track constraints from settings', { height, width });
     await sender.track.applyConstraints({
       width: {
         ideal: width

@@ -3,7 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.4...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.5...HEAD)
+
+# [v9.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.4...v9.0.5)
+### Added
+* [no-jira] Bump to `Softphone Vendor Headsets` to support two new vendors: VBeT and CyberAcoustics
+### Fixed
+* [no-jira] Removed check for persistent connection to allow orchestration rejection for active calls and idle persistent connection
+* [PCM-2319](https://inindca.atlassian.net/browse/PCM-2319) - move typescript to a dev dependency
+* [PCM-1826](https://inindca.atlassian.net/browse/PCM-1826) - Fixed screen sharing in safari
+
 # [v9.0.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.3...v9.0.4)
 ### Changed
 * [PCM-2312](https://inindca.atlassian.net/browse/PCM-2312) bump logger version
