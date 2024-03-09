@@ -805,10 +805,13 @@ export interface IStartSessionParams extends ISdkMediaDeviceIds {
 }
 
 export interface IStartVideoSessionParams extends IStartSessionParams {
-  jid?: string;
-  meetingId?: string;
+  jid: string;
   /** userJid to be used when inviting a user to a conference */
   inviteeJid?: string;
+}
+
+export interface IStartVideoMeetingSessionParams extends IStartSessionParams {
+  meetingId: string;
 }
 
 export interface ISessionMuteRequest {

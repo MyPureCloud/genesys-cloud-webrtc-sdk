@@ -13,6 +13,7 @@ import {
   IConversationParticipant,
   IMediaRequestOptions,
   IStartVideoSessionParams,
+  IStartVideoMeetingSessionParams,
   VideoMediaSession,
   MemberStatusMessage
 } from '../types/interfaces';
@@ -217,22 +218,23 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   // triggers a propose from the backend
-  async startSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
-    let participant: { address: string };
+  async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
+    if ((<IStartVideoSessionParams>startParams).jid) {
+      const conferenceParams = (<IStartVideoSessionParams>startParams);
+      let participant: { address: string };
 
-    if (startParams.inviteeJid) {
-      participant = { address: startParams.inviteeJid };
-    } else {
-      participant = { address: this.sdk._personDetails.chat.jabberId };
-    }
+      if (conferenceParams.inviteeJid) {
+        participant = { address: conferenceParams.inviteeJid };
+      } else {
+        participant = { address: this.sdk._personDetails.chat.jabberId };
+      }
 
-    if (startParams.jid != null) {
       const data = JSON.stringify({
-        roomId: startParams.jid,
+        roomId: conferenceParams.jid,
         participant
       });
 
-      this.requestedSessions[startParams.jid] = true;
+      this.requestedSessions[conferenceParams.jid] = true;
 
       try {
         const response = await requestApi.call(this.sdk, `/conversations/videos`, {
@@ -242,17 +244,19 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
         return { conversationId: response.data.conversationId };
       } catch (err) {
-        delete this.requestedSessions[startParams.jid];
+        delete this.requestedSessions[conferenceParams.jid];
         this.log('error', 'Failed to request video session', err);
         throw err;
       }
-    } else if (startParams.meetingId != null) {
+    } else {
+      const meetingParams = (<IStartVideoMeetingSessionParams>startParams);
+      const participant = { address: this.sdk._personDetails.chat.jabberId };
       const data = JSON.stringify({
-        meetingId: startParams.meetingId,
+        meetingId: meetingParams.meetingId,
         participant
       });
 
-      this.requestedMeetingSessions[startParams.meetingId] = true;
+      this.requestedMeetingSessions[meetingParams.meetingId] = true;
 
       try {
         const response = await requestApi.call(this.sdk, `/conversations/videos/participants`, {
@@ -262,7 +266,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
         return { conversationId: response.data.conversationId };
       } catch (err) {
-        delete this.requestedMeetingSessions[startParams.meetingId];
+        delete this.requestedMeetingSessions[meetingParams.meetingId];
         this.log('error', 'Failed to request video session', err);
         throw err;
       }
