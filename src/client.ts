@@ -373,7 +373,18 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     }
   }
 
-  async startVideoConference2 (meetingId: string): Promise<{ conversationId: string }> {
+  /**
+   * Start a video conference using a meeting id. Not supported for guests.
+   *  Conferences can only be joined by authenticated users
+   *  from the same organization.
+   *
+   *  `initialize()` must be called first.
+   *
+   * @param meetingId meetingId of the conference to join.
+   *
+   * @returns a promise with an object with the newly created 'conversationId'
+   */
+  async startVideoMeeting (meetingId: string): Promise<{ conversationId: string }> {
     if (!this.isGuest) {
       return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
     } else {

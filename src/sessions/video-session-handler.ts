@@ -282,7 +282,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
       logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
       delete this.requestedMeetingSessions[pendingSession.meetingId];
       await this.proceedWithSession(pendingSession);
-      this.sdk.emit('hjonChangeRoom', { roomJid: pendingSession.fromJid });
       return;
     }
 

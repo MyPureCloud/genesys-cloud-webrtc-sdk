@@ -305,7 +305,8 @@ export class SessionManager {
       originalRoomJid: sessionInfo.originalRoomJid,
       fromUserId: sessionInfo.fromUserId,
       toJid: sessionInfo.toJid,
-      fromJid: sessionInfo.fromJid
+      fromJid: sessionInfo.fromJid,
+      meetingId: sessionInfo.meetingId
     };
 
     this.pendingSessions.push(pendingSession);

@@ -126,7 +126,8 @@ export const logPendingSession = function (
     sessionId: (pendingSession as IPendingSession).id || (pendingSession as ISessionInfo).sessionId,
     autoAnswer: pendingSession.autoAnswer,
     conversationId: pendingSession.conversationId,
-    fromUserId: pendingSession.fromUserId
+    fromUserId: pendingSession.fromUserId,
+    meetingId: pendingSession.meetingId
   };
 
   /* for pending sessions */
