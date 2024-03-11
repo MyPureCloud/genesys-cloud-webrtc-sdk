@@ -13,6 +13,7 @@ import {
   IConversationParticipant,
   IMediaRequestOptions,
   IStartVideoSessionParams,
+  IStartVideoMeetingSessionParams,
   VideoMediaSession,
   MemberStatusMessage
 } from '../types/interfaces';
@@ -54,6 +55,7 @@ export interface IMediaChangeEventParticipant {
 
 export class VideoSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
+  requestedMeetingSessions: { [meetingId: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
 
@@ -216,33 +218,58 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   // triggers a propose from the backend
-  async startSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
-    let participant: { address: string };
+  async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
+    if ((<IStartVideoSessionParams>startParams).jid) {
+      const conferenceParams = (<IStartVideoSessionParams>startParams);
+      let participant: { address: string };
 
-    if (startParams.inviteeJid) {
-      participant = { address: startParams.inviteeJid };
-    } else {
-      participant = { address: this.sdk._personDetails.chat.jabberId };
-    }
+      if (conferenceParams.inviteeJid) {
+        participant = { address: conferenceParams.inviteeJid };
+      } else {
+        participant = { address: this.sdk._personDetails.chat.jabberId };
+      }
 
-    const data = JSON.stringify({
-      roomId: startParams.jid,
-      participant
-    });
-
-    this.requestedSessions[startParams.jid] = true;
-
-    try {
-      const response = await requestApi.call(this.sdk, `/conversations/videos`, {
-        method: 'post',
-        data
+      const data = JSON.stringify({
+        roomId: conferenceParams.jid,
+        participant
       });
 
-      return { conversationId: response.data.conversationId };
-    } catch (err) {
-      delete this.requestedSessions[startParams.jid];
-      this.log('error', 'Failed to request video session', err);
-      throw err;
+      this.requestedSessions[conferenceParams.jid] = true;
+
+      try {
+        const response = await requestApi.call(this.sdk, `/conversations/videos`, {
+          method: 'post',
+          data
+        });
+
+        return { conversationId: response.data.conversationId };
+      } catch (err) {
+        delete this.requestedSessions[conferenceParams.jid];
+        this.log('error', 'Failed to request video session', err);
+        throw err;
+      }
+    } else {
+      const meetingParams = (<IStartVideoMeetingSessionParams>startParams);
+      const participant = { address: this.sdk._personDetails.chat.jabberId };
+      const data = JSON.stringify({
+        meetingId: meetingParams.meetingId,
+        participant
+      });
+
+      this.requestedMeetingSessions[meetingParams.meetingId] = true;
+
+      try {
+        const response = await requestApi.call(this.sdk, `/conversations/videos/participants`, {
+          method: 'post',
+          data
+        });
+
+        return { conversationId: response.data.conversationId };
+      } catch (err) {
+        delete this.requestedMeetingSessions[meetingParams.meetingId];
+        this.log('error', 'Failed to request video session', err);
+        throw err;
+      }
     }
   }
 
@@ -251,6 +278,13 @@ export class VideoSessionHandler extends BaseSessionHandler {
     if (this.requestedSessions[pendingSession.originalRoomJid]) {
       logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
       delete this.requestedSessions[pendingSession.originalRoomJid];
+      await this.proceedWithSession(pendingSession);
+      return;
+    }
+
+    if (this.requestedMeetingSessions[pendingSession.meetingId]) {
+      logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
+      delete this.requestedMeetingSessions[pendingSession.meetingId];
       await this.proceedWithSession(pendingSession);
       return;
     }
