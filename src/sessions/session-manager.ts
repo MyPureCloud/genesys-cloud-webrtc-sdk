@@ -398,6 +398,8 @@ export class SessionManager {
       return;
     }
 
+    const frame = new VideoFrame('lskdjf' as any)
+
     session._alreadyAccepted = true;
     
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
