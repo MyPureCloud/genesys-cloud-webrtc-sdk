@@ -69,7 +69,7 @@
     "safe-json-stringify": "^1.2.0",
     "softphone-vendor-headsets": "^2.5.0",
     "strict-event-emitter-types": "^2.0.0",
-    "uuid": "^3.4.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.3",

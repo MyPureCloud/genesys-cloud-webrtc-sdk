@@ -2,7 +2,7 @@ import { IUser, IOrg, IUserQueue, IContext } from '../../types/types';
 import { TestConfig } from '../../types/test-config';
 import { Subject, Observable, throwError } from 'rxjs';
 // import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import Logger from 'genesys-cloud-client-logger';
 import GenesysCloudStreamingClient, { IClientOptions } from 'genesys-cloud-streaming-client';
 import { assert } from 'chai';
@@ -225,7 +225,7 @@ export function setupStreamingPubsub (topic: string, streamingClient: any, bulk 
 // }
 
 export function getRandomVideoRoomJid (myJid: string) {
-  return `adhoc-${uuid()}@conference.${getJidDomain(myJid)}`;
+  return `adhoc-${uuidv4()}@conference.${getJidDomain(myJid)}`;
 }
 
 // const logger: any = console;
