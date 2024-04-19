@@ -35,7 +35,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     appVersion: originAppVersion || this.VERSION,
     appId: originAppId || this.logger.clientId,
     optOutOfWebrtcStatsTelemetry: optOutOfTelemetry,
-    customHeaders: customHeaders
+    customHeaders: customHeaders || undefined
   };
 
   if (this._personDetails) {
