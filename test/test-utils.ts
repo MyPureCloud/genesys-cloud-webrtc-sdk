@@ -359,4 +359,4 @@ export function createPendingSession (sessionType: SessionTypes = SessionTypes.s
   };
 };
 
-export const flushPromises = () => new Promise(setImmediate);
+export const flushPromises = () => new Promise(process.nextTick);
