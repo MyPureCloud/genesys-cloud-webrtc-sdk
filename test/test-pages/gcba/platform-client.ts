@@ -124,7 +124,8 @@ const persitentName = 'sdk_test';
       mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `bearer ${accessToken}`
+        'Authorization': `bearer ${accessToken}`,
+        'Genesys-App': 'developercenter-cdn--webrtc-sdk-webui'
       },
       body: JSON.stringify({backgroundAssistantId: "5a106b00-b2d2-466d-94ea-75a0908cadeb"})
     });
@@ -132,7 +133,7 @@ const persitentName = 'sdk_test';
     const { jwt } = await response.json();
     updateHashParams({ jwt });
   }
-  
+
   const form = document.getElementById('manual-form') as HTMLFormElement;
   const manualAuthInput = document.getElementById('manual-auth') as HTMLInputElement;
   const jwtInput = document.getElementById('jwt-input') as HTMLInputElement;
