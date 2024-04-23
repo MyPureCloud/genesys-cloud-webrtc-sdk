@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.6...HEAD)
 
-# [v9.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.5...v9.0.6)
+# [v9.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.5...v9.0.6)
 ### Added
 * [PCM-2345](https://inindca.atlassian.net/browse/PCM-2345) - Added ability to pass in custom headers for telemetry purposes (internal use only). Bumped streaming-client and client-logger.
 
