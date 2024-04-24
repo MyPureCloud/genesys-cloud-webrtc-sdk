@@ -253,7 +253,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       return { conversationId: response.data.conversationId };
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
-      this.log('error', 'Failed to request video session', err);
+      this.log('error', 'Failed to request video meeting session', err);
       throw err;
     }
   }
@@ -273,7 +273,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       return { conversationId: response.data.conversationId };
     } catch (err) {
-      this.log('error', 'Failed to request video session', err);
+      this.log('error', 'Failed to request video conference session', err);
       throw err;
     }
   }
@@ -281,14 +281,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     // if we requested the session dont emit a pending session
     if (this.requestedSessions[pendingSession.originalRoomJid]) {
-      logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
+      logPendingSession(this.sdk.logger, 'Propose received for requested video conference session, accepting automatically', pendingSession, 'debug');
       delete this.requestedSessions[pendingSession.originalRoomJid];
       await this.proceedWithSession(pendingSession);
       return;
     }
 
     if (this.requestedMeetingSessions[pendingSession.meetingId]) {
-      logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
+      logPendingSession(this.sdk.logger, 'Propose received for requested video meeting session, accepting automatically', pendingSession, 'debug');
       delete this.requestedMeetingSessions[pendingSession.meetingId];
       await this.proceedWithSession(pendingSession);
       return;
