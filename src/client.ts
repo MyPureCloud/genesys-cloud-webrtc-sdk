@@ -366,11 +366,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise with an object with the newly created `conversationId`
    */
   async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
-    if (!this.isGuest) {
-      return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
-    } else {
+    if (this.isGuest) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }
+
+    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
   }
 
   /**
@@ -385,11 +385,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise with an object with the newly created 'conversationId'
    */
   async startVideoMeeting (meetingId: string): Promise<{ conversationId: string }> {
-    if (!this.isGuest) {
-      return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
-    } else {
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
+    if (this.isGuest) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing meetings not supported for guests');
     }
+
+    return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
   }
 
   /**
