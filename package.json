@@ -57,7 +57,6 @@
   "dependencies": {
     "@babel/runtime": "^7.24.4",
     "@babel/runtime-corejs3": "^7.24.4",
-    "backoff-web": "^1.0.1",
     "browserama": "^3.2.2",
     "core-js": "^3.37.0",
     "genesys-cloud-client-logger": "^4.2.12",
@@ -84,7 +83,6 @@
     "@types/lodash": "^4.17.0",
     "@types/nock": "^11.1.0",
     "@types/node": "^15.12.0",
-    "@types/safe-json-stringify": "^1.1.0",
     "@types/uuid": "^3.4.9",
     "@types/webrtc": "^0.0.30",
     "@types/ws": "^7.2.9",
@@ -114,12 +112,7 @@
     "ts-jest": "^27.1.5",
     "ts-node": "^10.9.2",
     "typescript": "^4.0.5",
-    "uglify-js": "^3.17.4",
-    "vinyl-buffer": "^1.0.1",
-    "vinyl-source-stream": "^2.0.0",
-    "watch": "^1.0.2",
     "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.5",
     "ws": "^7.4.0"
   },
   "false": {}
