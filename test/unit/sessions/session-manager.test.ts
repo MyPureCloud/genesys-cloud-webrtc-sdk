@@ -4,7 +4,6 @@ import { SimpleMockSdk, createPendingSession, MockSession, MockStream, MockTrack
 import { SessionTypes } from '../../../src/types/enums';
 import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState, VideoMediaSession } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
-import uuid from 'uuid';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
 import VideoSessionHandler from '../../../src/sessions/video-session-handler';
 

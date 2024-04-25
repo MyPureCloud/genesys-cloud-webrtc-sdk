@@ -1,6 +1,6 @@
 /* global describe, it, beforeEach, after */
 
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import { GenesysCloudWebrtcSdk } from '../../';
 import { IExtendedMediaSession } from '../../';
@@ -110,7 +110,7 @@ describe('Softphone Via WebRTC SDK [sdk] [stable]', function () {
     await peerTrackAdded;
     await wait(200); // we have to wait for some async tasks to finish before the `_outputAudioElement` is available
 
-    const id = 'audio-' + uuid();
+    const id = 'audio-' + uuidv4();
     session._outputAudioElement.id = id;
     const autoAttachedMediaEl = await testUtils.pollForTruthy(() => document.querySelector(`audio#${id}`));
     if (!autoAttachedMediaEl) {

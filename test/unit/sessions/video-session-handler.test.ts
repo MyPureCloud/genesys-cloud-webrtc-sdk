@@ -1,5 +1,5 @@
 import nock from 'nock';
-import uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
@@ -1389,10 +1389,10 @@ describe('pinParticipantVideo', () => {
       address: null as any,
       confined: null as any,
       direction: null as any,
-      id: uuid(),
+      id: uuidv4(),
       state: CommunicationStates.connected,
       purpose: 'user',
-      userId: uuid(),
+      userId: uuidv4(),
       muted: false,
       videoMuted: false
     };

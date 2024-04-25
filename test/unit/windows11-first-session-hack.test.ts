@@ -9,13 +9,15 @@ describe("isWindows11", () => {
     Object.defineProperty(navigator, "userAgentData", {
       get: () => {
         return userAgentData;
-      }
+      },
+      configurable: true
     } as any);
   });
 
   afterAll(() => {
     Object.defineProperty(navigator, "userAgentData", {
-      get: originalUserAgentData
+      get: originalUserAgentData,
+      configurable: true
     } as any);
   });
 
