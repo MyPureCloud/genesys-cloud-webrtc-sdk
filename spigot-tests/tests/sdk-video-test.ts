@@ -1,5 +1,5 @@
 import * as testUtils from './utils/test-utils';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { IExtendedMediaSession } from '../../';
 
 const logger = testUtils.getLogger();
@@ -29,7 +29,7 @@ describe('Video Via WebRTC SDK [videosdk] [sdk] [stable]', function () {
 
     let conversationId;
     const audioElement = document.createElement('audio');
-    const randomId = uuid();
+    const randomId = uuidv4();
     audioElement.classList.add(randomId + '-audio');
     const videoElement = document.createElement('video');
     videoElement.classList.add(randomId + '-video');
