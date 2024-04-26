@@ -3,11 +3,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.5...HEAD)
-### Added
-* [PCM-2345](https://inindca.atlassian.net/browse/PCM-2345) - Added ability to pass in custom headers for telemetry purposes (internal use only). Bumped streaming-client and client-logger.
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.6...HEAD)
 ### Changed
 * [no-jira] Update uuid to v9.0.1
+
+# [v9.0.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.5...v9.0.6)
+### Added
+* [PCM-2345](https://inindca.atlassian.net/browse/PCM-2345) - Added ability to pass in custom headers for telemetry purposes (internal use only). Bumped streaming-client and client-logger.
 
 # [v9.0.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.4...v9.0.5)
 ### Added
