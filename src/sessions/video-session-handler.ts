@@ -253,7 +253,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       return { conversationId: response.data.conversationId };
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
-      this.log('error', 'Failed to request video meeting session', err);
+      this.log('error', 'Failed to request video conference session', err);
       throw err;
     }
   }
@@ -273,7 +273,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       return { conversationId: response.data.conversationId };
     } catch (err) {
-      this.log('error', 'Failed to request video conference session', err);
+      this.log('error', 'Failed to request video meeting session', err);
       throw err;
     }
   }
