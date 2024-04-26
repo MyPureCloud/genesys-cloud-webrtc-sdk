@@ -7,6 +7,7 @@ module.exports = {
     '<rootDir>/test/unit/**/*.(ts|js)',
     '<rootDir>/test/integration/**/*.(ts|js)'
   ],
+  testEnvironment: 'jsdom',
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest'
