@@ -1491,7 +1491,7 @@ describe('emitConversationEvent()', () => {
   beforeEach(() => {
     conversationState = {
       conversationId: 'convo-id',
-      session: undefined,
+      session: { id: '345' } as IExtendedMediaSession,
       conversationUpdate: new ConversationUpdate({ participants: [] }),
       mostRecentUserParticipant: undefined,
       mostRecentCallState: undefined
