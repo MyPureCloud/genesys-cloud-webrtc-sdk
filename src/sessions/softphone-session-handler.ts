@@ -1,4 +1,4 @@
-import { pick, debounce, DebouncedFunc } from 'lodash';
+import { cloneDeep, debounce, DebouncedFunc } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -378,7 +378,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       conversationState['sessionId'] = sessionId;
     };
 
-    const updateForLogging = { ...update };
+    const updateForLogging = cloneDeep(update);
     updateForLogging.added.forEach(replaceSession);
     updateForLogging.removed.forEach(replaceSession);
     updateForLogging.current.forEach(replaceSession);
