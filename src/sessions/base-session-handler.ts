@@ -175,7 +175,7 @@ export default abstract class BaseSessionHandler {
     this.log('info', 'ending session', { sessionId: session.id, sessionConversationId: session.conversationId, reason, sessionType: session.sessionType });
 
     return new Promise<void>((resolve) => {
-      session.once('terminated', (reason) => {
+      session.once('terminated', () => {
         resolve();
       });
       return session.end(reason);

@@ -15,7 +15,6 @@ import {
   SdkMediaEventTypes,
   SdkMediaTypesToRequest
 } from '../types/interfaces';
-import { MediaStat } from 'genesys-cloud-streaming-client';
 
 declare const window: {
   navigator: {
@@ -1397,7 +1396,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private setupDefaultMediaTrackListeners (stream: MediaStream, track: MediaStreamTrack): void {
     const origStop = track.stop.bind(track);
 
-    const endedListener = (_) => {
+    const endedListener = () => {
       this.sdk.logger.warn('stopping defaults.audioStream track from track.onended. removing from default stream', track);
       stopAndRemoveTrack(track);
     };
