@@ -371,7 +371,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     this.sdk.emit('conversationUpdate', currentEmittedEvent);
   }
 
-  private pruneConversationUpdateForLogging (update: ISdkConversationUpdateEvent): unknown {
+  private pruneConversationUpdateForLogging (update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
     const replaceSession = (conversationState: IStoredConversationState) => {
       const sessionId = conversationState.session.id;
       delete conversationState.session;
