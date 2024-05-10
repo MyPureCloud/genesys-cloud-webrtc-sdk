@@ -1544,6 +1544,23 @@ describe('emitConversationEvent()', () => {
   });
 });
 
+describe('pruneConversationUpdateForLogging', () => {
+  it('should not remove session from original update', () => {
+    const lastEmittedSdkConversationEvent = {
+      current: [
+        { conversationId: 'convo1', session: { id: 'session1' }},
+        { conversationId: 'convo2', session: { id: 'session2' }}
+      ],
+      added: [],
+      removed: []
+    } as unknown as ISdkConversationUpdateEvent;
+
+    const prunedConvo = handler['pruneConversationUpdateForLogging'](lastEmittedSdkConversationEvent) as any;
+
+    expect(lastEmittedSdkConversationEvent.current[0].session).toBeTruthy();
+  });
+});
+
 describe('determineActiveConversationId()', () => {
   let connectedCall: ICallStateFromParticipant;
 
