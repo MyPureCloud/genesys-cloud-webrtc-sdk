@@ -233,6 +233,14 @@ export interface ISdkFullConfig {
   */
   customHeaders?: ICustomHeader;
 
+  /**
+   * Controls whether to attempt to use `ping` stanzas from the server or the client.
+   * When `true`, `ping` stanzas from the server will be requested. If `false` (or unsupported by the server), the client will send `ping` stanzas.
+   *
+   * Optional: default `true`
+   */
+  useServerSidePings?: boolean;
+
   /** defaults for various SDK functionality */
   defaults?: {
 
