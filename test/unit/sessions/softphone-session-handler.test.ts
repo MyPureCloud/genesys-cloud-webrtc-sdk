@@ -1491,7 +1491,7 @@ describe('emitConversationEvent()', () => {
   beforeEach(() => {
     conversationState = {
       conversationId: 'convo-id',
-      session: undefined,
+      session: { id: '345' } as IExtendedMediaSession,
       conversationUpdate: new ConversationUpdate({ participants: [] }),
       mostRecentUserParticipant: undefined,
       mostRecentCallState: undefined
@@ -1541,6 +1541,23 @@ describe('emitConversationEvent()', () => {
     handler.conversations[conversationState.conversationId] = conversationState;
     expectedEvent.current.push(conversationState);
     handler.emitConversationEvent('updated', conversationState, undefined as any);
+  });
+});
+
+describe('pruneConversationUpdateForLogging', () => {
+  it('should not remove session from original update', () => {
+    const lastEmittedSdkConversationEvent = {
+      current: [
+        { conversationId: 'convo1', session: { id: 'session1' }},
+        { conversationId: 'convo2', session: { id: 'session2' }}
+      ],
+      added: [],
+      removed: []
+    } as unknown as ISdkConversationUpdateEvent;
+
+    const prunedConvo = handler['pruneConversationUpdateForLogging'](lastEmittedSdkConversationEvent) as any;
+
+    expect(lastEmittedSdkConversationEvent.current[0].session).toBeTruthy();
   });
 });
 
