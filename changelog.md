@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.7...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.8...HEAD)
+
+# [v9.0.8](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.7...v9.0.8)
 ### Changed
 * [PCM-2360](https://inindca.atlassian.net/browse/PCM-2360) - removed session object from certain logs to reduce size
 * [PCM-2352](https://inindca.atlassian.net/browse/PCM-2352) - Add option to control whether to use server-side pinging
