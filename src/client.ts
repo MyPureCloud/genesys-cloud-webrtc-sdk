@@ -162,6 +162,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         allowedSessionTypes,
         useHeadsets: options.useHeadsets || false, // default false
         customHeaders: options.customHeaders,
+        useServerSidePings: defaultConfigOption(options.useServerSidePings, true),
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
