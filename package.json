@@ -46,7 +46,7 @@
     "start": "stupid-server -s -p 8443",
     "start:sample": "npm run build-run-local",
     "test": "npm run lint && npm run test:unit",
-    "test:unit": "NODE_ENV=test jest --runInBand",
+    "test:unit": "SET NODE_ENV=test & jest --runInBand",
     "test:watch": "jest --watch --collectCoverage=false --runInBand",
     "lint": "eslint -c .eslintrc.json --ext .ts src",
     "lint:fix": "npm run lint -- --fix",
@@ -67,7 +67,7 @@
     "process-fast": "^1.0.0",
     "rxjs": "^7.5.5",
     "safe-json-stringify": "^1.2.0",
-    "softphone-vendor-headsets": "^2.5.0",
+    "softphone-vendor-headsets": "^2.4.5-vendor-fixes.3",
     "strict-event-emitter-types": "^2.0.0",
     "uuid": "^9.0.1"
   },
