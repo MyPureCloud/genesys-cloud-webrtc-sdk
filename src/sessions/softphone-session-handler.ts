@@ -1,4 +1,4 @@
-import { debounce, DebouncedFunc } from 'lodash';
+import { cloneDeep, debounce, DebouncedFunc } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -303,7 +303,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (eventToEmit) {
-      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: this.conversations[conversationId], previousCallState, callState, sessionId: session?.id }, { skipServer: true });
+      const conversationUpdateForLogging = { ...this.conversations[conversationId] };
+      delete conversationUpdateForLogging.session;
+
+      this.log('debug', 'about to emit based on conversation event', { eventToEmit, update: conversationUpdateForLogging, previousCallState, callState, sessionId: session?.id }, { skipServer: true });
       this.emitConversationEvent(eventToEmit, this.conversations[conversationId], session);
     }
   }
@@ -360,10 +363,26 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     currentEmittedEvent.activeConversationId = this.determineActiveConversationId(session);
 
-    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: this.lastEmittedSdkConversationEvent, currentEmittedEvent, sessionId: session?.id }, { skipServer: true });
+    const previousEventForLogging = this.pruneConversationUpdateForLogging(this.lastEmittedSdkConversationEvent);
+    const currentEventForLogging = this.pruneConversationUpdateForLogging(currentEmittedEvent);
+    this.log('debug', 'emitting `conversationUpdate`', { event, previousEmittedEvent: previousEventForLogging, currentEmittedEvent: currentEventForLogging, sessionId: session?.id }, { skipServer: true });
     this.lastEmittedSdkConversationEvent = currentEmittedEvent;
 
     this.sdk.emit('conversationUpdate', currentEmittedEvent);
+  }
+
+  private pruneConversationUpdateForLogging (update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
+    const replaceSession = (conversationState: IStoredConversationState) => {
+      const sessionId = conversationState.session.id;
+      delete conversationState.session;
+      conversationState['sessionId'] = sessionId;
+    };
+
+    const updateForLogging = cloneDeep(update);
+    updateForLogging.added.forEach(replaceSession);
+    updateForLogging.removed.forEach(replaceSession);
+    updateForLogging.current.forEach(replaceSession);
+    return updateForLogging;
   }
 
   determineActiveConversationId (session?: IExtendedMediaSession): string {
@@ -658,11 +677,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       const terminatedPromise = new Promise<JingleReason>((resolve) => {
         const listener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
           if (endedSession.id === session.id && endedSession.conversationId === conversationId) {
-            this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', { endedSession, conversationId, session}, { skipServer: true });
+            this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', { endedSessionId: endedSession.id, conversationId}, { skipServer: true });
             this.sdk.off('sessionEnded', listener);
             return resolve(reason);
           } else {
-            this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', { endedSession, conversationId, session}, { skipServer: true});
+            this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', { endedSessionId: endedSession.id, conversationId, sessionId: session.id}, { skipServer: true});
           }
         }
 
