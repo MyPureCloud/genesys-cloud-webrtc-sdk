@@ -55,18 +55,6 @@ interface MockApiReturns {
   mockCustomerData?: ICustomerData;
 }
 
-// polyfill window.getRandomValues() for node (because we are using jest)
-// Object.defineProperty(global, 'crypto', {
-//   value: {
-//     getRandomValues: function (rawBytes: Uint8Array) {
-//       const buffer = crypto.randomBytes(rawBytes.length);
-//       for (let i = 0; i < rawBytes.length; i++) {
-//         rawBytes[i] = buffer[i];
-//       }
-//     }
-//   }
-// });
-
 let wss: WebSocketServer | undefined;
 let ws: WebSocket;
 let mockAxios: AxiosMockAdapter;
