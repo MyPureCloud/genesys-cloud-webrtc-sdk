@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 import {
   ISdkConfig,
