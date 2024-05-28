@@ -331,7 +331,7 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
     wss = undefined;
   }
 
-  wss = new WebSocketServer({ port: 8080 });
+  wss = new WebSocketServer({ port: 1234 });
 
   let openSockets = 0;
   const hash = random().toString().substr(0, 4);

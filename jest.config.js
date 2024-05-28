@@ -8,6 +8,9 @@ module.exports = {
     '<rootDir>/test/integration/**/*.(ts|js)'
   ],
   testEnvironment: 'jsdom',
+  testEnvironmentOptions: {
+    customExportConditions: ['node'],
+  },
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest'
@@ -17,7 +20,6 @@ module.exports = {
     // '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
   ],
   setupFiles: [
-    './jest.setup.js'
   ],
   collectCoverage: true,
   collectCoverageFrom: [
