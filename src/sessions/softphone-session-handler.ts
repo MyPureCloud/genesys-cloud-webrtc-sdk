@@ -541,7 +541,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
 
     /* If LA>1, hold other active sessions in favor of the latest we're accepting. */
-    if (!lineAppearance1) {
+    if (!lineAppearance1 && !session.reinvite) {
       this.holdOtherSessions(session);
     }
     /* if we have an active non-concurrent session, we can drop this accept on the floor */

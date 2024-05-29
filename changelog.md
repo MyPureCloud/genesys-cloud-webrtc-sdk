@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-73](https://inindca.atlassian.net/browse/STREAM-73) - fix for issue where Sennheiser/EPOS devices maintained a mute state when starting a new call
 * [STREAM-74](https://inindca.atlassian.net/browse/STREAM-73) - fix for issue where the WebHID permission modal popped up constantly for Jabra
+### Changed
+* [WEBRTCS-1106](https://inindca.atlassian.net/browse/WEBRTCS-1106) - bump streaming client for reinvite functionality
 
 # [v9.0.8](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.7...v9.0.8)
 ### Changed
