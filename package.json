@@ -37,8 +37,8 @@
     "build": "ts-node scripts/build.ts",
     "build:cjs": "tsc -p .",
     "build:es": "tsc -p . --outDir ./dist/es --target es2015 --module es2015",
-    "build:cdn": "webpack --env.cdn && webpack --env.cdn --env.production",
-    "build:rollup": "rollup -c",
+    "build:cdn": "webpack --env cdn && webpack --env cdn --env production",
+    "build:rollup": "rollup -c --bundleConfigAsCjs",
     "build:sample": "./test/test-pages/build.sh",
     "build:watch": "tsc -p . && webpack --watch",
     "build-run-local": "concurrently \"./test/test-pages/build-dev.sh\" \"npm start\"",
@@ -115,6 +115,7 @@
     "tslib": "^2.6.2",
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
     "ws": "^8.17.0"
   },
   "false": {}
