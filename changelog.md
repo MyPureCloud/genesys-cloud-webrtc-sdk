@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [no-jira] Use default of `false` for `useServerSidePings`
 * [WEBRTCS-1106](https://inindca.atlassian.net/browse/WEBRTCS-1106) - bump streaming client for reinvite functionality
+* [STREAM-82](https://inindca.atlassian.net/browse/STREAM-82) - Updated lots of dependencies. For full list, see attached ticket.
 
 # [v9.0.8](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.7...v9.0.8)
 ### Changed

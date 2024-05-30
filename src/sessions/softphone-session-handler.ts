@@ -526,7 +526,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
         // if this fails, we don't want it to mess up anything up.
         this.forceEndSession(oldSession, JingleReasons.alternativeSession)
-          .catch(e => {
+          .catch(() => {
             this.log('warn', 'failed to force terminate the session that was replaced by a reinvite', oldSession);
           });
       }
@@ -815,7 +815,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     * connection that will attempt to hold the previous ended call
     */
     const otherSessions = sessions.filter(session => {
-      return session.sessionType === SessionTypes.softphone && 
+      return session.sessionType === SessionTypes.softphone &&
         this.conversations[session.conversationId] &&
         !this.isConversationHeld(session.conversationId) &&
         session !== currentSession;

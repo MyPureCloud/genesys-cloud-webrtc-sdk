@@ -8,7 +8,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
-import { IExtendedMediaSession, VideoMediaSession } from '../../../src/types/interfaces';
+import { VideoMediaSession } from '../../../src/types/interfaces';
 
 let handler: ScreenShareSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;

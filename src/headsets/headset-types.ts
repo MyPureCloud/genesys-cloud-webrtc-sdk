@@ -1,5 +1,4 @@
 /* istanbul ignore file */
-import { GenesysMediaMessage, TypedJsonRpcMessage } from "genesys-cloud-streaming-client";
 import { Observable } from "rxjs";
 import { DeviceConnectionStatus, EventInfoWithConversationId, HeadsetEvents, HoldEventInfo, MutedEventInfo, VendorImplementation, WebHidPermissionRequest } from "softphone-vendor-headsets";
 

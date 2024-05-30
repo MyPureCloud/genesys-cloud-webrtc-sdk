@@ -1,17 +1,16 @@
 import { Constants } from 'stanza';
-
 import {
   IPendingSession,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
   IAcceptSessionRequest,
-  IUpdateOutgoingMedia,
-  ScreenRecordingMetadata
+  ScreenRecordingMetadata,
+  IUpdateOutgoingMedia
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
-import { first, fromEvent, takeUntil, takeWhile } from 'rxjs';
+import { first, fromEvent, takeWhile } from 'rxjs';
 
 export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -38,7 +37,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
   async acceptSession (session: ScreenRecordingMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const mediaStream = params.mediaStream;
-    
+
     if (!mediaStream) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept screen recording session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
     }
@@ -81,7 +80,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${this.sessionType} must be ended remotely`, { conversationId });
   }
 
-  updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
+  updateOutgoingMedia (session: IExtendedMediaSession,  options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for screen recording sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for screen recording sessions');
   }
@@ -102,7 +101,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
       meta.trackId = transceiver.mid;
     });
-    
+
     const data = JSON.stringify({
       participantJid: getBareJid(this.sdk),
       metaData: metadatas,
