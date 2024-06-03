@@ -10,7 +10,7 @@ import {
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
-import { first, fromEvent, takeWhile } from 'rxjs';
+import { filter, fromEvent, take, takeWhile } from 'rxjs';
 
 export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -68,12 +68,18 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
         takeWhile(() => {
           return !isPeerConnectionDisconnected(session.peerConnection.connectionState);
         }),
-        first(() => {
+        filter(() => {
           return session.peerConnection.connectionState === 'connected';
-        })
-      ).subscribe(async () => {
-        await this.updateScreenRecordingMetadatas(session, metadatas);
+        }),
+        take(1)
+      ).subscribe({
+        next: async () => await this.updateScreenRecordingMetadatas(session, metadatas),
+        error: (e) => this._logSubscriptionError(e)
       });
+  }
+
+  _logSubscriptionError(e: any) {
+    // This is simply so we can test for thrown exceptions with an RXJS subscription
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
