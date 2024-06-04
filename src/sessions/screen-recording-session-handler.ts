@@ -63,6 +63,8 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   }
 
   private sendMetadataWhenSessionConnects (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    // We really only want to ignore the error handling (because that should never execute), but putting an ignore closer to that line doesn't properly ignore it
+    /* istanbul ignore next */
     fromEvent(session.peerConnection, 'connectionstatechange')
       .pipe(
         takeWhile(() => {
@@ -78,8 +80,9 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
       });
   }
 
-  _logSubscriptionError(e: any) {
-    // This is simply so we can test for thrown exceptions with an RXJS subscription
+  /* istanbul ignore next */
+  _logSubscriptionError(e: unknown) {
+    // This is for testing thrown exceptions with an RXJS subscription
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
