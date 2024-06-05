@@ -73,7 +73,7 @@ webappPipeline {
     chatGroupId = chatGroupId
     useSkynetV2 = true
 
-    nodeVersion = '14.x'
+    nodeVersion = '18.x'
     buildType = getBranchType
 
     manifest = customManifest('dist') {

@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 import {
   ISdkConfig,
@@ -162,7 +162,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         allowedSessionTypes,
         useHeadsets: options.useHeadsets || false, // default false
         customHeaders: options.customHeaders,
-        useServerSidePings: defaultConfigOption(options.useServerSidePings, true),
+        useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,

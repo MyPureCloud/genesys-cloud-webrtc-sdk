@@ -8,7 +8,7 @@ import StreamingClient, { IPendingSession } from 'genesys-cloud-streaming-client
 import { Logger } from 'genesys-cloud-client-logger';
 import * as clientPrivate from '../../src/client-private';
 import * as windows11Utils from '../../src/windows11-first-session-hack';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 import { SessionManager } from '../../src/sessions/session-manager';
 import { MockStream, MockSession, random } from '../test-utils';
@@ -1334,7 +1334,7 @@ describe('Client', () => {
       proxySpy = jest.spyOn(clientPrivate, 'proxyStreamingClientEvents').mockResolvedValue();
       requestSpy = jest.spyOn(utils, 'requestApi');
     });
-    
+
     it('should init with jwt', async () => {
       jwtDecodeSpy.mockReturnValue({
         name: 'scooby',
