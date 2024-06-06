@@ -1559,6 +1559,19 @@ describe('pruneConversationUpdateForLogging', () => {
 
     expect(lastEmittedSdkConversationEvent.current[0].session).toBeTruthy();
   });
+
+  it('should not throw if a session does not exist', () => {
+    const lastEmittedSdkConversationEvent = {
+      current: [
+        { conversationId: 'convo1' },
+        { conversationId: 'convo2' }
+      ],
+      added: [],
+      removed: []
+    } as unknown as ISdkConversationUpdateEvent;
+
+    expect(() => handler['pruneConversationUpdateForLogging'](lastEmittedSdkConversationEvent)).not.toThrow();
+  })
 });
 
 describe('determineActiveConversationId()', () => {
