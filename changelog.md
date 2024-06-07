@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.0...HEAD)
+### Fixed
+* [STREAM-97](https://inindca.atlassian.net/browse/STREAM-97) - fix for pruning conversation events for logging when a session doesn't exist
 
 # [v9.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.8...v9.1.0)
 ### Fixed
