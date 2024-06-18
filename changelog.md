@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.1...HEAD)
 ### Fixed
 * [STREAM-22](https://inindca.atlassian.net/browse/STREAM-22) - fix for unhandled exception thrown from RXJS `first` operator when there are no elements from the Observable
+* [STREAM-108](https://inindca.atlassian.net/browse/STREAM-108) - Update ws to address Snyk vulnerability
 
 # [v9.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.0...v9.1.1)
 ### Fixed
