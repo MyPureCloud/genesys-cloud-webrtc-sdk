@@ -1,10 +1,11 @@
 import './App.css'
+import Auth from './components/Auth';
 
 function App() {
 
   return (
     <div className='app-wrapper'>
-      <h1>test</h1>
+      <Auth />
     </div>
   )
 }
