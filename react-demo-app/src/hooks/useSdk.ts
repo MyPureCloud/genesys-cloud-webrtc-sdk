@@ -1,5 +1,6 @@
 import { GenesysCloudWebrtcSdk, ISdkConfig, ISdkConversationUpdateEvent } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 interface IAuthData {
   token: string,
@@ -11,6 +12,7 @@ interface IAuthData {
 
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
+  const navigate = useNavigate();
 
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {
@@ -28,6 +30,7 @@ export default function useSdk() {
     connectEventHandlers();
 
     await webrtcSdk.initialize();
+    navigate('/dashboard');
   }
 
   function connectEventHandlers() {

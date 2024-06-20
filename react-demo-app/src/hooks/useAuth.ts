@@ -27,6 +27,13 @@ export const environments = {
 
 export default function useAuth() {
   const { initWebrtcSDK } = useSdk();
+
+
+  useEffect(() => {
+    if (localStorage.getItem('sdk_test_auth_data')) {
+      authenticateImplicitly('dca');
+    }
+  }, []);
   async function checkAuthToken (auth: any) {
     const token = auth.token;
     if (!auth.token) {
