@@ -1,0 +1,19 @@
+.card {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex; /* Use flexbox for layout */
+  flex-direction: column; /* Stack content vertically by default */
+}
+
+.card-content {
+  flex: 1; /* Allow content to grow and fill remaining space */
+}
+
+@media (max-width: 768px) {
+  .card {
+    max-width: 100%;
+  }
+}

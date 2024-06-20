@@ -47,6 +47,14 @@ export default function useSdk() {
     webrtcSdk.on("conversationUpdate", (event: ISdkConversationUpdateEvent) => handleConversationUpdate(event));
   }
 
+  function startSoftphoneSession(phoneNumber: string) {
+    if (!phoneNumber) {
+      console.error("Must enter a valid phone number.");
+      return;
+    }
+    window['webrtcSdk'].startSoftphoneSession({ phoneNumber });
+  }
+
   function handlePendingSession(pendingSession) {}
 
   function pendingSessionHandled() {}
@@ -61,5 +69,5 @@ export default function useSdk() {
 
   function handleConversationUpdate(update: ISdkConversationUpdateEvent) {}
 
-  return { initWebrtcSDK }
+  return { initWebrtcSDK, startSoftphoneSession }
 }
