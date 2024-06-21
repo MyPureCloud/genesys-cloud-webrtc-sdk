@@ -14,12 +14,13 @@ export default function Softphone() {
   return (
     <>
       <h1>Softphone</h1>
-      <div className='place-call'>
+      <Card className={undefined}>
         <form onSubmit={placeCall}>
+          <label>Place Call</label>
           <input type='text' value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
           <button type='submit'>Place Call</button>
         </form>
-      </div>
+      </Card>
     </>
   )
 }
