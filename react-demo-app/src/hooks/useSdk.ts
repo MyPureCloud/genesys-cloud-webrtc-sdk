@@ -1,8 +1,9 @@
 import { GenesysCloudWebrtcSdk, ISdkConfig, ISdkConversationUpdateEvent, ISessionIdAndConversationId } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
+  removePendingSession,
   updatePendingSessions
 } from '../features/conversationsSlice';
 
@@ -42,8 +43,8 @@ export default function useSdk() {
     webrtcSdk.on("ready", () => console.warn('ready!'));
     webrtcSdk.on("sdkError", (error) => console.error(error))
     webrtcSdk.on("pendingSession", handlePendingSession);
-    webrtcSdk.on("cancelPendingSession", (pendingSession) => handlePendingSession(pendingSession));
-    webrtcSdk.on("handledPendingSession", pendingSessionHandled);
+    webrtcSdk.on("cancelPendingSession", handleCancelPendingSession);
+    webrtcSdk.on("handledPendingSession", handleCancelPendingSession);
     webrtcSdk.on("sessionStarted", handleSessionStarted);
     webrtcSdk.on("sessionEnded", (session) => handleSessionEnded(session));
     // webrtcSdk.on('trace', trace);
@@ -64,8 +65,10 @@ export default function useSdk() {
     console.warn('pending session: ', pendingSession);
     dispatch(updatePendingSessions(pendingSession));
   }
-
-  function pendingSessionHandled() {}
+  // If a pendingSession was cancelled or handled, we can remove it from our state.
+  function handleCancelPendingSession(pendingSession) {
+    dispatch(removePendingSession(pendingSession));
+  }
 
   function handleSessionStarted() {}
 
