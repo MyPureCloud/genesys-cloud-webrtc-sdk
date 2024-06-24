@@ -30,9 +30,19 @@ export const conversationsSlice = createSlice({
     removePendingSession: (state, action) => {
       const updatedPendingSessions = state.pendingSessions.filter(session => session.conversationId !== action.payload.conversationId);
       state.pendingSessions = updatedPendingSessions;
+    },
+    updateConversations: (state, action) => {
+      const currentConversations = action.payload.current;
+      state.activeConversations = currentConversations;
+    },
+    removeConversations: (state, action) => {
+      const removedConversations = action.payload.removed;
+      for (const id in removedConversations) {
+        delete state.activeConversations[id];
+      }
     }
   }
 })
 
-export const { updatePendingSessions, removePendingSession } = conversationsSlice.actions;
+export const { updatePendingSessions, removePendingSession, updateConversations } = conversationsSlice.actions;
 export default conversationsSlice.reducer;

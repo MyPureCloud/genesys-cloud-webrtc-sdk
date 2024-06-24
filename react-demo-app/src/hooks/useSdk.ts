@@ -1,10 +1,11 @@
-import { GenesysCloudWebrtcSdk, ISdkConfig, ISdkConversationUpdateEvent, ISessionIdAndConversationId } from 'genesys-cloud-webrtc-sdk';
+import { GenesysCloudWebrtcSdk, ISdkConfig, ISdkConversationUpdateEvent } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from "react-redux";
 import {
   removePendingSession,
-  updatePendingSessions
+  updatePendingSessions,
+  updateConversations
 } from '../features/conversationsSlice';
 
 interface IAuthData {
@@ -78,7 +79,20 @@ export default function useSdk() {
 
   function handleConnected() {}
 
-  function handleConversationUpdate(update: ISdkConversationUpdateEvent) {}
+  function handleConversationUpdate(update: ISdkConversationUpdateEvent) {
+    console.warn('here is the active convo:', update);
+    dispatch(updateConversations(update));
+  }
 
-  return { initWebrtcSDK, startSoftphoneSession }
+  function endSession(conversationId: string) {
+    window['webrtcSdk'].endSession({ conversationId });
+  }
+  function toggleAudioMute(mute:boolean, conversationId: string) {
+    window['webrtcSdk'].setAudioMute({ mute, conversationId });
+  }
+  function toggleHoldState(held:boolean, conversationId: string) {
+    window['webrtcSdk'].setConversationHeld({ held, conversationId });
+  }
+
+  return { initWebrtcSDK, startSoftphoneSession, endSession, toggleAudioMute, toggleHoldState }
 }

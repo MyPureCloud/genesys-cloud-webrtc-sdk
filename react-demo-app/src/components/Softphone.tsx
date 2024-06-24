@@ -3,6 +3,7 @@ import Card from './Card';
 import './Softphone.css';
 import useSdk from '../hooks/useSdk';
 import PendingSessionsTable from './PendingSessionsTable';
+import ActiveConversationsTable from './ActiveConversationsTable';
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -28,6 +29,7 @@ export default function Softphone() {
           </form>
         </Card>
         <PendingSessionsTable></PendingSessionsTable>
+        <ActiveConversationsTable></ActiveConversationsTable>
       </div>
     </>
   );
