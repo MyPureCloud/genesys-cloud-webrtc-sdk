@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Card from './Card';
 import './Softphone.css';
 import useSdk from '../hooks/useSdk';
+import PendingSessionsTable from './PendingSessionsTable';
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -17,10 +18,15 @@ export default function Softphone() {
       <Card className={undefined}>
         <form onSubmit={placeCall}>
           <label>Place Call</label>
-          <input type='text' value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-          <button type='submit'>Place Call</button>
+          <input
+            type="text"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+          />
+          <button type="submit">Place Call</button>
         </form>
       </Card>
+      <PendingSessionsTable></PendingSessionsTable>
     </>
-  )
+  );
 }
