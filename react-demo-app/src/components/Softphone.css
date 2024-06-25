@@ -8,3 +8,9 @@
   flex-direction: column;
   width: 100%;
 }
+
+.softphone-call-btn {
+  margin-top: 0.5rem;
+  background-color: var(--primary-btn-color);
+  color: white;
+}

@@ -25,7 +25,7 @@ export default function Softphone() {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
             />
-            <button type="submit">Place Call</button>
+            <button className="softphone-call-btn" type="submit">Place Call</button>
           </form>
         </Card>
         <PendingSessionsTable></PendingSessionsTable>

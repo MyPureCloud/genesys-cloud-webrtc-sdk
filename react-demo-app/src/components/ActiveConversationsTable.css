@@ -13,6 +13,11 @@
   font-size: small;
 }
 
+.end-call-btn {
+  background-color: var(--danger-btn-color);
+  color: white;
+}
+
 @media (max-width: 768px) {
   .active-convo-table {
     font-size: 0.8rem;

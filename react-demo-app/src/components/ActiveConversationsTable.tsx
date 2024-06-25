@@ -43,7 +43,7 @@ export default function ActiveConversationsTable() {
                   <td>{convo.session.connectionState}</td>
                   <td><button onClick={() => toggleHoldState(!convo.mostRecentCallState.held, convo.conversationId)}>{convo.mostRecentCallState.held ? 'Unhold' : 'Hold'}</button></td>
                   <td><button onClick={() => toggleAudioMute(!convo.mostRecentCallState.muted, convo.conversationId)}>{convo.mostRecentCallState.muted ? 'Unmute' : 'Mute'}</button></td>
-                  <td><button onClick={() => endSession(convo.conversationId)}>End</button></td>
+                  <td><button className='end-call-btn' onClick={() => endSession(convo.conversationId)}>End</button></td>
                 </tr>
               ))}
             </tbody>

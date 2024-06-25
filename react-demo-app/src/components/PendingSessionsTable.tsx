@@ -7,6 +7,15 @@ export default function PendingSessionsTable() {
     (state) => state.conversations.pendingSessions
   );
 
+
+  function handlePendingSession(accept: boolean, conversationId: string): void {
+    if (accept) {
+      window['webrtcSdk'].acceptPendingSession({ conversationId });
+    } else {
+      window['webrtcSdk'].rejectPendingSession({ conversationId });
+    }
+  }
+
   function generatePendingSessionsTable() {
     if (!conversations.length) {
       return;
@@ -24,6 +33,8 @@ export default function PendingSessionsTable() {
                 <th>From JID</th>
                 <th>To JID</th>
                 <th>Auto Answer</th>
+                <th>Answer</th>
+                <th>Decline</th>
               </tr>
             </thead>
             <tbody>
@@ -35,6 +46,8 @@ export default function PendingSessionsTable() {
                   <td>{convo.fromJid}</td>
                   <td>{convo.toJid}</td>
                   <td>{convo.autoAnswer.toString()}</td>
+                  <td><button className="pending-answer-btn" onClick={() => handlePendingSession(true, convo.conversationId)}>Answer</button></td>
+                  <td><button className="pending-decline-btn" onClick={() => handlePendingSession(false, convo.conversationId)}>Decline</button></td>
                 </tr>
               ))}
             </tbody>
