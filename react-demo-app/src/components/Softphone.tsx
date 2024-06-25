@@ -6,7 +6,7 @@ import PendingSessionsTable from './PendingSessionsTable';
 import ActiveConversationsTable from './ActiveConversationsTable';
 
 export default function Softphone() {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('*86');
   const { startSoftphoneSession } = useSdk();
 
   function placeCall(event: React.FormEvent<HTMLFormElement>) {

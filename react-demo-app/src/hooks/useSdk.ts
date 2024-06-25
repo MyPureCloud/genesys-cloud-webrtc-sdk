@@ -7,6 +7,7 @@ import {
   updatePendingSessions,
   updateConversations
 } from '../features/conversationsSlice';
+import { updateMediaState } from '../features/devicesSlice';
 
 interface IAuthData {
   token: string,
@@ -52,6 +53,8 @@ export default function useSdk() {
     webrtcSdk.on("disconnected", handleDisconnected);
     webrtcSdk.on("connected", handleConnected);
     webrtcSdk.on("conversationUpdate", (event: ISdkConversationUpdateEvent) => handleConversationUpdate(event));
+
+    webrtcSdk.media.on('state', handleMediaStateChange);
   }
 
   function startSoftphoneSession(phoneNumber: string) {
@@ -94,5 +97,8 @@ export default function useSdk() {
     window['webrtcSdk'].setConversationHeld({ held, conversationId });
   }
 
+  function handleMediaStateChange(state) {
+    dispatch(updateMediaState(state));
+  }
   return { initWebrtcSDK, startSoftphoneSession, endSession, toggleAudioMute, toggleHoldState }
 }

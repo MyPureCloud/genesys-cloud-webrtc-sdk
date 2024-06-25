@@ -20,7 +20,6 @@ export const conversationsSlice = createSlice({
   initialState,
   reducers: {
     updatePendingSessions: (state, action) => {
-      console.warn(action.payload);
       const existingSession = state.pendingSessions.find(session => session.id === action.payload.id);
       if (!existingSession) {
         state.pendingSessions = [...state.pendingSessions, action.payload];
