@@ -5,34 +5,29 @@ import useSdk from '../hooks/useSdk';
 
 export default function Devices() {
   const deviceState = useSelector((state) => state.devices);
-  const { updateDefaultDevices } = useSdk();
-  const noDevices: JSX.Element = (
-    <p>No devices found.</p>
-  )
+  const { updateDefaultDevices, enumerateDevices, requestDevicePermissions } =
+    useSdk();
+  const noDevices: JSX.Element = <p>No devices found.</p>;
 
   function renderAudioDevices() {
     if (!deviceState.audioDevices.length) {
       return noDevices;
     }
-    const audioDeviceDropdown = (
-      <select
-        onChange={(e) =>
-          updateDefaultDevices({ audioDeviceId: e.target.value })
-        }
-      >
-        {deviceState.audioDevices.map((device) => (
-          <option key={device.deviceId} value={device.deviceId}>
-            {device.label}
-          </option>
-        ))}
-      </select>
-    );
 
     return (
-      <Card className={undefined}>
-        <h3>Microphone Devices</h3>
-        { audioDeviceDropdown }
-      </Card>
+      <>
+        <select
+          onChange={(e) =>
+            updateDefaultDevices({ audioDeviceId: e.target.value })
+          }
+        >
+          {deviceState.audioDevices.map((device) => (
+            <option key={device.deviceId} value={device.deviceId}>
+              {device.label}
+            </option>
+          ))}
+        </select>
+      </>
     );
   }
 
@@ -41,8 +36,7 @@ export default function Devices() {
       return noDevices;
     }
     return (
-      <Card className={undefined}>
-        <h3>Output Devices</h3>
+      <>
         <select
           onChange={(e) =>
             updateDefaultDevices({ outputDeviceId: e.target.value })
@@ -54,7 +48,7 @@ export default function Devices() {
             </option>
           ))}
         </select>
-      </Card>
+      </>
     );
   }
 
@@ -63,8 +57,7 @@ export default function Devices() {
       return noDevices;
     }
     return (
-      <Card className={undefined}>
-        <h3>Video Devices</h3>
+      <>
         <select
           onChange={(e) =>
             updateDefaultDevices({ videoDeviceId: e.target.value })
@@ -76,7 +69,7 @@ export default function Devices() {
             </option>
           ))}
         </select>
-      </Card>
+      </>
     );
   }
   return (
@@ -94,6 +87,24 @@ export default function Devices() {
         <Card className={undefined}>
           <h3>Video Devices</h3>
           {renderVideoDevices()}
+        </Card>
+        <Card className={'device-controls'}>
+          <h3>Media Controls</h3>
+          <button className="device-enum-btn" onClick={() => enumerateDevices()}>
+            Enumerate Devices
+          </button>
+          <button
+            className="device-permissions-btn"
+            onClick={() => requestDevicePermissions('audio')}
+          >
+            Request Audio Permissions
+          </button>
+          <button
+            className="device-permissions-btn"
+            onClick={() => requestDevicePermissions('video')}
+          >
+            Request Video Permissions
+          </button>
         </Card>
       </div>
     </>

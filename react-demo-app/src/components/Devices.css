@@ -1,10 +1,25 @@
 .devices-container {
   display: flex;
-  flex-wrap: no-wrap;
+  flex-wrap: wrap;
   margin: 1rem 0;
 }
 
 .devices-container > * {
   flex: 1 0 auto;
   margin: 0.5rem;
+}
+
+.device-controls {
+  display: flex;
+  flex-direction: column;
+
+}
+.device-enum-btn, .device-permissions-btn {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .devices-container {
+    flex-direction: column;
+  }
 }
