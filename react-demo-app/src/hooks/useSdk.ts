@@ -100,5 +100,9 @@ export default function useSdk() {
   function handleMediaStateChange(state) {
     dispatch(updateMediaState(state));
   }
-  return { initWebrtcSDK, startSoftphoneSession, endSession, toggleAudioMute, toggleHoldState }
+
+  function updateDefaultDevices (options) {
+    window['webrtcSdk'].updateDefaultDevices(options, true);
+  }
+  return { initWebrtcSDK, startSoftphoneSession, endSession, toggleAudioMute, toggleHoldState, updateDefaultDevices }
 }

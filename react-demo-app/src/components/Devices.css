@@ -1,0 +1,10 @@
+.devices-container {
+  display: flex;
+  flex-wrap: no-wrap;
+  margin: 1rem 0;
+}
+
+.devices-container > * {
+  flex: 1 0 auto;
+  margin: 0.5rem;
+}
