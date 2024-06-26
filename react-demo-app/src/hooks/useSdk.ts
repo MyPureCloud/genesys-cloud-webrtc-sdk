@@ -102,7 +102,7 @@ export default function useSdk() {
   }
 
   function updateDefaultDevices (options) {
-    window['webrtcSdk'].updateDefaultDevices(options, true);
+    window['webrtcSdk'].updateDefaultDevices({ ...options, updateActiveSessions: true });
   }
   return { initWebrtcSDK, startSoftphoneSession, endSession, toggleAudioMute, toggleHoldState, updateDefaultDevices }
 }
