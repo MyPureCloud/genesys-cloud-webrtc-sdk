@@ -1,5 +1,4 @@
-import WebSocket from 'ws';
-import crypto from 'crypto';
+import WebSocket, { WebSocketServer } from 'ws';
 import fs from 'fs';
 import path from 'path';
 import AxiosMockAdapter from 'axios-mock-adapter';
@@ -12,7 +11,7 @@ declare var global: {
   window: any,
   document: any,
   crypto: any
-} & NodeJS.Global;
+} & typeof globalThis;
 
 interface MockParticipant {
   id: string;
@@ -56,20 +55,7 @@ interface MockApiReturns {
   mockCustomerData?: ICustomerData;
 }
 
-// polyfill window.getRandomValues() for node (because we are using jest)
-Object.defineProperty(global, 'crypto', {
-  value: {
-    getRandomValues: function (rawBytes: Uint8Array) {
-      const buffer = crypto.randomBytes(rawBytes.length);
-      for (let i = 0; i < rawBytes.length; i++) {
-        rawBytes[i] = buffer[i];
-      }
-    }
-  }
-});
-
-
-let wss: WebSocket.Server | undefined;
+let wss: WebSocketServer | undefined;
 let ws: WebSocket;
 let mockAxios: AxiosMockAdapter;
 
@@ -332,9 +318,8 @@ function setupWss (opts: { guestSdk?: boolean, failStreaming?: boolean } = {}) {
     wss.close();
     wss = undefined;
   }
-  wss = new WebSocket.Server({
-    port: 1234
-  });
+
+  wss = new WebSocketServer({ port: 1234 });
 
   let openSockets = 0;
   const hash = random().toString().substr(0, 4);

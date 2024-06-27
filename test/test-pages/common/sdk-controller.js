@@ -3,7 +3,7 @@
 import { HeadsetEvents } from 'softphone-vendor-headsets';
 import { getSdk, GenesysCloudWebrtcSdk } from '../sdk-proxy';
 import utils from './utils';
-import { v4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 let videoOpts;
 let webrtcSdk;
@@ -45,7 +45,7 @@ async function initWebrtcSDK (environmentData, _conversationsApi, noAuth, withDe
 
   options.environment = environmentData.uri;
   options.logLevel = 'info';
-  options.originAppId = v4();
+  options.originAppId = uuidv4();
   options.originAppName = 'webrtc-demo-app';
   options.useHeadsets = true;
   // for sumo debugging

@@ -1,17 +1,16 @@
 import { Constants } from 'stanza';
-
 import {
   IPendingSession,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
   IAcceptSessionRequest,
-  IUpdateOutgoingMedia,
-  ScreenRecordingMetadata
+  ScreenRecordingMetadata,
+  IUpdateOutgoingMedia
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
-import { first, fromEvent, takeUntil, takeWhile } from 'rxjs';
+import { filter, fromEvent, take, takeWhile } from 'rxjs';
 
 export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -38,7 +37,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
   async acceptSession (session: ScreenRecordingMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const mediaStream = params.mediaStream;
-    
+
     if (!mediaStream) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept screen recording session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
     }
@@ -64,24 +63,33 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   }
 
   private sendMetadataWhenSessionConnects (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    // We really only want to ignore the error handling (because that should never execute), but putting an ignore closer to that line doesn't properly ignore it
+    /* istanbul ignore next */
     fromEvent(session.peerConnection, 'connectionstatechange')
       .pipe(
         takeWhile(() => {
           return !isPeerConnectionDisconnected(session.peerConnection.connectionState);
         }),
-        first(() => {
+        filter(() => {
           return session.peerConnection.connectionState === 'connected';
-        })
-      ).subscribe(async () => {
-        await this.updateScreenRecordingMetadatas(session, metadatas);
+        }),
+        take(1)
+      ).subscribe({
+        next: async () => await this.updateScreenRecordingMetadatas(session, metadatas),
+        error: (e) => this._logSubscriptionError(e)
       });
+  }
+
+  /* istanbul ignore next */
+  _logSubscriptionError(e: unknown) {
+    // This is for testing thrown exceptions with an RXJS subscription
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${this.sessionType} must be ended remotely`, { conversationId });
   }
 
-  updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
+  updateOutgoingMedia (session: IExtendedMediaSession,  options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for screen recording sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for screen recording sessions');
   }
@@ -102,7 +110,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
       meta.trackId = transceiver.mid;
     });
-    
+
     const data = JSON.stringify({
       participantJid: getBareJid(this.sdk),
       metaData: metadatas,

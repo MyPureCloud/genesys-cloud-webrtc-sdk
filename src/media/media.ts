@@ -6,7 +6,7 @@ import browserama from 'browserama';
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
 import { SdkErrorTypes } from '../types/enums';
-import uuid, { v4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import {
   IExtendedMediaSession,
   IMediaRequestOptions,
@@ -15,7 +15,6 @@ import {
   SdkMediaEventTypes,
   SdkMediaTypesToRequest
 } from '../types/interfaces';
-import { MediaStat } from 'genesys-cloud-streaming-client';
 
 declare const window: {
   navigator: {
@@ -144,7 +143,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   ): Promise<MediaStream | void> {
     const optionsCopy = (options && { ...options }) || {};
     if (!optionsCopy.uuid) {
-      optionsCopy.uuid = v4();
+      optionsCopy.uuid = uuidv4();
     }
     const requestingAudio = mediaType === 'audio';
     const requestingVideo = mediaType === 'video';
@@ -318,7 +317,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   ): Promise<MediaStream> {
     const optionsCopy = { ...mediaReqOptions };
     if (!optionsCopy.uuid) {
-      optionsCopy.uuid = v4();
+      optionsCopy.uuid = uuidv4();
     }
 
     /* `getStandardConstraints` will set media type to `truthy` if `null` was passed in */
@@ -441,7 +440,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const constraints = this.getScreenShareConstraints();
 
     const baseNrStatInfo = {
-      requestId: uuid.v4(),
+      requestId: uuidv4(),
       audioRequested: false,
       videoRequested: false,
       displayRequested: true,
@@ -1397,7 +1396,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private setupDefaultMediaTrackListeners (stream: MediaStream, track: MediaStreamTrack): void {
     const origStop = track.stop.bind(track);
 
-    const endedListener = (_) => {
+    const endedListener = () => {
       this.sdk.logger.warn('stopping defaults.audioStream track from track.onended. removing from default stream', track);
       stopAndRemoveTrack(track);
     };

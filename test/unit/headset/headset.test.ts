@@ -346,7 +346,7 @@ describe('HeadsetProxyService', () => {
       expect(spy).toHaveBeenCalledWith('newService');
 
       originalHeadsetService['_fakeObservable'].next('oldService original');
-      
+
       expect(spy).not.toHaveBeenCalledWith('oldService original');
     });
   });
@@ -496,7 +496,7 @@ describe('HeadsetProxyService', () => {
     }
 
     beforeEach(() => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ legacyFakeTimers: true });
       updateAudioSpy = proxyService.updateAudioInputDevice = jest.fn();
       broadcastSpy = proxyService['sdk']._streamingConnection.messenger.broadcastMessage as jest.Mock;
       proxyService['sdk']._config.useHeadsets = true;
@@ -589,7 +589,7 @@ describe('HeadsetProxyService', () => {
       expect(broadcastSpy).not.toHaveBeenCalled()
       expect(proxyService['orchestrationState']).toBe('alternativeClient');
     });
-    
+
     it('should send a rejection if a request is received during orchestration and is lower priority', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 
@@ -636,7 +636,7 @@ describe('HeadsetProxyService', () => {
       expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ mediaMessage: expectedMediaMessage }));
       expect(proxyService['orchestrationState']).toBe('hasControls');
     });
-    
+
     it('should send a rejection if a request is received during orchestration and is mediaHelper', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 
@@ -676,14 +676,14 @@ describe('HeadsetProxyService', () => {
       const expectedMediaMessage: HeadsetControlsChanged = {
         jsonrpc: '2.0',
         method: 'headsetControlsChanged',
-        params: { 
+        params: {
           hasControls: true
         }
       };
       expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ mediaMessage: expectedMediaMessage }));
       expect(proxyService['orchestrationState']).toBe('hasControls');
     });
-    
+
     it('should send a rejection if a request is received with higher priority but has persistentConnection and active session', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 
@@ -712,7 +712,7 @@ describe('HeadsetProxyService', () => {
       };
       expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ mediaMessage: rejection }));
     });
-    
+
     it('should do nothing if persistent connection but no active session', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 
@@ -733,7 +733,7 @@ describe('HeadsetProxyService', () => {
 
       expect(broadcastSpy).not.toHaveBeenCalledWith();
     });
-    
+
     it('should do nothing if no station', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 

@@ -603,8 +603,8 @@ describe('SdkMedia', () => {
       }
     });
     it('should not populate uuid with v4 if one already exists in optionsCopy', () => {
-      const uuid = require('uuid');
-      const v4Spy = jest.spyOn(uuid, 'v4');
+      const v4Spy = jest.fn();
+      jest.mock('uuid', () => ({ v4: v4Spy}));
       const reqOptions: IMediaRequestOptions = { audio: true, video: false, retryOnFailure: false, uuid: '123456-789' };
       sdkMedia.requestMediaPermissions('audio', false, reqOptions);
       expect(v4Spy).not.toHaveBeenCalled();

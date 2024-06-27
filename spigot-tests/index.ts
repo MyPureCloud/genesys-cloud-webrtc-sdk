@@ -12,7 +12,7 @@ import stupidServer from 'stupid-server';
 import { PuppeteerManager } from './puppeteer/launch';
 import { TestConfig } from './types/test-config';
 import sdkPkg from '../package.json';
-import { v4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 let config: TestConfig;
 
@@ -76,7 +76,7 @@ async function buildConfig () {
     apiUrl: `https://api.${envHost}/api/v2`,
     personDetailsUrl: `https://api.${envHost}/api/v2/users/me`,
     host: `wss://streaming.${envHost}`,
-    uuid: v4(),
+    uuid: uuidv4(),
     validationTimeout: 15000
   };
 
