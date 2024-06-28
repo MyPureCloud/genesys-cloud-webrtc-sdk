@@ -1,17 +1,22 @@
-import './App.css'
+import './App.css';
 import Auth from './components/Auth';
-import { Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import { useSelector } from 'react-redux';
+import { IAuthState } from './features/authSlice';
 
 function App() {
-  return (
-    <div className='app-wrapper'>
-      <Routes>
-        <Route path ='/' element={<Auth/>} />
-        <Route path ='/dashboard' element={<Dashboard />} />
-      </Routes>
-    </div>
-  )
+  const isAuthenticated = useSelector((state: IAuthState) => state.auth.isAuthenticated);
+
+  function renderDashboard() {
+    console.warn('are we authd', isAuthenticated)
+    if (isAuthenticated) {
+      return <Dashboard></Dashboard>;
+    }
+    return <Auth></Auth>;
+  }
+  return <div className="app-wrapper">
+    {renderDashboard()}
+  </div>;
 }
 
-export default App
+export default App;
