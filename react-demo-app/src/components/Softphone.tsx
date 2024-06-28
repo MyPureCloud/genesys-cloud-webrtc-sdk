@@ -4,6 +4,7 @@ import './Softphone.css';
 import useSdk from '../hooks/useSdk';
 import PendingSessionsTable from './PendingSessionsTable';
 import ActiveConversationsTable from './ActiveConversationsTable';
+import UserDetails from './UserDetails';
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState('*86');
@@ -28,6 +29,7 @@ export default function Softphone() {
             <button className="softphone-call-btn" type="submit">Place Call</button>
           </form>
         </Card>
+        {/* <UserDetails></UserDetails> */}
         <PendingSessionsTable></PendingSessionsTable>
         <ActiveConversationsTable></ActiveConversationsTable>
       </div>

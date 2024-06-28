@@ -1,8 +1,13 @@
 .softphone-container {
   display: flex;
   flex-wrap: wrap;
+  margin: 1rem 0;
 }
 
+.softphone-container > * {
+  flex: 1 0 auto;
+  margin: 0.5rem;
+}
 .card form {
   display: flex;
   flex-direction: column;

@@ -18,44 +18,46 @@ export default function PendingSessionsTable() {
 
   function generatePendingSessionsTable() {
     if (!conversations.length) {
-      return;
+      return (<p>No pending sessions.</p>);
     }
     return (
       <>
-        <Card className={undefined}>
-          <h3>Pending Sessions</h3>
-          <table className="pending-table">
-            <thead>
-              <tr>
-                <th>Conversation ID</th>
-                <th>Session ID</th>
-                <th>Session Type</th>
-                <th>From JID</th>
-                <th>To JID</th>
-                <th>Auto Answer</th>
-                <th>Answer</th>
-                <th>Decline</th>
+        <table className="pending-table">
+          <thead>
+            <tr>
+              <th>Conversation ID</th>
+              <th>Session ID</th>
+              <th>Session Type</th>
+              <th>From JID</th>
+              <th>To JID</th>
+              <th>Auto Answer</th>
+              <th>Answer</th>
+              <th>Decline</th>
+            </tr>
+          </thead>
+          <tbody>
+            {conversations.map((convo) => (
+              <tr key={convo.conversationId}>
+                <td>{convo.conversationId}</td>
+                <td>{convo.sessionId}</td>
+                <td>{convo.sessionType}</td>
+                <td>{convo.fromJid}</td>
+                <td>{convo.toJid}</td>
+                <td>{convo.autoAnswer.toString()}</td>
+                <td><button className="pending-answer-btn" onClick={() => handlePendingSession(true, convo.conversationId)}>Answer</button></td>
+                <td><button className="pending-decline-btn" onClick={() => handlePendingSession(false, convo.conversationId)}>Decline</button></td>
               </tr>
-            </thead>
-            <tbody>
-              {conversations.map((convo) => (
-                <tr key={convo.conversationId}>
-                  <td>{convo.conversationId}</td>
-                  <td>{convo.sessionId}</td>
-                  <td>{convo.sessionType}</td>
-                  <td>{convo.fromJid}</td>
-                  <td>{convo.toJid}</td>
-                  <td>{convo.autoAnswer.toString()}</td>
-                  <td><button className="pending-answer-btn" onClick={() => handlePendingSession(true, convo.conversationId)}>Answer</button></td>
-                  <td><button className="pending-decline-btn" onClick={() => handlePendingSession(false, convo.conversationId)}>Decline</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+            ))}
+          </tbody>
+        </table>
       </>
     );
   }
 
-  return <>{generatePendingSessionsTable()}</>;
+  return <>
+    <Card className={undefined}>
+      <h3>Pending Sessions</h3>
+      {generatePendingSessionsTable()}
+    </Card>
+  </>;
 }

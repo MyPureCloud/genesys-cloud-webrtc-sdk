@@ -40,7 +40,6 @@ export default function useSdk() {
     connectEventHandlers();
 
     await webrtcSdk.initialize();
-    navigate('/dashboard');
   }
 
   function connectEventHandlers() {

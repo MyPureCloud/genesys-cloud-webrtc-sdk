@@ -5,12 +5,14 @@ import useSdk from '../hooks/useSdk';
 
 export default function Devices() {
   const deviceState = useSelector((state) => state.devices);
+
+  console.warn('deviceState: ', deviceState)
   const { updateDefaultDevices, enumerateDevices, requestDevicePermissions } =
     useSdk();
   const noDevices: JSX.Element = <p>No devices found.</p>;
 
   function renderAudioDevices() {
-    if (!deviceState.audioDevices.length) {
+    if (!deviceState.currentState.audioDevices.length) {
       return noDevices;
     }
 
@@ -21,7 +23,7 @@ export default function Devices() {
             updateDefaultDevices({ audioDeviceId: e.target.value })
           }
         >
-          {deviceState.audioDevices.map((device) => (
+          {deviceState.currentState.audioDevices.map((device) => (
             <option key={device.deviceId} value={device.deviceId}>
               {device.label}
             </option>
@@ -32,7 +34,7 @@ export default function Devices() {
   }
 
   function renderOutputDevices() {
-    if (!deviceState.outputDevices.length) {
+    if (!deviceState.currentState.outputDevices.length) {
       return noDevices;
     }
     return (
@@ -42,7 +44,7 @@ export default function Devices() {
             updateDefaultDevices({ outputDeviceId: e.target.value })
           }
         >
-          {deviceState.outputDevices.map((device) => (
+          {deviceState.currentState.outputDevices.map((device) => (
             <option key={device.deviceId} value={device.deviceId}>
               {device.label}
             </option>
@@ -53,7 +55,7 @@ export default function Devices() {
   }
 
   function renderVideoDevices() {
-    if (!deviceState.videoDevices.length) {
+    if (!deviceState.currentState.videoDevices.length) {
       return noDevices;
     }
     return (
@@ -63,7 +65,7 @@ export default function Devices() {
             updateDefaultDevices({ videoDeviceId: e.target.value })
           }
         >
-          {deviceState.videoDevices.map((device) => (
+          {deviceState.currentState.videoDevices.map((device) => (
             <option key={device.deviceId} value={device.deviceId}>
               {device.label}
             </option>
@@ -75,20 +77,9 @@ export default function Devices() {
   return (
     <>
       <h1>Devices</h1>
+      <h4>Media State Updates: {deviceState.stateChanges}</h4>
       <div className="devices-container">
-        <Card className={undefined}>
-          <h3>Audio Devices</h3>
-          {renderAudioDevices()}
-        </Card>
-        <Card className={undefined}>
-          <h3>Output Devices</h3>
-          {renderOutputDevices()}
-        </Card>
-        <Card className={undefined}>
-          <h3>Video Devices</h3>
-          {renderVideoDevices()}
-        </Card>
-        <Card className={'device-controls'}>
+      <Card className={'device-controls'}>
           <h3>Media Controls</h3>
           <button className="device-enum-btn" onClick={() => enumerateDevices()}>
             Enumerate Devices
@@ -106,6 +97,19 @@ export default function Devices() {
             Request Video Permissions
           </button>
         </Card>
+        <Card className={undefined}>
+          <h3>Audio Devices</h3>
+          {renderAudioDevices()}
+        </Card>
+        <Card className={undefined}>
+          <h3>Output Devices</h3>
+          {renderOutputDevices()}
+        </Card>
+        <Card className={undefined}>
+          <h3>Video Devices</h3>
+          {renderVideoDevices()}
+        </Card>
+
       </div>
     </>
   );
