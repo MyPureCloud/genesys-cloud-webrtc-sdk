@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.2...HEAD)
+
+# [v9.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.1...v9.1.2)
 ### Fixed
 * [STREAM-22](https://inindca.atlassian.net/browse/STREAM-22) - fix for unhandled exception thrown from RXJS `first` operator when there are no elements from the Observable
 * [STREAM-108](https://inindca.atlassian.net/browse/STREAM-108) - Update ws to address Snyk vulnerability
