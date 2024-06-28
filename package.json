@@ -60,7 +60,7 @@
     "browserama": "^3.2.2",
     "core-js": "^3.37.1",
     "genesys-cloud-client-logger": "^4.2.12",
-    "genesys-cloud-streaming-client": "^17.2.0",
+    "genesys-cloud-streaming-client": "^17.2.2",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "process-fast": "^1.0.0",
@@ -116,7 +116,7 @@
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4",
-    "ws": "^8.17.0"
+    "ws": "^8.17.1"
   },
   "false": {}
 }
