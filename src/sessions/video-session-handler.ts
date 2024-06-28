@@ -261,6 +261,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
   private async startVideoMeetingSession (startParams: IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
     const participant = { address: this.sdk._personDetails.chat.jabberId };
     const data = JSON.stringify({
+      meetingId: startParams.meetingId,
       participant
     });
 

@@ -250,7 +250,7 @@ describe('Client', () => {
         await sdk.startVideoMeeting('123');
         fail('should have failed');
       } catch (e) {
-        expect(e).toEqual(new Error('video conferencing not supported for guests'));
+        expect(e).toEqual(new Error('video conferencing meetings not supported for guests'));
         expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
       }
     });

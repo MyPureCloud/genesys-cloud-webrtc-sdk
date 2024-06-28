@@ -449,7 +449,7 @@ describe('startSession', () => {
     const logSpy = jest.spyOn(mockSdk.logger, 'error');
     await expect(handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
-    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything(), undefined);
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video conference session', expect.anything(), undefined);
   });
 
   it('should post to video meeting api', async () => {
@@ -488,7 +488,7 @@ describe('startSession', () => {
     const logSpy = jest.spyOn(mockSdk.logger, 'error');
     await expect(handler.startSession({ meetingId: meetingId, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
-    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything(), undefined);
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video meeting session', expect.anything(), undefined);
   });
 });
 
