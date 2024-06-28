@@ -4,7 +4,6 @@ import {
   ISdkConversationUpdateEvent,
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
-import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import {
   removePendingSession,
@@ -23,7 +22,6 @@ interface IAuthData {
 
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   async function initWebrtcSDK(authData: IAuthData) {
