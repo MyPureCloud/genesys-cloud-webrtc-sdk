@@ -116,6 +116,9 @@ export default function useSdk() {
   function requestDevicePermissions(type: string): void {
     window['webrtcSdk'].media.requestMediaPermissions(type);
   }
+  function updateAudioVolume(volume: string): void {
+    window['webrtcSdk'].updateAudioVolume(volume);
+  }
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -125,5 +128,6 @@ export default function useSdk() {
     updateDefaultDevices,
     enumerateDevices,
     requestDevicePermissions,
+    updateAudioVolume
   };
 }

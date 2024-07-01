@@ -1,0 +1,16 @@
+.audio-devices-container {
+  display: flex;
+}
+
+.audio-device-list {
+  display: flex;
+  align-items: center;
+  margin: 0.5rem;
+}
+
+.audio-device-volume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.5rem;
+}
