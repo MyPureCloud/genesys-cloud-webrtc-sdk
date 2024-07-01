@@ -10,7 +10,7 @@ import {
   updatePendingSessions,
   updateConversations,
 } from '../features/conversationsSlice';
-import { updateMediaState } from '../features/devicesSlice';
+import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 
 interface IAuthData {
   token: string;
@@ -58,6 +58,7 @@ export default function useSdk() {
     );
 
     webrtcSdk.media.on('state', handleMediaStateChange);
+    webrtcSdk.media.on('gumRequest', handleGumRequest);
   }
 
   function startSoftphoneSession(phoneNumber: string) {
@@ -102,6 +103,10 @@ export default function useSdk() {
 
   function handleMediaStateChange(state: void) {
     dispatch(updateMediaState(state));
+  }
+  function handleGumRequest(state: void) {
+    console.warn(state);
+    dispatch(updateGumRequests(state));
   }
 
   function updateDefaultDevices(options): void {

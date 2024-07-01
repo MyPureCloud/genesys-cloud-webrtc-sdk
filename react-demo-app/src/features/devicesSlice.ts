@@ -16,7 +16,8 @@ const initialState = {
     outputDevices: [],
     videoDevices: []
   } as ISdkMediaState,
-  stateChanges: 0
+  stateChanges: 0,
+  gumRequests: 0
 };
 
 export const devicesSlice = createSlice({
@@ -26,9 +27,12 @@ export const devicesSlice = createSlice({
     updateMediaState: (state, action) => {
       state.currentState = action.payload;
       state.stateChanges++;
+    },
+    updateGumRequests: (state) => {
+      state.gumRequests++;
     }
   }
 })
 
-export const { updateMediaState } = devicesSlice.actions;
+export const { updateMediaState, updateGumRequests } = devicesSlice.actions;
 export default devicesSlice.reducer;

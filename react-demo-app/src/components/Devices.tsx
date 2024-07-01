@@ -3,6 +3,7 @@ import AudioDevices from './AudioDevices';
 import OutputDevices from './OutputDevices';
 import VideoDevices from './VideoDevices';
 import MediaControls from './MediaControls';
+import MediaStateCounts from './MediaStateCounts';
 
 export default function Devices() {
   return (
@@ -13,6 +14,7 @@ export default function Devices() {
         <AudioDevices></AudioDevices>
         <OutputDevices></OutputDevices>
         <VideoDevices></VideoDevices>
+        <MediaStateCounts></MediaStateCounts>
       </div>
     </>
   );
