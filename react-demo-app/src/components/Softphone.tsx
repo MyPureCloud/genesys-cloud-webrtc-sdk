@@ -4,15 +4,20 @@ import './Softphone.css';
 import useSdk from '../hooks/useSdk';
 import PendingSessionsTable from './PendingSessionsTable';
 import ActiveConversationsTable from './ActiveConversationsTable';
-import UserDetails from './UserDetails';
+import HandledPendingSessionsTable from './HandledPendingSessionsTable';
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState('*86');
-  const { startSoftphoneSession } = useSdk();
+  const [onQueueStatus, setOnQueueStatus] = useState(false);
+  const { startSoftphoneSession, updateOnQueueStatus } = useSdk();
 
   function placeCall(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startSoftphoneSession(phoneNumber);
+  }
+  function toggleQueueStatus() {
+    updateOnQueueStatus(!onQueueStatus);
+    setOnQueueStatus(!onQueueStatus)
   }
   return (
     <>
@@ -28,10 +33,12 @@ export default function Softphone() {
             />
             <button className="softphone-call-btn" type="submit">Place Call</button>
           </form>
+          <button onClick={() => toggleQueueStatus()}>Toggle Queue</button>
         </Card>
         {/* <UserDetails></UserDetails> */}
         <PendingSessionsTable></PendingSessionsTable>
         <ActiveConversationsTable></ActiveConversationsTable>
+        <HandledPendingSessionsTable></HandledPendingSessionsTable>
       </div>
     </>
   );

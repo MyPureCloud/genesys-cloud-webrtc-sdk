@@ -3,6 +3,7 @@ import { IPendingSession, IStoredConversationState } from '../../../dist/es';
 
 interface IConversationsState {
   pendingSessions: IPendingSession[],
+  handledPendingSessions: IPendingSession[],
   activeConversations: IActiveConversationsState
 }
 
@@ -12,6 +13,7 @@ interface IActiveConversationsState {
 
 const initialState: IConversationsState = {
   pendingSessions: [],
+  handledPendingSessions: [],
   activeConversations: {}
 }
 
@@ -39,9 +41,16 @@ export const conversationsSlice = createSlice({
       for (const id in removedConversations) {
         delete state.activeConversations[id];
       }
+    },
+    storeHandledPendingSession: (state, action) => {
+      console.warn('the action payload', action.payload.id);
+      const existingSession = state.handledPendingSessions.find(session => session.conversationId === action.payload.conversationId);
+      if (!existingSession) {
+        state.handledPendingSessions = [...state.handledPendingSessions, action.payload];
+      }
     }
   }
 })
 
-export const { updatePendingSessions, removePendingSession, updateConversations } = conversationsSlice.actions;
+export const { updatePendingSessions, removePendingSession, updateConversations, storeHandledPendingSession } = conversationsSlice.actions;
 export default conversationsSlice.reducer;

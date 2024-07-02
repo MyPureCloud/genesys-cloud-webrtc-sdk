@@ -9,6 +9,7 @@ import {
   removePendingSession,
   updatePendingSessions,
   updateConversations,
+  storeHandledPendingSession,
 } from '../features/conversationsSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 
@@ -47,7 +48,7 @@ export default function useSdk() {
     webrtcSdk.on('sdkError', (error) => console.error(error));
     webrtcSdk.on('pendingSession', handlePendingSession);
     webrtcSdk.on('cancelPendingSession', handleCancelPendingSession);
-    webrtcSdk.on('handledPendingSession', handleCancelPendingSession);
+    webrtcSdk.on('handledPendingSession', handledPendingSession);
     webrtcSdk.on('sessionStarted', handleSessionStarted);
     webrtcSdk.on('sessionEnded', (session) => handleSessionEnded(session));
     // webrtcSdk.on('trace', trace);
@@ -75,7 +76,13 @@ export default function useSdk() {
   }
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(pendingSession) {
+    console.warn('we have handled this', pendingSession);
     dispatch(removePendingSession(pendingSession));
+  }
+
+  function handledPendingSession(pendingSession) {
+    dispatch(removePendingSession(pendingSession));
+    dispatch(storeHandledPendingSession(pendingSession))
   }
 
   function handleSessionStarted() {}
@@ -124,6 +131,36 @@ export default function useSdk() {
   function updateAudioVolume(volume: string): void {
     window['webrtcSdk'].updateAudioVolume(volume);
   }
+
+  async function destroySdk(): void {
+    await window['webrtcSdk'].destroy();
+  }
+
+  /* Misc Functions */
+  async function updateOnQueueStatus(onQueue: boolean) {
+    const webrtcSdk = window['webrtcSdk'];
+    const systemPresences = await webrtcSdk._http.requestApi(`systempresences`, {
+      method: 'get',
+      host: webrtcSdk._config.environment,
+      authToken: webrtcSdk._config.accessToken
+    });
+
+    let presenceDefinition;
+    if (onQueue) {
+      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'ON_QUEUE')
+    } else {
+      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'AVAILABLE')
+    }
+    const requestOptions = {
+      method: 'patch',
+      host: webrtcSdk._config.environment,
+      authToken: webrtcSdk._config.accessToken,
+      data: JSON.stringify({ presenceDefinition })
+    };
+
+    await webrtcSdk._http.requestApi(`users/${webrtcSdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
+  }
+
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -133,6 +170,8 @@ export default function useSdk() {
     updateDefaultDevices,
     enumerateDevices,
     requestDevicePermissions,
-    updateAudioVolume
+    updateAudioVolume,
+    destroySdk,
+    updateOnQueueStatus
   };
 }
