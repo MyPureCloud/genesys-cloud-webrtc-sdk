@@ -5,9 +5,10 @@
 }
 
 .softphone-container > * {
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   margin: 0.5rem;
 }
+
 .card form {
   display: flex;
   flex-direction: column;
@@ -18,4 +19,8 @@
   margin-top: 0.5rem;
   background-color: var(--primary-btn-color);
   color: white;
+}
+
+.softphone-queue-btn {
+  margin-top: 0.5rem;
 }

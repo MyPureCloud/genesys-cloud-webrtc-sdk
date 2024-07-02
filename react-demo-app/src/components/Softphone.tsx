@@ -23,7 +23,7 @@ export default function Softphone() {
     <>
       <h1>Softphone</h1>
       <div className="softphone-container">
-        <Card className={undefined}>
+        <Card className='softphone-call-card'>
           <form onSubmit={placeCall}>
             <h3>Place Call</h3>
             <input
@@ -33,12 +33,11 @@ export default function Softphone() {
             />
             <button className="softphone-call-btn" type="submit">Place Call</button>
           </form>
-          <button onClick={() => toggleQueueStatus()}>Toggle Queue</button>
+          <button className='softphone-queue-btn' onClick={() => toggleQueueStatus()}>{onQueueStatus ? 'On Queue' : 'Off Queue'}</button>
         </Card>
-        {/* <UserDetails></UserDetails> */}
+        <HandledPendingSessionsTable></HandledPendingSessionsTable>
         <PendingSessionsTable></PendingSessionsTable>
         <ActiveConversationsTable></ActiveConversationsTable>
-        <HandledPendingSessionsTable></HandledPendingSessionsTable>
       </div>
     </>
   );
