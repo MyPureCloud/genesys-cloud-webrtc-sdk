@@ -54,7 +54,7 @@ export default function ActiveConversationsTable() {
   }
   return (
     <>
-      <Card className={undefined}>
+      <Card className='active-conversations-card'>
         <h3>Active Sessions</h3>
         {generateActiveConversationsTable()}
       </Card>

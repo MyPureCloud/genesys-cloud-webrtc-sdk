@@ -23,11 +23,10 @@ export default function Softphone() {
   // GuxButton's don't support form events currently so a form can't be used.
   return (
     <>
-      <Card className={undefined}>
-        <h1>Softphone</h1>
+      <Card className='softphone-card'>
+        <h2 className='gux-heading-lg-semibold'>Softphone</h2>
         <div className="softphone-container">
-          <Card className={undefined}>
-            <div className="softphone-call-card">
+          <Card className='softphone-call-card'>
               <h3>Place Call</h3>
               <input
                 type="text"
@@ -43,7 +42,6 @@ export default function Softphone() {
               >
                 {onQueueStatus ? "On Queue" : "Off Queue"}
               </GuxButton>
-            </div>
           </Card>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
           <PendingSessionsTable></PendingSessionsTable>
