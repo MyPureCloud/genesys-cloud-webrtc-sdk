@@ -1,5 +1,5 @@
-import Card from './Card'
 import { useSelector } from 'react-redux';
+import Card from './Card';
 
 export default function MediaStateCounts() {
   const gumRequests = useSelector((state) => state.devices.gumRequests);

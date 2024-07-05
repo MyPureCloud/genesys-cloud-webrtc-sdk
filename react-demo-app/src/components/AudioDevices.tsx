@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import './AudioDevices.css';
-import Card from './Card';
+import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-react';
 import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
+import Card from './Card';
 
 export default function AudioDevices() {
   const { updateDefaultDevices, updateAudioVolume } = useSdk();
@@ -18,22 +19,25 @@ export default function AudioDevices() {
 
   return (
     <>
-      <Card className={'audio-devices-container'}>
+      <Card className='audio-devices-container'>
         <h4>Audio Devices</h4>
         {deviceState.audioDevices.length ? (
           <>
             <div className="audio-device-list">
-              <select
-                onChange={(e) =>
+              <GuxDropdown
+                value={deviceState.audioDevices[0].deviceId}
+                onInput={(e) =>
                   updateDefaultDevices({ audioDeviceId: e.target.value })
                 }
               >
-                {deviceState.audioDevices.map((device) => (
-                  <option key={device.deviceId} value={device.deviceId}>
-                    {device.label}
-                  </option>
-                ))}
-              </select>
+                <GuxListbox>
+                  {deviceState.audioDevices.map((device) => (
+                    <GuxOption key={device.deviceId} value={device.deviceId}>
+                      {device.label}
+                    </GuxOption>
+                  ))}
+                </GuxListbox>
+              </GuxDropdown>
             </div>
             <div className="audio-device-volume">
               <label htmlFor="audio-volume">Audio Volume</label>

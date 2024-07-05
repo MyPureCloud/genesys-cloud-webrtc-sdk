@@ -13,6 +13,8 @@
     "@reduxjs/toolkit": "^2.2.5",
     "@vitejs/plugin-basic-ssl": "^1.1.0",
     "genesys-cloud-webrtc-sdk": "file:..",
+    "genesys-spark-components": "^4.63.2",
+    "genesys-spark-components-react": "^4.63.2",
     "normalize.css": "^8.0.1",
     "purecloud-platform-client-v2": "^195.0.0",
     "react": "^18.2.0",

@@ -13,16 +13,6 @@
   font-size: small;
 }
 
-.pending-answer-btn {
-  background-color: var(--primary-btn-color);
-  color: white;
-}
-
-.pending-decline-btn {
-  background-color: var(--danger-btn-color);
-  color: white;
-}
-
 @media (max-width: 768px) {
   .pending-table {
     font-size: 0.8rem;

@@ -1,0 +1,12 @@
+.header-container {
+  margin: 3rem;
+}
+.header-card {
+  display: flex;
+  align-items: center;
+}
+
+.header-content {
+  display: flex;
+  align-items: baseline;
+}

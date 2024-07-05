@@ -1,5 +1,6 @@
-import Card from './Card';
+import { GuxTable } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
+import Card from './Card';
 
 export default function HandledPendingSessionsTable() {
   const handledPendingSessions = useSelector(
@@ -13,28 +14,30 @@ export default function HandledPendingSessionsTable() {
     }
     return (
       <>
-        <table className="pending-table">
-          <thead>
-            <tr>
-              <th>Conversation ID</th>
-              <th>Session ID</th>
-            </tr>
-          </thead>
-          <tbody>
-            {handledPendingSessions.map((convo) => (
-              <tr key={convo.conversationId}>
-                <td>{convo.conversationId}</td>
-                <td>{convo.sessionId}</td>
+        <GuxTable>
+          <table slot='data' className="pending-table">
+            <thead>
+              <tr>
+                <th>Conversation ID</th>
+                <th>Session ID</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {handledPendingSessions.map((convo) => (
+                <tr key={convo.conversationId}>
+                  <td>{convo.conversationId}</td>
+                  <td>{convo.sessionId}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </GuxTable>
       </>
     );
   }
 
   return <>
-    <Card className={undefined}>
+    <Card className='handled-pending-container'>
       <h3>Handled Pending Sessions</h3>
       {generateHandledPendingSessionsTable()}
     </Card>

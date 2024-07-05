@@ -1,14 +1,15 @@
 import './Dashboard.css';
-import Card from './Card';
 import Softphone from './Softphone';
 import Devices from './Devices';
+import Header from './Header';
 
 
 export default function Dashboard() {
   return (
     <div className='dashboard-container'>
-      <Card children={<Softphone></Softphone>} className='dashboard-card' />
-      <Card children={<Devices></Devices>} className='dashboard-card' />
+      <Header></Header>
+      <Devices></Devices>
+      <Softphone></Softphone>
     </div>
   )
 }

@@ -9,18 +9,10 @@
   margin: 0.5rem;
 }
 
-.card form {
+.softphone-call-card {
   display: flex;
   flex-direction: column;
-  width: 100%;
 }
-
-.softphone-call-btn {
-  margin-top: 0.5rem;
-  background-color: var(--primary-btn-color);
-  color: white;
-}
-
-.softphone-queue-btn {
+.softphone-call-btn, .softphone-queue-btn {
   margin-top: 0.5rem;
 }

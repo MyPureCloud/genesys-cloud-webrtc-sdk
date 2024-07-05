@@ -1,8 +1,9 @@
+@import 'genesys-spark-components/dist/genesys-webcomponents/genesys-webcomponents.css'; /* css for gux-components */
 :root {
   font-family: "Noto Sans", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  background-color: #f2f2f3;
+  background-color: #f2f2f2;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

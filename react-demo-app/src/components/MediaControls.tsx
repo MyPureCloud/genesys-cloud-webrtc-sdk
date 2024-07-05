@@ -1,27 +1,31 @@
-import Card from './Card';
+import './MediaControls.css';
 import useSdk from '../hooks/useSdk';
+import { GuxButton } from 'genesys-spark-components-react'
+import Card from './Card';
 
 export default function MediaControls() {
   const {enumerateDevices, requestDevicePermissions} = useSdk();
   return (
     <>
-      <Card className="media-controls">
-        <h4>Media Controls</h4>
-        <button className="device-enum-btn" onClick={() => enumerateDevices()}>
-          Enumerate Devices
-        </button>
-        <button
-          className="device-permissions-btn"
-          onClick={() => requestDevicePermissions('audio')}
-        >
-          Request Audio Permissions
-        </button>
-        <button
-          className="device-permissions-btn"
-          onClick={() => requestDevicePermissions('video')}
-        >
-          Request Video Permissions
-        </button>
+      <Card className='media-controls-container'>
+          <h4>Media Controls</h4>
+          <GuxButton accent='secondary' className="device-enum-btn" onClick={() => enumerateDevices()}>
+            Enumerate Devices
+          </GuxButton>
+          <GuxButton
+            accent='secondary'
+            className="device-permissions-btn"
+            onClick={() => requestDevicePermissions('audio')}
+          >
+            Request Audio Permissions
+          </GuxButton>
+          <GuxButton
+            accent='secondary'
+            className="device-permissions-btn"
+            onClick={() => requestDevicePermissions('video')}
+          >
+            Request Video Permissions
+          </GuxButton>
       </Card>
     </>
   );
