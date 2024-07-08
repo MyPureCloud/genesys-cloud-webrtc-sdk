@@ -25,7 +25,6 @@ export const conversationsSlice = createSlice({
       const existingSession = state.pendingSessions.find(session => session.id === action.payload.id);
       if (!existingSession) {
         state.pendingSessions = [...state.pendingSessions, action.payload];
-        console.warn(state.pendingSessions);
       }
     },
     removePendingSession: (state, action) => {
@@ -43,7 +42,6 @@ export const conversationsSlice = createSlice({
       }
     },
     storeHandledPendingSession: (state, action) => {
-      console.warn('the action payload', action.payload.id);
       const existingSession = state.handledPendingSessions.find(session => session.conversationId === action.payload.conversationId);
       if (!existingSession) {
         state.handledPendingSessions = [...state.handledPendingSessions, action.payload];

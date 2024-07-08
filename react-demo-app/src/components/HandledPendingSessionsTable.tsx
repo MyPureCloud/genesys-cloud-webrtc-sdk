@@ -8,7 +8,6 @@ export default function HandledPendingSessionsTable() {
   );
 
   function generateHandledPendingSessionsTable() {
-    console.warn('the handled', handledPendingSessions);
     if (!handledPendingSessions.length) {
       return (<p>No pending sessions.</p>);
     }

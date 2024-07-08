@@ -8,7 +8,6 @@ function App() {
   const isAuthenticated = useSelector((state: IAuthState) => state.auth.isAuthenticated);
 
   function renderDashboard() {
-    console.warn('are we authd', isAuthenticated)
     if (isAuthenticated) {
       return <Dashboard></Dashboard>;
     }

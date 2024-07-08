@@ -71,12 +71,10 @@ export default function useSdk() {
   }
 
   function handlePendingSession(pendingSession) {
-    console.warn('pending session: ', pendingSession);
     dispatch(updatePendingSessions(pendingSession));
   }
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(pendingSession) {
-    console.warn('we have handled this', pendingSession);
     dispatch(removePendingSession(pendingSession));
   }
 
@@ -94,7 +92,6 @@ export default function useSdk() {
   function handleConnected() {}
 
   function handleConversationUpdate(update: ISdkConversationUpdateEvent) {
-    console.warn('here is the active convo:', update);
     dispatch(updateConversations(update));
   }
 
@@ -112,7 +109,6 @@ export default function useSdk() {
     dispatch(updateMediaState(state));
   }
   function handleGumRequest(state: void) {
-    console.warn(state);
     dispatch(updateGumRequests(state));
   }
 
