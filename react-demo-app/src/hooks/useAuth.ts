@@ -30,11 +30,12 @@ export default function useAuth() {
   const { initWebrtcSDK } = useSdk();
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    if (localStorage.getItem('sdk_test_auth_data')) {
-      authenticateImplicitly('dca');
-    }
-  }, []);
+  /* Uncomment this to login implicitly without clicking. */
+  // useEffect(() => {
+  //   if (localStorage.getItem('sdk_test_auth_data')) {
+  //     authenticateImplicitly('dca');
+  //   }
+  // }, []);
   async function checkAuthToken(auth: any) {
     const token = auth.token;
     if (!auth.token) {

@@ -1,6 +1,9 @@
 import { FormEvent, useState } from 'react';
 import './Auth.css';
 import useAuth from '../hooks/useAuth';
+import { GuxButton } from 'genesys-spark-components-react';
+import Header from './Header';
+import Card from './Card';
 
 export default function Auth() {
   const { checkAuthToken, authenticateImplicitly } = useAuth();
@@ -21,24 +24,30 @@ export default function Auth() {
   }
 
   return (
-    <div className="auth-wrapper">
-      <form onSubmit={authenticate}>
-        <div>
-          <label htmlFor="environments">Env:</label>
-          <select name="environments" id="env-selector" onChange={(e) => setEnv(e.target.value)}>
-            <option value="dca">DCA</option>
-            <option value="pca-us">Prod</option>
-          </select>
+    <div className='auth-container'>
+      <Header></Header>
+      <Card className={undefined}>
+        <div className="auth-content">
+          <form onSubmit={authenticate}>
+            <div>
+              <label htmlFor="environments">Env:</label>
+              <select name="environments" id="env-selector" onChange={(e) => setEnv(e.target.value)}>
+                <option value="dca">DCA</option>
+                <option value="pca-us">Prod</option>
+              </select>
+            </div>
+          <div>
+            <label htmlFor="auth-input">Manual Token: </label>
+            <input type="text" id="auth-input" name="auth-input" onChange={(e) => setToken(e.target.value)}/>
+          </div>
+          <div className="auth-buttons">
+            <GuxButton type="submit">Authenticate</GuxButton>
+            <GuxButton type="button" onClick={handleImplicitAuth}>Use Implicit Auth</GuxButton>
+          </div>
+          </form>
         </div>
-      <div>
-        <label htmlFor="auth-input">Manual Token: </label>
-        <input type="text" id="auth-input" name="auth-input" onChange={(e) => setToken(e.target.value)}/>
-      </div>
-      <div className="auth-buttons">
-        <button type="submit">Authenticate</button>
-        <button type="button" onClick={handleImplicitAuth}>Use Implicit Auth</button>
-      </div>
-      </form>
+      </Card>
+
     </div>
   )
 }

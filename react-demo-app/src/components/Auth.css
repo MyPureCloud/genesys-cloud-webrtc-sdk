@@ -1,8 +1,11 @@
-.auth-wrapper {
+.auth-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 1px solid black;
   height: 25em;
   width: 50em;
+}
+
+.auth-buttons > * {
+  margin: 0.5em 0.5em 0 0;
 }
