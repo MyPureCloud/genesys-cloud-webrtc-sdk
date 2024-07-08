@@ -7,3 +7,7 @@
   display: flex;
   align-items: baseline;
 }
+
+.header-logo {
+  color: #FF4F1F;
+}
