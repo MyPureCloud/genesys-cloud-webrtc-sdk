@@ -9,9 +9,11 @@ import {
   removePendingSession,
   updatePendingSessions,
   updateConversations,
-  storeHandledPendingSession,
+  storeHandledPendingSession
 } from '../features/conversationsSlice';
+import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
+import { useSelector } from 'react-redux';
 
 interface IAuthData {
   token: string;
@@ -24,6 +26,7 @@ interface IAuthData {
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch();
+  const sdk = useSelector((state) => state.sdk.sdk);
 
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {
@@ -36,7 +39,7 @@ export default function useSdk() {
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
-    (window as any)['webrtcSdk'] = webrtcSdk;
+    dispatch(setSdk(webrtcSdk));
 
     connectEventHandlers();
 
@@ -67,7 +70,7 @@ export default function useSdk() {
       console.error('Must enter a valid phone number.');
       return;
     }
-    window['webrtcSdk'].startSoftphoneSession({ phoneNumber });
+    sdk.startSoftphoneSession({ phoneNumber });
   }
 
   function handlePendingSession(pendingSession) {
@@ -96,13 +99,13 @@ export default function useSdk() {
   }
 
   function endSession(conversationId: string) {
-    window['webrtcSdk'].endSession({ conversationId });
+    sdk.endSession({ conversationId });
   }
   function toggleAudioMute(mute: boolean, conversationId: string) {
-    window['webrtcSdk'].setAudioMute({ mute, conversationId });
+    sdk.setAudioMute({ mute, conversationId });
   }
   function toggleHoldState(held: boolean, conversationId: string) {
-    window['webrtcSdk'].setConversationHeld({ held, conversationId });
+    sdk.setConversationHeld({ held, conversationId });
   }
 
   function handleMediaStateChange(state: void) {
@@ -113,32 +116,31 @@ export default function useSdk() {
   }
 
   function updateDefaultDevices(options): void {
-    window['webrtcSdk'].updateDefaultDevices({
+    sdk.updateDefaultDevices({
       ...options,
       updateActiveSessions: true,
     });
   }
   function enumerateDevices(): void {
-    window['webrtcSdk'].media.enumerateDevices(true);
+    sdk.media.enumerateDevices(true);
   }
   function requestDevicePermissions(type: string): void {
-    window['webrtcSdk'].media.requestMediaPermissions(type);
+    sdk.media.requestMediaPermissions(type);
   }
   function updateAudioVolume(volume: string): void {
-    window['webrtcSdk'].updateAudioVolume(volume);
+    sdk.updateAudioVolume(volume);
   }
 
-  async function destroySdk(): void {
-    await window['webrtcSdk'].destroy();
+  async function destroySdk(): Promise<void> {
+    await sdk.destroy();
   }
 
   /* Misc Functions */
   async function updateOnQueueStatus(onQueue: boolean) {
-    const webrtcSdk = window['webrtcSdk'];
-    const systemPresences = await webrtcSdk._http.requestApi(`systempresences`, {
+    const systemPresences = await sdk._http.requestApi(`systempresences`, {
       method: 'get',
-      host: webrtcSdk._config.environment,
-      authToken: webrtcSdk._config.accessToken
+      host: sdk._config.environment,
+      authToken: sdk._config.accessToken
     });
 
     let presenceDefinition;
@@ -149,12 +151,12 @@ export default function useSdk() {
     }
     const requestOptions = {
       method: 'patch',
-      host: webrtcSdk._config.environment,
-      authToken: webrtcSdk._config.accessToken,
+      host: sdk._config.environment,
+      authToken: sdk._config.accessToken,
       data: JSON.stringify({ presenceDefinition })
     };
 
-    await webrtcSdk._http.requestApi(`users/${webrtcSdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
+    await sdk._http.requestApi(`users/${sdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
   }
 
   return {

@@ -8,8 +8,9 @@ import Card from './Card';
 export default function AudioDevices() {
   const { updateDefaultDevices, updateAudioVolume } = useSdk();
   const deviceState = useSelector((state) => state.devices.currentState);
+  const sdk = useSelector(state => state.sdk.sdk);
   const [audioVolume, setAudioVolume] = useState(
-    window['webrtcSdk']._config.defaults.audioVolume
+    sdk._config.defaults.audioVolume
   );
 
   function updateVolume(volume: string) {

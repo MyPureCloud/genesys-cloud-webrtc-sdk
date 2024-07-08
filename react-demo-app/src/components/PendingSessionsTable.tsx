@@ -7,13 +7,14 @@ export default function PendingSessionsTable() {
   const conversations = useSelector(
     (state) => state.conversations.pendingSessions
   );
+  const sdk = useSelector(state => state.sdk.sdk);
 
 
   function handlePendingSession(accept: boolean, conversationId: string): void {
     if (accept) {
-      window['webrtcSdk'].acceptPendingSession({ conversationId });
+      sdk.acceptPendingSession({ conversationId });
     } else {
-      window['webrtcSdk'].rejectPendingSession({ conversationId });
+     sdk.rejectPendingSession({ conversationId });
     }
   }
 

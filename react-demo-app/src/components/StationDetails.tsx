@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useSelector } from 'react-redux';
 import Card from "./Card";
 import { GuxTable } from 'genesys-spark-components-react';
 
 export default function StationDetails() {
-  const [stationDetails] = useState(window["webrtcSdk"].station);
+  const sdk = useSelector(state => state.sdk.sdk);
+  const [stationDetails] = useState(sdk.station);
+
 
   return (
     <>
@@ -28,9 +31,9 @@ export default function StationDetails() {
                 <td>{stationDetails?.id}</td>
                 <td>{stationDetails?.status}</td>
                 <td>{stationDetails?.type}</td>
-                <td>{stationDetails?.webRtcCallAppearances.toString()}</td>
-                <td>{stationDetails?.webRtcPersistentEnabled.toString()}</td>
-                <td>{stationDetails?.webRtcForceTurn.toString()}</td>
+                <td>{stationDetails?.webRtcCallAppearances?.toString()}</td>
+                <td>{stationDetails?.webRtcPersistentEnabled?.toString()}</td>
+                <td>{stationDetails?.webRtcForceTurn?.toString()}</td>
               </tr>
             </tbody>
           </table>
