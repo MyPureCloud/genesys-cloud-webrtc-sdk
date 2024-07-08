@@ -6,6 +6,7 @@ import useSdk from "../hooks/useSdk";
 import PendingSessionsTable from "./PendingSessionsTable";
 import ActiveConversationsTable from "./ActiveConversationsTable";
 import HandledPendingSessionsTable from "./HandledPendingSessionsTable";
+import StationDetails from "./StationDetails";
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState("*86");
@@ -43,6 +44,7 @@ export default function Softphone() {
                 {onQueueStatus ? "On Queue" : "Off Queue"}
               </GuxButton>
           </Card>
+          <StationDetails></StationDetails>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
           <PendingSessionsTable></PendingSessionsTable>
           <ActiveConversationsTable></ActiveConversationsTable>

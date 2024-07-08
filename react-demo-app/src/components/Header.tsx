@@ -8,7 +8,7 @@ export default function Header() {
       <Card className='header-card'>
         <div className='header-content'>
           <GuxIcon className='header-logo' iconName='custom/genesys' size='large' decorative={true}></GuxIcon>
-          <h1 className='gux-heading-lg-bold'>WebRTC SDK</h1>
+          <h1 className='gux-heading-lg-bold'>Genesys Cloud WebRTC SDK</h1>
         </div>
       </Card>
     </div>
