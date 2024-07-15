@@ -67,6 +67,24 @@ describe('sendMetadataWhenSessionConnects', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it('should send metadata only the first time peer connection connects', async () => {
+    const pc = createFakePc();
+
+    const session = {
+      peerConnection: pc
+    };
+
+    const spy = handler['updateScreenRecordingMetadatas'] = jest.fn();
+
+    handler['sendMetadataWhenSessionConnects'](session as any, []);
+
+    pc.connectionState = 'connected';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    pc.dispatchEvent(new Event('connectionstatechange'));
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
   it('should not if peer connection never connects', async () => {
     const pc = createFakePc();
 
@@ -92,6 +110,22 @@ describe('sendMetadataWhenSessionConnects', () => {
     pc.connectionState = 'connected';
     pc.dispatchEvent(new Event('connectionstatechange'));
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should not throw an exception if peer connection state never connects', async () => {
+    const pc = createFakePc();
+
+    const session = {
+      peerConnection: pc
+    };
+
+    const errorSpy = handler['_logSubscribeError'] = jest.fn();
+
+    handler['sendMetadataWhenSessionConnects'](session as any, []);
+
+    pc.connectionState = 'disconnected';
+    pc.dispatchEvent(new Event('connectionstatechange'));
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 });
 
