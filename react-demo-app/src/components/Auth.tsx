@@ -41,7 +41,7 @@ export default function Auth() {
             <input type="text" id="auth-input" name="auth-input" onChange={(e) => setToken(e.target.value)}/>
           </div>
           <div className="auth-buttons">
-            <GuxButton type="submit">Authenticate</GuxButton>
+            <GuxButton type="submit" onClick={authenticate}>Authenticate</GuxButton>
             <GuxButton type="button" onClick={handleImplicitAuth}>Use Implicit Auth</GuxButton>
           </div>
           </form>
