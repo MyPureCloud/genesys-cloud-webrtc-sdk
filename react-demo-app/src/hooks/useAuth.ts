@@ -15,7 +15,7 @@ interface IAuthData {
 const client = platformClient.ApiClient.instance;
 const persistentName = 'sdk_test';
 
-export const environments = {
+export const environments: any = {
   dca: {
     clientId: '2e10c888-5261-45b9-ac32-860a1e67eff8',
     uri: 'inindca.com',
@@ -36,7 +36,7 @@ export default function useAuth() {
   //     authenticateImplicitly('dca');
   //   }
   // }, []);
-  async function checkAuthToken(auth: any) {
+  async function checkAuthToken(auth: { token: string, env: string}) {
     const token = auth.token;
     if (!auth.token) {
       console.error('No token found!');
@@ -47,11 +47,11 @@ export default function useAuth() {
   }
 
   async function authenticateFromUrlToken() {
-    const urlParams = getCurrentUrlParams();
+    const urlParams: any = getCurrentUrlParams();
     if (!urlParams) {
       return;
     }
-    const environment = (environments as any)[(urlParams as any).env];
+    const environment: any = environments[urlParams.env];
     const token = (urlParams as any)['access_token'];
 
     client.setPersistSettings(true, persistentName);
@@ -61,35 +61,26 @@ export default function useAuth() {
       `${persistentName}_auth_data`,
       JSON.stringify({ accessToken: token })
     );
-    (platformClient.ApiClient as any).instance.authentications[
-      'PureCloud OAuth'
-    ].accessToken = token;
-    (window as any).conversationsAPI = new platformClient.ConversationsApi();
+    client.instance.setAccessToken(token);
     await initWebrtcSDK({ token, environment });
     dispatch(setAuthStatus(true));
   }
 
   function authenticateImplicitly(environment: any) {
-    const environmentData = (environments as any)[environment];
+    const environmentData = environments[environment];
     client.setPersistSettings(true, persistentName);
     client.setEnvironment(environmentData.uri);
 
     client
       .loginImplicitGrant(environmentData.clientId, window.location.href)
-      .then(() => {
-        const authInfo = JSON.parse(
-          (window as any).localStorage.getItem(`${persistentName}_auth_data`)
-        );
+      .then(async () => {
+        const authInfo = JSON.parse(window.localStorage.getItem(`${persistentName}_auth_data`) ?? '{}');
         const authData: IAuthData = {
-          token: authInfo.accessToken,
+          token: authInfo?.accessToken,
           environment: environmentData,
         };
-        (platformClient.ApiClient as any).instance.authentications[
-          'PureCloud OAuth'
-        ].accessToken = authInfo.accessToken;
-        (window as any).conversationsAPI =
-          new platformClient.ConversationsApi();
-        initWebrtcSDK(authData);
+        client.instance.setAccessToken(authData.token);
+        await initWebrtcSDK(authData);
         dispatch(setAuthStatus(true));
       })
       .catch((err) => {
@@ -98,7 +89,7 @@ export default function useAuth() {
   }
 
   function getCurrentUrlParams() {
-    let params = null;
+    let params: any = null;
     const urlParts = window.location.href.split('#');
 
     if (urlParts[1]) {
@@ -110,7 +101,7 @@ export default function useAuth() {
           const currParam = urlParamsArr[i].split('=');
           const key = currParam[0];
           const value = currParam[1];
-          (params as any)[key] = value;
+          params[key] = value;
         }
       }
     }
