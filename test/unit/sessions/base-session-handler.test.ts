@@ -658,7 +658,7 @@ describe('acceptSession', () => {
 
     await handler.acceptSession(session, params);
 
-    expect(logSpy).toHaveBeenCalledWith('info', 'accepting session', {
+    expect(logSpy).toHaveBeenCalledWith('info', 'received jingle session-accept', {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,
@@ -1021,7 +1021,7 @@ describe('applyTrackConstraints()', () => {
     getSettingsSpy
       .mockReturnValueOnce({ height: 0, width: 0 })
       .mockReturnValue({ height: 100, width: 110, frameRate: 10 });
-    
+
     await handler['applyTrackConstraints'](sender);
 
     expect(applySpy).toHaveBeenCalledWith({
@@ -1041,7 +1041,7 @@ describe('applyTrackConstraints()', () => {
   it('should not retry more than once', async () => {
     getSettingsSpy
       .mockReturnValue({ height: 0, width: 0 });
-  
+
     await handler['applyTrackConstraints'](sender);
 
     expect(applySpy).not.toHaveBeenCalled();
@@ -1051,7 +1051,7 @@ describe('applyTrackConstraints()', () => {
   it('should apply constraints if track has settings', async () => {
     getSettingsSpy
       .mockReturnValue({ height: 100, width: 110, frameRate: 10 });
-    
+
     await handler['applyTrackConstraints'](sender);
 
     expect(applySpy).toHaveBeenCalledWith({
