@@ -116,8 +116,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     }
     
     // if eagerPersistentConnectionEstablishment==='none' then we want to completely swallow the propose
-    const shouldSwallowPropose = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'none';
-    if (shouldSwallowPropose) {
+    const shouldIgnorePrivAnswerPropose = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'none';
+    if (shouldIgnorePrivAnswerPropose) {
       this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=true will be ignored', logInfo);
       return;
     }

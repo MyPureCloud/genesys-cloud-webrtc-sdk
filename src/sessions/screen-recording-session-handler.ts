@@ -10,7 +10,7 @@ import {
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
-import { first, fromEvent, takeWhile } from 'rxjs';
+import { filter, fromEvent, take, takeWhile } from 'rxjs';
 
 export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -63,17 +63,26 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   }
 
   private sendMetadataWhenSessionConnects (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
+    // We really only want to ignore the error handling (because that should never execute), but putting an ignore closer to that line doesn't properly ignore it
+    /* istanbul ignore next */
     fromEvent(session.peerConnection, 'connectionstatechange')
       .pipe(
         takeWhile(() => {
           return !isPeerConnectionDisconnected(session.peerConnection.connectionState);
         }),
-        first(() => {
+        filter(() => {
           return session.peerConnection.connectionState === 'connected';
-        })
-      ).subscribe(async () => {
-        await this.updateScreenRecordingMetadatas(session, metadatas);
+        }),
+        take(1)
+      ).subscribe({
+        next: async () => await this.updateScreenRecordingMetadatas(session, metadatas),
+        error: (e) => this._logSubscriptionError(e)
       });
+  }
+
+  /* istanbul ignore next */
+  _logSubscriptionError(e: unknown) {
+    // This is for testing thrown exceptions with an RXJS subscription
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
