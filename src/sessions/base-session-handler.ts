@@ -82,7 +82,7 @@ export default abstract class BaseSessionHandler {
     }
 
     try {
-      this.log('info', 'handling session init', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
+      this.log('info', 'received webrtc session', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
     } catch (e) {
       // don't let log errors ruin a session
     }
@@ -167,7 +167,7 @@ export default abstract class BaseSessionHandler {
       logExtras.outputDeviceId = outputDeviceId;
     }
 
-    this.log('info', 'accepting session', logExtras);
+    this.log('info', 'received jingle session-accept', logExtras);
     return session.accept();
   }
 
