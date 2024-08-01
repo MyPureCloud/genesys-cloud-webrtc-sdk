@@ -658,7 +658,7 @@ describe('acceptSession', () => {
 
     await handler.acceptSession(session, params);
 
-    expect(logSpy).toHaveBeenCalledWith('info', 'received jingle session-accept', {
+    expect(logSpy).toHaveBeenCalledWith('info', 'accepting session', {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,

@@ -167,7 +167,7 @@ export default abstract class BaseSessionHandler {
       logExtras.outputDeviceId = outputDeviceId;
     }
 
-    this.log('info', 'received jingle session-accept', logExtras);
+    this.log('info', 'accepting session', logExtras);
     return session.accept();
   }
 
