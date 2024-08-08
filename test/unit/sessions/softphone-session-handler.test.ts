@@ -125,6 +125,66 @@ describe('handlePropose()', () => {
     expect(superSpyHandlePropose).toHaveBeenCalled();
     expect(superSpyProceed).not.toHaveBeenCalled();
   });
+
+  it('should swallow the propose if eagerConnectionEstablishmentMode is "none" and priv-answer-mode', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+
+    mockSdk._config.disableAutoAnswer = true;
+    mockSdk._config.eagerPersistentConnectionEstablishment = 'none';
+
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.privAnswerMode = 'Auto';
+    pendingSession.autoAnswer = true;
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(superSpyHandlePropose).not.toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
+  });
+
+  it('should event the propose if eagerConnectionEstablishmentMode is "event" and priv-answer-mode', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+
+    mockSdk._config.disableAutoAnswer = true;
+    mockSdk._config.eagerPersistentConnectionEstablishment = 'event';
+
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.privAnswerMode = 'Auto';
+    pendingSession.autoAnswer = true;
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).toHaveBeenCalled();
+    expect(superSpyHandlePropose).toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
+  });
+
+  it('should auto proceed the propose if eagerConnectionEstablishmentMode is "auto" and priv-answer-mode', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+
+    mockSdk._config.disableAutoAnswer = true;
+    mockSdk._config.eagerPersistentConnectionEstablishment = 'auto';
+
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.privAnswerMode = 'Auto';
+    pendingSession.autoAnswer = true;
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(superSpyHandlePropose).not.toHaveBeenCalled();
+    expect(superSpyProceed).toHaveBeenCalled();
+  });
 });
 
 describe('handleSessionInit()', () => {
