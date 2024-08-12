@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Card from "./Card";
-import { GuxButton } from "genesys-spark-components-react";
+import { GuxButton, GuxToggle } from "genesys-spark-components-react";
 import "./Softphone.css";
 import useSdk from "../hooks/useSdk";
 import PendingSessionsTable from "./PendingSessionsTable";
@@ -37,12 +37,14 @@ export default function Softphone() {
               <GuxButton accent="primary" className='softphone-call-btn' onClick={() => placeCall()}>
                 Place Call
               </GuxButton>
-              <GuxButton
-                className="softphone-queue-btn"
+              <GuxToggle
+                className="softphone-queue-toggle"
+                labelPosition="left"
                 onClick={() => toggleQueueStatus()}
+                checkedLabel="On Queue"
+                uncheckedLabel="Off Queue"
               >
-                {onQueueStatus ? "On Queue" : "Off Queue"}
-              </GuxButton>
+              </GuxToggle>
           </Card>
           <StationDetails></StationDetails>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
