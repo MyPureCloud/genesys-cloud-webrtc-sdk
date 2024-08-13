@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import Card from "./Card";
 import { GuxButton, GuxToggle } from "genesys-spark-components-react";
 import "./Softphone.css";
@@ -13,7 +13,10 @@ export default function Softphone() {
   const [onQueueStatus, setOnQueueStatus] = useState(false);
   const { startSoftphoneSession, updateOnQueueStatus } = useSdk();
 
-  function placeCall() {
+  function placeCall(event?: FormEvent<HTMLFormElement>) {
+    if (event) {
+      event.preventDefault()
+    }
     startSoftphoneSession(phoneNumber);
   }
   function toggleQueueStatus() {
@@ -21,30 +24,37 @@ export default function Softphone() {
     setOnQueueStatus(!onQueueStatus);
   }
 
-  // GuxButton's don't support form events currently so a form can't be used.
+  // GuxButton's don't support form events currently but we want a form for keyboard navigation.
   return (
     <>
-      <Card className='softphone-card'>
-        <h2 className='gux-heading-lg-semibold'>Softphone</h2>
+      <Card className="softphone-card">
+        <h2 className="gux-heading-lg-semibold">Softphone</h2>
         <div className="softphone-container">
-          <Card className='softphone-call-card'>
-              <h3>Place Call</h3>
-              <input
-                type="text"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-              />
-              <GuxButton accent="primary" className='softphone-call-btn' onClick={() => placeCall()}>
+          <Card className="softphone-call-card">
+            <h3>Place Call</h3>
+            <form onSubmit={(e) => placeCall(e)}>
+                <input
+                  type="text"
+                  slot="input"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              <GuxButton
+                accent="primary"
+                className="softphone-call-btn"
+                type="submit"
+                onClick={() => placeCall()}
+              >
                 Place Call
               </GuxButton>
-              <GuxToggle
-                className="softphone-queue-toggle"
-                labelPosition="left"
-                onClick={() => toggleQueueStatus()}
-                checkedLabel="On Queue"
-                uncheckedLabel="Off Queue"
-              >
-              </GuxToggle>
+            </form>
+            <GuxToggle
+              className="softphone-queue-toggle"
+              labelPosition="left"
+              onClick={() => toggleQueueStatus()}
+              checkedLabel="On Queue"
+              uncheckedLabel="Off Queue"
+            ></GuxToggle>
           </Card>
           <StationDetails></StationDetails>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
