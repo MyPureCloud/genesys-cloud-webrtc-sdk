@@ -101,11 +101,11 @@ export default function useSdk() {
   function endSession(conversationId: string) {
     sdk.endSession({ conversationId });
   }
-  function toggleAudioMute(mute: boolean, conversationId: string) {
-    sdk.setAudioMute({ mute, conversationId });
+  async function toggleAudioMute(mute: boolean, conversationId: string) {
+    await sdk.setAudioMute({ mute, conversationId });
   }
-  function toggleHoldState(held: boolean, conversationId: string) {
-    sdk.setConversationHeld({ held, conversationId });
+  async function toggleHoldState(held: boolean, conversationId: string) {
+    await sdk.setConversationHeld({ held, conversationId });
   }
 
   function handleMediaStateChange(state: void) {

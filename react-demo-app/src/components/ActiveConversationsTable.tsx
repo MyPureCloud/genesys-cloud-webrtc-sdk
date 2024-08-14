@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react';
 import useSdk from '../hooks/useSdk';
 import './ActiveConversationsTable.css';
-import { GuxButton, GuxTable } from 'genesys-spark-components-react';
+import { GuxButton, GuxTable, GuxRadialLoading } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 
@@ -10,6 +11,41 @@ export default function ActiveConversationsTable() {
     (state) => state.conversations.activeConversations
   );
   const { endSession, toggleAudioMute, toggleHoldState } = useSdk();
+  const [holdLabels, setHoldLabels ] = useState<Array<string | JSX.Element>>([]);
+  const [muteLabels, setMuteLabels ] = useState<Array<string | JSX.Element>>([]);
+
+  useEffect(() => {
+    if (conversations.length) {
+      setHoldLabels(conversations.map((convo) => convo.mostRecentCallState.held ? 'Unhold' : 'Hold'));
+      setMuteLabels(conversations.map((convo) => convo.mostRecentCallState.muted ? 'Unmute' : 'Mute'));
+    }
+  }, [conversations]);
+
+  async function toggleConversationHold(index: number): Promise<void> {
+    const updatedHoldLabels = [...holdLabels];
+    updatedHoldLabels[index] = <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading>;
+    setHoldLabels(updatedHoldLabels);
+    try {
+      await toggleHoldState(!conversations[index].mostRecentCallState.held, conversations[index].conversationId)
+      updatedHoldLabels[index] = conversations[index].mostRecentCallState.held ? 'Unhold' : 'Hold';
+      setHoldLabels(updatedHoldLabels);
+    } catch(err) {
+      console.error(err);
+    }
+  }
+
+  async function toggleConversationMute(index: number): Promise<void> {
+    const updatedMuteLabels = [...muteLabels];
+    updatedMuteLabels[index] = <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading>;
+    setMuteLabels(updatedMuteLabels);
+    try {
+      await toggleAudioMute(!conversations[index].mostRecentCallState.muted, conversations[index].conversationId)
+      updatedMuteLabels[index] = conversations[index].mostRecentCallState.muted ? 'Unmute' : 'Mute';
+      setMuteLabels(updatedMuteLabels);
+    } catch(err) {
+      console.error(err);
+    }
+  }
 
   function generateActiveConversationsTable() {
     if (!conversations.length) {
@@ -33,7 +69,7 @@ export default function ActiveConversationsTable() {
               </tr>
             </thead>
             <tbody>
-              {conversations.map((convo) => (
+              {conversations.map((convo, index: number) => (
                 <tr key={convo.conversationId}>
                   <td>{convo.conversationId}</td>
                   <td>{convo.session.id}</td>
@@ -41,8 +77,8 @@ export default function ActiveConversationsTable() {
                   <td>{convo.session.sessionType}</td>
                   <td>{convo.mostRecentCallState.direction}</td>
                   <td>{convo.session.connectionState}</td>
-                  <td><GuxButton accent='secondary' onClick={() => toggleHoldState(!convo.mostRecentCallState.held, convo.conversationId)}>{convo.mostRecentCallState.held ? 'Unhold' : 'Hold'}</GuxButton></td>
-                  <td><GuxButton accent='secondary' onClick={() => toggleAudioMute(!convo.mostRecentCallState.muted, convo.conversationId)}>{convo.mostRecentCallState.muted ? 'Unmute' : 'Mute'}</GuxButton></td>
+                  <td><GuxButton accent='secondary' onClick={async () => await toggleConversationHold(index)}>{holdLabels[index]}</GuxButton></td>
+                  <td><GuxButton accent='secondary' onClick={async () => await toggleConversationMute(index)}>{muteLabels[index]}</GuxButton></td>
                   <td><GuxButton accent='danger' onClick={() => endSession(convo.conversationId)}>End</GuxButton></td>
                 </tr>
               ))}
