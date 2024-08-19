@@ -9,3 +9,11 @@
 .auth-buttons > * {
   margin: 0.375rem 0.375rem 0 0;
 }
+
+.auth-spinner {
+  display: flex;
+  align-items: center;
+}
+.auth-spinner > * {
+  margin: 0.375rem 0.375rem 0 0;
+}

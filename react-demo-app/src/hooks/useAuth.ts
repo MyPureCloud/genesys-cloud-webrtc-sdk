@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import platformClient from 'purecloud-platform-client-v2';
 import useSdk from './useSdk';
-import { setAuthStatus } from '../features/authSlice';
+import { setAuthStatus, setAuthLoading } from '../features/authSlice';
 
 export const environments: any = {
   dca: {
@@ -23,6 +23,7 @@ export default function useAuth() {
 
   useEffect(() => {
     if (localStorage.getItem('sdk_test_auth_data')) {
+      dispatch(setAuthLoading(true));
       let parsedAuth = JSON.parse(
         localStorage.getItem('sdk_test_auth_data') || '{}'
       );
@@ -47,6 +48,7 @@ export default function useAuth() {
       console.error('No token found!');
       return;
     }
+    dispatch(setAuthLoading(true));
     window.location.hash = `#access_token=${token}&env=${auth.env}`;
     authenticateFromUrlToken();
   }
@@ -68,6 +70,7 @@ export default function useAuth() {
 
     await initWebrtcSDK({ token, environment });
     dispatch(setAuthStatus(true));
+    dispatch(setAuthLoading(false));
   }
 
   // platformClient.setPersistSettings(true, persistentName) only sets the token, not the env so we'll do it all ourselves.
@@ -101,6 +104,7 @@ export default function useAuth() {
           },
         });
         dispatch(setAuthStatus(true));
+        dispatch(setAuthLoading(false));
       })
       .catch((err) => {
         console.error(err);
