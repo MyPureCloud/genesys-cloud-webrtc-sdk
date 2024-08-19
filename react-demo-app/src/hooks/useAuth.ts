@@ -4,17 +4,6 @@ import platformClient from 'purecloud-platform-client-v2';
 import useSdk from './useSdk';
 import { setAuthStatus } from '../features/authSlice';
 
-interface IAuthData {
-  token: string;
-  environment: {
-    clientId: string;
-    uri: string;
-  };
-}
-
-const client = platformClient.ApiClient.instance;
-const persistentName = 'sdk_test';
-
 export const environments: any = {
   dca: {
     clientId: '2e10c888-5261-45b9-ac32-860a1e67eff8',
@@ -27,16 +16,32 @@ export const environments: any = {
 };
 
 export default function useAuth() {
+  const client = platformClient.ApiClient.instance;
+  const persistentName = 'sdk_test';
   const { initWebrtcSDK } = useSdk();
   const dispatch = useDispatch();
 
-  /* Uncomment this to login implicitly without clicking. */
-  // useEffect(() => {
-  //   if (localStorage.getItem('sdk_test_auth_data')) {
-  //     authenticateImplicitly('dca');
-  //   }
-  // }, []);
-  async function checkAuthToken(auth: { token: string, env: string}) {
+  useEffect(() => {
+    if (localStorage.getItem('sdk_test_auth_data')) {
+      let parsedAuth = JSON.parse(
+        localStorage.getItem('sdk_test_auth_data') || '{}'
+      );
+
+      setAuthData(parsedAuth);
+      // React doesn't like making useEffect async so we will just create an anon function that returns our function.
+      async () => await verifyToken();
+      authenticateImplicitly();
+    }
+  }, []);
+
+  // Verify the token we have saved locally is valid.
+  async function verifyToken() {
+    const tokensApi = new platformClient.TokensApi();
+    await tokensApi.getTokensMe();
+    return true;
+  }
+
+  async function checkAuthToken(auth: { token: string; env: string }) {
     const token = auth.token;
     if (!auth.token) {
       console.error('No token found!');
@@ -54,33 +59,47 @@ export default function useAuth() {
     const environment: any = environments[urlParams.env];
     const token = (urlParams as any)['access_token'];
 
-    client.setPersistSettings(true, persistentName);
-    client.setEnvironment(environment.uri);
+    setLocalStorage({
+      accessToken: token,
+      environment: environment.uri,
+      clientId: environment.clientId,
+    });
+    setAuthData({ accessToken: token, environment: environment.uri });
 
-    window.localStorage.setItem(
-      `${persistentName}_auth_data`,
-      JSON.stringify({ accessToken: token })
-    );
-    client.instance.setAccessToken(token);
     await initWebrtcSDK({ token, environment });
     dispatch(setAuthStatus(true));
   }
 
-  function authenticateImplicitly(environment: any) {
-    const environmentData = environments[environment];
-    client.setPersistSettings(true, persistentName);
-    client.setEnvironment(environmentData.uri);
+  // platformClient.setPersistSettings(true, persistentName) only sets the token, not the env so we'll do it all ourselves.
+  function setLocalStorage(authData: {
+    accessToken: string;
+    environment: string;
+    clientId: string;
+  }) {
+    window.localStorage.setItem(
+      `${persistentName}_auth_data`,
+      JSON.stringify(authData)
+    );
+  }
 
+  function setAuthData(authData: { accessToken: string; environment: string }) {
+    client.setEnvironment(authData.environment);
+    client.setAccessToken(authData.accessToken);
+  }
+  function authenticateImplicitly() {
+    const authData = JSON.parse(
+      window.localStorage.getItem(`${persistentName}_auth_data`) || '{}'
+    );
     client
-      .loginImplicitGrant(environmentData.clientId, window.location.href)
+      .loginImplicitGrant(authData.clientId, window.location.href)
       .then(async () => {
-        const authInfo = JSON.parse(window.localStorage.getItem(`${persistentName}_auth_data`) ?? '{}');
-        const authData: IAuthData = {
-          token: authInfo?.accessToken,
-          environment: environmentData,
-        };
-        client.instance.setAccessToken(authData.token);
-        await initWebrtcSDK(authData);
+        await initWebrtcSDK({
+          token: authData.accessToken,
+          environment: {
+            uri: authData.environment,
+            clientId: authData.clientId,
+          },
+        });
         dispatch(setAuthStatus(true));
       })
       .catch((err) => {

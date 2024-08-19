@@ -20,7 +20,7 @@ export default function Auth() {
   }
 
   function handleImplicitAuth(): void {
-    authenticateImplicitly(env);
+    authenticateImplicitly();
   }
 
   return (
