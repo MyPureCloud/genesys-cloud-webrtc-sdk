@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.0...HEAD)
+### Fixed
+* [STREAM-168](https://inindca.atlassian.net/browse/STREAM-168) - resetHeadsetState should not attempt if headset is not connected - softphone vendor headsets version bump.
+
 # [v9.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.2...v9.2.0)
 ### Changed
 * [STREAM-71](https://inindca.atlassian.net/browse/STREAM-71) - Support priv-answer-mode auto and add eagerPersistentConnectionEstablishment to config
