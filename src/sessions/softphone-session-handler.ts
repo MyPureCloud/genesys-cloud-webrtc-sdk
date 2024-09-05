@@ -1,4 +1,4 @@
-import { cloneDeep, debounce, DebouncedFunc } from 'lodash';
+import { debounce, DebouncedFunc } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -19,7 +19,7 @@ import {
 } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
-import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
+import { requestApi, isSoftphoneJid, createAndEmitSdkError, deepClone } from '../utils';
 import { HeadsetChangesQueue } from '../headsets/headset-utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
@@ -403,7 +403,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       conversationState['sessionId'] = sessionId;
     };
 
-    const updateForLogging = cloneDeep(update);
+    const updateForLogging = deepClone(update);
     updateForLogging.added.forEach(replaceSession);
     updateForLogging.removed.forEach(replaceSession);
     updateForLogging.current.forEach(replaceSession);
