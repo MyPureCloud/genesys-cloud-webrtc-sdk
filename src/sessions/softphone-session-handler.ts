@@ -397,16 +397,26 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   private pruneConversationUpdateForLogging (update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
-    const replaceSession = (conversationState: IStoredConversationState) => {
-      const sessionId = conversationState.session?.id;
-      delete conversationState.session;
-      conversationState['sessionId'] = sessionId;
+  private pruneConversationUpdateForLogging(update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
+    const replaceSessions = (conversationStates: IStoredConversationState[]) => {
+      return conversationStates.map((conversationState: IStoredConversationState) => {
+        const conversationStateCopy = {
+          ...conversationState,
+          session: undefined,
+          sessionId: conversationState.session?.id
+        }
+        delete conversationStateCopy.session;
+        return conversationStateCopy;
+      });
     };
 
-    const updateForLogging = deepClone(update);
-    updateForLogging.added.forEach(replaceSession);
-    updateForLogging.removed.forEach(replaceSession);
-    updateForLogging.current.forEach(replaceSession);
+    const updateForLogging = {
+      ...update,
+      added: replaceSessions(update.added),
+      removed: replaceSessions(update.removed),
+      current: replaceSessions(update.current)
+    }
+
     return updateForLogging;
   }
 
