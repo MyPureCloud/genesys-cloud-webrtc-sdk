@@ -29,9 +29,15 @@ export default function useAuth() {
       );
 
       setAuthData(parsedAuth);
-      // React doesn't like making useEffect async so we will just create an anon function that returns our function.
-      async () => await verifyToken();
-      authenticateImplicitly();
+      // React doesn't like making useEffect async so we will just create an anon function.
+      (async () => {
+        try {
+          await verifyToken();
+          authenticateImplicitly();
+        } catch(err) {
+          dispatch(setAuthLoading(false));
+        }
+      })();
     }
   }, []);
 
