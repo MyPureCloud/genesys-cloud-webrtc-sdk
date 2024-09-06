@@ -19,7 +19,7 @@ import {
 } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
-import { requestApi, isSoftphoneJid, createAndEmitSdkError, deepClone } from '../utils';
+import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
 import { HeadsetChangesQueue } from '../headsets/headset-utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
