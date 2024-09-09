@@ -397,12 +397,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   private pruneConversationUpdateForLogging (update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
-  private pruneConversationUpdateForLogging(update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
     const replaceSessions = (conversationStates: IStoredConversationState[]) => {
       return conversationStates.map((conversationState: IStoredConversationState) => {
         const conversationStateCopy = {
           ...conversationState,
-          session: undefined,
           sessionId: conversationState.session?.id
         }
         delete conversationStateCopy.session;
