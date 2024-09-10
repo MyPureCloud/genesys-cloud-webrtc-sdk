@@ -854,7 +854,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   isConversationHeld(conversationId: string): boolean {
-    return !!this.conversations[conversationId]?.mostRecentCallState.held;
+    return !!this.conversations[conversationId]?.mostRecentCallState?.held;
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera
