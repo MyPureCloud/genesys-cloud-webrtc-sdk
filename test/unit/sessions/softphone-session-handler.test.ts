@@ -1605,7 +1605,7 @@ describe('emitConversationEvent()', () => {
 });
 
 describe('pruneConversationUpdateForLogging', () => {
-  it('should not remove session from original update', () => {
+  it('should replace session but not in original update', () => {
     const lastEmittedSdkConversationEvent = {
       current: [
         { conversationId: 'convo1', session: { id: 'session1' }},
@@ -1617,6 +1617,9 @@ describe('pruneConversationUpdateForLogging', () => {
 
     const prunedConvo = handler['pruneConversationUpdateForLogging'](lastEmittedSdkConversationEvent) as any;
 
+    expect(Object.keys(prunedConvo.current[0])).not.toContain('session');
+    expect(prunedConvo.current[0].sessionId).toBeTruthy();
+    expect(prunedConvo.current[0].sessionId).toBe(lastEmittedSdkConversationEvent.current[0].session?.id);
     expect(lastEmittedSdkConversationEvent.current[0].session).toBeTruthy();
   });
 
