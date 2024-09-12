@@ -8,14 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v9.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.1...v9.2.2)
 ### Fixed
 * [STREAM-174](https://inindca.atlassian.net/browse/STREAM-174) - Add a null check for conversation state lookup for held.
+* [STREAM-172](https://inindca.atlassian.net/browse/STREAM-172) - Update axios to address Snyk vulnerability
+* [STREAM-191](https://inindca.atlassian.net/browse/STREAM-191) - Fix for slow performance of `pruneConversationUpdateForLogging`
+
 ### Changed
 * [STREAM-146](https://inindca.atlassian.net/browse/STREAM-146) - Updated logging for new JSON-RPC commands.
 
 # [v9.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.0...v9.2.1)
 ### Fixed
 * [STREAM-168](https://inindca.atlassian.net/browse/STREAM-168) - resetHeadsetState should not attempt if headset is not connected - softphone vendor headsets version bump.
-* [STREAM-172](https://inindca.atlassian.net/browse/STREAM-172) - Update axios to address Snyk vulnerability
-* [STREAM-191](https://inindca.atlassian.net/browse/STREAM-191) - Fix for slow performance of `pruneConversationUpdateForLogging`
 
 # [v9.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.2...v9.2.0)
 ### Changed
