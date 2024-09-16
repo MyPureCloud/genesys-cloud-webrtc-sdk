@@ -2324,6 +2324,16 @@ describe('setConversationHeld()', () => {
       .mockResolvedValue(null);
   });
 
+  it('should do nothing if peerConnection is not connected', async () => {
+    const params: IConversationHeldRequest = { conversationId, held: true };
+
+    (session.peerConnection as any).connectionState = 'closed';
+    await handler.setConversationHeld(session, params);
+
+    expect(getUserParticipantFromConversationIdSpy).not.toHaveBeenCalled();
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
+  });
+
   it('should fetch the participant and patch the phone call', async () => {
     const params: IConversationHeldRequest = { conversationId, held: true };
 
