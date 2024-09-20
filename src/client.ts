@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
-import StreamingClient, { HttpClient, InvalidTokenError } from 'genesys-cloud-streaming-client';
+import StreamingClient, { HttpClient, StreamingClientError, StreamingClientErrorTypes } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
 import { jwtDecode } from "jwt-decode";
 
@@ -287,7 +287,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
       this.emit('ready');
     } catch (err) {
-      if (err instanceof InvalidTokenError) {
+      if (err instanceof StreamingClientError && err.type == StreamingClientErrorTypes.invalid_token) {
         throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_token, err.message, err);
       }
 
