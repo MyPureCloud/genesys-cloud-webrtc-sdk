@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.3...HEAD)
 # [v9.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.2...v9.2.3)
+### Changed
+* [NO_JIRA] - Bump client-logger to pick up fixes
 ### Fixed
 * [STREAM-178](https://inindca.atlassian.net/browse/STREAM-178) - Dont try and hold session with dead peerConnections; bump streaming-client
 
