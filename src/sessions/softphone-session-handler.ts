@@ -127,10 +127,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     // we want to emit the pendingSession event in all cases except when eagerConnectionEstablishmentMode === auto and this is a privAnswerMode call
     if (!shouldAutoAnswerPrivately) {
       await super.handlePropose(pendingSession);
-    } else if (shouldAutoAnswerPrivately) {
-      if (shouldAutoAnswerPrivately) {
-        return await this.proceedWithSession(pendingSession);
-      }
+    } else {
+      return await this.proceedWithSession(pendingSession);
     }
 
     // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both

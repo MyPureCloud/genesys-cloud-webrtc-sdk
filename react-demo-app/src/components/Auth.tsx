@@ -8,8 +8,9 @@ import { useSelector } from 'react-redux';
 import { IAuthState } from '../features/authSlice';
 
 export default function Auth() {
-  const { checkAuthToken, authenticateImplicitly } = useAuth();
+  const { checkAuthToken, authenticateWithPkce } = useAuth();
   const authLoading = useSelector((state: IAuthState) => state.auth.authLoading);
+  const authError = useSelector((state: IAuthState) => state.auth.authError);
   const [token, setToken] = useState('');
   const [env, setEnv] = useState('dca');
 
@@ -22,8 +23,8 @@ export default function Auth() {
     checkAuthToken(auth);
   }
 
-  function handleImplicitAuth(): void {
-    authenticateImplicitly();
+  function authenticateWithCode(): void {
+    authenticateWithPkce(env);
   }
 
   const authSpinner = () => {
@@ -32,6 +33,16 @@ export default function Auth() {
         <div className='auth-spinner'>
           <p>Authenticating</p>
           <GuxRadialLoading context='input'></GuxRadialLoading>
+        </div>
+      )
+    }
+  }
+
+  const errorMessage = () => {
+    if (authError) {
+      return (
+        <div className='auth-error'>
+          <p>{authError}</p>
         </div>
       )
     }
@@ -55,9 +66,10 @@ export default function Auth() {
             <input type="text" id="auth-input" name="auth-input" onChange={(e) => setToken(e.target.value)}/>
           </div>
           <div className="auth-buttons">
-            <GuxButton type="submit" onClick={authenticate}>Authenticate</GuxButton>
-            <GuxButton type="button" onClick={handleImplicitAuth}>Use Implicit Auth</GuxButton>
+            <GuxButton type="submit" onClick={authenticate}>Use Manual Token</GuxButton>
+            <GuxButton type="button" onClick={authenticateWithCode}>Authenticate</GuxButton>
           </div>
+          {errorMessage()}
           {authSpinner()}
           </form>
         </div>
