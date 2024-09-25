@@ -19,7 +19,7 @@ import {
 } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
-import { requestApi, isSoftphoneJid, createAndEmitSdkError } from '../utils';
+import { requestApi, isSoftphoneJid, createAndEmitSdkError, isPeerConnectionDisconnected } from '../utils';
 import { HeadsetChangesQueue } from '../headsets/headset-utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { GenesysCloudWebrtcSdk } from '..';
@@ -809,6 +809,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest) {
+    if (isPeerConnectionDisconnected(session.peerConnection.connectionState)) {
+      this.log('warn', 'peerConnection is disconnected, canceling attempt to hold', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
+      return;
+    }
+    
     this.log('info', 'setting conversation "held" state', {
       conversationId: session.conversationId,
       sessionId: session.id,
