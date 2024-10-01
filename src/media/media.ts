@@ -914,12 +914,15 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
         echoCancellation: this.sdk._config.defaults.micEchoCancellation,
         noiseSuppression: this.sdk._config.defaults.micNoiseSuppression,
         googDucking: false,
-        googHighpassFilter: true
+        googHighpassFilter: true,
+        googNoiseSuppression: true,
+        voiceIsolation: true
       }
     };
 
     if (browserama.isChromeOrChromium) {
-      constraints.video.googNoiseReduction = true;
+      constraints.video.googNoiseSuppression = true;
+      constraints.video.voiceIsolation = true;
     }
 
     /* `false|undefined` means don't request */

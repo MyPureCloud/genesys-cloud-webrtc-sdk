@@ -1242,7 +1242,8 @@ describe('SdkMedia', () => {
 
       expect(getStandardConstraintsFn(options)).toEqual({
         video: {
-          googNoiseReduction: true,
+          googNoiseSuppression: true,
+          voiceIsolation: true,
           frameRate: { ideal: 30 }
         },
         audio: {
@@ -1251,7 +1252,9 @@ describe('SdkMedia', () => {
           echoCancellation: true,
           noiseSuppression: true,
           googDucking: false,
-          googHighpassFilter: true
+          googHighpassFilter: true,
+          googNoiseSuppression: true,
+          voiceIsolation: true
         }
       });
     });
