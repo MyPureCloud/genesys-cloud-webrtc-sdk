@@ -11,6 +11,9 @@ export const environments: { [envKey: string]: { uri: string } } = {
   dca: {
     uri: 'inindca.com',
   },
+  tca: {
+    uri: 'inintca.com',
+  },
   'pca-us': {
     uri: 'mypurecloud.com',
   },

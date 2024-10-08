@@ -58,6 +58,7 @@ export default function Auth() {
               <label htmlFor="environments">Env:</label>
               <select name="environments" id="env-selector" onChange={(e) => setEnv(e.target.value)}>
                 <option value="dca">DCA</option>
+                <option value="tca">TCA</option>
                 <option value="pca-us">Prod</option>
               </select>
             </div>
