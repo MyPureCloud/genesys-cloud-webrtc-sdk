@@ -1,4 +1,4 @@
-import { cloneDeep, debounce, DebouncedFunc } from 'lodash';
+import { debounce, DebouncedFunc } from 'lodash';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 
@@ -107,11 +107,34 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
-    await super.handlePropose(pendingSession);
+    const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
+    const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
+    const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
+    
+    if (isPrivAnswerAuto) {
+      this.log('info', 'received a propose with privAnswerMode=true', logInfo);
+    }
+    
+    // if eagerPersistentConnectionEstablishment==='none' then we want to completely swallow the propose
+    const shouldIgnorePrivAnswerPropose = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'none';
+    if (shouldIgnorePrivAnswerPropose) {
+      this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=true will be ignored', logInfo);
+      return;
+    }
 
+    const shouldAutoAnswerPrivately = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'auto';
+
+    // we want to emit the pendingSession event in all cases except when eagerConnectionEstablishmentMode === auto and this is a privAnswerMode call
+    if (!shouldAutoAnswerPrivately) {
+      await super.handlePropose(pendingSession);
+    } else {
+      return await this.proceedWithSession(pendingSession);
+    }
+
+    // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
     if (pendingSession.autoAnswer) {
       if (this.sdk._config.disableAutoAnswer) {
-        this.log('info', 'received and autoAnswer tagged propose but sdk has disableAutoAnswer.', { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId });
+        this.log('info', 'received and autoAnswer tagged propose but sdk has disableAutoAnswer.', logInfo);
       } else {
         await this.proceedWithSession(pendingSession);
       }
@@ -372,16 +395,24 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   private pruneConversationUpdateForLogging (update: ISdkConversationUpdateEvent): ISdkConversationUpdateEvent {
-    const replaceSession = (conversationState: IStoredConversationState) => {
-      const sessionId = conversationState.session?.id;
-      delete conversationState.session;
-      conversationState['sessionId'] = sessionId;
+    const replaceSessions = (conversationStates: IStoredConversationState[]) => {
+      return conversationStates.map((conversationState: IStoredConversationState) => {
+        const conversationStateCopy = {
+          ...conversationState,
+          sessionId: conversationState.session?.id
+        }
+        delete conversationStateCopy.session;
+        return conversationStateCopy;
+      });
     };
 
-    const updateForLogging = cloneDeep(update);
-    updateForLogging.added.forEach(replaceSession);
-    updateForLogging.removed.forEach(replaceSession);
-    updateForLogging.current.forEach(replaceSession);
+    const updateForLogging = {
+      ...update,
+      added: replaceSessions(update.added),
+      removed: replaceSessions(update.removed),
+      current: replaceSessions(update.current)
+    }
+
     return updateForLogging;
   }
 
@@ -829,7 +860,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   isConversationHeld(conversationId: string): boolean {
-    return !!this.conversations[conversationId]?.mostRecentCallState.held;
+    return !!this.conversations[conversationId]?.mostRecentCallState?.held;
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera

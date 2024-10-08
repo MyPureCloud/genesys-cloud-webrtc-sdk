@@ -496,7 +496,7 @@ describe('HeadsetProxyService', () => {
     }
 
     beforeEach(() => {
-      jest.useFakeTimers({ legacyFakeTimers: true });
+      jest.useFakeTimers({ doNotFake: ['nextTick'] });
       updateAudioSpy = proxyService.updateAudioInputDevice = jest.fn();
       broadcastSpy = proxyService['sdk']._streamingConnection.messenger.broadcastMessage as jest.Mock;
       proxyService['sdk']._config.useHeadsets = true;
