@@ -7,11 +7,14 @@ import PendingSessionsTable from "./PendingSessionsTable";
 import ActiveConversationsTable from "./ActiveConversationsTable";
 import HandledPendingSessionsTable from "./HandledPendingSessionsTable";
 import StationDetails from "./StationDetails";
+import { useSelector } from "react-redux";
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState("*86");
   const [onQueueStatus, setOnQueueStatus] = useState(false);
-  const { startSoftphoneSession, updateOnQueueStatus } = useSdk();
+  const { startSoftphoneSession, updateOnQueueStatus, disconnectPersistentConnection } = useSdk();
+  const sdk = useSelector(state => state.sdk.sdk);
+  const [persistentConnectionEnabled] = useState(sdk.station.webRtcPersistentEnabled);
 
   function placeCall(event?: FormEvent<HTMLFormElement>) {
     if (event) {
@@ -33,12 +36,12 @@ export default function Softphone() {
           <Card className="softphone-call-card">
             <h3>Place Call</h3>
             <form onSubmit={(e) => placeCall(e)}>
-                <input
-                  type="text"
-                  slot="input"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                />
+              <input
+                type="text"
+                slot="input"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
               <GuxButton
                 accent="primary"
                 className="softphone-call-btn"
@@ -48,6 +51,14 @@ export default function Softphone() {
                 Place Call
               </GuxButton>
             </form>
+            <GuxButton
+              accent="secondary"
+              disabled={!persistentConnectionEnabled}
+              className="softphone-disconnect-btn"
+              onClick={() => disconnectPersistentConnection()}
+            >
+              Disconnect PC
+            </GuxButton>
             <GuxToggle
               className="softphone-queue-toggle"
               labelPosition="left"

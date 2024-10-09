@@ -2,6 +2,7 @@ import {
   GenesysCloudWebrtcSdk,
   ISdkConfig,
   ISdkConversationUpdateEvent,
+  SessionTypes
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -14,6 +15,7 @@ import {
 import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
+import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
 
 interface IAuthData {
   token: string;
@@ -115,7 +117,7 @@ export default function useSdk() {
     dispatch(updateGumRequests(state));
   }
 
-  function updateDefaultDevices(options): void {
+  function updateDefaultDevices(options: any): void {
     sdk.updateDefaultDevices({
       ...options,
       updateActiveSessions: true,
@@ -159,6 +161,11 @@ export default function useSdk() {
     await sdk._http.requestApi(`users/${sdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
   }
 
+  function disconnectPersistentConnection(): void {
+    const sessions = sdk.sessionManager.getAllActiveSessions().filter((session: GenesysCloudMediaSession) => session.sessionType === SessionTypes.softphone);
+    sessions.forEach((session: GenesysCloudMediaSession) => sdk.forceTerminateSession(session.id));
+  }
+
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -170,6 +177,7 @@ export default function useSdk() {
     requestDevicePermissions,
     updateAudioVolume,
     destroySdk,
-    updateOnQueueStatus
+    updateOnQueueStatus,
+    disconnectPersistentConnection
   };
 }

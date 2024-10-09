@@ -13,9 +13,9 @@
   display: flex;
   flex-direction: column;
 }
-.softphone-call-btn, .softphone-queue-toggle {
+.softphone-call-btn, .softphone-queue-toggle, .softphone-disconnect-btn {
   display: flex;
   justify-content: center;
-  margin-top: 0.5rem;
+  margin: 0.25rem 0 0.25rem 0;
 }
 
