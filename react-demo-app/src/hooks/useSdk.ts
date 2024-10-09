@@ -15,7 +15,7 @@ import {
 import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
-import { GenesysCloudMediaSession } from 'genesys-cloud-streaming-client';
+import { GenesysCloudMediaSession, IPendingSession } from 'genesys-cloud-streaming-client';
 
 interface IAuthData {
   token: string;
@@ -75,45 +75,45 @@ export default function useSdk() {
     sdk.startSoftphoneSession({ phoneNumber });
   }
 
-  function handlePendingSession(pendingSession) {
+  function handlePendingSession(pendingSession: IPendingSession): void {
     dispatch(updatePendingSessions(pendingSession));
   }
   // If a pendingSession was cancelled or handled, we can remove it from our state.
-  function handleCancelPendingSession(pendingSession) {
+  function handleCancelPendingSession(pendingSession: IPendingSession): void {
     dispatch(removePendingSession(pendingSession));
   }
 
-  function handledPendingSession(pendingSession) {
+  function handledPendingSession(pendingSession: IPendingSession): void {
     dispatch(removePendingSession(pendingSession));
     dispatch(storeHandledPendingSession(pendingSession))
   }
 
   function handleSessionStarted() {}
 
-  function handleSessionEnded(session) {}
+  function handleSessionEnded(session: GenesysCloudMediaSession) {}
 
   function handleDisconnected() {}
 
   function handleConnected() {}
 
-  function handleConversationUpdate(update: ISdkConversationUpdateEvent) {
+  function handleConversationUpdate(update: ISdkConversationUpdateEvent): void {
     dispatch(updateConversations(update));
   }
 
-  function endSession(conversationId: string) {
+  function endSession(conversationId: string): void {
     sdk.endSession({ conversationId });
   }
-  async function toggleAudioMute(mute: boolean, conversationId: string) {
+  async function toggleAudioMute(mute: boolean, conversationId: string): Promise<void> {
     await sdk.setAudioMute({ mute, conversationId });
   }
-  async function toggleHoldState(held: boolean, conversationId: string) {
+  async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
     await sdk.setConversationHeld({ held, conversationId });
   }
 
-  function handleMediaStateChange(state: void) {
+  function handleMediaStateChange(state: void): void {
     dispatch(updateMediaState(state));
   }
-  function handleGumRequest(state: void) {
+  function handleGumRequest(state: void): void {
     dispatch(updateGumRequests(state));
   }
 
@@ -138,7 +138,7 @@ export default function useSdk() {
   }
 
   /* Misc Functions */
-  async function updateOnQueueStatus(onQueue: boolean) {
+  async function updateOnQueueStatus(onQueue: boolean): Promise<void> {
     const systemPresences = await sdk._http.requestApi(`systempresences`, {
       method: 'get',
       host: sdk._config.environment,
