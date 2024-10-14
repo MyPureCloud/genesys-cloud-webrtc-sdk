@@ -633,7 +633,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     /* make sure we store the session with the conversation state: this is used for LA > 1 _and_ for initial (ie. 1st) sessions */
     if (!this.conversations[session.conversationId]) {
-      this.conversations[session.conversationId] = { session } as any;
+      // we don't want to store the fake conversation when priv-answer-mode=true
+      if (session.privAnswerMode !== 'Auto') {
+        this.conversations[session.conversationId] = { session } as any;
+      }
     } else {
       this.conversations[session.conversationId].session = session;
     }
