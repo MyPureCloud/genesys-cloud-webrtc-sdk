@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-218](https://inindca.atlassian.net/browse/STREAM-218) - bump streaming for priv-auto-answer on session object; dont create a conversation object for priv-auto-answer sessions.
 
+# Added
+* [STREAM-222](https://inindca.atlassian.net/browse/STREAM-222) - Created new SDK demo app using React/Vite.
+
 # [v9.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.2...v9.2.3)
 ### Changed
 * [NO_JIRA] - Bump client-logger to pick up fixes
