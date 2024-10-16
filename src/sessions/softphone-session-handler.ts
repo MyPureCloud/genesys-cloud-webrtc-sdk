@@ -110,11 +110,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
-    
+
     if (isPrivAnswerAuto) {
       this.log('info', 'received a propose with privAnswerMode=true', logInfo);
     }
-    
+
     // if eagerPersistentConnectionEstablishment==='none' then we want to completely swallow the propose
     const shouldIgnorePrivAnswerPropose = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'none';
     if (shouldIgnorePrivAnswerPropose) {
@@ -127,10 +127,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     // we want to emit the pendingSession event in all cases except when eagerConnectionEstablishmentMode === auto and this is a privAnswerMode call
     if (!shouldAutoAnswerPrivately) {
       await super.handlePropose(pendingSession);
-    } else if (shouldAutoAnswerPrivately) {
-      if (shouldAutoAnswerPrivately) {
-        return await this.proceedWithSession(pendingSession);
-      }
+    } else {
+      return await this.proceedWithSession(pendingSession);
     }
 
     // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
@@ -635,7 +633,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     /* make sure we store the session with the conversation state: this is used for LA > 1 _and_ for initial (ie. 1st) sessions */
     if (!this.conversations[session.conversationId]) {
-      this.conversations[session.conversationId] = { session } as any;
+      // we don't want to store the fake conversation when priv-answer-mode=true
+      if (session.privAnswerMode !== 'Auto') {
+        this.conversations[session.conversationId] = { session } as any;
+      }
     } else {
       this.conversations[session.conversationId].session = session;
     }
@@ -813,7 +814,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       this.log('warn', 'peerConnection is disconnected, canceling attempt to hold', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       return;
     }
-    
+
     this.log('info', 'setting conversation "held" state', {
       conversationId: session.conversationId,
       sessionId: session.id,

@@ -1,0 +1,25 @@
+.pending-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pending-table thead th, tr, td {
+  text-align: left;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+}
+
+.pending-table tbody tr {
+  font-size: small;
+}
+
+@media (max-width: 768px) {
+  .pending-table {
+    font-size: 0.8rem;
+  }
+
+  .pending-table thead th,
+  .pending-table tbody tr td {
+    padding: 0.25rem 0.5rem;
+  }
+}

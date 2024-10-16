@@ -1,0 +1,29 @@
+.header-card {
+  display: flex;
+  align-items: center;
+
+  .card-content {
+    flex-direction: row;
+    width: 100%;
+  }
+}
+
+.header-content {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  width: 100%;
+}
+
+.header-logo {
+  color: #FF4F1F;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+}
+
+.actions-container {
+  align-self: center;
+}
