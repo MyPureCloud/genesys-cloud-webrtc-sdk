@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.4...HEAD)
+### Fixed
+* [STREAM-253](https://inindca.atlassian.net/browse/STREAM-253) - Allow emission of non-solicited agent-video proposes
+
 # [v9.2.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.3...v9.2.4)
 ### Fixed
 * [STREAM-218](https://inindca.atlassian.net/browse/STREAM-218) - bump streaming for priv-auto-answer on session object; dont create a conversation object for priv-auto-answer sessions.
