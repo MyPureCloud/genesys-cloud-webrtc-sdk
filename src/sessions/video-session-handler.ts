@@ -19,7 +19,7 @@ import {
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
+import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession, isAgentVideoJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 
@@ -255,7 +255,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    if (isPeerVideoJid(pendingSession.fromJid)) {
+    if (isPeerVideoJid(pendingSession.fromJid) || isAgentVideoJid(pendingSession.fromJid)) {
       if (pendingSession.fromUserId === this.sdk._personDetails.id) {
         logPendingSession(this.sdk.logger,
           'Propose received for session which was initiated by a different client for this user. Ignoring.', pendingSession);
