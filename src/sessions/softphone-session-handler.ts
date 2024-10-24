@@ -454,8 +454,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id).reverse();
+    const userId = this.sdk._personDetails.id;
+    const participantsForUser = update.participants.filter(p => p.userId === userId).reverse();
     let participant: IConversationParticipantFromEvent;
+
+    this.log('debug', 'participants for user', { conversationId: update.id, participantsForUser, userId });
 
     if (!participantsForUser.length) {
       this.log('warn', 'user not found on conversation as a participant', { conversationId: update.id });
@@ -465,21 +468,25 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     /* one participant */
     if (participantsForUser.length === 1) {
       participant = participantsForUser[0];
+      this.log('debug', 'user only has a single participant on the conversation, returning that participant', { conversationId: update.id, participant });
     }
 
     /* find user participant with desired call state */
     if (!participant && state) {
       participant = participantsForUser.filter(p => p.calls.find(c => c.state === state))[0];
+      this.log('debug', 'looking for participant by state', { conversationId: update.id, participant, state });
     }
 
     /* find user participant with a call */
     if (!participant) {
       participant = participantsForUser.find(p => p.calls.length)
+      this.log('debug', 'looking for participant number of calls', { participant });
     }
 
     /* find the most recent user participant */
     if (!participant) {
       participant = participantsForUser[0];
+      this.log('debug', 'getting the first participant', { participant });
     }
 
     return participant;
@@ -490,7 +497,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const callLen = calls?.length;
 
     if (!callLen) {
-      this.log('debug', 'no call found on participant', { userId: participant?.userId, participantId: participant?.id });
+      this.log('debug', 'no call found on participant', { participant: participant || null, userId: participant?.userId, participantId: participant?.id });
       return;
     }
 

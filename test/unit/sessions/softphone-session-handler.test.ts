@@ -1888,7 +1888,7 @@ describe('getCallStateFromParticipant()', () => {
     expect(handler.getCallStateFromParticipant(null as any)).toBe(undefined);
     expect(mockSdk.logger.debug).toHaveBeenCalledWith(
       'no call found on participant',
-      { userId: undefined, participantId: undefined },
+      { userId: undefined, participantId: undefined, participant: null },
       undefined
     );
   });
@@ -1897,7 +1897,7 @@ describe('getCallStateFromParticipant()', () => {
     expect(handler.getCallStateFromParticipant(participant)).toBe(undefined);
     expect(mockSdk.logger.debug).toHaveBeenCalledWith(
       'no call found on participant',
-      { userId: participant.userId, participantId: participant.id },
+      expect.objectContaining({ userId: participant.userId, participantId: participant.id }),
       undefined
     );
   });
