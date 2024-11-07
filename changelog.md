@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.4...HEAD)
 ### Fixed
 * [STREAM-253](https://inindca.atlassian.net/browse/STREAM-253) - Allow emission of non-solicited agent-video proposes
+* [STREAM-245](https://inindca.atlassian.net/browse/STREAM-245) - Don't hold other active sessions if we're establishing an eager persistent connection (privAnswerMode === 'Auto').
 
 # [v9.2.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.3...v9.2.4)
 ### Fixed
