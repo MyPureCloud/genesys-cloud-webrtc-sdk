@@ -570,9 +570,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
+    const privAnswerMode = session.privAnswerMode;
 
-    /* If LA>1, hold other active sessions in favor of the latest we're accepting. */
-    if (!lineAppearance1 && !session.reinvite) {
+    /* If LA>1, hold other active sessions in favor of the latest we're accepting unless its a reinvite
+    or we're establishing an eager persistent connection (privAnswer). */
+    if (!lineAppearance1 && !session.reinvite && privAnswerMode !== 'Auto') {
       this.holdOtherSessions(session);
     }
     /* if we have an active non-concurrent session, we can drop this accept on the floor */
@@ -811,7 +813,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest) {
     if (isPeerConnectionDisconnected(session.peerConnection.connectionState)) {
-      this.log('warn', 'peerConnection is disconnected, canceling attempt to hold', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
+      this.log('warn', 'peerConnection is disconnected, cancelling attempt to hold', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       return;
     }
 
