@@ -289,6 +289,10 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     // auto answer agent sessions
     if (isAgentVideoJid(pendingSession.fromJid)) {
+      this.log('info', 'handling agent-video propose', {
+        conversationId: pendingSession.conversationId,
+        sessionType: pendingSession.sessionType
+      });
       await super.handlePropose(pendingSession);
     }
 
