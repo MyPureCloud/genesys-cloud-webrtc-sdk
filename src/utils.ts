@@ -107,6 +107,10 @@ export const isPeerVideoJid = function (jid: string) {
   return isVideoJid(jid) && jid.startsWith('peer-');
 };
 
+export const isAgentVideoJid = function (jid: string) {
+  return isVideoJid(jid) && jid.startsWith('agent-');
+};
+
 export const isVideoJid = function (jid: string): boolean {
   return jid && !!jid.match(/@conference/) && !isAcdJid(jid) && !isScreenRecordingJid(jid);
 };

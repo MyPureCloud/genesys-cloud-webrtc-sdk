@@ -14,12 +14,13 @@ import {
   IMediaRequestOptions,
   IStartVideoSessionParams,
   VideoMediaSession,
-  MemberStatusMessage
+  MemberStatusMessage,
+  IConversationParticipantFromEvent
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes, CommunicationStates } from '../types/enums';
 import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession } from '../utils';
+import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession, isAgentVideoJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 
@@ -61,8 +62,39 @@ export class VideoSessionHandler extends BaseSessionHandler {
     return isVideoJid(jid);
   }
 
+  getUserParticipantFromConversationEvent (update: ConversationUpdate): IConversationParticipantFromEvent | undefined {
+    if (!update) {
+      return;
+    }
+
+    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id).reverse();
+    let participant: IConversationParticipantFromEvent;
+
+    if (!participantsForUser.length) {
+      this.log('warn', 'user not found on conversation as a participant', { conversationId: update.id });
+      return;
+    }
+
+    /* one participant */
+    if (participantsForUser.length === 1) {
+      participant = participantsForUser[0];
+    }
+
+    /* find user participant with a call */
+    if (!participant) {
+      participant = participantsForUser.find(p => p.videos.length)
+    }
+
+    /* find the most recent user participant */
+    if (!participant) {
+      participant = participantsForUser[0];
+    }
+
+    return participant;
+  }
+
   findLocalParticipantInConversationUpdate (conversationUpdate: ConversationUpdate): IConversationParticipant | null {
-    const participant = conversationUpdate.participants.find((p) => p.userId === this.sdk._personDetails.id);
+    const participant = this.getUserParticipantFromConversationEvent(conversationUpdate)
 
     if (!participant) {
       this.log('warn', 'Failed to find current user in the conversation update');
@@ -253,6 +285,15 @@ export class VideoSessionHandler extends BaseSessionHandler {
       delete this.requestedSessions[pendingSession.originalRoomJid];
       await this.proceedWithSession(pendingSession);
       return;
+    }
+
+    // auto answer agent sessions
+    if (isAgentVideoJid(pendingSession.fromJid)) {
+      this.log('info', 'handling agent-video propose', {
+        conversationId: pendingSession.conversationId,
+        sessionType: pendingSession.sessionType
+      });
+      await super.handlePropose(pendingSession);
     }
 
     if (isPeerVideoJid(pendingSession.fromJid)) {
