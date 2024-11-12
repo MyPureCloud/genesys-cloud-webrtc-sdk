@@ -43,22 +43,6 @@ def testSpigotByEnv = { environment, branch ->
     }
 }
 
-def getDeployConfig = {
-  def deployConfig = [:]
-
-  if (isMainline()) {
-    deployConfig['dev'] = 'always'
-    deployConfig['test'] = 'always'
-  }
-
-  if (isMain()) {
-    deployConfig['prod'] = 'always'
-    deployConfig['fedramp-use2-core'] = 'always'
-  }
-
-  return deployConfig;
-}
-
 def npmFunctions = new com.genesys.jenkins.Npm()
 def gitFunctions = new com.genesys.jenkins.Git()
 def notifications = new com.genesys.jenkins.Notifications()
@@ -87,8 +71,6 @@ webappPipeline {
         wait: true
       ]
     }
-
-    deployConfig = getDeployConfig()
 
     autoSubmitCm = true
 
