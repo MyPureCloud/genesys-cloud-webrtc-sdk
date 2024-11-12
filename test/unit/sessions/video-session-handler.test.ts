@@ -10,7 +10,7 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import { ConversationUpdate, GenesysDataChannelMessageParams } from '../../../src/';
+import { ConversationUpdate, GenesysDataChannelMessageParams, ICallStateFromParticipant, IConversationParticipantFromEvent, IParticipantVideo, IPersonDetails } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 
 let handler: VideoSessionHandler;
@@ -37,6 +37,75 @@ describe('shouldHandleSessionByJid', () => {
     jest.spyOn(utils, 'isVideoJid').mockReturnValueOnce(false).mockReturnValueOnce(true);
     expect(handler.shouldHandleSessionByJid('sdlkf')).toBeFalsy();
     expect(handler.shouldHandleSessionByJid('sdlfk')).toBeTruthy();
+  });
+});
+
+describe('getUserParticipantFromConversationEvent()', () => {
+  const conversationId = 'call-home-to-asgard';
+  const userId = 'loki';
+  let converversationUpdate: ConversationUpdate;
+  let participant1: IConversationParticipantFromEvent;
+  let participant2: IConversationParticipantFromEvent;
+  let video: IParticipantVideo;
+
+  beforeEach(() => {
+    mockSdk._personDetails = { id: userId } as IPersonDetails;
+
+    participant1 = {
+      id: 'party#1',
+      purpose: 'totalk',
+      userId,
+      videos: [],
+      calls: []
+    };
+
+    participant2 = {
+      id: 'party#2',
+      purpose: 'tolisten',
+      userId,
+      videos: [],
+      calls: []
+    };
+
+    converversationUpdate = new ConversationUpdate({ id: conversationId, participants: [participant1, participant2] });
+
+    video = {
+      peerCount: 0,
+      context: 'asdf',
+      state: CommunicationStates.connected,
+      audioMuted: false,
+      videoMuted: false,
+      sharingScreen: false,
+      id: 'something'
+    };
+  });
+
+  it('should return void if no update', () => {
+    expect(handler.getUserParticipantFromConversationEvent(undefined as any)).toBe(undefined);
+  });
+
+  it('should return void if no participant found with the auth userId', () => {
+    converversationUpdate.participants = [{ ...participant2, userId: 'not-loki' }];
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toBe(undefined);
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith('user not found on conversation as a participant', { conversationId }, undefined);
+  });
+
+  it('should return the participant that matches the auth userId', () => {
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
+  });
+
+  it('should return the first participant with calls', () => {
+    participant1.userId = userId;
+    participant1.videos = [];
+    participant2.userId = userId;
+    participant2.videos = [video];
+    converversationUpdate.participants = [participant1, participant2];
+
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
+  });
+
+  it('should return the most recent participant if there are no calls on any of them', () => {
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
 });
 
@@ -528,6 +597,30 @@ describe('handlePropose', () => {
 
   it('should emit session if peer request', async () => {
     const jid = 'peer-123@conference.com';
+
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+
+    const emitSpy = jest.fn();
+
+    mockSdk.once('pendingSession', emitSpy);
+
+    await handler.handlePropose({
+      id: '1241241',
+      sessionId: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      fromJid: jid,
+      toJid: '',
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
+    });
+
+    expect(handler.proceedWithSession).not.toHaveBeenCalled();
+    expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it('should emit session if agent video request', async () => {
+    const jid = 'agent-123@conference.com';
 
     jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
 

@@ -651,6 +651,36 @@ describe('acceptSession()', () => {
     expect(getActiveSessionsSpy).toHaveBeenCalled();
     expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session or unheld previously held session with LA>1, holding other active sessions.', undefined, undefined);
   });
+
+  it('should NOT hold other sessions if LA>1 and we are establishing an eager persistent connection', () => {
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
+    const mockAudioElement = {} as HTMLAudioElement;
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
+    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+    jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
+
+    const createdStream = new MockStream({ audio: true });
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
+
+    const mockIncomingStream = new MockStream({ audio: true });
+
+    const session: any = new MockSession();
+    session.peerConnection.getReceivers = jest.fn().mockReturnValue([
+      {
+        track: mockIncomingStream.getAudioTracks()[0]
+      }
+    ]);
+    session.privAnswerMode = 'Auto';
+
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+
+    handler.acceptSession(session, { conversationId: session.conversationId });
+    expect(setHoldSpy).not.toHaveBeenCalled();
+    expect(getActiveSessionsSpy).not.toHaveBeenCalled();
+    expect(mockSdk.logger.debug).not.toHaveBeenCalled();
+  });
 });
 
 describe('proceedWithSession()', () => {
