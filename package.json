@@ -1,6 +1,6 @@
 {
   "name": "genesys-cloud-webrtc-sdk",
-  "version": "9.3.1",
+  "version": "9.3.2",
   "description": "client for the interfacing with Genesys Cloud WebRTC",
   "repository": "https://github.com/mypurecloud/genesys-cloud-webrtc-sdk",
   "license": "MIT",
@@ -67,7 +67,7 @@
     "process-fast": "^1.0.0",
     "rxjs": "^7.8.1",
     "safe-json-stringify": "^1.2.0",
-    "softphone-vendor-headsets": "^2.5.2",
+    "softphone-vendor-headsets": "^2.5.4",
     "strict-event-emitter-types": "^2.0.0",
     "uuid": "^9.0.1"
   },
