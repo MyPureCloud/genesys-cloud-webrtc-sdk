@@ -3,7 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.2...HEAD)
+
+# [v9.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.1...v9.3.2)
+### Fixed
+* [STREAM-259](https://inindca.atlassian.net/browse/STREAM-259) - updated softphone-vendor-headsets which added in guard for EPOS reject call to only bubble up events in the case of a "Notification" type message to avoid issues with "Acknowledgements"
+
+### Added
+* [no-jira] updated softphone-vendor-headsets which included a refactor for the VBeT implementation to better accommodate more devices; moved code out in favor of VBeT SDK
+
 # [v9.3.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.0...v9.3.1)
 ### Fixed
 * [no-jira] - deployment schedule change
