@@ -1,0 +1,21 @@
+.softphone-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.softphone-container > * {
+  flex: 0 0 auto;
+  margin: 0.5rem;
+}
+
+.softphone-call-card {
+  display: flex;
+  flex-direction: column;
+}
+.softphone-call-btn, .softphone-queue-toggle, .softphone-disconnect-btn {
+  display: flex;
+  justify-content: center;
+  margin: 0.25rem 0 0.25rem 0;
+}
+

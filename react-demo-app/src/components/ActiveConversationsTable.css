@@ -1,0 +1,30 @@
+.active-convo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.active-convo-table thead th, tr, td {
+  text-align: left;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+}
+
+.active-convo-table tbody tr {
+  font-size: small;
+}
+
+.end-call-btn {
+  background-color: var(--danger-btn-color);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .active-convo-table {
+    font-size: 0.8rem;
+  }
+
+  .active-convo-table thead th,
+  .active-convo-table tbody tr td {
+    padding: 0.25rem 0.5rem;
+  }
+}

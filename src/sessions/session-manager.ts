@@ -307,6 +307,7 @@ export class SessionManager {
       fromUserId: sessionInfo.fromUserId,
       toJid: sessionInfo.toJid,
       fromJid: sessionInfo.fromJid,
+      privAnswerMode: sessionInfo.privAnswerMode,
       meetingId: sessionInfo.meetingId
     };
 

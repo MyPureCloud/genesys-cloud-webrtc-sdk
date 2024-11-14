@@ -1,0 +1,4 @@
+.media-controls-container {
+  display: flex;
+  flex-direction: column;
+}

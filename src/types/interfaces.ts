@@ -106,6 +106,24 @@ export interface ISdkFullConfig {
   disableAutoAnswer?: boolean;
 
   /**
+   * If the station is configured for persistent connection and an active connection is required to go on queue, 
+   * a "fake" call will be used to establish the persistent connection as part of the process to go on queue.
+   * This setting is additional configuration for how the webrtc sdk handles this circumstance but
+   * only comes into play if `disableAutoAnswer` is `true`. If `disableAutoAnswer` is `false`, `eagerPersistentConnectionEstablishment`
+   * will always be `'auto'`.
+   * 
+   * Options:
+   * ``` ts
+   * 'auto': will automatically establish the connection upon receiving the fake call without emitting a `pendingSession` event.
+   * 'event': will emit a pendingSession event and allow the application to decide if it will establish the connection
+   * 'none': will not emit an event and will not establish the persistent connection
+   * ```
+   * 
+   * Defaults to `'auto'`
+   */
+  eagerPersistentConnectionEstablishment?: 'auto' | 'event' | 'none';
+
+  /**
    * Desired log level.
    * Available options:
    * ``` ts

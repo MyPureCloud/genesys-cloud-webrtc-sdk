@@ -125,6 +125,66 @@ describe('handlePropose()', () => {
     expect(superSpyHandlePropose).toHaveBeenCalled();
     expect(superSpyProceed).not.toHaveBeenCalled();
   });
+
+  it('should swallow the propose if eagerConnectionEstablishmentMode is "none" and priv-answer-mode', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+
+    mockSdk._config.disableAutoAnswer = true;
+    mockSdk._config.eagerPersistentConnectionEstablishment = 'none';
+
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.privAnswerMode = 'Auto';
+    pendingSession.autoAnswer = true;
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(superSpyHandlePropose).not.toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
+  });
+
+  it('should event the propose if eagerConnectionEstablishmentMode is "event" and priv-answer-mode', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+
+    mockSdk._config.disableAutoAnswer = true;
+    mockSdk._config.eagerPersistentConnectionEstablishment = 'event';
+
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.privAnswerMode = 'Auto';
+    pendingSession.autoAnswer = true;
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).toHaveBeenCalled();
+    expect(superSpyHandlePropose).toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
+  });
+
+  it('should auto proceed the propose if eagerConnectionEstablishmentMode is "auto" and priv-answer-mode', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+
+    mockSdk._config.disableAutoAnswer = true;
+    mockSdk._config.eagerPersistentConnectionEstablishment = 'auto';
+
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.privAnswerMode = 'Auto';
+    pendingSession.autoAnswer = true;
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(superSpyHandlePropose).not.toHaveBeenCalled();
+    expect(superSpyProceed).toHaveBeenCalled();
+  });
 });
 
 describe('handleSessionInit()', () => {
@@ -590,6 +650,36 @@ describe('acceptSession()', () => {
     expect(setHoldSpy).toHaveBeenCalledWith(session2, { conversationId: session2.conversationId, held: true });
     expect(getActiveSessionsSpy).toHaveBeenCalled();
     expect(mockSdk.logger.debug).toHaveBeenCalledWith('Received new session or unheld previously held session with LA>1, holding other active sessions.', undefined, undefined);
+  });
+
+  it('should NOT hold other sessions if LA>1 and we are establishing an eager persistent connection', () => {
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
+    const mockAudioElement = {} as HTMLAudioElement;
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
+    jest.spyOn(mediaUtils, 'attachAudioMedia').mockImplementation();
+    jest.spyOn(handler, 'addMediaToSession').mockImplementation();
+    jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
+
+    const createdStream = new MockStream({ audio: true });
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
+
+    const mockIncomingStream = new MockStream({ audio: true });
+
+    const session: any = new MockSession();
+    session.peerConnection.getReceivers = jest.fn().mockReturnValue([
+      {
+        track: mockIncomingStream.getAudioTracks()[0]
+      }
+    ]);
+    session.privAnswerMode = 'Auto';
+
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+
+    handler.acceptSession(session, { conversationId: session.conversationId });
+    expect(setHoldSpy).not.toHaveBeenCalled();
+    expect(getActiveSessionsSpy).not.toHaveBeenCalled();
+    expect(mockSdk.logger.debug).not.toHaveBeenCalled();
   });
 });
 
@@ -1545,7 +1635,7 @@ describe('emitConversationEvent()', () => {
 });
 
 describe('pruneConversationUpdateForLogging', () => {
-  it('should not remove session from original update', () => {
+  it('should replace session but not in original update', () => {
     const lastEmittedSdkConversationEvent = {
       current: [
         { conversationId: 'convo1', session: { id: 'session1' }},
@@ -1557,6 +1647,9 @@ describe('pruneConversationUpdateForLogging', () => {
 
     const prunedConvo = handler['pruneConversationUpdateForLogging'](lastEmittedSdkConversationEvent) as any;
 
+    expect(Object.keys(prunedConvo.current[0])).not.toContain('session');
+    expect(prunedConvo.current[0].sessionId).toBeTruthy();
+    expect(prunedConvo.current[0].sessionId).toBe(lastEmittedSdkConversationEvent.current[0].session?.id);
     expect(lastEmittedSdkConversationEvent.current[0].session).toBeTruthy();
   });
 
@@ -2259,6 +2352,16 @@ describe('setConversationHeld()', () => {
       .mockResolvedValue(userParticipant);
     patchPhoneCallSpy = jest.spyOn(handler, 'patchPhoneCall' as any)
       .mockResolvedValue(null);
+  });
+
+  it('should do nothing if peerConnection is not connected', async () => {
+    const params: IConversationHeldRequest = { conversationId, held: true };
+
+    (session.peerConnection as any).connectionState = 'closed';
+    await handler.setConversationHeld(session, params);
+
+    expect(getUserParticipantFromConversationIdSpy).not.toHaveBeenCalled();
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
   });
 
   it('should fetch the participant and patch the phone call', async () => {

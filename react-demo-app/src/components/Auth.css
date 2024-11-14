@@ -1,0 +1,23 @@
+.auth-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 18.75rem;
+  width: 37.5rem;
+}
+
+.auth-buttons > * {
+  margin: 0.375rem 0.375rem 0 0;
+}
+
+.auth-spinner {
+  display: flex;
+  align-items: center;
+}
+.auth-spinner > * {
+  margin: 0.375rem 0.375rem 0 0;
+}
+
+.auth-error {
+  color: red;
+}

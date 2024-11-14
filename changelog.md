@@ -3,11 +3,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.2...HEAD)
 ### Added
 * [PCM-2081](https://inindca.atlassian.net/browse/PCM-2081) Add ability to join a video conference using a meeting id
+
+# [v9.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.1...v9.3.2)
+### Fixed
+* [STREAM-259](https://inindca.atlassian.net/browse/STREAM-259) - updated softphone-vendor-headsets which added in guard for EPOS reject call to only bubble up events in the case of a "Notification" type message to avoid issues with "Acknowledgements"
+
+### Added
+* [no-jira] updated softphone-vendor-headsets which included a refactor for the VBeT implementation to better accommodate more devices; moved code out in favor of VBeT SDK
+
+# [v9.3.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.0...v9.3.1)
+### Fixed
+* [no-jira] - deployment schedule change
+
+# [v9.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.4...v9.3.0)
+### Fixed
+* [STREAM-253](https://inindca.atlassian.net/browse/STREAM-253) - Allow emission of non-solicited agent-video proposes
+* [STREAM-245](https://inindca.atlassian.net/browse/STREAM-245) - Don't hold other active sessions if we're establishing an eager persistent connection (privAnswerMode === 'Auto').
+
+# [v9.2.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.3...v9.2.4)
+### Fixed
+* [STREAM-218](https://inindca.atlassian.net/browse/STREAM-218) - bump streaming for priv-auto-answer on session object; dont create a conversation object for priv-auto-answer sessions.
+
+# Added
+* [STREAM-222](https://inindca.atlassian.net/browse/STREAM-222) - Created new SDK demo app using React/Vite.
+
+# [v9.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.2...v9.2.3)
+### Changed
+* [NO_JIRA] - Bump client-logger to pick up fixes
+### Fixed
+* [STREAM-178](https://inindca.atlassian.net/browse/STREAM-178) - Dont try and hold session with dead peerConnections; bump streaming-client
+
+# [v9.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.1...v9.2.2)
+### Fixed
+* [STREAM-174](https://inindca.atlassian.net/browse/STREAM-174) - Add a null check for conversation state lookup for held.
+* [STREAM-172](https://inindca.atlassian.net/browse/STREAM-172) - Update axios to address Snyk vulnerability
+* [STREAM-191](https://inindca.atlassian.net/browse/STREAM-191) - Fix for slow performance of `pruneConversationUpdateForLogging`
+
+### Changed
+* [STREAM-146](https://inindca.atlassian.net/browse/STREAM-146) - Updated logging for new JSON-RPC commands.
+
+# [v9.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.0...v9.2.1)
+### Fixed
+* [STREAM-168](https://inindca.atlassian.net/browse/STREAM-168) - resetHeadsetState should not attempt if headset is not connected - softphone vendor headsets version bump.
+
+# [v9.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.2...v9.2.0)
+### Changed
+* [STREAM-71](https://inindca.atlassian.net/browse/STREAM-71) - Support priv-answer-mode auto and add eagerPersistentConnectionEstablishment to config
+* [STREAM-15](https://inindca.atlassian.net/browse/STREAM-15) - Move to modern modern Jest timers by telling Jest to not fake `nextTick`
+
+# [v9.1.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.1...v9.1.2)
 ### Fixed
 * [STREAM-22](https://inindca.atlassian.net/browse/STREAM-22) - fix for unhandled exception thrown from RXJS `first` operator when there are no elements from the Observable
+* [STREAM-108](https://inindca.atlassian.net/browse/STREAM-108) - Update ws to address Snyk vulnerability
 
 # [v9.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.1.0...v9.1.1)
 ### Fixed
