@@ -3,7 +3,6 @@ import StrictEventEmitter from 'strict-event-emitter-types';
 import StreamingClient, { HttpClient, StreamingClientError, StreamingClientErrorTypes } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
 import { jwtDecode } from "jwt-decode";
-import { isAxiosError } from 'axios';
 
 import {
   ISdkConfig,
@@ -292,7 +291,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_token, err.message, err);
       }
 
-      if (isAxiosError(err) && [401, 403].includes(err.response?.status || 0)) {
+      if (err.name === 'AxiosError' && [401, 403].includes(err.response?.status || 0)) {
         throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_token, err.message, err);
       }
 
