@@ -120,22 +120,20 @@ describe('Client (integration)', () => {
       const invalidCustomerData = {};
       try {
         await sdk.initialize(invalidCustomerData as ICustomerData);
+        fail('should have thrown');
       } catch (e) {
         expect(e).toBeTruthy();
       }
-
-      expect.assertions(1);
     });
 
     it('throws error for guest users without a security code', async () => {
       const { sdk } = mockApis({ withMedia: new MockStream(), guestSdk: true });
       try {
         await sdk.initialize();
+        fail();
       } catch (e) {
         expect(e).toEqual(new SdkError(SdkErrorTypes.initialization, '`securityCode` is required to initialize the SDK as a guest'));
       }
-
-      expect.assertions(1);
     });
 
     it('throws if getting the jwt fails', async () => {
@@ -143,11 +141,10 @@ describe('Client (integration)', () => {
 
       try {
         await sdk.initialize({ securityCode: '12345' });
+        fail();
       } catch (e) {
         expect(e.type).toBe(SdkErrorTypes.initialization);
       }
-
-      expect.assertions(1);
     });
 
     it('throws if getting the org fails', async () => {
@@ -216,14 +213,7 @@ describe('Client (integration)', () => {
     it('throws an invalid_token error if streaming-client throws an invalid_token error', async () => {
       const { sdk } = mockApis({ failStreaming: true });
 
-      try {
-        await sdk.initialize();
-      } catch (e) {
-        expect(e).toBeTruthy();
-        expect(e.type).toBe(SdkErrorTypes.invalid_token);
-      }
-
-      expect.assertions(2);
+      await expect(sdk.initialize()).rejects.toHaveProperty('type', SdkErrorTypes.invalid_token);
     });
 
     it('should not throw if fetching the station fails', async () => {
