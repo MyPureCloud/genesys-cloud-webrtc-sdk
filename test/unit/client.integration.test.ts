@@ -194,6 +194,25 @@ describe('Client (integration)', () => {
       jest.spyOn(utils, 'requestApiWithRetry').mockRestore();
     });
 
+    it('throws initialization error if no response object from HTTP request', async () => {
+      const { sdk } = mockApis({ failUser: true });
+
+      const error = new AxiosError('fake error', 'FAKE_ERROR', {
+        url: 'fakeUrl',
+        method: 'get',
+        headers: new AxiosHeaders()
+      });
+
+      // have to mock until: https://inindca.atlassian.net/browse/PCM-1581 is complete
+      jest.spyOn(utils, 'requestApiWithRetry').mockReturnValue({
+        promise: Promise.reject(error)
+      } as any);
+
+      await expect(sdk.initialize()).rejects.toHaveProperty('type', SdkErrorTypes.initialization);
+
+      jest.spyOn(utils, 'requestApiWithRetry').mockRestore();
+    });
+
     it('throws an invalid_token error if streaming-client throws an invalid_token error', async () => {
       const { sdk } = mockApis({ failStreaming: true });
 
