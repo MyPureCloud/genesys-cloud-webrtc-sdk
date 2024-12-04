@@ -125,6 +125,8 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
    * @param conversationId string representing the call whose state will be reset
    * @returns Promise<void>
    */
-  async resetHeadsetStateForCall(_conversationId: string): Promise<void> { /* no-op */}
+  async resetHeadsetStateForCall(_conversationId: string): Promise<void> { /* no-op */ }
+
+  async disconnectImplementation(): Promise<void> { /* no-op */ }
   /* eslint-enable */
 }

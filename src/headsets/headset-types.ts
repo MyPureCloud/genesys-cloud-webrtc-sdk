@@ -37,4 +37,5 @@ export interface ISdkHeadsetService {
   setMute (isMuted: boolean): Promise<void>;
   setHold (conversationId: string, isHeld: boolean): Promise<void>;
   resetHeadsetStateForCall (conversationId: string): Promise<void>;
+  disconnectImplementation (): Promise<void>;
 }

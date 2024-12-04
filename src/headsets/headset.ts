@@ -331,4 +331,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   resetHeadsetStateForCall(conversationId: string): Promise<void> {
     return this.currentHeadsetService.resetHeadsetStateForCall(conversationId);
   }
+
+  disconnectImplementation(): Promise<void> {
+    return this.currentHeadsetService.disconnectImplementation();
+  }
 }

@@ -268,6 +268,12 @@ describe('SdkHeadsetServiceStub', () => {
       expect(await headsetStub.setHold('', false)).toBe(undefined);
     });
   });
+
+  describe('disconnectImplementation', () => {
+    it('should return an empty promise', async () => {
+      expect(await headsetStub.disconnectImplementation()).toBe(undefined);
+    });
+  });
 });
 
 describe('HeadsetProxyService', () => {
@@ -911,6 +917,14 @@ describe('HeadsetProxyService', () => {
       expect(spy).toHaveBeenCalledWith('123', true);
     });
   });
+
+  describe('disconnectImplementation', () => {
+    it('should proxy to headsetService', () => {
+      const spy = currentHeadsetService.disconnectImplementation = jest.fn();
+      proxyService.disconnectImplementation();
+      expect(spy).toHaveBeenCalled();
+    })
+  })
 
   describe('handleHeadsetEvent', () => {
     it('should pass the event to the headsetEventsSub if it does not meet proper conditions', () => {
