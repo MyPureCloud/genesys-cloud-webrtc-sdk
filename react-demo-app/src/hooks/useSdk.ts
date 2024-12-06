@@ -38,6 +38,7 @@ export default function useSdk() {
       originAppName: 'webrtc-demo-app',
       optOutOfTelemetry: true,
       logLevel: 'info',
+      useServerSidePings: true
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);

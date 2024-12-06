@@ -54,12 +54,12 @@ export class SessionManager {
 
   async addAllowedSessionType (sessionType: SessionTypes): Promise<void> {
     const handler = this.getSessionHandler({ sessionType });
-    handler.disabled = false;
+    return handler.enableHandler();
   }
 
   async removeAllowedSessionType (sessionType: SessionTypes): Promise<void> {
     const handler = this.getSessionHandler({ sessionType });
-    handler.disabled = true;
+    return handler.disableHandler();
   }
 
   handleConversationUpdate (update: ConversationUpdate): void {

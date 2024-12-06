@@ -41,14 +41,22 @@ describe('SdkError', () => {
 
 describe('createAndEmitSdkError', () => {
   it('should emit and return an SdkError', () => {
+    jest.useFakeTimers();
+
     const spy = jest.fn();
     const origError = new Error('Something broke');
     sdk.on('sdkError', spy);
 
-    expect(
-      utils.createAndEmitSdkError.call(sdk, SdkErrorTypes.generic, origError)
-    ).toEqual(origError);
-    expect(spy).toHaveBeenCalledWith(origError);
+    const createdError = utils.createAndEmitSdkError.call(sdk, SdkErrorTypes.generic, origError);
+    expect(createdError).toBeInstanceOf(SdkError);
+    expect(createdError).toEqual(origError);
+    
+    jest.runAllTimers();
+    const emittedError = spy.mock.calls[0][0];
+    expect(emittedError).toBeInstanceOf(SdkError);
+    expect(emittedError).toEqual(origError);
+
+    jest.useRealTimers();
   });
 });
 

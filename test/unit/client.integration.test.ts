@@ -16,6 +16,7 @@ import { SdkError } from '../../src/utils';
 import { SdkErrorTypes } from '../../src/types/enums';
 import { mockGetStationApi } from '../mock-apis';
 import { BroadcastChannel } from 'broadcast-channel';
+import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
 
 jest.mock('broadcast-channel');
 
@@ -147,41 +148,72 @@ describe('Client (integration)', () => {
     });
 
     it('throws if getting the org fails', async () => {
-      expect.assertions(1);
       const { sdk } = mockApis({ failOrg: true });
+
+      const error = new AxiosError('fake error', 'FAKE_ERROR', {
+        url: 'fakeUrl',
+        method: 'get',
+        headers: new AxiosHeaders()
+      },
+      undefined,
+      { status: 401 } as AxiosResponse
+      );
 
       // have to mock until: https://inindca.atlassian.net/browse/PCM-1581 is complete
       jest.spyOn(utils, 'requestApiWithRetry').mockReturnValue({
-        promise: Promise.reject()
+        promise: Promise.reject(error)
       } as any);
 
-      try {
-        await sdk.initialize();
-        fail();
-      } catch (e) {
-        expect(e).toBeTruthy();
-      }
+      await expect(sdk.initialize()).rejects.toHaveProperty('type', SdkErrorTypes.invalid_token);
 
       jest.spyOn(utils, 'requestApiWithRetry').mockRestore();
     });
 
     it('throws if getting the user fails', async () => {
-      expect.assertions(1);
       const { sdk } = mockApis({ failUser: true });
+
+      const error = new AxiosError('fake error', 'FAKE_ERROR', {
+        url: 'fakeUrl',
+        method: 'get',
+        headers: new AxiosHeaders()
+      },
+      undefined,
+      { status: 401 } as AxiosResponse
+      );
 
       // have to mock until: https://inindca.atlassian.net/browse/PCM-1581 is complete
       jest.spyOn(utils, 'requestApiWithRetry').mockReturnValue({
-        promise: Promise.reject()
+        promise: Promise.reject(error)
       } as any);
 
-      try {
-        await sdk.initialize();
-        fail();
-      } catch (e) {
-        expect(e).toBeTruthy();
-      }
+      await expect(sdk.initialize()).rejects.toHaveProperty('type', SdkErrorTypes.invalid_token);
 
       jest.spyOn(utils, 'requestApiWithRetry').mockRestore();
+    });
+
+    it('throws initialization error if no response object from HTTP request', async () => {
+      const { sdk } = mockApis({ failUser: true });
+
+      const error = new AxiosError('fake error', 'FAKE_ERROR', {
+        url: 'fakeUrl',
+        method: 'get',
+        headers: new AxiosHeaders()
+      });
+
+      // have to mock until: https://inindca.atlassian.net/browse/PCM-1581 is complete
+      jest.spyOn(utils, 'requestApiWithRetry').mockReturnValue({
+        promise: Promise.reject(error)
+      } as any);
+
+      await expect(sdk.initialize()).rejects.toHaveProperty('type', SdkErrorTypes.initialization);
+
+      jest.spyOn(utils, 'requestApiWithRetry').mockRestore();
+    });
+
+    it('throws an invalid_token error if streaming-client throws an invalid_token error', async () => {
+      const { sdk } = mockApis({ failStreaming: true });
+
+      await expect(sdk.initialize()).rejects.toHaveProperty('type', SdkErrorTypes.invalid_token);
     });
 
     it('should not throw if fetching the station fails', async () => {

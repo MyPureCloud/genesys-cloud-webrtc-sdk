@@ -1732,10 +1732,12 @@ class SdkError extends Error {
 enum SdkErrorTypes {
   generic = 'generic',
   initialization = 'initialization',
+  invalid_token = 'invalid_token',
   http = 'http',
   invalid_options = 'invalid_options',
   not_supported = 'not_supported',
   session = 'session',
+  call = 'call',
   media = 'media'
 }
 ```
