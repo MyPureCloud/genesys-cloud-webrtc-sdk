@@ -547,7 +547,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       this.log('info', 'received reinvite offer', { ...acceptParams, sessionId: session.id });
       const oldSession = this.sessionManager.getAllSessions().find(s => {
         return s.sessionType === SessionTypes.softphone &&
-        s.conversationId === session.conversationId
+        s.conversationId === session.conversationId &&
+        s.id !== session.id;
       });
 
       if (oldSession) {
