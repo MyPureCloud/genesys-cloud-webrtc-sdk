@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  ### Fixed
 * [STREAM-287](https://inindca.atlassian.net/browse/STREAM-287) - Fixed late arriving reinvites from terminating themselves.
 
+ ### Fixed
+* [STREAM-241](https://inindca.atlassian.net/browse/STREAM-241) - propagate mediaHelperRequired errors for eager persistent connections
+
 # [v9.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.1...v9.3.2)
 ### Fixed
 * [STREAM-259](https://inindca.atlassian.net/browse/STREAM-259) - updated softphone-vendor-headsets which added in guard for EPOS reject call to only bubble up events in the case of a "Notification" type message to avoid issues with "Acknowledgements"

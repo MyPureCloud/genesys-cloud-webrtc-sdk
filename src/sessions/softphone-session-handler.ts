@@ -15,7 +15,9 @@ import {
   IStoredConversationState,
   ISdkConversationUpdateEvent,
   IConversationHeldRequest,
-  IActiveConversationDescription
+  IActiveConversationDescription,
+  PersistentConnectionEvent,
+  HawkNotification
 } from '../types/interfaces';
 import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
@@ -40,12 +42,49 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     added: [],
     removed: []
   };
-
+  boundPersistentConnectionEventHandler: (event: HawkNotification<PersistentConnectionEvent>) => void;
   debouncedEmitCallError: DebouncedFunc<(update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant) => void>;
+  lastPersistentConnectionEvent?: PersistentConnectionEvent;
+
 
   constructor (sdk: GenesysCloudWebrtcSdk, sessionManager: SessionManager) {
     super(sdk, sessionManager);
     this.debouncedEmitCallError = debounce(this.emitCallError, 500, { leading: true });
+  }
+
+  handlePersistentConnectionEvent(event: HawkNotification<PersistentConnectionEvent>) {
+    this.lastPersistentConnectionEvent = event.eventBody;
+    if (event.eventBody.errorInfo?.code === 'error.ininedgecontrol.connection.webrtc.endpoint.disconnect') {
+      this.log('debug', 'received disconnected persistent connection event');
+      return;
+    }
+
+    this.log('debug', 'persistent connection event', event.eventBody);
+
+    if (event.eventBody.errorInfo) {
+      createAndEmitSdkError.call(this.sdk, SdkErrorTypes.call, event.eventBody.errorInfo.userMessage, event.eventBody.errorInfo);
+    }
+  }
+
+  async listenForPersistentConnectionEvents () {
+    this.boundPersistentConnectionEventHandler = this.handlePersistentConnectionEvent.bind(this);
+    await this.sdk._streamingConnection.notifications.subscribe(`v2.users.${this.sdk._personDetails.id}.persistentconnection`, this.boundPersistentConnectionEventHandler, true);
+  }
+
+  async enableHandler (): Promise<void> {
+    if (!this.sdk.isGuest) {
+      await this.listenForPersistentConnectionEvents();
+    }
+    super.enableHandler();
+  }
+
+  async disableHandler(): Promise<void> {
+      if (this.boundPersistentConnectionEventHandler) {
+        await this.sdk._streamingConnection.notifications.unsubscribe(`v2.users.${this.sdk._personDetails.id}.persistentconnection`, this.boundPersistentConnectionEventHandler);
+        this.boundPersistentConnectionEventHandler = undefined;
+      }
+
+      super.disableHandler();
   }
 
   shouldHandleSessionByJid (jid: string): boolean {
