@@ -50,6 +50,14 @@ export default abstract class BaseSessionHandler {
     this.sdk.logger[level].call(this.sdk.logger, message, details, logOptions);
   }
 
+  async enableHandler () {
+    this.disabled = false;
+  }
+
+  async disableHandler () {
+    this.disabled = true;
+  }
+
   getActiveConversations (): IActiveConversationDescription[] {
     return this.sessionManager.getAllActiveSessions()
       .filter(session => session.sessionType === this.sessionType)

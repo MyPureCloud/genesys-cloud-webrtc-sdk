@@ -499,7 +499,7 @@ describe('acceptSession()', () => {
     const startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(createdStream as any);
 
     const mockIncomingStream = new MockStream({ audio: true });
-    const volume = mockSdk._config.defaults!!.audioVolume = 67;
+    const volume = mockSdk._config.defaults!.audioVolume = 67;
 
     const session: any = new MockSession();
     session.peerConnection.getReceivers = jest.fn().mockReturnValue([
@@ -531,7 +531,7 @@ describe('acceptSession()', () => {
     const element = {};
 
     const session: any = new MockSession();
-    const volume = mockSdk._config.defaults!!.audioVolume = 67;
+    const volume = mockSdk._config.defaults!.audioVolume = 67;
 
     const params: IAcceptSessionRequest = {
       conversationId: session.conversationId,
@@ -2603,5 +2603,47 @@ describe('isConversationHeld()', () => {
     };
     handler.conversations = { 'asdfasdf': lastConversationUpdate };
     expect(handler.isConversationHeld('asdfasdf')).toBeTruthy();
-  })
+  });
+
+  describe('handlePersistentConnectionEvent', () => {
+    it('should emit error if there is an errorInfo', () => {
+      const spy = jest.spyOn(utils, 'createAndEmitSdkError').mockImplementation();
+
+      handler.handlePersistentConnectionEvent({
+        eventBody: {
+          persistentState: 'FAILED',
+          errorInfo: {
+            code: 'error.ininedgecontrol.connection.webrtc.mediaHelperRequired'
+          }
+        }
+      } as any);
+
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should ignore disconnect events', () => {
+      const spy = jest.spyOn(utils, 'createAndEmitSdkError').mockImplementation();
+
+      handler.handlePersistentConnectionEvent({
+        eventBody: {
+          persistentState: 'FAILED',
+          errorInfo: {
+            code: 'error.ininedgecontrol.connection.webrtc.endpoint.disconnect'
+          }
+        }
+      } as any);
+
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('disableHandler', () => {
+    it('should clean up old handler', async () => {
+      const old = {};
+      handler.boundPersistentConnectionEventHandler = old as any;
+
+      await handler.disableHandler();
+      expect(handler.boundPersistentConnectionEventHandler).not.toEqual(old);
+    });
+  });
 });
