@@ -35,6 +35,14 @@ describe('resetHeadsetStateForCall', () => {
   })
 });
 
+describe('disconnectImplementation', () => {
+  it('should call the SVHs disconnectImplementation', () => {
+    const spy = service['headsetLibrary'].disconnectImplementation = jest.fn();
+    service.disconnectImplementation();
+    expect(spy).toHaveBeenCalled();
+  })
+});
+
 describe('createDecoratedLogger', () => {
   it ('should return a new logger that contains the types of logginger', () => {
     const decoratedLogger = service['createDecoratedLogger']();
