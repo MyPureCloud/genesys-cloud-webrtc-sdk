@@ -38,7 +38,10 @@ export class SdkError extends Error {
  */
 export const createAndEmitSdkError = function (this: GenesysCloudWebrtcSdk, errorType: SdkErrorTypes | null, messageOrError?: string | Error, details?: any): SdkError {
   const error = new SdkError(errorType, messageOrError, details);
-  this.emit('sdkError', error);
+  // Isolate us from any downstream throws
+  setTimeout(() => {
+    this.emit('sdkError', error);
+  }, 0);
   return error;
 };
 

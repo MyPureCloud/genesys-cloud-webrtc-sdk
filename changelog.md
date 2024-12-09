@@ -4,8 +4,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.2...HEAD)
+### Breaking Changes
+* The `initialize` method will now throw SdkErrors related to authentication with an `invalid_token` type (previously all errors from `initialize` would have an `initialization` type).
+
 ### Added
-* [PCM-2081](https://inindca.atlassian.net/browse/PCM-2081) Add ability to join a video conference using a meeting id
+* [PCM-2081](https://inindca.atlassian.net/browse/PCM-2081) - Add ability to join a video conference using a meeting id
+
+### Changed
+* [STREAM-162](https://inindca.atlassian.net/browse/STREAM-162) - Authentication errors during `initialize` will now throw an SdkError of type `.invalid_token`.
 
 # [v9.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.1...v9.3.2)
 ### Fixed
