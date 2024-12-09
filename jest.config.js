@@ -21,7 +21,7 @@ module.exports = {
   ],
   setupFiles: [
   ],
-  collectCoverage: true,
+  collectCoverage: false,
   collectCoverageFrom: [
     '<rootDir>/src/**/*.{js,jsx,ts,tsx}',
     '!**/headset-types.ts',

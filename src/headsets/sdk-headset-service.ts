@@ -179,7 +179,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
       return this.headsetLibrary.resetHeadsetStateForCall(conversationId);
     }
 
-    async disconnectImplementation(): Promise<void> {
+    disconnectImplementation(): Promise<void> {
       return this.headsetLibrary.disconnectImplementation();
     }
 }
