@@ -286,7 +286,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
   let sdkOpts = {
     accessToken: guestSdk ? undefined : '1234',
     organizationId: '4589546-12349vn4-2345',
-    wsHost: failStreaming ? null : 'ws://localhost:1234',
+    wsHost: 'ws://localhost:1234',
     optOutOfTelemetry: true,
     logger: { debug: jest.fn(), log: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() } as any
     // logger: { debug () { }, log () { }, info () { }, warn: console.warn.bind(console), error: console.error.bind(console) }
