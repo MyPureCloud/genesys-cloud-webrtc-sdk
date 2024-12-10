@@ -1319,3 +1319,26 @@ export interface ICustomHeader {
 
 export type DefaultHeadsetRequestType = 'prioritized' | 'standard';
 export type HeadsetRequestType = 'mediaHelper' | DefaultHeadsetRequestType;
+
+export type HawkNotification<T> = {
+  topicName: string;
+  metadata: {
+    CorrelationId: string;
+  };
+  eventBody: T;
+}
+
+export type PersistentConnectionEvent = {
+  userId: string;
+  stationId: string;
+  persistentState: PersistentState;
+  errorInfo?: ErrorInfo;
+}
+
+export type PersistentState = 'UNKNOWN' | 'PERSISTED' | 'ACTIVE_CALL' | 'DISCONNECTED' | 'FAILED';
+
+export type ErrorInfo = {
+  text: string;
+  code: string;
+  userMessage: string;
+}
