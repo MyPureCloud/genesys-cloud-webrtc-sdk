@@ -627,7 +627,7 @@ Params:
 Returns: a promise with an object with the newly created `conversationId`
 
 #### `startVideoMeeting()`
-Start a video meeting with. Not supported for guests. Meetings can
+Start a video meeting with a meetingId. Not supported for guests. Meetings can
 only be joined by authenticated users from the same organization.
 
 `initialize()` must be called first.
