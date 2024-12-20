@@ -215,7 +215,7 @@ describe('Client', () => {
   });
 
   describe('startVideoConference()', () => {
-    it('should call session manager to start screenshare', async () => {
+    it('should call session manager to start video conference', async () => {
       sdk = constructSdk();
 
       sessionManagerMock.startSession.mockResolvedValue({});
@@ -230,6 +230,27 @@ describe('Client', () => {
         fail('should have failed');
       } catch (e) {
         expect(e).toEqual(new Error('video conferencing not supported for guests'));
+        expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('startVideoMeeting()', () => {
+    it('should call session manager to start video meeting', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.startSession.mockResolvedValue({});
+      await sdk.startVideoMeeting('123abc');
+      expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
+    });
+
+    it('should throw if guest user', async () => {
+      sdk = constructSdk({ organizationId: 'some-org' }); // no access_token is a guest user
+      try {
+        await sdk.startVideoMeeting('123');
+        fail('should have failed');
+      } catch (e) {
+        expect(e).toEqual(new Error('video conferencing meetings not supported for guests'));
         expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
       }
     });

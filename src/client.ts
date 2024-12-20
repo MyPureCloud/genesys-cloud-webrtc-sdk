@@ -376,11 +376,30 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise with an object with the newly created `conversationId`
    */
   async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
-    if (!this.isGuest) {
-      return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
-    } else {
+    if (this.isGuest) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
     }
+
+    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
+  }
+
+  /**
+   * Start a video conference using a meeting id. Not supported for guests.
+   *  Conferences can only be joined by authenticated users
+   *  from the same organization.
+   *
+   *  `initialize()` must be called first.
+   *
+   * @param meetingId meetingId of the conference to join.
+   *
+   * @returns a promise with an object with the newly created 'conversationId'
+   */
+  async startVideoMeeting (meetingId: string): Promise<{ conversationId: string }> {
+    if (this.isGuest) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing meetings not supported for guests');
+    }
+
+    return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
   }
 
   /**
