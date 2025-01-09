@@ -12,6 +12,7 @@ module.exports = {
       /* if we are testing, we don't want core-js polyfills */
       corejs: false
     }],
-    '@babel/plugin-proposal-class-properties'
+    '@babel/plugin-proposal-class-properties',
+    "@babel/plugin-transform-private-methods"
   ]
 };
