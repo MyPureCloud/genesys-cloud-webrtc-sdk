@@ -248,7 +248,7 @@ describe('Client (integration)', () => {
           transformedArgs: [1]
         },
         { name: 'error', trigger: 'rtcSessionError' },
-        { name: 'disconnected', trigger: 'session:end', args: [], transformedArgs: ['Streaming API connection disconnected'] }
+        { name: 'disconnected', trigger: 'session:end', args: [], transformedArgs: ['Streaming API connection disconnected', { reconnecting: false }] }
       ];
 
       async function awaitEvent (sdk, eventName, trigger, args = [], transformedArgs) {
