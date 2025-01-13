@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk } from '../test-utils';
 import { CommunicationStates } from '../../src/types/enums';
 import { SubscriptionEvent } from '../../src/types/interfaces';
-import { handleConversationUpdate, setupStreamingClient } from '../../src/client-private';
+import { handleConversationUpdate, setupStreamingClient, handleDisconnectedEvent } from '../../src/client-private';
 import { ConversationUpdate } from '../../src/';
 import StreamingClient from 'genesys-cloud-streaming-client';
 
@@ -64,7 +64,7 @@ describe('setupStreamingClient', () => {
         jabberId: 'myJid'
       }
     };
-  
+
     let connectedCb: () => void;
     const connectSpy = jest.fn().mockImplementation(() => {
       connectedCb();
@@ -77,9 +77,9 @@ describe('setupStreamingClient', () => {
       },
       connect: connectSpy
     });
-  
+
     await setupStreamingClient.call(mockSdk);
-  
+
     expect(StreamingClient).toHaveBeenCalledWith(expect.objectContaining({
       host: 'wss://streaming.downunder',
       jid: 'myJid'
@@ -143,5 +143,20 @@ describe('handleConversationUpdate', () => {
     expect(spy).toHaveBeenCalled();
     const arg = (spy as jest.Mock).mock.calls[0][0];
     expect(arg).toBeInstanceOf(ConversationUpdate);
+  });
+});
+
+describe('handleDisconnectedEvent', () => {
+  it('should emit disconnected event with message and eventData', () => {
+    const eventData = { reconnecting: true };
+    const emitSpy = mockSdk.emit = jest.fn();
+    handleDisconnectedEvent.call(mockSdk as GenesysCloudWebrtcSdk, eventData);
+
+    expect(mockSdk.logger.error).toHaveBeenCalledWith('Streaming API connection disconnected');
+    expect(emitSpy).toHaveBeenCalledWith(
+      'disconnected',
+      'Streaming API connection disconnected',
+      eventData
+    );
   });
 });
