@@ -504,6 +504,21 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
+  it('should track requested video conferences', async () => {
+    const roomJid = '123@conference.com';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
+
+    expect(Object.values(handler.requestedSessions).length).toBe(1);
+  });
+
   it('should log error on video conference failure', async () => {
     const roomJid = '123@conference.com';
     const error = new Error('test');
@@ -519,6 +534,7 @@ describe('startSession', () => {
     await expect(handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
     expect(logSpy).toHaveBeenCalledWith('Failed to request video conference session', expect.anything(), undefined);
+    expect(Object.values(handler.requestedSessions).length).toBe(0);
   });
 
   it('should post to video meeting api', async () => {
@@ -543,6 +559,21 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos/participants', { method: 'post', data: expected });
   });
 
+  it('should track requested video meetings', async () => {
+    const meetingId = '123abc';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ meetingId: meetingId, sessionType: SessionTypes.collaborateVideo });
+
+    expect(Object.values(handler.requestedMeetingSessions).length).toBe(1);
+  });
+
   it('should log error on meeting failure', async () => {
     const meetingId = '123@conference.com';
     const error = new Error('test');
@@ -558,6 +589,7 @@ describe('startSession', () => {
     await expect(handler.startSession({ meetingId: meetingId, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
     expect(logSpy).toHaveBeenCalledWith('Failed to request video meeting session', expect.anything(), undefined);
+    expect(Object.values(handler.requestedMeetingSessions).length).toBe(0);
   });
 });
 

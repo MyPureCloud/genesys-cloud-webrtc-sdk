@@ -297,6 +297,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       participant
     });
 
+    this.requestedMeetingSessions[startParams.meetingId] = true;
 
     try {
       const response = await requestApi.call(this.sdk, `/conversations/videos/participants`, {
@@ -306,6 +307,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       return { conversationId: response.data.conversationId };
     } catch (err) {
+      delete this.requestedMeetingSessions[startParams.meetingId];
       this.log('error', 'Failed to request video meeting session', err);
       throw err;
     }
