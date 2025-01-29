@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v10.0.0...HEAD)
+### Breaking Changes
+* Lru-cache was upgraded from v6 to v11 in a dependency (genesys-cloud-streaming-client), which uses newer language features. Depending on your language target version, you may need to configure a transpiler accordingly. For example, we added `plugin-transform-private-methods` to our Babel config for the SDK.
+
 ### Changed
 * [STREAM-314](https://inindca.atlassian.net/browse/STREAM-314) - On streaming-client disconnected events, emit the value of autoReconnect so that consumers can determine if they should tear down their SDK or wait for streaming-client to reconnect. Updated docs to reflect this.
 
