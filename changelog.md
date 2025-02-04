@@ -3,7 +3,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v10.0.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.0.0...HEAD)
+
+# [v11.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v10.0.0...v11.0.0)
+### Breaking Changes
+* Lru-cache was upgraded from v6 to v11 in a dependency (genesys-cloud-streaming-client), which uses newer language features. Depending on your language target version, you may need to configure a transpiler accordingly. For example, we added `plugin-transform-private-methods` to our Babel config for the SDK.
+
+### Changed
+* [STREAM-314](https://inindca.atlassian.net/browse/STREAM-314) - On streaming-client disconnected events, emit the value of autoReconnect so that consumers can determine if they should tear down their SDK or wait for streaming-client to reconnect. Updated docs to reflect this.
+
+### Added
+* [PCM-2081](https://inindca.atlassian.net/browse/PCM-2081) - Add ability to join a video conference using a meeting id
 
 # [v10.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.2...v10.0.0)
 ### Breaking Changes
@@ -12,10 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-162](https://inindca.atlassian.net/browse/STREAM-162) - Authentication errors during `initialize` will now throw an SdkError of type `.invalid_token`.
 
- ### Fixed
+### Fixed
 * [STREAM-287](https://inindca.atlassian.net/browse/STREAM-287) - Fixed late arriving reinvites from terminating themselves.
-
- ### Fixed
 * [STREAM-241](https://inindca.atlassian.net/browse/STREAM-241) - propagate mediaHelperRequired errors for eager persistent connections
 
 # [v9.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.3.1...v9.3.2)

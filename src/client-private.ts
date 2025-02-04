@@ -115,8 +115,8 @@ export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, u
   this.sessionManager.handleConversationUpdate(update);
 };
 
-export const handleDisconnectedEvent = function (this: GenesysCloudWebrtcSdk) {
+export const handleDisconnectedEvent = function (this: GenesysCloudWebrtcSdk, eventData: { reconnecting: boolean }) {
   const message = 'Streaming API connection disconnected';
   this.logger.error(message);
-  this.emit('disconnected', message);
+  this.emit('disconnected', message, eventData);
 }

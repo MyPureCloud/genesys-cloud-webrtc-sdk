@@ -460,7 +460,7 @@ describe('mediaUpdateEvent', () => {
 });
 
 describe('startSession', () => {
-  it('should post to api', async () => {
+  it('should post to video conference api', async () => {
     const roomJid = '123@conference.com';
 
     mockSdk._personDetails = {
@@ -482,7 +482,7 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
-  it('should post to api with an invitee', async () => {
+  it('should post to video conference api with an invitee', async () => {
     const roomJid = '123@conference.com';
 
     mockSdk._personDetails = {
@@ -504,7 +504,22 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
-  it('should log error on failure', async () => {
+  it('should track requested video conferences', async () => {
+    const roomJid = '123@conference.com';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
+
+    expect(Object.values(handler.requestedSessions).length).toBe(1);
+  });
+
+  it('should log error on video conference failure', async () => {
     const roomJid = '123@conference.com';
     const error = new Error('test');
     jest.spyOn(utils, 'requestApi').mockRejectedValue(error);
@@ -518,7 +533,63 @@ describe('startSession', () => {
     const logSpy = jest.spyOn(mockSdk.logger, 'error');
     await expect(handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
 
-    expect(logSpy).toHaveBeenCalledWith('Failed to request video session', expect.anything(), undefined);
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video conference session', expect.anything(), undefined);
+    expect(Object.values(handler.requestedSessions).length).toBe(0);
+  });
+
+  it('should post to video meeting api', async () => {
+    const meetingId = '123abc';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ meetingId: meetingId, sessionType: SessionTypes.collaborateVideo });
+
+    const expected = JSON.stringify({
+      meetingId: meetingId,
+      participant: {
+        address: 'part1@test.com'
+      }
+    });
+
+    expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos/participants', { method: 'post', data: expected });
+  });
+
+  it('should track requested video meetings', async () => {
+    const meetingId = '123abc';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ meetingId: meetingId, sessionType: SessionTypes.collaborateVideo });
+
+    expect(Object.values(handler.requestedMeetingSessions).length).toBe(1);
+  });
+
+  it('should log error on meeting failure', async () => {
+    const meetingId = '123@conference.com';
+    const error = new Error('test');
+    jest.spyOn(utils, 'requestApi').mockRejectedValue(error);
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    const logSpy = jest.spyOn(mockSdk.logger, 'error');
+    await expect(handler.startSession({ meetingId: meetingId, sessionType: SessionTypes.collaborateVideo })).rejects.toBe(error);
+
+    expect(logSpy).toHaveBeenCalledWith('Failed to request video meeting session', expect.anything(), undefined);
+    expect(Object.values(handler.requestedMeetingSessions).length).toBe(0);
   });
 });
 
@@ -542,6 +613,30 @@ describe('handlePropose', () => {
     });
 
     expect(handler.proceedWithSession).toHaveBeenCalled();
+    expect(parentHandler).not.toHaveBeenCalled();
+  });
+
+  it('should handle requested meeting sessions automatically', async () => {
+    const conferenceJid = '123@conference.com';
+    const previouslyRequestedMeetingId = 'abc123';
+    handler.requestedMeetingSessions[previouslyRequestedMeetingId] = true;
+
+    const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+
+    await handler.handlePropose({
+      id: '1241241',
+      sessionId: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      fromJid: conferenceJid,
+      toJid: '',
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: conferenceJid,
+      meetingId: previouslyRequestedMeetingId
+    });
+
+    expect(handler.proceedWithSession).toBeCalled();
     expect(parentHandler).not.toHaveBeenCalled();
   });
 

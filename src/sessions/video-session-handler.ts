@@ -13,6 +13,7 @@ import {
   IConversationParticipant,
   IMediaRequestOptions,
   IStartVideoSessionParams,
+  IStartVideoMeetingSessionParams,
   VideoMediaSession,
   MemberStatusMessage,
   IConversationParticipantFromEvent
@@ -55,6 +56,7 @@ export interface IMediaChangeEventParticipant {
 
 export class VideoSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
+  requestedMeetingSessions: { [meetingId: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
 
@@ -248,7 +250,17 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   // triggers a propose from the backend
-  async startSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
+  async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
+    if ("jid" in startParams) {
+      // TypeScript will know that all references to `startParams` in this block are of type `IStartVideoSessionParams`
+      // See https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-in-operator-narrowing
+      return this.startVideoSession(startParams);
+    } else {
+      return this.startVideoMeetingSession(startParams);
+    }
+  }
+
+  private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
     let participant: { address: string };
 
     if (startParams.inviteeJid) {
@@ -273,7 +285,30 @@ export class VideoSessionHandler extends BaseSessionHandler {
       return { conversationId: response.data.conversationId };
     } catch (err) {
       delete this.requestedSessions[startParams.jid];
-      this.log('error', 'Failed to request video session', err);
+      this.log('error', 'Failed to request video conference session', err);
+      throw err;
+    }
+  }
+
+  private async startVideoMeetingSession (startParams: IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
+    const participant = { address: this.sdk._personDetails.chat.jabberId };
+    const data = JSON.stringify({
+      meetingId: startParams.meetingId,
+      participant
+    });
+
+    this.requestedMeetingSessions[startParams.meetingId] = true;
+
+    try {
+      const response = await requestApi.call(this.sdk, `/conversations/videos/participants`, {
+        method: 'post',
+        data
+      });
+
+      return { conversationId: response.data.conversationId };
+    } catch (err) {
+      delete this.requestedMeetingSessions[startParams.meetingId];
+      this.log('error', 'Failed to request video meeting session', err);
       throw err;
     }
   }
@@ -281,8 +316,15 @@ export class VideoSessionHandler extends BaseSessionHandler {
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     // if we requested the session dont emit a pending session
     if (this.requestedSessions[pendingSession.originalRoomJid]) {
-      logPendingSession(this.sdk.logger, 'Propose received for requested video session, accepting automatically', pendingSession, 'debug');
+      logPendingSession(this.sdk.logger, 'Propose received for requested video conference session, accepting automatically', pendingSession, 'debug');
       delete this.requestedSessions[pendingSession.originalRoomJid];
+      await this.proceedWithSession(pendingSession);
+      return;
+    }
+
+    if (this.requestedMeetingSessions[pendingSession.meetingId]) {
+      logPendingSession(this.sdk.logger, 'Propose received for requested video meeting session, accepting automatically', pendingSession, 'debug');
+      delete this.requestedMeetingSessions[pendingSession.meetingId];
       await this.proceedWithSession(pendingSession);
       return;
     }
@@ -646,7 +688,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       const stream = await this.sdk.media.startDisplayMedia({ conversationId: session.conversationId, sessionId: session.id });
       session._screenShareStream = stream;
-      
+
       this.log('info', 'Screen media created', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
 
       await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);

@@ -14,6 +14,7 @@ import {
   ISessionMuteRequest,
   IUpdateOutgoingMedia,
   IStartVideoSessionParams,
+  IStartVideoMeetingSessionParams,
   IExtendedMediaSession,
   IStartSoftphoneSessionParams,
   ISessionIdAndConversationId,
@@ -174,7 +175,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartSoftphoneSessionParams): Promise<any> {
+  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams): Promise<any> {
     if (!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
     }
@@ -306,7 +307,8 @@ export class SessionManager {
       fromUserId: sessionInfo.fromUserId,
       toJid: sessionInfo.toJid,
       fromJid: sessionInfo.fromJid,
-      privAnswerMode: sessionInfo.privAnswerMode
+      privAnswerMode: sessionInfo.privAnswerMode,
+      meetingId: sessionInfo.meetingId
     };
 
     this.pendingSessions.push(pendingSession);
