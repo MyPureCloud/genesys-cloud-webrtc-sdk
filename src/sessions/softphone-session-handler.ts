@@ -61,8 +61,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     this.log('debug', 'persistent connection event', event.eventBody);
 
-    if (event.eventBody.errorInfo) {
-      createAndEmitSdkError.call(this.sdk, SdkErrorTypes.call, event.eventBody.errorInfo.userMessage, event.eventBody.errorInfo);
+    if (event.eventBody.errorInfo && event.eventBody.persistentState === 'FAILED') {
+      createAndEmitSdkError.call(this.sdk, SdkErrorTypes.call, event.eventBody.errorInfo.userMessage, event.eventBody);
     }
   }
 
