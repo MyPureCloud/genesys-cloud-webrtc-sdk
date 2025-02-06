@@ -29,6 +29,7 @@ export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch();
   const sdk = useSelector((state) => state.sdk.sdk);
+  const video = useSelector((state) => state.video);
 
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {
@@ -89,7 +90,15 @@ export default function useSdk() {
     dispatch(storeHandledPendingSession(pendingSession))
   }
 
-  function handleSessionStarted() {}
+  function handleSessionStarted() {
+    // console.warn('handleSessionStarted', session);
+    // if (session.sessionType === 'collaborateVideo') {
+    //   let audioElement = video.audioElement;
+    //   let videoElement = video.videoElement;
+
+    //   sdk.acceptSession({ conversationId: session.conversationId, audioElement, videoElement });
+    // }
+  }
 
   function handleSessionEnded(session: GenesysCloudMediaSession) {}
 
@@ -135,6 +144,7 @@ export default function useSdk() {
   }
 
   async function destroySdk(): Promise<void> {
+    console.warn('destroying this mf');
     await sdk.destroy();
   }
 
@@ -167,6 +177,14 @@ export default function useSdk() {
     sessions.forEach((session: GenesysCloudMediaSession) => sdk.forceTerminateSession(session.id));
   }
 
+  async function startMedia(reqOptions = { audio: false, video: true }) {
+    return await sdk.media.startMedia(reqOptions);
+  }
+
+  async function startVideoConference() {
+    sdk.startVideoConference('123test@conference.com');
+  }
+
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -179,6 +197,8 @@ export default function useSdk() {
     updateAudioVolume,
     destroySdk,
     updateOnQueueStatus,
-    disconnectPersistentConnection
+    disconnectPersistentConnection,
+    startMedia,
+    startVideoConference
   };
 }

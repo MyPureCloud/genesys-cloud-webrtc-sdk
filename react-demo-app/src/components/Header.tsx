@@ -4,9 +4,11 @@ import useAuth from '../hooks/useAuth';
 import Card from './Card';
 import './Header.css';
 import { GuxButton, GuxIcon } from 'genesys-spark-components-react';
+import useSdk from '../hooks/useSdk';
 
 export default function Header() {
   const { logout } = useAuth();
+  const { destroySdk } = useSdk();
   const isAuthenticated = useSelector((state: IAuthState) => state.auth.isAuthenticated);
 
   const logoutButton = () => {
@@ -27,6 +29,7 @@ export default function Header() {
         </div>
         
       </Card>
+      <button onClick={destroySdk}>destroy</button>
     </div>
   )
 }

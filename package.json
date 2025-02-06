@@ -57,6 +57,7 @@
   "dependencies": {
     "@babel/runtime": "^7.24.6",
     "@babel/runtime-corejs3": "^7.24.6",
+    "@mediapipe/tasks-vision": "^0.10.20",
     "axios": "^1.7.4",
     "browserama": "^3.2.2",
     "core-js": "^3.37.1",
