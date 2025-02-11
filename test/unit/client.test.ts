@@ -239,7 +239,6 @@ describe('Client', () => {
       const testJwt = 'test.jwt.token';
       sdk = constructSdk({ jwt: testJwt });
 
-      // Mock the person details that would normally come from JWT parsing
       sdk._personDetails = {
         id: 'test-user-id',
         name: 'Test User',
