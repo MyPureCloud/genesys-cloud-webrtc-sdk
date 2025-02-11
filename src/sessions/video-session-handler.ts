@@ -261,6 +261,9 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
+    let participant: { address: string };
+
+  private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
     let participant: { address: string, jwt?: string };
 
     if (this.sdk._config.jwt) {
