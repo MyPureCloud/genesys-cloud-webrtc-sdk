@@ -146,8 +146,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
     // if using jwt auth, we only support screen recording
     if (options.jwt) {
-      console.debug(`Forcing allowed session types to be ${SessionTypes.screenRecording} due to jwt auth`);
-      allowedSessionTypes = [ SessionTypes.screenRecording ];
+      console.debug(`Forcing allowed session types to be ${SessionTypes.screenRecording} and ${SessionTypes.collaborateVideo} due to jwt auth`);
+      allowedSessionTypes = [ SessionTypes.screenRecording, SessionTypes.collaborateVideo ];
     }
 
     this._config = {
@@ -376,8 +376,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise with an object with the newly created `conversationId`
    */
   async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
-    if (this.isGuest) {
-      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing not supported for guests');
+    if (!this._config.jwt && !this._config.accessToken) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Video conferencing requires authentication via JWT or access token.');
     }
 
     return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });

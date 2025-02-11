@@ -261,9 +261,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
-    let participant: { address: string };
+    let participant: { address: string, jwt?: string };
 
-    if (startParams.inviteeJid) {
+    if (this.sdk._config.jwt) {
+      participant = {
+        address: this.sdk._personDetails.chat.jabberId,
+        jwt: this.sdk._config.jwt
+      }
+    } else if (startParams.inviteeJid) {
       participant = { address: startParams.inviteeJid };
     } else {
       participant = { address: this.sdk._personDetails.chat.jabberId };
