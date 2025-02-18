@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.0.0...HEAD)
 ### Changed
 * [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
+* [STREAM-315](https://inindca.atlassian.net/browse/STREAM-315) - Changed the details emitted by an error to be more aligned with other SDK errors and provide more information to the consuming app
+### Fixed
+* [STREAM-331](https://inindca.atlassian.net/browse/STREAM-331) - Updated headset library to fix a Plantronics issue and issue with Teams and Yealink
 
 # [v11.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v10.0.0...v11.0.0)
 ### Breaking Changes
