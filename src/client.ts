@@ -806,6 +806,22 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     }
   }
 
+    /**
+   * Set the JWT the sdk uses to authenticate
+   *  to the API.
+   * @param jwt new jwt
+   *
+   * @returns void
+   */
+    setJwt (jwt: string): void {
+      this._config.jwt = jwt;
+      // this.logger.setJwt(jwt);
+
+      if (this._streamingConnection) {
+        this._streamingConnection.config.jwt = jwt;
+      }
+    }
+
   /**
    * Changes the headset functionality for the sdk
    * @param useHeadsets if true, this enables events from active headsets

@@ -61,7 +61,7 @@ describe('Client', () => {
     constructSdk = (config?: ISdkConfig) => {
       /* if we have no config, then use some defaults */
       if (config === undefined) {
-        config = { logger: mockLogger as any, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
+        config = { logger: mockLogger as any, accessToken: 'secure', jwt: 'test-jwt', environment: 'mypurecloud.com', optOutOfTelemetry: true };
       }
       /* if we have `truthy`, make sure we always have the mock logger */
       else if (config) {
@@ -1099,6 +1099,37 @@ describe('Client', () => {
       expect(sdk._streamingConnection).toBeFalsy();
 
       // add streamingConnection
+    });
+  });
+
+  describe('setJwt()', () => {
+    it('should set _config.jwt and pass it to logger and streamingclient', () => {
+      sdk = constructSdk();
+
+      expect(sdk._config.jwt).toBe('test-jwt');
+      expect(sdk._streamingConnection.config.jwt).toBe(undefined);
+
+      const newToken = 'hi-jwt-token';
+      sdk.setJwt(newToken);
+
+      expect(sdk._config.jwt).toBe(newToken);
+      // expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
+      expect(sdk._streamingConnection.config.jwt).toBe(newToken);
+    });
+
+    it('should not pass it to the streaming-client if it does not exist', () => {
+      sdk = constructSdk();
+
+      /* mock that we haven't initialized yet */
+      delete (sdk as any)._streamingConnection;
+      expect(sdk._config.jwt).toBe('test-jwt');
+
+      const newToken = 'hi-jwt-token';
+      sdk.setJwt(newToken);
+
+      expect(sdk._config.jwt).toBe(newToken);
+      // expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
+      expect(sdk._streamingConnection).toBeFalsy();
     });
   });
 

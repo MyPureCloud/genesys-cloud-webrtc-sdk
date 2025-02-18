@@ -1101,6 +1101,22 @@ Params:
 
 Returns: void
 
+#### `setJwt()`
+
+Set the JWT the sdk uses to authenticate to the API.
+
+Declaration:
+
+```ts
+setJwt(jwt: string): void;
+```
+
+Params:
+
+- `jwt: string` Required: new  JWT
+
+Returns: void
+
 #### `setDefaultAudioStream()`
 
 Set the sdk default audioStream. Calling with a falsy value will clear out sdk default.
