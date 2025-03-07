@@ -837,12 +837,9 @@ export interface IStartSessionParams extends ISdkMediaDeviceIds {
 }
 
 export interface IStartVideoSessionParams extends IStartSessionParams {
-  /** jid to be used when starting a video session */
-  jid?: string;
+  jid: string;
   /** userJid to be used when inviting a user to a conference */
   inviteeJid?: string;
-  /** conferenceId to be used instead of jid when using JWT authentication */
-  conferenceId?: string;
 }
 
 export interface IStartVideoMeetingSessionParams extends IStartSessionParams {

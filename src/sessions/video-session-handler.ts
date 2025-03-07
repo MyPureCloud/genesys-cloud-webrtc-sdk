@@ -55,8 +55,7 @@ export interface IMediaChangeEventParticipant {
 }
 
 export class VideoSessionHandler extends BaseSessionHandler {
-  /** Map of requested room IDs, either jid or conferenceId (JWT) */
-  requestedSessions: { [roomId: string]: boolean } = {};
+  requestedSessions: { [roomJid: string]: boolean } = {};
   requestedMeetingSessions: { [meetingId: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
@@ -252,12 +251,12 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
   // triggers a propose from the backend
   async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
-    if ("meetingId" in startParams) {
-      // TypeScript will know that all references to `startParams` in this block are of type `IStartVideoMeetingSessionParams`
-      return this.startVideoMeetingSession(startParams);
-    } else {
+    if ("jid" in startParams) {
       // TypeScript will know that all references to `startParams` in this block are of type `IStartVideoSessionParams`
+      // See https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-in-operator-narrowing
       return this.startVideoSession(startParams);
+    } else {
+      return this.startVideoMeetingSession(startParams);
     }
   }
 
@@ -276,16 +275,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     const data = JSON.stringify({
-      roomId: startParams.jid || startParams.conferenceId,
+      roomId: startParams.jid,
       participant
     });
 
-    if (!startParams.jid && !startParams.conferenceId) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'Either jid or conferenceId must be provided to start a video session', startParams);
-    }
-
-    const roomIdForTracking = startParams.jid || startParams.conferenceId;
-    this.requestedSessions[roomIdForTracking] = true;
+    this.requestedSessions[startParams.jid] = true;
 
     try {
       const response = await requestApi.call(this.sdk, `/conversations/videos`, {
@@ -295,7 +289,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       return { conversationId: response.data.conversationId };
     } catch (err) {
-      delete this.requestedSessions[roomIdForTracking];
+      delete this.requestedSessions[startParams.jid];
       this.log('error', 'Failed to request video conference session', err);
       throw err;
     }
