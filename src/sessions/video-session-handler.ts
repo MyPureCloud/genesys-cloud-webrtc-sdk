@@ -261,19 +261,25 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
-    let participant: { address: string };
+    let participant: { address: string, jwt?: string };
 
-    if (startParams.inviteeJid) {
+    if (this.sdk._config.jwt) {
+      participant = {
+        address: this.sdk._personDetails.chat.jabberId,
+        jwt: this.sdk._config.jwt
+      }
+    } else if (startParams.inviteeJid) {
       participant = { address: startParams.inviteeJid };
     } else {
       participant = { address: this.sdk._personDetails.chat.jabberId };
     }
 
+    // If using a JWT, the field name is conferenceId, otherwise it's roomId - their values are the same.
+    const fieldName = this.sdk._config.jwt ? 'conferenceId' : 'roomId';
     const data = JSON.stringify({
-      roomId: startParams.jid,
+      [fieldName]: startParams.jid,
       participant
     });
-
     this.requestedSessions[startParams.jid] = true;
 
     try {
