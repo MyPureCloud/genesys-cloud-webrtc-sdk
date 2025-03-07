@@ -236,7 +236,7 @@ describe('handleConversationUpdate', () => {
 
     expect(session.emit).toHaveBeenCalledTimes(1);
 
-    let emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
     expect(emittedUpdate.activeParticipants.length).toEqual(1);
     expect(emittedUpdate.removedParticipants.length).toEqual(0);
   });
@@ -482,6 +482,40 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
+  it('should be able to start a video session with a conferenceId', async () => {
+    const conferenceId = 'conf123';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ conferenceId, sessionType: SessionTypes.collaborateVideo });
+
+    const expected = JSON.stringify({
+      roomId: conferenceId,
+      participant: {
+        address: 'part1@test.com'
+      }
+    });
+
+    expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
+  });
+
+  it('should throw error when neither jid nor conferenceId is provided', async () => {
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    await expect(handler.startSession({ sessionType: SessionTypes.collaborateVideo }))
+      .rejects
+      .toThrow('Either jid or conferenceId must be provided to start a video session');
+  });
+
   it('should post to video conference api with an invitee', async () => {
     const roomJid = '123@conference.com';
 
@@ -504,7 +538,7 @@ describe('startSession', () => {
     expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', { method: 'post', data: expected });
   });
 
-  it('should track requested video conferences', async () => {
+  it('should track requested video conferences with jid', async () => {
     const roomJid = '123@conference.com';
 
     mockSdk._personDetails = {
@@ -516,7 +550,22 @@ describe('startSession', () => {
     jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
     await handler.startSession({ jid: roomJid, sessionType: SessionTypes.collaborateVideo });
 
-    expect(Object.values(handler.requestedSessions).length).toBe(1);
+    expect(handler.requestedSessions[roomJid]).toBe(true);
+  });
+
+  it('should track requested video conferences with conferenceId', async () => {
+    const conferenceId = 'conf123';
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: 'sldk' });
+    await handler.startSession({ conferenceId, sessionType: SessionTypes.collaborateVideo });
+
+    expect(handler.requestedSessions[conferenceId]).toBe(true);
   });
 
   it('should log error on video conference failure', async () => {
@@ -594,7 +643,7 @@ describe('startSession', () => {
 });
 
 describe('handlePropose', () => {
-  it('should handle requested sessions automatically', async () => {
+  it('should handle requested sessions automatically with jid', async () => {
     const previouslyRequestedJid = '123@conference.com';
     handler.requestedSessions[previouslyRequestedJid] = true;
 
@@ -614,6 +663,30 @@ describe('handlePropose', () => {
 
     expect(handler.proceedWithSession).toHaveBeenCalled();
     expect(parentHandler).not.toHaveBeenCalled();
+    expect(handler.requestedSessions[previouslyRequestedJid]).toBeUndefined();
+  });
+
+  it('should handle requested sessions automatically with conferenceId', async () => {
+    const conferenceId = 'conf123';
+    handler.requestedSessions[conferenceId] = true;
+
+    const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+
+    await handler.handlePropose({
+      id: '1241241',
+      sessionId: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      fromJid: 'some-jid@conference.com',
+      toJid: '',
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: conferenceId
+    });
+
+    expect(handler.proceedWithSession).toHaveBeenCalled();
+    expect(parentHandler).not.toHaveBeenCalled();
+    expect(handler.requestedSessions[conferenceId]).toBeUndefined();
   });
 
   it('should handle requested meeting sessions automatically', async () => {
