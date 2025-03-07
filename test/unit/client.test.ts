@@ -277,7 +277,7 @@ describe('Client', () => {
       });
 
       const expected = JSON.stringify({
-        roomId: 'test-room@conference.com',
+        conferenceId: 'test-room@conference.com',
         participant: {
           address: 'test-user@test.com',
           jwt: testJwt
