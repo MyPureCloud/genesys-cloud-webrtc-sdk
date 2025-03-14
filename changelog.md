@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...HEAD)
 
+# [v11.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...v11.1.1)
+### Fixed
+* [STREAM-380](https://inindca.atlassian.net/browse/STREAM-380) - Bump streaming-client to include line break for ice candidate SDP to follow the spec
+
 # [v11.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.0.0...v11.1.0)
 ### Changed
 * [STREAM-315](https://inindca.atlassian.net/browse/STREAM-315) - Changed the details emitted by an error to be more aligned with other SDK errors and provide more information to the consuming app
