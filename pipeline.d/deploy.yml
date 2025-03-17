@@ -1,0 +1,54 @@
+deploy:
+  path:
+    - type: habitat
+      name: dev
+      schedule: always
+    - type: environment
+      name: dev
+      filters:
+        family: webui
+      schedule: always
+      sequence: parallel
+    - type: habitat
+      name: test
+      schedule: always
+    - type: environment
+      name: test
+      filters:
+        family: webui
+      schedule: always
+      sequence: parallel
+    - type: habitat
+      name: prod
+      schedule: off_hours
+    - type: environment
+      name: prod
+      filters:
+        family: webui
+      schedule: off_hours
+      sequence: serial
+    - type: habitat
+      name: fedramp-use2-core
+      schedule: off_hours
+  branchPath:
+    - type: habitat
+      name: dev
+      schedule: always
+    - type: environment
+      name: dev
+      filters:
+        family: webui
+      schedule: always
+      sequence: parallel
+    - type: habitat
+      name: test
+      schedule: always
+    - type: environment
+      name: test
+      filters:
+        family: webui
+      schedule: always
+      sequence: parallel
+  changeManagement:
+    submit: True
+    finish: True

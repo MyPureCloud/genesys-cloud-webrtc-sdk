@@ -18,14 +18,6 @@ def isDevelop = {
   env.BRANCH_NAME == DEVELOP_BRANCH
 }
 
-def isMainline = {
-  isMain() || isDevelop() || isRelease()
-}
-
-def getBranchType = {
-  isMainline() ? 'MAINLINE' : 'FEATURE'
-}
-
 def hasRunSpigotTests = false
 def testSpigotByEnv = { environment, branch ->
    stage("Spigot test '${environment}'") {
@@ -48,17 +40,13 @@ def gitFunctions = new com.genesys.jenkins.Git()
 def notifications = new com.genesys.jenkins.Notifications()
 
 def chatGroupId = 'adhoc-60e40c95-3d9c-458e-a48e-ca4b29cf486d'
+def name = 'developercenter-cdn/webrtc-sdk'
 
-webappPipeline {
-    projectName = 'developercenter-cdn/webrtc-sdk'
+webappPipelineV2 {
+    urlPrefix = name
     nodeVersion = '20.x multiarch'
-    team = 'Client Streaming and Signaling'
-    jiraProjectKey = 'STREAM'
     mailer = 'GcMediaStreamSignal@genesys.com'
     chatGroupId = chatGroupId
-    useSkynetV2 = true
-
-    buildType = getBranchType
 
     manifest = customManifest('dist') {
         sh('node ./create-manifest.js')
@@ -72,10 +60,6 @@ webappPipeline {
       ]
     }
 
-    autoSubmitCm = true
-
-    testJob = 'no-tests' // see buildStep to spigot tests
-
     ciTests = {
       sh('node -e "console.log(process.env)"')
 
@@ -85,7 +69,6 @@ ENVIRONMENT  : ${env.ENVIRONMENT}
 BUILD_NUMBER : ${env.BUILD_NUMBER}
 BUILD_ID     : ${env.BUILD_ID}
 BRANCH_NAME  : ${env.BRANCH_NAME}
-APP_NAME     : ${env.APP_NAME}
 VERSION      : ${env.VERSION}
 ===================================
       """)
@@ -176,7 +159,7 @@ VERSION      : ${env.VERSION}
                     ])
                 }
 
-                def message = "**${env.APP_NAME}** ${version} (Build [#${env.BUILD_NUMBER}](${env.BUILD_URL})) has been published to **npm**"
+                def message = "**${name}** ${version} (Build [#${env.BUILD_NUMBER}](${env.BUILD_URL})) has been published to **npm**"
 
                 if (!tag) {
                   message = ":loudspeaker: ${message}"
