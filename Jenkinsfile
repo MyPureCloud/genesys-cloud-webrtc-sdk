@@ -1,5 +1,3 @@
-import groovy.json.JsonBuilder
-
 @Library('pipeline-library') _
 
 def MAIN_BRANCH = 'master'
@@ -18,23 +16,6 @@ def isDevelop = {
   env.BRANCH_NAME == DEVELOP_BRANCH
 }
 
-def hasRunSpigotTests = false
-def testSpigotByEnv = { environment, branch ->
-   stage("Spigot test '${environment}'") {
-        script {
-            println("Scheduling spigot test for: { env: '${environment}', branch: '${branch}' }")
-            build(job: 'spigot-tests-webrtcsdk-entry',
-                    parameters: [
-                        string(name: 'ENVIRONMENT', value: environment),
-                        string(name: 'BRANCH_TO_TEST', value: branch)
-                    ],
-                    propagate: true,
-                    wait: true // wait for the test job to finish
-            )
-        }
-    }
-}
-
 def npmFunctions = new com.genesys.jenkins.Npm()
 def gitFunctions = new com.genesys.jenkins.Git()
 def notifications = new com.genesys.jenkins.Notifications()
@@ -45,6 +26,7 @@ def name = 'developercenter-cdn/webrtc-sdk'
 webappPipelineV2 {
     urlPrefix = name
     nodeVersion = '20.x multiarch'
+    // I wonder if we should use a function like streaming-client
     mailer = 'GcMediaStreamSignal@genesys.com'
     chatGroupId = chatGroupId
 
@@ -74,7 +56,6 @@ VERSION      : ${env.VERSION}
       """)
 
       sh("""
-        npm i -g npm@7
         npm ci
         npm run test
       """)
@@ -87,14 +68,6 @@ VERSION      : ${env.VERSION}
             npm run build
             npm run build:sample
         """)
-
-        // // run spigot tests on release/ branches
-        // if (isRelease() && !hasRunSpigotTests) {
-        //   testSpigotByEnv('dev', env.BRANCH_NAME);
-        //   testSpigotByEnv('test', env.BRANCH_NAME);
-        //   testSpigotByEnv('prod', env.BRANCH_NAME);
-        //   hasRunSpigotTests = true // have to use this because it builds twice (once for legacy build)
-        // }
     }
 
     onSuccess = {
