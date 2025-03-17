@@ -51,13 +51,13 @@ def chatGroupId = 'adhoc-60e40c95-3d9c-458e-a48e-ca4b29cf486d'
 
 webappPipeline {
     projectName = 'developercenter-cdn/webrtc-sdk'
+    nodeVersion = '20.x multiarch'
     team = 'Client Streaming and Signaling'
     jiraProjectKey = 'STREAM'
     mailer = 'GcMediaStreamSignal@genesys.com'
     chatGroupId = chatGroupId
     useSkynetV2 = true
 
-    nodeVersion = '18.x'
     buildType = getBranchType
 
     manifest = customManifest('dist') {
