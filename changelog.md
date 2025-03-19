@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...HEAD)
+### Changed
+* [STREAM-401](https://inindca.atlassian.net/browse/STREAM-401) - Migrate to webappPipelineV2.
 
 # [v11.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...v11.1.1)
 ### Fixed
