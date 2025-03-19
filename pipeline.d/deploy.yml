@@ -50,5 +50,5 @@ deploy:
       schedule: always
       sequence: parallel
   changeManagement:
-    submit: True
+    submit: False
     finish: True
