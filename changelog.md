@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-315](https://inindca.atlassian.net/browse/STREAM-315) - Changed the details emitted by an error to be more aligned with other SDK errors and provide more information to the consuming app
 ### Fixed
 * [STREAM-331](https://inindca.atlassian.net/browse/STREAM-331) - Updated headset library to fix a Plantronics issue and issue with Teams and Yealink
+* [STREAM-357](https://inindca.atlassian.net/browse/STREAM-357) - Updated streaming-client to maintain a JID resource across websockets/stanza instances. If a JID resource is not provided, a random UUID will be generated and saved for that streaming-client instance.
 
 # [v11.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v10.0.0...v11.0.0)
 ### Breaking Changes
