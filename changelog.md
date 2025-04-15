@@ -3,7 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.0.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...HEAD)
+### Changed
+* [STREAM-357](https://inindca.atlassian.net/browse/STREAM-357) - Updated streaming-client to maintain a JID resource across websockets/stanza instances. If a JID resource is not provided, a random UUID will be generated and saved for that streaming-client instance.
+
+# [v11.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...v11.1.1)
+### Fixed
+* [STREAM-380](https://inindca.atlassian.net/browse/STREAM-380) - Bump streaming-client to include line break for ice candidate SDP to follow the spec
+
+# [v11.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.0.0...v11.1.0)
 ### Changed
 * [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
 * [STREAM-315](https://inindca.atlassian.net/browse/STREAM-315) - Changed the details emitted by an error to be more aligned with other SDK errors and provide more information to the consuming app
