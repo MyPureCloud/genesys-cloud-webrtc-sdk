@@ -192,7 +192,7 @@ Access token received from authentication. Required for authenticated users (aka
 `jwt?: string;`
 This is tied to some genesys-internal functionality and is not intended for outside use at this point in time.
 A genesys-signed jwt can be used to allow limited agent access to the sdk. Currently this only enables
-screen-recording functionality. This cannot be used in conjuction with an accessToken or guest access.
+screen-recording and video conferencing functionality. This cannot be used in conjuction with an accessToken or guest access.
 
 #### `organizationId`
 
@@ -1098,6 +1098,22 @@ setAccessToken(token: string): void;
 Params:
 
 - `token: string` Required: new access token
+
+Returns: void
+
+#### `setJwt()`
+
+Set the JWT the sdk uses to authenticate to the API.
+
+Declaration:
+
+```ts
+setJwt(jwt: string): void;
+```
+
+Params:
+
+- `jwt: string` Required: new  JWT
 
 Returns: void
 
