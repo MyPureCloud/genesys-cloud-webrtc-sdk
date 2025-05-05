@@ -29,7 +29,7 @@ Not yet supported:
 # npm
 npm install --save genesys-cloud-webrtc-sdk
 # yarn
-yarn genesys-cloud-webrtc-sdk
+yarn add genesys-cloud-webrtc-sdk
 ```
 
 See [documentation][4] for usage and implementation details.
