@@ -50,7 +50,7 @@ describe('createAndEmitSdkError', () => {
     const createdError = utils.createAndEmitSdkError.call(sdk, SdkErrorTypes.generic, origError);
     expect(createdError).toBeInstanceOf(SdkError);
     expect(createdError).toEqual(origError);
-    
+
     jest.runAllTimers();
     const emittedError = spy.mock.calls[0][0];
     expect(emittedError).toBeInstanceOf(SdkError);
@@ -350,5 +350,58 @@ describe('getBareJid', () => {
     };
 
     expect(utils.getBareJid(sdk as any)).toEqual(jid);
+  });
+});
+
+describe('removeAddressFieldFromConversationUpdate', () => {
+  it('should remove address field from conversation updates', () => {
+    const update: any = {
+      id: 1,
+      address: 'test',
+      details: {
+        address: 'some-pii',
+        userId: 'user-123'
+      }
+    };
+
+    const sanitzed = {
+      id: 1,
+      details: {
+        userId: 'user-123'
+      }
+    };
+
+    const result = utils.removeAddressFieldFromConversationUpdate(update);
+    expect(result).toEqual(sanitzed);
+  });
+
+  it('should handle deeply nested address fields in conversation updates', () => {
+    const update: any = {
+      id: 1,
+      address: 'some-pii',
+      data: {
+        participant: {
+          address: 'more-pii',
+          details: {
+            address: 'more-pii-again',
+            userId: 'user-123'
+          }
+        }
+      }
+    };
+
+    const sanitized = {
+      id: 1,
+      data: {
+        participant: {
+          details: {
+            userId: 'user-123'
+          }
+        }
+      }
+    };
+
+    const result = utils.removeAddressFieldFromConversationUpdate(update);
+    expect(result).toEqual(sanitized);
   });
 });

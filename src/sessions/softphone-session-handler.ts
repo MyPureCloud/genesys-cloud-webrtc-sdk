@@ -28,6 +28,7 @@ import { GenesysCloudWebrtcSdk } from '..';
 import { SessionManager } from './session-manager';
 import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
 import { HeadsetProxyService } from '../headsets/headset';
+import { removeAddressFieldFromConversationUpdate } from '../utils';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -302,11 +303,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           conversationId !== session?.conversationId
           || (previousCallState && !this.isConnectedState(previousCallState))
         ) {
+          // Conversation update could potentially contain PII in the address field.
+          const updateToLog = removeAddressFieldFromConversationUpdate(update);
           /* if we are adding a session, but we don't have a session – it means another client took the conversation */
           if (!session) {
             this.log('info', 'incoming conversation started, but we do not have a session. assuming it was handled by a different client. ignoring', {
               ignoredConversation: this.conversations[conversationId],
-              update
+              updateToLog
             });
             if ((this.sdk.headset as HeadsetProxyService).orchestrationState === 'hasControls') {
               this.sdk.headset.resetHeadsetStateForCall(conversationId);
