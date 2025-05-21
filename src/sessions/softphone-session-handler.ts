@@ -736,8 +736,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   _rejectUcCall (conversationId: string, participantId: string): Promise<any> {
     return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}/replace`, {
       method: 'post',
-      data: JSON.stringify({ voicemail: true }),
-      customHeaders: this.sdk._config.customHeaders
+      data: JSON.stringify({ voicemail: true })
     });
   }
 
@@ -927,8 +926,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     this.log('info', 'Creating softphone call from SDK', { conversationIds: params.conversationIds, sessionType: this.sessionType });
     const response = await requestApi.call(this.sdk, `/conversations/calls`, {
       method: 'post',
-      data: JSON.stringify(params),
-      customHeaders: this.sdk._config.customHeaders || undefined
+      data: JSON.stringify(params)
     });
     return { id: response.data.id, selfUri: response.data.selfUri };
   }
@@ -940,8 +938,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   ): Promise<any> {
     return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}`, {
       method: 'patch',
-      data: JSON.stringify(body),
-      customHeaders: this.sdk._config.customHeaders || undefined
+      data: JSON.stringify(body)
     });
   }
 

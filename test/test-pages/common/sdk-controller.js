@@ -872,8 +872,7 @@ async function updateOnQueueStatus (goingOnQueue) {
     systemPresences = (await webrtcSdk._http.requestApi(`systempresences`, {
       method: 'get',
       host: webrtcSdk._config.environment,
-      authToken: webrtcSdk._config.accessToken,
-      customHeaders: webrtcSdk._config.customHeaders || undefined
+      authToken: webrtcSdk._config.accessToken
     })).data;
   }
 
@@ -888,8 +887,7 @@ async function updateOnQueueStatus (goingOnQueue) {
     method: 'patch',
     host: webrtcSdk._config.environment,
     authToken: webrtcSdk._config.accessToken,
-    data: JSON.stringify({ presenceDefinition }),
-    customHeaders: webrtcSdk._config.customHeaders || undefined
+    data: JSON.stringify({ presenceDefinition })
   };
   return await webrtcSdk._http.requestApi(`users/${webrtcSdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
 }

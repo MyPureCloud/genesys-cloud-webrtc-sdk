@@ -236,8 +236,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
             organizationId: this._orgDetails.id,
             addCommunicationCode: opts.securityCode
           },
-          noAuthHeader: true,
-          customHeaders: this._config.customHeaders || undefined
+          noAuthHeader: true
         }).then(({ data }) => {
           this._customerData = data;
         });
@@ -660,7 +659,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   async fetchOrganization (): Promise<IOrgDetails> {
-    return requestApiWithRetry.call(this, '/organizations/me', { customHeaders: this._config.customHeaders || undefined }).promise
+    return requestApiWithRetry.call(this, '/organizations/me').promise
       .then(({ data }) => {
         this._orgDetails = data;
         this.logger.debug('Fetched organization details', data, { skipServer: true }); // don't log PII
@@ -669,7 +668,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   async fetchAuthenticatedUser (): Promise<IPersonDetails> {
-    return requestApiWithRetry.call(this, '/users/me?expand=station', { customHeaders: this._config.customHeaders || undefined }).promise
+    return requestApiWithRetry.call(this, '/users/me?expand=station').promise
       .then(({ data }) => {
         this._personDetails = data;
         this.logger.debug('Fetched person details', data, { skipServer: true }); // don't log PII
@@ -709,7 +708,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.generic, error.message, error);
     }
 
-    const { data } = await requestApiWithRetry.call(this, `/stations/${stationId}`, { customHeaders: this._config.customHeaders || undefined }).promise;
+    const { data } = await requestApiWithRetry.call(this, `/stations/${stationId}`).promise;
     this.station = data;
     this.logger.info('Fetched user station', {
       userId: data.userId,
