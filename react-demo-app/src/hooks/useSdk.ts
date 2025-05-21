@@ -143,7 +143,8 @@ export default function useSdk() {
     const systemPresences = await sdk._http.requestApi(`systempresences`, {
       method: 'get',
       host: sdk._config.environment,
-      authToken: sdk._config.accessToken
+      authToken: sdk._config.accessToken,
+      customHeaders: sdk._config.customHeaders || undefined,
     });
 
     let presenceDefinition;
@@ -156,7 +157,8 @@ export default function useSdk() {
       method: 'patch',
       host: sdk._config.environment,
       authToken: sdk._config.accessToken,
-      data: JSON.stringify({ presenceDefinition })
+      data: JSON.stringify({ presenceDefinition }),
+      customHeaders: sdk._config.customHeaders || undefined
     };
 
     await sdk._http.requestApi(`users/${sdk._personDetails.id}/presences/PURECLOUD`, requestOptions);

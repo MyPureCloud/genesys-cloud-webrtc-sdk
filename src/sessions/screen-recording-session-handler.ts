@@ -127,6 +127,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
     return requestApi.call(this.sdk, url, {
       method: 'post',
       authToken: accessToken || jwt,
+      customHeaders: this.sdk._config.customHeaders || undefined,
       data
     });
   }

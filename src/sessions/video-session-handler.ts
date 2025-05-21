@@ -279,7 +279,8 @@ export class VideoSessionHandler extends BaseSessionHandler {
     try {
       const response = await requestApi.call(this.sdk, `/conversations/videos`, {
         method: 'post',
-        data
+        data,
+        customHeaders: this.sdk._config.customHeaders || undefined
       });
 
       return { conversationId: response.data.conversationId };
@@ -302,7 +303,8 @@ export class VideoSessionHandler extends BaseSessionHandler {
     try {
       const response = await requestApi.call(this.sdk, `/conversations/videos/participants`, {
         method: 'post',
-        data
+        data,
+        customHeaders: this.sdk._config.customHeaders || undefined
       });
 
       return { conversationId: response.data.conversationId };
@@ -784,7 +786,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     try {
-      await requestApi.call(this.sdk, uri, { method, data });
+      await requestApi.call(this.sdk, uri, { method, data, customHeaders: this.sdk._config.customHeaders || undefined });
       session.emit('pinnedParticipant', { participantId: participantId || null });
     } catch (err) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Request to pin video failed', {

@@ -594,7 +594,7 @@ export default abstract class BaseSessionHandler {
   }
 
   async fetchConversationStateFromApi (conversationId: string): Promise<ConversationUpdate> {
-    const { data } = await requestApi.call(this.sdk, `/conversations/${conversationId}`);
+    const { data } = await requestApi.call(this.sdk, `/conversations/${conversationId}`, { customHeaders: this.sdk._config.customHeaders || undefined });
     if (data) {
       return new ConversationUpdate(data);
     }
