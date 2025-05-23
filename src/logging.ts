@@ -9,7 +9,8 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     originAppId,
     originAppName,
     originAppVersion,
-    logFormatters
+    logFormatters,
+    customHeaders
   } = this._config;
 
   let url = `https://api.${this._config.environment}/api/v2/diagnostics/trace`;
@@ -33,7 +34,8 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     /* consumerApp info */
     originAppId,
     originAppName,
-    originAppVersion
+    originAppVersion,
+    customHeaders
   });
 
   if (this.isGuest) {
