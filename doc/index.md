@@ -16,7 +16,6 @@
 ## Feature Index
 
 - [WebRTC SoftPhone]
-- [WebRTC Screen Share]
 - [WebRTC Video Conferencing]
 - [WebRTC Screen Recording]
 - [WebRTC Media] (media, devices, and permissions support)
@@ -73,7 +72,7 @@ polyfill these modules.
 
 This is a very basic usage of the WebRTC SDK. Be sure to read through the documentation for more advanced usage.
 
-For an authenticated user, a valid **accessToken** is required on construction. The following example is for an authenticated user (for an unauthenticated user example, see [WebRTC Screen Share]).
+For an authenticated user, a valid **accessToken** is required on construction. The following example is for an authenticated user.
 
 ```js
 import { GenesysCloudWebrtcSdk } from 'genesys-cloud-webrtc-sdk';
@@ -2025,7 +2024,6 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [GenesysCloudClientLogger]: https://github.com/purecloudlabs/genesys-cloud-client-logger
 [webrtc-stats-gatherer]: https://github.com/MyPureCloud/webrtc-stats-gatherer
 [WebRTC SoftPhone]: softphone.md
-[WebRTC Screen Share]: screenshare.md
 [WebRTC Video Conferencing]: video.md
 [WebRTC Screen Recording]: screen-recording.md
 [WebRTC Media]: media.md
