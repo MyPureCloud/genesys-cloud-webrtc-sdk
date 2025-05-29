@@ -256,6 +256,23 @@ describe('buildRequestApiOptions', () => {
       method
     })).toEqual(expected);
   });
+
+  it('should use config customHeaders if none are passed in AND the SDK was initialized with a customHeader', () => {
+    sdk._config.customHeaders = {
+      'Genesys-App': 'test-app'
+    };
+
+    const expected: Partial<RequestApiOptions> ={
+      authToken: undefined,
+      host: "mypurecloud.com",
+      method: "get",
+      customHeaders: {
+        'Genesys-App': 'test-app'
+      }
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {})).toEqual(expected);
+  })
 });
 
 describe('parseJwt', () => {
