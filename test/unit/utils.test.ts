@@ -159,6 +159,7 @@ describe('requestApi', () => {
     await utils.requestApi.call(sdk, '/path');
 
     expect(httpSpy).toHaveBeenCalledWith('/path', {
+      customHeaders: {},
       authToken: sdk._config.accessToken,
       host: sdk._config.environment,
       method: 'get'
@@ -175,6 +176,7 @@ describe('requestApi', () => {
     await utils.requestApi.call(sdk, '/path', { authToken, method, host });
 
     expect(httpSpy).toHaveBeenCalledWith('/path', {
+      customHeaders: {},
       authToken,
       method,
       host
@@ -197,6 +199,7 @@ describe('requestApi', () => {
     await utils.requestApi.call(sdk, '/', { noAuthHeader: true });
 
     expect(httpSpy).toHaveBeenCalledWith('/', {
+      customHeaders: {},
       method: 'get',
       host: 'mypurecloud.com',
       noAuthHeader: true
@@ -213,6 +216,7 @@ describe('buildRequestApiOptions', () => {
     sdk._config.environment = host;
 
     const expected: Partial<RequestApiOptions> = {
+      customHeaders: {},
       authToken,
       host,
       method: 'get'
@@ -227,12 +231,14 @@ describe('buildRequestApiOptions', () => {
     const method = 'post';
 
     const expected: Partial<RequestApiOptions> = {
+      customHeaders: {},
       authToken,
       host,
       method
     };
 
     expect(utils.buildRequestApiOptions(sdk, {
+      customHeaders: {},
       host,
       authToken,
       method
@@ -245,6 +251,7 @@ describe('buildRequestApiOptions', () => {
     const method = 'get';
 
     const expected: Partial<RequestApiOptions> = {
+      customHeaders: {},
       noAuthHeader,
       host,
       method
@@ -256,6 +263,23 @@ describe('buildRequestApiOptions', () => {
       method
     })).toEqual(expected);
   });
+
+  it('should use config customHeaders if none are passed in AND the SDK was initialized with a customHeader', () => {
+    sdk._config.customHeaders = {
+      'Genesys-App': 'test-app'
+    };
+
+    const expected: Partial<RequestApiOptions> ={
+      authToken: undefined,
+      host: "mypurecloud.com",
+      method: "get",
+      customHeaders: {
+        'Genesys-App': 'test-app'
+      }
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {})).toEqual(expected);
+  })
 });
 
 describe('parseJwt', () => {
