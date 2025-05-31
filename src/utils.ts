@@ -93,6 +93,11 @@ export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partia
     opts.customHeaders = sdk._config.customHeaders;
   }
 
+  opts.customHeaders = {
+    ...(sdk._config.customHeaders || {}),
+    ...(opts.customHeaders || {})
+  }
+
   return opts;
 }
 
