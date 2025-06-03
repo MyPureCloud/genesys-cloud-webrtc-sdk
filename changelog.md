@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.1...HEAD)
+### Fixed
+* [STREAM-534](https://inindca.atlassian.net/browse/STREAM-534) - Bump streaming-client to fix an issue where the sdpOverXmpp flag could be overwritten by simultaneous proposes.
 
 # [v11.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.0...v11.2.1)
 ### Changed
