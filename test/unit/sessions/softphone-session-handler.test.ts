@@ -1197,12 +1197,13 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
-  it('should emit a pending session if we already have an active session', async () => {
+  it('should emit a pending session if we already have an active session with a different conversationId', async () => {
     const { update, participant, callState, session } = generateUpdate({
       callState: CommunicationStates.alerting
     });
 
     handler.activeSession = session;
+    update.id = session.conversationId + '1';
 
     handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
@@ -1226,6 +1227,21 @@ describe('handleSoftphoneConversationUpdate()', () => {
       expectedPendingSession
     );
     expect(mockSessionManager.pendingSessions[0]).toEqual(expectedPendingSession);
+  });
+
+  it('should not emit a pending session if the active session is for the same conversation', async () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(emitConversationEventSpy).not.toHaveBeenCalled();
+    expect(sdkEmitSpy).not.toHaveBeenCalled();
+    expect(mockSessionManager.pendingSessions.length).toBe(0);
   });
 
   it('should not emit a pending session if we do not have an active session', () => {
