@@ -277,7 +277,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         }
 
         /* only emit `pendingSession` if we already have an active session */
-        if (session && session === this.activeSession) {
+        if (session && session === this.activeSession && conversationId !== session.conversationId) {
           const pendingSession: IPendingSession = {
             id: session.id,
             sessionId: session.id,
