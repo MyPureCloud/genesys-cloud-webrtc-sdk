@@ -55,7 +55,7 @@ export default function useSdk() {
     webrtcSdk.on('pendingSession', handlePendingSession);
     webrtcSdk.on('cancelPendingSession', handleCancelPendingSession);
     webrtcSdk.on('handledPendingSession', handledPendingSession);
-    webrtcSdk.on('sessionStarted', handleSessionStarted);
+    // webrtcSdk.on('sessionStarted', handleSessionStarted);
     webrtcSdk.on('sessionEnded', (session) => handleSessionEnded(session));
     // webrtcSdk.on('trace', trace);
     webrtcSdk.on('disconnected', handleDisconnected);
