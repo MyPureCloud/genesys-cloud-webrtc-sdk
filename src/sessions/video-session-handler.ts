@@ -262,12 +262,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
   private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
     let participant: { address: string, jwt?: string };
+    let videoApiUrl = '/conversations/videos';
 
     if (this.sdk._config.jwt) {
       participant = {
         address: this.sdk._personDetails.chat.jabberId,
         jwt: this.sdk._config.jwt
       }
+      videoApiUrl = '/conversations/videos/agentconference/guest';
     } else if (startParams.inviteeJid) {
       participant = { address: startParams.inviteeJid };
     } else {
@@ -283,7 +285,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     this.requestedSessions[startParams.jid] = true;
 
     try {
-      const response = await requestApi.call(this.sdk, `/conversations/videos`, {
+      const response = await requestApi.call(this.sdk, videoApiUrl, {
         method: 'post',
         data
       });
