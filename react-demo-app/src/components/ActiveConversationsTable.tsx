@@ -51,9 +51,15 @@ export default function ActiveConversationsTable() {
     updatedMuteLabels[index] = <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading>;
     setMuteLabels(updatedMuteLabels);
     try {
-      await toggleAudioMute(!conversations[index].mostRecentCallState.muted, conversations[index].conversationId)
-      updatedMuteLabels[index] = conversations[index].mostRecentCallState.muted ? 'Unmute' : 'Mute';
-      setMuteLabels(updatedMuteLabels);
+      if (conversations[index].session.sessionType === SessionTypes.softphone) {
+        await toggleAudioMute(!conversations[index].mostRecentCallState.muted, conversations[index].conversationId)
+        updatedMuteLabels[index] = conversations[index].mostRecentCallState.muted ? 'Unmute' : 'Mute';
+        setMuteLabels(updatedMuteLabels);
+      } else {
+        await toggleAudioMute(!conversations[index].ownCallState.audioMuted, conversations[index].conversationId)
+        updatedMuteLabels[index] = conversations[index].ownCallState.audioMuted ? 'Unmute' : 'Mute';
+        setMuteLabels(updatedMuteLabels);
+      }
     } catch(err) {
       console.error(err);
     }
@@ -64,8 +70,8 @@ export default function ActiveConversationsTable() {
     updatedVideoMuteLabels[index] = <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading>;
     setMuteLabels(updatedVideoMuteLabels);
     try {
-      await toggleVideoMute(!conversations[index].mostRecentCallState.muted, conversations[index].conversationId);
-      updatedVideoMuteLabels[index] = conversations[index].mostRecentCallState.muted ? 'Unmute' : 'Mute';
+      await toggleVideoMute(!conversations[index].ownCallState.videoMuted, conversations[index].conversationId);
+      updatedVideoMuteLabels[index] = conversations[index].ownCallState.videoMuted ? 'Unmute' : 'Mute';
       setVideoMuteLabels(updatedVideoMuteLabels);
     } catch (err) {
       console.error(err);

@@ -14,17 +14,12 @@ import {
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
   const [stream, setStream] = useState();
+  const [sessionState, setSessionState] = useState<VideoMediaSession>();
   const sdk = useSelector(state => state.sdk.sdk);
+  const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
-  const [isVideoMuted, setIsVideoMuted] = useState(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [sessionState, setSessionState] = useState<VideoMediaSession>();
-  const dispatch = useDispatch();
-  const conversations = useSelector(
-    (state) => state.conversations.activeConversations
-  );
 
   function startVideoConf() {
     sdk.startVideoConference(roomJid);
@@ -114,35 +109,6 @@ export default function Video() {
             onClick={startMediaVideo}
           >
             Start Your Media
-          </GuxButton>
-          <GuxButton
-            onClick={() => {
-              if (!sessionState?.conversationId) {
-                return;
-              }
-              sdk.setVideoMute({conversationId: sessionState.conversationId, mute: !isVideoMuted});
-              setIsVideoMuted(prev => !prev);
-            }}
-          >
-            🎥 {isVideoMuted ? 'Unmute' : 'Mute'} video
-          </GuxButton>
-          <GuxButton
-            onClick={() => {
-              if (!sessionState?.conversationId) {
-                return;
-              }
-              sdk.setAudioMute({conversationId: sessionState.conversationId, mute: !isAudioMuted});
-              setIsAudioMuted(prev => !prev);
-            }}
-          >
-            🔉 {isAudioMuted ? 'Unmute' : 'Mute'} audio
-          </GuxButton>
-          <GuxButton
-            onClick={() => {
-              sdk.updateDefaultResolution({width: 1920, height: 1080}, true);
-            }}
-          >
-            Update res
           </GuxButton>
           <GuxButton
             onClick={() => {
