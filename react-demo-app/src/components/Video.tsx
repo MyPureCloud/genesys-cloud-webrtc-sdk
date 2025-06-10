@@ -25,6 +25,17 @@ export default function Video() {
     sdk.startVideoConference(roomJid);
   }
 
+  function startVideoMeeting() {
+    sdk.startVideoMeeting(roomJid);
+  }
+
+  function startScreenShare() {
+    if (!sessionState?.startScreenShare) {
+      return;
+    }
+    sessionState.startScreenShare();
+  }
+
   async function startMedia() {
     return await sdk.media.startMedia({video: true});
   }
@@ -82,24 +93,6 @@ export default function Video() {
     });
   }, []);
 
-  const placeCall = () => {
-    if (!stream) {
-      // return;
-    }
-    return (
-      <>
-        <GuxButton
-          accent="primary"
-          className="video-btn"
-          type="submit"
-          onClick={startVideoConf}
-        >
-          Place call
-        </GuxButton>
-      </>
-    );
-  }
-
   return (
     <>
       <Card className="video-card">
@@ -109,19 +102,24 @@ export default function Video() {
             value={roomJid}
             onChange={(e) => setRoomJid(e.target.value)}
           />
-          {placeCall()}
-          {/*<GuxButton*/}
-          {/*  onClick={startMediaVideo}*/}
-          {/*>*/}
-          {/*  Start Your Media*/}
-          {/*</GuxButton>*/}
           <GuxButton
-            onClick={() => {
-              if (!sessionState?.startScreenShare) {
-                return;
-              }
-              sessionState.startScreenShare();
-            }}
+            accent="primary"
+            className="video-btn"
+            type="submit"
+            onClick={startVideoConf}
+          >
+            Place Conference
+          </GuxButton>
+          <GuxButton
+            accent="primary"
+            className="video-btn"
+            type="submit"
+            onClick={startVideoMeeting}
+          >
+            Place Meeting
+          </GuxButton>
+          <GuxButton
+            onClick={startScreenShare}
           >
             Screen Share
           </GuxButton>
