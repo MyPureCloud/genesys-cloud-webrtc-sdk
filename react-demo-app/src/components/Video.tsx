@@ -1,21 +1,30 @@
 import Card from "./Card.tsx";
 import {useEffect, useRef, useState} from "react";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {GuxButton} from "genesys-spark-components-react";
 import {SessionEvents} from 'genesys-cloud-streaming-client';
 
-import {VideoMediaSession} from "../../../src";
+import {IExtendedMediaSession, VideoMediaSession} from "../../../src";
+import {
+  addConvToActive,
+  addOwnParticipantData,
+  updateActiveConv
+} from "../features/conversationsSlice.ts";
 
 export default function Video() {
-  const [roomJid, setRoomJid] = useState("123test@conference.com");
+  const [roomJid, setRoomJid] = useState("2@conference.com");
   const [stream, setStream] = useState();
   const sdk = useSelector(state => state.sdk.sdk);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const vanityVideoRef = useRef<HTMLVideoElement>(null);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [session, setSession] = useState<VideoMediaSession>();
-  const vanityVideoRef = useRef<HTMLVideoElement>(null);
+  const [sessionState, setSessionState] = useState<VideoMediaSession>();
+  const dispatch = useDispatch();
+  const conversations = useSelector(
+    (state) => state.conversations.activeConversations
+  );
 
   function startVideoConf() {
     sdk.startVideoConference(roomJid);
@@ -23,7 +32,6 @@ export default function Video() {
 
   async function startMedia() {
     return await sdk.media.startMedia({video: true});
-    // Is this for displaying locally and then we essentially copy it and stream it?
   }
 
   async function startMediaVideo() {
@@ -36,7 +44,7 @@ export default function Video() {
     }
   }
 
-  function logRelevantSessionEvents(session: VideoMediaSession) {
+  function logRelevantSessionEvents(session: IExtendedMediaSession) {
     const sessionEventsToLog: Array<keyof SessionEvents> = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
     sessionEventsToLog.forEach((eventName) => {
       session.on(eventName, (e) => console.info(eventName, e));
@@ -46,13 +54,29 @@ export default function Video() {
   useEffect(() => {
     sdk.on('sessionStarted', async (session: VideoMediaSession) => {
       if (session.sessionType === 'collaborateVideo') {
-        setSession(session);
+        setSessionState(session);
         logRelevantSessionEvents(session);
         sdk.acceptSession({
           conversationId: session.conversationId,
           audioElement: audioRef.current,
           videoElement: videoRef.current,
           // mediaStream: stream,
+        });
+
+        dispatch(addConvToActive(session));
+
+        session.on('sessionState', seshState => {
+          session.state = seshState;
+          dispatch(updateActiveConv(session));
+        });
+
+        session.on('connectionState', connState => {
+          session.connectionState = connState;
+          dispatch(updateActiveConv(session));
+        });
+
+        session.on('participantsUpdate', partsUpdate => {
+          dispatch(addOwnParticipantData(partsUpdate));
         });
       }
     });
@@ -93,10 +117,10 @@ export default function Video() {
           </GuxButton>
           <GuxButton
             onClick={() => {
-              if (!session?.conversationId) {
+              if (!sessionState?.conversationId) {
                 return;
               }
-              sdk.setVideoMute({conversationId: session.conversationId, mute: !isVideoMuted});
+              sdk.setVideoMute({conversationId: sessionState.conversationId, mute: !isVideoMuted});
               setIsVideoMuted(prev => !prev);
             }}
           >
@@ -104,10 +128,10 @@ export default function Video() {
           </GuxButton>
           <GuxButton
             onClick={() => {
-              if (!session?.conversationId) {
+              if (!sessionState?.conversationId) {
                 return;
               }
-              sdk.setAudioMute({conversationId: session.conversationId, mute: !isAudioMuted});
+              sdk.setAudioMute({conversationId: sessionState.conversationId, mute: !isAudioMuted});
               setIsAudioMuted(prev => !prev);
             }}
           >
@@ -122,20 +146,20 @@ export default function Video() {
           </GuxButton>
           <GuxButton
             onClick={() => {
-              if (!session?.conversationId) {
+              if (!sessionState?.conversationId) {
                 return;
               }
-              sdk.endSession({conversationId: session.conversationId});
+              sdk.endSession({conversationId: sessionState.conversationId});
             }}
           >
             End
           </GuxButton>
           <GuxButton
             onClick={() => {
-              if (!session?.startScreenShare) {
+              if (!sessionState?.startScreenShare) {
                 return;
               }
-              session.startScreenShare();
+              sessionState.startScreenShare();
             }}
           >
             Screen Share

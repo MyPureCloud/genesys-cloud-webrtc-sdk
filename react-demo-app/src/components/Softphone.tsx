@@ -51,14 +51,14 @@ export default function Softphone() {
                 Place Call
               </GuxButton>
             </form>
-            <GuxButton
-              accent="secondary"
-              disabled={!persistentConnectionEnabled}
-              className="softphone-disconnect-btn"
-              onClick={() => disconnectPersistentConnection()}
-            >
-              Disconnect PC
-            </GuxButton>
+            {/*<GuxButton*/}
+            {/*  accent="secondary"*/}
+            {/*  disabled={!persistentConnectionEnabled}*/}
+            {/*  className="softphone-disconnect-btn"*/}
+            {/*  onClick={() => disconnectPersistentConnection()}*/}
+            {/*>*/}
+            {/*  Disconnect PC*/}
+            {/*</GuxButton>*/}
             <GuxToggle
               className="softphone-queue-toggle"
               labelPosition="left"
