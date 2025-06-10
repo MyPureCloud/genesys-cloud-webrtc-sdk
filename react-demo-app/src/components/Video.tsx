@@ -55,10 +55,15 @@ export default function Video() {
           conversationId: session.conversationId,
           audioElement: audioRef.current,
           videoElement: videoRef.current,
-          // mediaStream: stream,
         });
 
         dispatch(addConvToActive(session));
+
+        session.on('incomingMedia', () => {
+          if (vanityVideoRef.current && session?._outboundStream) {
+            vanityVideoRef.current.srcObject = session._outboundStream;
+          }
+        });
 
         session.on('sessionState', seshState => {
           session.state = seshState;
@@ -79,7 +84,7 @@ export default function Video() {
 
   const placeCall = () => {
     if (!stream) {
-      return;
+      // return;
     }
     return (
       <>
@@ -105,11 +110,11 @@ export default function Video() {
             onChange={(e) => setRoomJid(e.target.value)}
           />
           {placeCall()}
-          <GuxButton
-            onClick={startMediaVideo}
-          >
-            Start Your Media
-          </GuxButton>
+          {/*<GuxButton*/}
+          {/*  onClick={startMediaVideo}*/}
+          {/*>*/}
+          {/*  Start Your Media*/}
+          {/*</GuxButton>*/}
           <GuxButton
             onClick={() => {
               if (!sessionState?.startScreenShare) {
