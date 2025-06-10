@@ -112,16 +112,6 @@ export default function Video() {
           </GuxButton>
           <GuxButton
             onClick={() => {
-              if (!sessionState?.conversationId) {
-                return;
-              }
-              sdk.endSession({conversationId: sessionState.conversationId});
-            }}
-          >
-            End
-          </GuxButton>
-          <GuxButton
-            onClick={() => {
               if (!sessionState?.startScreenShare) {
                 return;
               }

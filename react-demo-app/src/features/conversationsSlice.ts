@@ -62,7 +62,15 @@ export const conversationsSlice = createSlice({
     },
     updateActiveConv: (state, action) => {
       const theConv = state.activeConversations.find(conv => conv.conversationId === action.payload.conversationId);
-      if (theConv) {
+      if (!theConv) {
+        return;
+      }
+      console.log('updating the state to', action.payload.state);
+      if (action.payload.state === 'ended') {
+        theConv.state = action.payload.state;
+        theConv.connectionState = action.payload.connectionState;
+        state.activeConversations = state.activeConversations.filter(conv => theConv !== conv);
+      } else {
         theConv.state = action.payload.state;
         theConv.connectionState = action.payload.connectionState;
       }
