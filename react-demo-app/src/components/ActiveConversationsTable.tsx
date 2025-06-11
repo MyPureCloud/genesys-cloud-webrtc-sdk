@@ -90,6 +90,7 @@ export default function ActiveConversationsTable() {
               <tr>
                 <th>Conversation ID</th>
                 <th>Session ID</th>
+                <th>Room JID</th>
                 <th>Session State</th>
                 <th>Session Type</th>
                 <th>Direction</th>
@@ -105,6 +106,9 @@ export default function ActiveConversationsTable() {
                 <tr key={`${convo.conversationId}${convo.session.id}`}>
                   <td>{convo.conversationId}</td>
                   <td>{convo.session.id}</td>
+                  <td>{convo.session.sessionType === SessionTypes.collaborateVideo ?
+                    convo.session.originalRoomJid : 'N/A'
+                  }</td>
                   <td>{convo.session.state}</td>
                   <td>{convo.session.sessionType}</td>
                   <td>{convo.mostRecentCallState?.direction || 'N/A'}</td>
