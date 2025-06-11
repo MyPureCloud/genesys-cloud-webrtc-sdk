@@ -255,7 +255,7 @@ export interface ISdkFullConfig {
    * Controls whether to attempt to use `ping` stanzas from the server or the client.
    * When `true`, `ping` stanzas from the server will be requested. If `false` (or unsupported by the server), the client will send `ping` stanzas.
    *
-   * Optional: default `true`
+   * Optional: default `false`
    */
   useServerSidePings?: boolean;
 
