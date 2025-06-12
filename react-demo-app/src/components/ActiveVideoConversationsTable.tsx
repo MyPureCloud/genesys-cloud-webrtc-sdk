@@ -2,9 +2,8 @@ import {useSelector} from "react-redux";
 import {useEffect, useState} from "react";
 import {GuxButton, GuxRadialLoading, GuxTable} from "genesys-spark-components-react";
 import useSdk from "../hooks/useSdk.ts";
-import {IActiveVideoConversationsState, participantUpdate} from "../features/conversationsSlice.ts";
+import {IActiveVideoConversationsState} from "../features/conversationsSlice.ts";
 import Card from "./Card.tsx";
-import {IParticipantUpdate} from "../../../src";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
@@ -15,22 +14,20 @@ export default function ActiveVideoConversationsTable() {
   const [videoMuteLabels, setVideoMuteLabels] = useState<Array<string | JSX.Element>>([]);
 
   useEffect(() => {
-    console.log('videoConversations update', videoConversations);
     if (videoConversations.length) {
-      setAudioMuteLabels(videoConversations.map(convo => {
-          const participant = convo.participantsUpdate?.activeParticipants.find(
-            participant => convo.session.fromUserId === participant.userId
-          );
+      setAudioMuteLabels(videoConversations.map((_convo, index) => {
+          const participant = getParticipantUsingDemoApp(index);
           return participant?.audioMuted ? 'Unmute' : 'Mute'
         }
       ));
-      setVideoMuteLabels(videoConversations.map(convo =>
-        convo.participantsUpdate?.videoMuted ? 'Unmute' : 'Mute'
+      setVideoMuteLabels(videoConversations.map((_convo, index) => {
+          const participant = getParticipantUsingDemoApp(index);
+          return participant?.videoMuted ? 'Unmute' : 'Mute';
+        }
       ));
     }
   }, [videoConversations]);
 
-  // todo rename function
   function getParticipantUsingDemoApp(index: number) {
     return videoConversations[index].participantsUpdate?.activeParticipants.find(
       participant => videoConversations[index].session.fromUserId === participant.userId
@@ -77,8 +74,8 @@ export default function ActiveVideoConversationsTable() {
             <tr>
               <th>Conversation ID</th>
               <th>Room JID/Meeting ID</th>
+              <th>Connection State</th>
               <th>Session State</th>
-              <th>Call State</th>
               <th>Audio Mute</th>
               <th>Video Mute</th>
               <th>End</th>
@@ -102,7 +99,9 @@ export default function ActiveVideoConversationsTable() {
                   </GuxButton>
                 </td>
                 <td>
-                  <GuxButton onClick={async () => await endSession(convo.conversationId)}>
+                  <GuxButton onClick={async () => await endSession(convo.conversationId)}
+                             accent='danger'
+                  >
                     End
                   </GuxButton>
                 </td>
@@ -122,5 +121,5 @@ export default function ActiveVideoConversationsTable() {
         {generateActiveVideoConversationsTable()}
       </Card>
     </>
-  )
+  );
 }
