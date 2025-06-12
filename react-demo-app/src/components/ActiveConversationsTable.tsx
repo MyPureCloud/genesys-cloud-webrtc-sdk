@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import useSdk from '../hooks/useSdk';
 import './ActiveConversationsTable.css';
-import { GuxButton, GuxTable, GuxRadialLoading } from 'genesys-spark-components-react';
-import { useSelector } from 'react-redux';
+import {GuxButton, GuxTable, GuxRadialLoading} from 'genesys-spark-components-react';
+import {useSelector} from 'react-redux';
 import Card from './Card';
 import {SessionTypes} from "genesys-cloud-webrtc-sdk";
 
@@ -11,10 +11,10 @@ export default function ActiveConversationsTable() {
   const conversations = useSelector(
     (state) => state.conversations.activeConversations
   );
-  const { endSession, toggleAudioMute, toggleVideoMute, toggleHoldState } = useSdk();
-  const [holdLabels, setHoldLabels ] = useState<Array<string | JSX.Element>>([]);
-  const [muteLabels, setMuteLabels ] = useState<Array<string | JSX.Element>>([]);
-  const [videoMutesLabels, setVideoMuteLabels ] = useState<Array<string | JSX.Element>>([]);
+  const {endSession, toggleAudioMute, toggleHoldState} = useSdk();
+  const [holdLabels, setHoldLabels] = useState<Array<string | JSX.Element>>([]);
+  const [muteLabels, setMuteLabels] = useState<Array<string | JSX.Element>>([]);
+  const [videoMutesLabels, setVideoMuteLabels] = useState<Array<string | JSX.Element>>([]);
 
   useEffect(() => {
     if (conversations.length) {
@@ -41,7 +41,7 @@ export default function ActiveConversationsTable() {
       await toggleHoldState(!conversations[index].mostRecentCallState?.held, conversations[index].conversationId)
       updatedHoldLabels[index] = conversations[index].mostRecentCallState?.held ? 'Unhold' : 'Hold';
       setHoldLabels(updatedHoldLabels);
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
   }
@@ -60,7 +60,7 @@ export default function ActiveConversationsTable() {
         updatedMuteLabels[index] = conversations[index].ownCallState.audioMuted ? 'Unmute' : 'Mute';
         setMuteLabels(updatedMuteLabels);
       }
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
   }
@@ -87,46 +87,51 @@ export default function ActiveConversationsTable() {
         <GuxTable>
           <table slot='data' className="active-convo-table">
             <thead>
-              <tr>
-                <th>Conversation ID</th>
-                <th>Session ID</th>
-                <th>Room JID</th>
-                <th>Session State</th>
-                <th>Session Type</th>
-                <th>Direction</th>
-                <th>Call State</th>
-                <th>Hold</th>
-                <th>Mute</th>
-                <th>Mute Video</th>
-                <th>End</th>
-              </tr>
+            <tr>
+              <th>Conversation ID</th>
+              <th>Session ID</th>
+              <th>Room JID</th>
+              <th>Session State</th>
+              <th>Session Type</th>
+              <th>Direction</th>
+              <th>Call State</th>
+              <th>Hold</th>
+              <th>Mute</th>
+              <th>Mute Video</th>
+              <th>End</th>
+            </tr>
             </thead>
             <tbody>
-              {conversations.map((convo, index: number) => (
-                <tr key={`${convo.conversationId}${convo.session.id}`}>
-                  <td>{convo.conversationId}</td>
-                  <td>{convo.session.id}</td>
-                  <td>{convo.session.sessionType === SessionTypes.collaborateVideo ?
-                    convo.session.originalRoomJid : 'N/A'
-                  }</td>
-                  <td>{convo.session.state}</td>
-                  <td>{convo.session.sessionType}</td>
-                  <td>{convo.mostRecentCallState?.direction || 'N/A'}</td>
-                  <td>{convo.session.connectionState}</td>
-                  <td>{convo.session.sessionType === SessionTypes.softphone ?
-                    <GuxButton accent='secondary' onClick={async () => await toggleConversationHold(index)}>{holdLabels[index]}</GuxButton> : 'N/A'}</td>
-                  <td><GuxButton accent='secondary' onClick={async () => await toggleConversationMute(index)}>{muteLabels[index]}</GuxButton></td>
-                  <td>{convo.session.sessionType === SessionTypes.collaborateVideo ?
-                    <GuxButton accent='secondary' onClick={async () => await toggleConversationVideoMute(index)}>{videoMutesLabels[index]}</GuxButton> : 'N/A'}</td>
-                  <td><GuxButton accent='danger' onClick={() => endSession(convo.conversationId)}>End</GuxButton></td>
-                </tr>
-              ))}
+            {conversations.map((convo, index: number) => (
+              <tr key={`${convo.conversationId}${convo.session.id}`}>
+                <td>{convo.conversationId}</td>
+                <td>{convo.session.id}</td>
+                <td>{convo.session.sessionType === SessionTypes.collaborateVideo ?
+                  convo.session.originalRoomJid : 'N/A'
+                }</td>
+                <td>{convo.session.state}</td>
+                <td>{convo.session.sessionType}</td>
+                <td>{convo.mostRecentCallState?.direction || 'N/A'}</td>
+                <td>{convo.session.connectionState}</td>
+                <td>{convo.session.sessionType === SessionTypes.softphone ?
+                  <GuxButton accent='secondary'
+                             onClick={async () => await toggleConversationHold(index)}>{holdLabels[index]}</GuxButton> : 'N/A'}</td>
+                <td><GuxButton accent='secondary'
+                               onClick={async () => await toggleConversationMute(index)}>{muteLabels[index]}</GuxButton>
+                </td>
+                <td>{convo.session.sessionType === SessionTypes.collaborateVideo ?
+                  <GuxButton accent='secondary'
+                             onClick={async () => await toggleConversationVideoMute(index)}>{videoMutesLabels[index]}</GuxButton> : 'N/A'}</td>
+                <td><GuxButton accent='danger' onClick={() => endSession(convo.conversationId)}>End</GuxButton></td>
+              </tr>
+            ))}
             </tbody>
           </table>
         </GuxTable>
       </>
     );
   }
+
   return (
     <>
       <Card className='active-conversations-card'>
@@ -134,5 +139,5 @@ export default function ActiveConversationsTable() {
         {generateActiveConversationsTable()}
       </Card>
     </>
-  )
+  );
 }

@@ -1,21 +1,33 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { IPendingSession, IStoredConversationState } from '../../../dist/es';
 import {SessionTypes} from "genesys-cloud-webrtc-sdk";
+import {IParticipantsUpdate, IParticipantUpdate, VideoMediaSession} from "../../../src";
 
 interface IConversationsState {
   pendingSessions: IPendingSession[],
   handledPendingSessions: IPendingSession[],
-  activeConversations: IActiveConversationsState[]
+  activeConversations: IActiveConversationsState[],
+  activeVideoConversations: IActiveVideoConversationsState[]
 }
 
 interface IActiveConversationsState {
   [key: string]: IStoredConversationState;
 }
 
+export interface IActiveVideoConversationsState {
+  // [key: string]: {
+    conversationId: string;
+    session: VideoMediaSession;
+    participantsUpdate: IParticipantsUpdate;
+
+  // }
+}
+
 const initialState: IConversationsState = {
   pendingSessions: [],
   handledPendingSessions: [],
-  activeConversations: []
+  activeConversations: [], // set this back to {}
+  activeVideoConversations: []
 }
 
 export const conversationsSlice = createSlice({
@@ -52,39 +64,60 @@ export const conversationsSlice = createSlice({
         state.handledPendingSessions = [...state.handledPendingSessions, action.payload];
       }
     },
-    addConvToActive: (state, action) => {
-      const thing = {
-        conversationId: action.payload.conversationId,
-        session: action.payload,
-      }
-      state.activeConversations = [...state.activeConversations, thing];
-      console.log('1addConvToActive', state.activeConversations);
+
+
+    addVideoConversationToActive: (state, action) => {
+      state.activeVideoConversations = [...state.activeVideoConversations, action.payload]
     },
-    updateActiveConv: (state, action) => {
-      const theConv = state.activeConversations.find(conv => conv.conversationId === action.payload.conversationId);
-      if (!theConv) {
-        return;
+
+    participantUpdate: (state, action) => {
+      const conv = state.activeVideoConversations.find(
+        conv => conv.conversationId === action.payload.conversationId);
+      if (conv) {
+        conv.participantsUpdate = action.payload;
       }
-      console.log('updating the state to', action.payload.state);
-      if (action.payload.state === 'ended') {
-        theConv.state = action.payload.state;
-        theConv.connectionState = action.payload.connectionState;
-        state.activeConversations = state.activeConversations.filter(conv => theConv !== conv);
-      } else {
-        theConv.state = action.payload.state;
-        theConv.connectionState = action.payload.connectionState;
-      }
+      state.activeVideoConversations = [...state.activeVideoConversations];
     },
-    addOwnParticipantData: (state, action) => {
-      const existingConversation = state.activeConversations.find(
-        conv =>
-          action.payload.conversationId === conv.conversationId &&
-          conv.session.state === 'active'); // I wanted to use sessionId but thats not part of the action.payload
-      const userId = existingConversation?.session.fromUserId;
-      if (existingConversation) {
-        existingConversation.ownCallState = action.payload.activeParticipants.find(activePart => userId === activePart.userId);
-      }
-    }
+
+    removeVideoConversationFromActive: (state, action) => {
+      const newFilteredState = state.activeVideoConversations.filter(
+        convo => action.payload.conversationId !== convo.conversationId);
+      state.activeVideoConversations = [...newFilteredState];
+    },
+
+    // addConvToActive: (state, action) => {
+    //   const thing = {
+    //     conversationId: action.payload.conversationId,
+    //     session: action.payload,
+    //   }
+    //   state.activeConversations = [...state.activeConversations, thing];
+    //   console.log('1addConvToActive', state.activeConversations);
+    // },
+    // updateActiveConv: (state, action) => {
+    //   const theConv = state.activeConversations.find(conv => conv.conversationId === action.payload.conversationId);
+    //   if (!theConv) {
+    //     return;
+    //   }
+    //   console.log('updating the state to', action.payload.state);
+    //   if (action.payload.state === 'ended') {
+    //     theConv.state = action.payload.state;
+    //     theConv.connectionState = action.payload.connectionState;
+    //     state.activeConversations = state.activeConversations.filter(conv => theConv !== conv);
+    //   } else {
+    //     theConv.state = action.payload.state;
+    //     theConv.connectionState = action.payload.connectionState;
+    //   }
+    // },
+    // addOwnParticipantData: (state, action) => {
+    //   const existingConversation = state.activeConversations.find(
+    //     conv =>
+    //       action.payload.conversationId === conv.conversationId &&
+    //       conv.session.state === 'active'); // I wanted to use sessionId but thats not part of the action.payload
+    //   const userId = existingConversation?.session.fromUserId;
+    //   if (existingConversation) {
+    //     existingConversation.ownCallState = action.payload.activeParticipants.find(activePart => userId === activePart.userId);
+    //   }
+    // }
   }
 });
 
@@ -93,8 +126,11 @@ export const {
   removePendingSession,
   updateConversations,
   storeHandledPendingSession,
-  addConvToActive,
-  updateActiveConv,
-  addOwnParticipantData
+  // addConvToActive,
+  // updateActiveConv,
+  // addOwnParticipantData,
+  addVideoConversationToActive,
+  participantUpdate,
+  removeVideoConversationFromActive
 } = conversationsSlice.actions;
 export default conversationsSlice.reducer;
