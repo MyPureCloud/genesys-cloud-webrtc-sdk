@@ -6,9 +6,10 @@ import {SessionEvents} from 'genesys-cloud-streaming-client';
 
 import {IExtendedMediaSession, VideoMediaSession} from "../../../src";
 import {
-  addVideoConversationToActive, participantUpdate, removeVideoConversationFromActive
+  addConvToActive,
+  addOwnParticipantData,
+  updateActiveConv
 } from "../features/conversationsSlice.ts";
-import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
@@ -67,10 +68,7 @@ export default function Video() {
           videoElement: videoRef.current,
         });
 
-        // dispatch(addConvToActive(session));
-        dispatch(addVideoConversationToActive({
-          session: session, conversationId: session.conversationId
-        }));
+        dispatch(addConvToActive(session));
 
         session.on('incomingMedia', () => {
           if (vanityVideoRef.current && session?._outboundStream) {
@@ -89,11 +87,7 @@ export default function Video() {
         });
 
         session.on('participantsUpdate', partsUpdate => {
-          dispatch(participantUpdate(partsUpdate))
-        });
-
-        session.on('terminated', reason => {
-          dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
+          dispatch(addOwnParticipantData(partsUpdate));
         });
       }
     });
@@ -155,7 +149,6 @@ export default function Video() {
             </div>
           </div>
         </div>
-        <ActiveVideoConversationsTable></ActiveVideoConversationsTable>
       </Card>
     </>
   );
