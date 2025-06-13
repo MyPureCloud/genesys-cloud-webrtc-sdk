@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-517](https://inindca.atlassian.net/browse/STREAM-517) - Remove address field from conversation update log because it could potentially contain PII.
 * [STREAM-523](https://inindca.atlassian.net/browse/STREAM-523) - Updated `genesys-cloud-streaming-client` dependency to properly proxy `connectionState` event emit
-* [STREAM-526](https://inindca.atlassian.net/browse/STREAM-526) - Removed references to WebRTC screenshare from docs and README as it is end of life and no longer supported.
+* [STREAM-536](https://inindca.atlassian.net/browse/STREAM-536) - Removed references to WebRTC screenshare from docs and README as it is end of life and no longer supported.
 
 # [v11.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.1...v11.2.0)
 ### Changed
