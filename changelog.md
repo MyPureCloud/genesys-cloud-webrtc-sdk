@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.1...HEAD)
 ### Added
 * [STREAM-63](https://inindca.atlassian.net/browse/STREAM-63) - Adds in logic to use `customHeaders` in during the API requests
+* [STREAM-600](https://inindca.atlassian.net/browse/STREAM-600) - Add Video to SDK demo app
 
 ### Fixed
 * [STREAM-534](https://inindca.atlassian.net/browse/STREAM-534) - Bump streaming-client to fix an issue where the sdpOverXmpp flag could be overwritten by simultaneous proposes.
