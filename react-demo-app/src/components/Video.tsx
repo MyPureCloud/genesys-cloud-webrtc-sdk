@@ -41,7 +41,7 @@ export default function Video() {
   }
 
   async function startMedia() {
-    return await sdk.media.startMedia({video: true});
+    return await sdk.media.startMedia({video: true, audio: false});
   }
 
   function logRelevantSessionEvents(session: IExtendedMediaSession) {
@@ -88,10 +88,14 @@ export default function Video() {
       if (session.sessionType === 'collaborateVideo') {
         setSessionState(session);
         logRelevantSessionEvents(session);
+
+        const mediaStream = await startMedia();
+
         sdk.acceptSession({
           conversationId: session.conversationId,
           audioElement: audioRef.current,
           videoElement: videoRef.current,
+          mediaStream
         });
 
         dispatch(addVideoConversationToActive({
