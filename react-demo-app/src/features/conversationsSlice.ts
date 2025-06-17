@@ -1,12 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { IPendingSession, IStoredConversationState } from '../../../dist/es';
-import {SessionTypes} from "genesys-cloud-webrtc-sdk";
-import {IParticipantsUpdate, IParticipantUpdate, VideoMediaSession} from "../../../src";
+import {IParticipantsUpdate, VideoMediaSession} from "../../../src";
 
 interface IConversationsState {
   pendingSessions: IPendingSession[],
   handledPendingSessions: IPendingSession[],
-  activeConversations: IActiveConversationsState[],
+  activeConversations: IActiveConversationsState,
   activeVideoConversations: IActiveVideoConversationsState[]
 }
 
@@ -15,18 +14,15 @@ interface IActiveConversationsState {
 }
 
 export interface IActiveVideoConversationsState {
-  // [key: string]: {
     conversationId: string;
     session: VideoMediaSession;
     participantsUpdate: IParticipantsUpdate;
-
-  // }
 }
 
 const initialState: IConversationsState = {
   pendingSessions: [],
   handledPendingSessions: [],
-  activeConversations: [], // set this back to {}
+  activeConversations: {},
   activeVideoConversations: []
 }
 

@@ -1,8 +1,8 @@
-import {useSelector} from "react-redux";
-import {useEffect, useState} from "react";
-import {GuxButton, GuxRadialLoading, GuxTable} from "genesys-spark-components-react";
+import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
 import useSdk from "../hooks/useSdk.ts";
-import {IActiveVideoConversationsState} from "../features/conversationsSlice.ts";
+import { IActiveVideoConversationsState } from "../features/conversationsSlice.ts";
 import Card from "./Card.tsx";
 
 export default function ActiveVideoConversationsTable() {

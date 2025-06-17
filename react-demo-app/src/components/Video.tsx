@@ -1,11 +1,11 @@
 import Card from "./Card.tsx";
-import {useEffect, useRef, useState} from "react";
-import {useDispatch, useSelector} from "react-redux";
-import {GuxButton} from "genesys-spark-components-react";
-import {SessionEvents} from 'genesys-cloud-streaming-client';
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { GuxButton } from "genesys-spark-components-react";
+import { SessionEvents } from 'genesys-cloud-streaming-client';
 import './Video.css';
 
-import {IExtendedMediaSession, VideoMediaSession} from "../../../src";
+import { IExtendedMediaSession, VideoMediaSession } from "../../../src";
 import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
@@ -16,14 +16,38 @@ import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
+  const [incomingStreamIsActive, setIsIncomingStreamActive] = useState(false);
+  const [outgoingStreamIsActive, setIsOutgoingStreamActive] = useState(false);
   const [sessionState, setSessionState] = useState<VideoMediaSession>();
   const sdk = useSelector(state => state.sdk.sdk);
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
-  const [incomingStreamIsActive, setIsIncomingStreamActive] = useState(false);
-  const [outgoingStreamIsActive, setIsOutgoingStreamActive] = useState(false);
+
+  useEffect(() => {
+    sdk.on('sessionStarted', async (session: VideoMediaSession) => {
+      if (session.sessionType === 'collaborateVideo') {
+        setSessionState(session);
+        logRelevantSessionEvents(session);
+
+        const mediaStream = await startMedia();
+
+        sdk.acceptSession({
+          conversationId: session.conversationId,
+          audioElement: audioRef.current,
+          videoElement: videoRef.current,
+          mediaStream
+        });
+
+        dispatch(addVideoConversationToActive({
+          session: session, conversationId: session.conversationId
+        }));
+
+        setupSessionListenersForVideo(session);
+      }
+    }, []);
+  });
 
   function startVideoConf() {
     sdk.startVideoConference(roomJid);
@@ -68,7 +92,6 @@ export default function Video() {
     });
 
     session.on('participantsUpdate', partsUpdate => {
-      console.log('1participantsUpdate', partsUpdate);
       dispatch(addParticipantUpdateToVideoConversation(partsUpdate));
       setIsIncomingStreamActive(partsUpdate.activeParticipants.length < 2 ? false :
         !partsUpdate.activeParticipants.find(part => session.fromUserId !== part.userId)?.videoMuted);
@@ -77,35 +100,11 @@ export default function Video() {
     });
 
     session.on('terminated', reason => {
+      dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
       setIsIncomingStreamActive(false);
       setIsOutgoingStreamActive(false);
-      dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
     });
   }
-
-  useEffect(() => {
-    sdk.on('sessionStarted', async (session: VideoMediaSession) => {
-      if (session.sessionType === 'collaborateVideo') {
-        setSessionState(session);
-        logRelevantSessionEvents(session);
-
-        const mediaStream = await startMedia();
-
-        sdk.acceptSession({
-          conversationId: session.conversationId,
-          audioElement: audioRef.current,
-          videoElement: videoRef.current,
-          mediaStream
-        });
-
-        dispatch(addVideoConversationToActive({
-          session: session, conversationId: session.conversationId
-        }));
-
-        setupSessionListenersForVideo(session);
-      }
-    });
-  }, []);
 
   return (
     <>
