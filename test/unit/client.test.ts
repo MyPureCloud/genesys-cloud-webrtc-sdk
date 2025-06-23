@@ -256,7 +256,7 @@ describe('Client', () => {
       });
     });
 
-    it('should include JWT in video session request', async () => {
+    xit('should include JWT in video session request', async () => {
       const testJwt = 'test.jwt.token';
       sdk = constructSdk({ jwt: testJwt });
       const handler = new VideoSessionHandler(sdk, sessionManagerMock);

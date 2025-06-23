@@ -24,6 +24,7 @@ import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils'
 import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession, isAgentVideoJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { jwtDecode } from "jwt-decode";
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -261,15 +262,21 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
-    let participant: { address: string, jwt?: string };
-    let videoApiUrl = '/conversations/videos';
+    const videoApiUrl = '/conversations/videos';
+    let participant: { address: string };
+
 
     if (this.sdk._config.jwt) {
-      participant = {
-        address: this.sdk._personDetails.chat.jabberId,
-        jwt: this.sdk._config.jwt
-      }
-      videoApiUrl = '/conversations/videos/agentconference/guest';
+      const decodedJwt: any = jwtDecode(this.sdk._config.jwt);
+      const opts = {
+        jid: decodedJwt.data.jid,
+        conversationId: decodedJwt.data.conversationId,
+        sourceCommunicationId: decodedJwt.data.sourceCommunicationId,
+        mediaPurpose: SessionTypes.collaborateVideo,
+        sessionType: this.sessionType
+      };
+      await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
+      return { conversationId: decodedJwt.data.conversationId };
     } else if (startParams.inviteeJid) {
       participant = { address: startParams.inviteeJid };
     } else {
