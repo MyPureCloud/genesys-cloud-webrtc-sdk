@@ -121,13 +121,13 @@ export default function Video() {
               accent="primary"
               onClick={startVideoConf}
             >
-              Place Conference
+              Join with roomJid
             </GuxButton>
             <GuxButton
               accent="primary"
               onClick={startVideoMeeting}
             >
-              Place Meeting
+              Join with conferenceId
             </GuxButton>
             <GuxButton
               onClick={startScreenShare}
