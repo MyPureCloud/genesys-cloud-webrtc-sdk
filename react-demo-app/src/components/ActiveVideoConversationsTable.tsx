@@ -1,5 +1,4 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useState } from "react";
 import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
 import useSdk from "../hooks/useSdk.ts";
 import { IActiveVideoConversationsState, toggleAudioMute2, toggleVideoMute2 } from "../features/conversationsSlice.ts";
@@ -7,12 +6,10 @@ import Card from "./Card.tsx";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state) => state.conversations.activeVideoConversations
+    (state: any) => state.conversations.activeVideoConversations
   );
   const dispatch = useDispatch();
-  const {toggleAudioMute, toggleVideoMute, endSession} = useSdk();
-  const [audioMuteLabels, setAudioMuteLabels] = useState<Array<string | JSX.Element>>([]);
-  const [videoMuteLabels, setVideoMuteLabels] = useState<Array<string | JSX.Element>>([]);
+  const {endSession} = useSdk();
 
   function getParticipantUsingDemoApp(index: number) {
     return videoConversations[index].participantsUpdate?.activeParticipants.find(
@@ -20,32 +17,28 @@ export default function ActiveVideoConversationsTable() {
     );
   }
 
-  async function toggleVideoConversationAudioMute(index: number): Promise<void> {
-    const updatedAudioMute = [...audioMuteLabels];
-    updatedAudioMute[index] = <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading>;
-    setAudioMuteLabels(updatedAudioMute);
-    try {
-      const participant = getParticipantUsingDemoApp(index);
-      await toggleAudioMute(!participant?.audioMuted, videoConversations[index].conversationId);
-      updatedAudioMute[index] = participant?.audioMuted ? 'Unmute' : 'Mute';
-      setAudioMuteLabels(updatedAudioMute);
-    } catch (err) {
-      console.error('Error toggling audio for video', err);
-    }
+  function handleVideoMuteToggle(index: number) {
+    const participant = getParticipantUsingDemoApp(index);
+    // @ts-ignore
+    dispatch(toggleVideoMute2(
+      {
+        mute: !participant?.videoMuted,
+        conversationId: videoConversations[index].conversationId,
+        userId: participant!.userId
+      }
+    ));
   }
 
-  async function toggleVideoConversationVideoMute(index: number): Promise<void> {
-    const updatedVideoMute = [...videoMuteLabels];
-    updatedVideoMute[index] = <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading>;
-    setVideoMuteLabels(updatedVideoMute);
-    try {
-      const participant = getParticipantUsingDemoApp(index);
-      await toggleVideoMute(!participant?.videoMuted, videoConversations[index].conversationId);
-      updatedVideoMute[index] = participant?.videoMuted ? 'Unmute' : 'Mute';
-      setVideoMuteLabels(updatedVideoMute);
-    } catch (err) {
-      console.error('Error toggling video for video', err);
-    }
+  function handleAudioMuteToggle(index: number) {
+    const participant = getParticipantUsingDemoApp(index);
+    // @ts-ignore
+    dispatch(toggleAudioMute2(
+      {
+        mute: !participant?.audioMuted,
+        conversationId: videoConversations[index].conversationId,
+        userId: participant!.userId
+      }
+    ))
   }
 
   function generateActiveVideoConversationsTable() {
@@ -75,42 +68,21 @@ export default function ActiveVideoConversationsTable() {
                 <td>{convo.session.connectionState}</td>
                 <td>{convo.session.state}</td>
                 <td>
-                  <GuxButton onClick={() => {
-                    const participant = getParticipantUsingDemoApp(index);
-                    // @ts-ignore
-                    dispatch(toggleAudioMute2(
-                      {
-                        mute: !participant?.audioMuted,
-                        conversationId: videoConversations[index].conversationId,
-                        userId: participant!.userId
-                      }
-                    ))
-                  }}>
+                  <GuxButton onClick={() => handleAudioMuteToggle(index)}>
                     {videoConversations?.[index].loadingAudio ?
                       <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
                       getParticipantUsingDemoApp(index)?.audioMuted ? 'Unmute' : 'Mute'}
                   </GuxButton>
                 </td>
                 <td>
-                  <GuxButton onClick={() => {
-                    const participant = getParticipantUsingDemoApp(index);
-                    // @ts-ignore
-                    dispatch(toggleVideoMute2(
-                      {
-                        mute: !participant?.videoMuted,
-                        conversationId: videoConversations[index].conversationId,
-                        userId: participant!.userId
-                      }
-                    ));
-                  }}>
-                    {videoConversations?.[index].loadingVideo ? <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
+                  <GuxButton onClick={() => handleVideoMuteToggle(index)}>
+                    {videoConversations?.[index].loadingVideo ?
+                      <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
                       getParticipantUsingDemoApp(index)?.videoMuted ? 'Unmute' : 'Mute'}
                   </GuxButton>
                 </td>
                 <td>
-                  <GuxButton onClick={() => endSession(convo.conversationId)}
-                             accent='danger'
-                  >
+                  <GuxButton onClick={() => endSession(convo.conversationId)} accent='danger'>
                     End
                   </GuxButton>
                 </td>
