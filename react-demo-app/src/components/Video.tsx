@@ -1,5 +1,5 @@
 import Card from "./Card.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GuxButton } from "genesys-spark-components-react";
 import { SessionEvents } from 'genesys-cloud-streaming-client';
@@ -10,7 +10,7 @@ import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
   reasignToTriggerRepaint,
-  removeVideoConversationFromActive,
+  removeVideoConversationFromActive, updateAudioLoading, IActiveVideoConversationsState, updateVideoLoading,
 } from "../features/conversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 
@@ -19,6 +19,9 @@ export default function Video() {
   const [incomingStreamIsActive, setIsIncomingStreamActive] = useState(false);
   const [outgoingStreamIsActive, setIsOutgoingStreamActive] = useState(false);
   const [sessionState, setSessionState] = useState<VideoMediaSession>();
+  const videoConversations: IActiveVideoConversationsState[] = useSelector(
+    (state) => state.conversations.activeVideoConversations
+  );
   const sdk = useSelector(state => state.sdk.sdk);
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -26,12 +29,14 @@ export default function Video() {
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    console.log('this should run once');
     sdk.on('sessionStarted', async (session: VideoMediaSession) => {
       if (session.sessionType === 'collaborateVideo') {
         setSessionState(session);
         logRelevantSessionEvents(session);
 
         const mediaStream = await startMedia();
+        console.log('running startMedia');
 
         sdk.acceptSession({
           conversationId: session.conversationId,
@@ -46,8 +51,10 @@ export default function Video() {
 
         setupSessionListenersForVideo(session);
       }
-    }, []);
-  });
+    });
+  }, []);
+
+
 
   function startVideoConf() {
     sdk.startVideoConference(roomJid);
@@ -76,6 +83,7 @@ export default function Video() {
   }
 
   function setupSessionListenersForVideo(session: VideoMediaSession) {
+
     session.on('incomingMedia', () => {
       setIsIncomingStreamActive(true);
       if (vanityVideoRef.current && session?._outboundStream) {
@@ -92,6 +100,17 @@ export default function Video() {
     });
 
     session.on('participantsUpdate', partsUpdate => {
+      const participant =
+        partsUpdate.activeParticipants.find(part => part.userId === session.fromUserId);
+      const conversation = videoConversations.find(c => c.conversationId === partsUpdate.conversationId);
+      const participantStore = conversation?.participantsUpdate?.activeParticipants?.find(p => p.userId === session.fromUserId);
+      if (participant?.audioMuted !== participantStore?.audioMuted) {
+        dispatch(updateAudioLoading(false));
+      }
+      if (participant?.videoMuted !== participantStore?.videoMuted) {
+        dispatch(updateVideoLoading(false));
+      }
+
       dispatch(addParticipantUpdateToVideoConversation(partsUpdate));
       setIsIncomingStreamActive(partsUpdate.activeParticipants.length < 2 ? false :
         !partsUpdate.activeParticipants.find(part => session.fromUserId !== part.userId)?.videoMuted);
