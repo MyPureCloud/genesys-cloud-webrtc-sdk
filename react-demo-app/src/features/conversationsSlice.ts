@@ -139,11 +139,33 @@ export const conversationsSlice = createSlice({
           conv.loadingVideo = true;
         }
       })
+      .addCase(toggleVideoMute.fulfilled, (state, action) => {
+        const conv = state.activeVideoConversations.find(
+          conv => conv.conversationId === action.meta.arg.conversationId);
+        if (conv) {
+          conv.loadingVideo = false;
+          const participant = conv.participantsUpdate.activeParticipants.find(p => p.userId === action.meta.arg.userId);
+          if (participant) {
+            participant.videoMuted = action.meta.arg.mute;
+          }
+        }
+      })
       .addCase(toggleAudioMute.pending, (state, action) => {
         const conv = state.activeVideoConversations.find(
           conv => conv.conversationId === action.meta.arg.conversationId);
         if (conv) {
           conv.loadingAudio = true;
+        }
+      })
+      .addCase(toggleAudioMute.fulfilled, (state, action) => {
+        const conv = state.activeVideoConversations.find(
+          conv => conv.conversationId === action.meta.arg.conversationId);
+        if (conv) {
+          conv.loadingAudio = false;
+          const participant = conv.participantsUpdate.activeParticipants.find(p => p.userId === action.meta.arg.userId);
+          if (participant) {
+            participant.audioMuted = action.meta.arg.mute;
+          }
         }
       });
   }
