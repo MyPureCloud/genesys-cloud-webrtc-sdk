@@ -105,10 +105,10 @@ export default function Video() {
       const conversation = videoConversations.find(c => c.conversationId === partsUpdate.conversationId);
       const participantStore = conversation?.participantsUpdate?.activeParticipants?.find(p => p.userId === session.fromUserId);
       if (participant?.audioMuted !== participantStore?.audioMuted) {
-        dispatch(updateAudioLoading(false));
+        dispatch(updateAudioLoading({loading: false, convId: partsUpdate.conversationId}));
       }
       if (participant?.videoMuted !== participantStore?.videoMuted) {
-        dispatch(updateVideoLoading(false));
+        dispatch(updateVideoLoading({loading: false, convId: partsUpdate.conversationId}));
       }
 
       dispatch(addParticipantUpdateToVideoConversation(partsUpdate));

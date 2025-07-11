@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
 import useSdk from "../hooks/useSdk.ts";
 import { IActiveVideoConversationsState, toggleAudioMute2, toggleVideoMute2 } from "../features/conversationsSlice.ts";
@@ -9,7 +9,6 @@ export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state) => state.conversations.activeVideoConversations
   );
-  const {loading, audioLoading} = useSelector(state => state.conversations)
   const dispatch = useDispatch();
   const {toggleAudioMute, toggleVideoMute, endSession} = useSdk();
   const [audioMuteLabels, setAudioMuteLabels] = useState<Array<string | JSX.Element>>([]);
@@ -76,7 +75,7 @@ export default function ActiveVideoConversationsTable() {
                 <td>{convo.session.connectionState}</td>
                 <td>{convo.session.state}</td>
                 <td>
-                  <GuxButton onClick={async () => {
+                  <GuxButton onClick={() => {
                     const participant = getParticipantUsingDemoApp(index);
                     // @ts-ignore
                     dispatch(toggleAudioMute2(
@@ -87,13 +86,13 @@ export default function ActiveVideoConversationsTable() {
                       }
                     ))
                   }}>
-                    {audioLoading ?
+                    {videoConversations?.[index].loadingAudio ?
                       <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
                       getParticipantUsingDemoApp(index)?.audioMuted ? 'Unmute' : 'Mute'}
                   </GuxButton>
                 </td>
                 <td>
-                  <GuxButton onClick={async () => {
+                  <GuxButton onClick={() => {
                     const participant = getParticipantUsingDemoApp(index);
                     // @ts-ignore
                     dispatch(toggleVideoMute2(
@@ -104,12 +103,12 @@ export default function ActiveVideoConversationsTable() {
                       }
                     ));
                   }}>
-                    {loading ? <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
+                    {videoConversations?.[index].loadingVideo ? <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
                       getParticipantUsingDemoApp(index)?.videoMuted ? 'Unmute' : 'Mute'}
                   </GuxButton>
                 </td>
                 <td>
-                  <GuxButton onClick={async () => await endSession(convo.conversationId)}
+                  <GuxButton onClick={() => endSession(convo.conversationId)}
                              accent='danger'
                   >
                     End

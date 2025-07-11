@@ -7,8 +7,6 @@ interface IConversationsState {
   handledPendingSessions: IPendingSession[],
   activeConversations: IActiveConversationsState,
   activeVideoConversations: IActiveVideoConversationsState[],
-  loading: boolean,
-  audioLoading: boolean
 }
 
 interface IActiveConversationsState {
@@ -19,7 +17,8 @@ export interface IActiveVideoConversationsState {
   conversationId: string;
   session: VideoMediaSession;
   participantsUpdate: IParticipantsUpdate;
-  loading: boolean
+  loadingVideo: boolean;
+  loadingAudio: boolean;
 }
 
 const initialState: IConversationsState = {
@@ -27,8 +26,6 @@ const initialState: IConversationsState = {
   handledPendingSessions: [],
   activeConversations: {},
   activeVideoConversations: [],
-  loading: false,
-  audioLoading: false,
 }
 
 export const toggleVideoMute2 = createAsyncThunk(
@@ -109,49 +106,36 @@ export const conversationsSlice = createSlice({
       state.activeVideoConversations = [...state.activeVideoConversations];
     },
     updateAudioLoading: (state, action) => {
-      state.audioLoading = action.payload;
+      const conv = state.activeVideoConversations.find(
+        conv => conv.conversationId === action.payload.convId);
+      if (conv) {
+        conv.loadingAudio = action.payload.loading
+      }
     },
     updateVideoLoading: (state, action) => {
-      state.loading = action.payload;
+      const conv = state.activeVideoConversations.find(
+        conv => conv.conversationId === action.payload.convId);
+      if (conv) {
+        conv.loadingVideo = action.payload.loading
+      }
     }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(toggleVideoMute2.pending, (state) => {
-        // You can add loading state here if needed
-        state.loading = true;
-        console.log('toggleVideoMute.pending');
+      .addCase(toggleVideoMute2.pending, (state, action) => {
+        const conv = state.activeVideoConversations.find(
+          conv => conv.conversationId === action.meta.arg.conversationId);
+        if (conv) {
+          conv.loadingVideo = true;
+        }
       })
-      .addCase(toggleVideoMute2.fulfilled, (state, action) => {
-        // Video mute state successfully updated
-        // state.loading = false;
-        // const conversationId = action.payload.conversationId;
-        // const conversation = state.activeVideoConversations.find(conv => conv.conversationId === conversationId);
-        // const userId = action.payload.userId;
-        // const participant = conversation?.participantsUpdate?.activeParticipants?.find(p => p.userId === userId);
-        // if (participant) {
-        //   participant.videoMuted = !participant?.videoMuted;
-        // }
-        // console.log('Video mute toggled:', action.payload);
-      })
-      .addCase(toggleVideoMute2.rejected, (state, action) => {
-        // errors are for the weak
-        console.error('Failed to toggle video mute:', action.error);
-      })
-      .addCase(toggleAudioMute2.pending, (state) => {
-        console.log('pending');
-        state.audioLoading = true;
-      })
-      .addCase(toggleAudioMute2.fulfilled, (state, action) => {
-        // state.audioLoading = false;
-        // const conversationId = action.payload.conversationId;
-        // const conversation = state.activeVideoConversations.find(conv => conv.conversationId === conversationId);
-        // const userId = action.payload.userId;
-        // const participant = conversation?.participantsUpdate?.activeParticipants?.find(p => p.userId === userId);
-        // if (participant) {
-        //   participant.audioMuted = !participant?.audioMuted;
-        // }
-      })
+      .addCase(toggleAudioMute2.pending, (state, action) => {
+        const conv = state.activeVideoConversations.find(
+          conv => conv.conversationId === action.meta.arg.conversationId);
+        if (conv) {
+          conv.loadingAudio = true;
+        }
+      });
   }
 });
 
