@@ -28,8 +28,8 @@ const initialState: IConversationsState = {
   activeVideoConversations: [],
 }
 
-export const toggleVideoMute2 = createAsyncThunk(
-  'conversations/toggleVideoMute2',
+export const toggleVideoMute = createAsyncThunk(
+  'conversations/toggleVideoMute',
   async (data: {mute: boolean; conversationId: string, userId: string}, thunkAPI) => {
     const state = thunkAPI.getState() as any;
     const sdk = state.sdk.sdk;
@@ -42,8 +42,8 @@ export const toggleVideoMute2 = createAsyncThunk(
   }
 );
 
-export const toggleAudioMute2 = createAsyncThunk(
-  'conversations/toggleAudioMute2',
+export const toggleAudioMute = createAsyncThunk(
+  'conversations/toggleAudioMute',
   async (data: {mute: boolean; conversationId: string, userId: string}, thunkAPI) => {
     const state = thunkAPI.getState() as any;
     const sdk = state.sdk.sdk;
@@ -54,7 +54,7 @@ export const toggleAudioMute2 = createAsyncThunk(
     await sdk.setAudioMute({mute: data.mute, conversationId: data.conversationId});
     return {mute: data.mute, conversationId: data.conversationId, userId: data.userId};
   }
-)
+);
 
 export const conversationsSlice = createSlice({
   name: 'conversations',
@@ -87,7 +87,12 @@ export const conversationsSlice = createSlice({
       }
     },
     addVideoConversationToActive: (state, action) => {
-      state.activeVideoConversations = [...state.activeVideoConversations, action.payload]
+      const newConversation = {
+        ...action.payload,
+        loadingVideo: false,
+        loadingAudio: false,
+      };
+      state.activeVideoConversations.push(newConversation);
     },
     addParticipantUpdateToVideoConversation: (state, action) => {
       const conv = state.activeVideoConversations.find(
@@ -95,41 +100,46 @@ export const conversationsSlice = createSlice({
       if (conv) {
         conv.participantsUpdate = action.payload;
       }
-      state.activeVideoConversations = [...state.activeVideoConversations];
     },
     removeVideoConversationFromActive: (state, action) => {
-      const newFilteredState = state.activeVideoConversations.filter(
-        convo => action.payload.conversationId !== convo.conversationId);
-      state.activeVideoConversations = [...newFilteredState];
+      const index = state.activeVideoConversations.findIndex(
+        convo => convo.conversationId === action.payload.conversationId);
+      if (index !== -1) {
+        state.activeVideoConversations.splice(index, 1);
+      }
     },
-    reasignToTriggerRepaint: (state) => {
-      state.activeVideoConversations = [...state.activeVideoConversations];
+    forceVideoConversationUpdate: (state, action) => {
+      const conv = state.activeVideoConversations.find(
+        conv => conv.conversationId === action.payload.conversationId);
+      if (conv) {
+        // RTK will handle the update automatically
+      }
     },
     updateAudioLoading: (state, action) => {
       const conv = state.activeVideoConversations.find(
         conv => conv.conversationId === action.payload.convId);
       if (conv) {
-        conv.loadingAudio = action.payload.loading
+        conv.loadingAudio = action.payload.loading;
       }
     },
     updateVideoLoading: (state, action) => {
       const conv = state.activeVideoConversations.find(
         conv => conv.conversationId === action.payload.convId);
       if (conv) {
-        conv.loadingVideo = action.payload.loading
+        conv.loadingVideo = action.payload.loading;
       }
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(toggleVideoMute2.pending, (state, action) => {
+      .addCase(toggleVideoMute.pending, (state, action) => {
         const conv = state.activeVideoConversations.find(
           conv => conv.conversationId === action.meta.arg.conversationId);
         if (conv) {
           conv.loadingVideo = true;
         }
       })
-      .addCase(toggleAudioMute2.pending, (state, action) => {
+      .addCase(toggleAudioMute.pending, (state, action) => {
         const conv = state.activeVideoConversations.find(
           conv => conv.conversationId === action.meta.arg.conversationId);
         if (conv) {
@@ -147,7 +157,7 @@ export const {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
   removeVideoConversationFromActive,
-  reasignToTriggerRepaint,
+  forceVideoConversationUpdate,
   updateAudioLoading,
   updateVideoLoading,
 } = conversationsSlice.actions;

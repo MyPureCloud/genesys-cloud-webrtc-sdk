@@ -9,8 +9,11 @@ import { IExtendedMediaSession, VideoMediaSession } from "../../../src";
 import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
-  reasignToTriggerRepaint,
-  removeVideoConversationFromActive, updateAudioLoading, IActiveVideoConversationsState, updateVideoLoading,
+  forceVideoConversationUpdate,
+  removeVideoConversationFromActive,
+  updateAudioLoading,
+  IActiveVideoConversationsState,
+  updateVideoLoading,
 } from "../features/conversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 
@@ -20,9 +23,9 @@ export default function Video() {
   const [outgoingStreamIsActive, setIsOutgoingStreamActive] = useState(false);
   const [sessionState, setSessionState] = useState<VideoMediaSession>();
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state) => state.conversations.activeVideoConversations
+    (state: any) => state.conversations.activeVideoConversations
   );
-  const sdk = useSelector(state => state.sdk.sdk);
+  const sdk = useSelector((state: any) => state.sdk.sdk);
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -46,15 +49,14 @@ export default function Video() {
         });
 
         dispatch(addVideoConversationToActive({
-          session: session, conversationId: session.conversationId
+          session: session,
+          conversationId: session.conversationId,
         }));
 
         setupSessionListenersForVideo(session);
       }
     });
   }, []);
-
-
 
   function startVideoConf() {
     sdk.startVideoConference(roomJid);
@@ -92,16 +94,15 @@ export default function Video() {
     });
 
     session.on('sessionState', () => {
-      dispatch(reasignToTriggerRepaint());
+      dispatch(forceVideoConversationUpdate({ conversationId: session.conversationId }));
     });
 
     session.on('connectionState', () => {
-      dispatch(reasignToTriggerRepaint());
+      dispatch(forceVideoConversationUpdate({ conversationId: session.conversationId }));
     });
 
     session.on('participantsUpdate', partsUpdate => {
-      const participant =
-        partsUpdate.activeParticipants.find(part => part.userId === session.fromUserId);
+      const participant = partsUpdate.activeParticipants.find(part => part.userId === session.fromUserId);
       const conversation = videoConversations.find(c => c.conversationId === partsUpdate.conversationId);
       const participantStore = conversation?.participantsUpdate?.activeParticipants?.find(p => p.userId === session.fromUserId);
       if (participant?.audioMuted !== participantStore?.audioMuted) {
@@ -168,7 +169,9 @@ export default function Video() {
               <p>Yours</p>
               <div className='video-container'>
                 <video ref={vanityVideoRef} autoPlay playsInline
-                       style={{visibility: outgoingStreamIsActive ? 'visible' : 'hidden'}}
+                       style={{visibility: outgoingStreamIsActive && !(
+                         videoConversations.find(v => v.loadingVideo)
+                         )  ? 'visible' : 'hidden'}}
                 />
               </div>
             </div>

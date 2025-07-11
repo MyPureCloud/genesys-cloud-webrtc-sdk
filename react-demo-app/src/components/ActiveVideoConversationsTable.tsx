@@ -1,7 +1,11 @@
 import { useDispatch, useSelector } from "react-redux";
 import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
 import useSdk from "../hooks/useSdk.ts";
-import { IActiveVideoConversationsState, toggleAudioMute2, toggleVideoMute2 } from "../features/conversationsSlice.ts";
+import {
+  IActiveVideoConversationsState,
+  toggleAudioMute,
+  toggleVideoMute
+} from "../features/conversationsSlice.ts";
 import Card from "./Card.tsx";
 
 export default function ActiveVideoConversationsTable() {
@@ -19,26 +23,26 @@ export default function ActiveVideoConversationsTable() {
 
   function handleVideoMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
-    // @ts-ignore
-    dispatch(toggleVideoMute2(
-      {
-        mute: !participant?.videoMuted,
+    if (participant) {
+      // @ts-ignore
+      dispatch(toggleVideoMute({
+        mute: !participant.videoMuted,
         conversationId: videoConversations[index].conversationId,
-        userId: participant!.userId
-      }
-    ));
+        userId: participant.userId
+      }));
+    }
   }
 
   function handleAudioMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
-    // @ts-ignore
-    dispatch(toggleAudioMute2(
-      {
-        mute: !participant?.audioMuted,
+    if (participant) {
+      // @ts-ignore
+      dispatch(toggleAudioMute({
+        mute: !participant.audioMuted,
         conversationId: videoConversations[index].conversationId,
-        userId: participant!.userId
-      }
-    ))
+        userId: participant.userId
+      }));
+    }
   }
 
   function generateActiveVideoConversationsTable() {
