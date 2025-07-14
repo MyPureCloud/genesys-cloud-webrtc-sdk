@@ -8,13 +8,19 @@ import { useSelector } from "react-redux";
 export default function VideoElements({
                                         audioRef,
                                         videoRef,
-                                        incomingStreamIsActive,
                                         vanityVideoRef,
-                                        outgoingStreamIsActive
                                       }) {
-   const videoConversations: IActiveVideoConversationsState[] = useSelector(
+  const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state: unknown) => state.conversations.activeVideoConversations
   );
+
+  const activeVideoConv = videoConversations[videoConversations.length - 1];
+  const localUserId = activeVideoConv?.session?.fromUserId;
+
+  const localParticipant = activeVideoConv?.participantsUpdate?.activeParticipants.find(p => p.userId === localUserId)
+  const remoteParticipant = activeVideoConv?.participantsUpdate?.activeParticipants.find(p => p.userId !== localUserId)
+  const localVideoVisible = localParticipant && !localParticipant?.videoMuted;
+  const remoteVideoVisible = remoteParticipant && !remoteParticipant?.videoMuted;
 
   return (<>
       <Card>
@@ -25,7 +31,7 @@ export default function VideoElements({
             <Card>
               <div className="video-container">
                 <video ref={videoRef} autoPlay playsInline
-                       style={{visibility: incomingStreamIsActive ? 'visible' : 'hidden'}}
+                       style={{visibility: remoteVideoVisible ? 'visible' : 'hidden'}}
                 />
               </div>
             </Card>
@@ -35,11 +41,7 @@ export default function VideoElements({
             <Card>
               <div className='video-container'>
                 <video ref={vanityVideoRef} autoPlay playsInline
-                       style={{
-                         visibility: outgoingStreamIsActive && !(
-                           videoConversations.find(v => v.loadingVideo)
-                         ) ? 'visible' : 'hidden'
-                       }}
+                       style={{visibility: localVideoVisible ? 'visible' : 'hidden'}}
                 />
               </div>
             </Card>

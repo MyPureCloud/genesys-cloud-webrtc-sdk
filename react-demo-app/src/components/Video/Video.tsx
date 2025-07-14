@@ -19,8 +19,6 @@ import VideoElements from "./VideoElements.tsx";
 
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
-  const [incomingStreamIsActive, setIsIncomingStreamActive] = useState(false);
-  const [outgoingStreamIsActive, setIsOutgoingStreamActive] = useState(false);
   const [sessionState, setSessionState] = useState<VideoMediaSession>();
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state: unknown) => state.conversations.activeVideoConversations
@@ -77,7 +75,6 @@ export default function Video() {
   function setupSessionListenersForVideo(session: VideoMediaSession) {
 
     session.on('incomingMedia', () => {
-      setIsIncomingStreamActive(true);
       if (vanityVideoRef.current && session?._outboundStream) {
         vanityVideoRef.current.srcObject = session._outboundStream;
       }
@@ -93,16 +90,10 @@ export default function Video() {
 
     session.on('participantsUpdate', partsUpdate => {
       dispatch(addParticipantUpdateToVideoConversation(partsUpdate));
-      setIsIncomingStreamActive(partsUpdate.activeParticipants.length < 2 ? false :
-        !partsUpdate.activeParticipants.find(part => session.fromUserId !== part.userId)?.videoMuted);
-      setIsOutgoingStreamActive(
-        !partsUpdate.activeParticipants.find(part => session.fromUserId === part.userId)?.videoMuted);
     });
 
     session.on('terminated', reason => {
       dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
-      setIsIncomingStreamActive(false);
-      setIsOutgoingStreamActive(false);
     });
   }
 
@@ -139,8 +130,8 @@ export default function Video() {
             </GuxButton>
           </Card>
 
-          <VideoElements audioRef={audioRef} videoRef={videoRef} incomingStreamIsActive={incomingStreamIsActive}
-                         vanityVideoRef={vanityVideoRef} outgoingStreamIsActive={outgoingStreamIsActive}
+          <VideoElements audioRef={audioRef} videoRef={videoRef}
+                         vanityVideoRef={vanityVideoRef}
           ></VideoElements>
           <ActiveVideoConversationsTable></ActiveVideoConversationsTable>
         </div>
