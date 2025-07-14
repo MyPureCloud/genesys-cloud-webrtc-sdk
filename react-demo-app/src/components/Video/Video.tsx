@@ -1,21 +1,21 @@
-import Card from "./Card.tsx";
-import { useEffect, useMemo, useRef, useState } from "react";
+import Card from "../Card.tsx";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GuxButton } from "genesys-spark-components-react";
 import { SessionEvents } from 'genesys-cloud-streaming-client';
 import './Video.css';
 
-import { IExtendedMediaSession, VideoMediaSession } from "../../../src";
+import { IExtendedMediaSession, VideoMediaSession } from "../../../../src";
 import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
   forceVideoConversationUpdate,
   removeVideoConversationFromActive,
-  updateAudioLoading,
   IActiveVideoConversationsState,
-  updateVideoLoading,
-} from "../features/conversationsSlice.ts";
+} from "../../features/conversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
+import useSdk from "../../hooks/useSdk.ts";
+import VideoElements from "./VideoElements.tsx";
 
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
@@ -23,23 +23,22 @@ export default function Video() {
   const [outgoingStreamIsActive, setIsOutgoingStreamActive] = useState(false);
   const [sessionState, setSessionState] = useState<VideoMediaSession>();
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: any) => state.conversations.activeVideoConversations
+    (state: unknown) => state.conversations.activeVideoConversations
   );
-  const sdk = useSelector((state: any) => state.sdk.sdk);
+  const sdk = useSelector((state: unknown) => state.sdk.sdk);
+  const {startVideoConference, startVideoMeeting, startMedia} = useSdk();
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    console.log('this should run once');
     sdk.on('sessionStarted', async (session: VideoMediaSession) => {
       if (session.sessionType === 'collaborateVideo') {
         setSessionState(session);
         logRelevantSessionEvents(session);
 
-        const mediaStream = await startMedia();
-        console.log('running startMedia');
+        const mediaStream = await startMedia({video: true, audio: false});
 
         sdk.acceptSession({
           conversationId: session.conversationId,
@@ -56,25 +55,16 @@ export default function Video() {
         setupSessionListenersForVideo(session);
       }
     });
+    return () => {
+      sdk.removeAllListeners('sessionStarted');
+    }
   }, []);
-
-  function startVideoConf() {
-    sdk.startVideoConference(roomJid);
-  }
-
-  function startVideoMeeting() {
-    sdk.startVideoMeeting(roomJid);
-  }
 
   function startScreenShare() {
     if (!sessionState?.startScreenShare) {
       return;
     }
     sessionState.startScreenShare();
-  }
-
-  async function startMedia() {
-    return await sdk.media.startMedia({video: true, audio: false});
   }
 
   function logRelevantSessionEvents(session: IExtendedMediaSession) {
@@ -94,11 +84,11 @@ export default function Video() {
     });
 
     session.on('sessionState', () => {
-      dispatch(forceVideoConversationUpdate({ conversationId: session.conversationId }));
+      dispatch(forceVideoConversationUpdate({conversationId: session.conversationId}));
     });
 
     session.on('connectionState', () => {
-      dispatch(forceVideoConversationUpdate({ conversationId: session.conversationId }));
+      dispatch(forceVideoConversationUpdate({conversationId: session.conversationId}));
     });
 
     session.on('participantsUpdate', partsUpdate => {
@@ -119,23 +109,26 @@ export default function Video() {
   return (
     <>
       <Card className="video-card">
-        <h2>Video</h2>
-        <div className="buttons-and-video-container">
-          <input
-            value={roomJid}
-            onChange={(e) => setRoomJid(e.target.value)}
-            className="conference-input"
-          />
-          <div className="place-conference">
+        <h2 className="gux-heading-lg-semibold">Video</h2>
+        <div className="video-container">
+          <Card className="softphone-call-card">
+            <h3>Place Video Call</h3>
+            <form>
+              <input
+                value={roomJid}
+                onChange={(e) => setRoomJid(e.target.value)}
+                className="conference-input"
+              />
+            </form>
             <GuxButton
               accent="primary"
-              onClick={startVideoConf}
+              onClick={() => startVideoConference(roomJid)}
             >
               Join with roomJid
             </GuxButton>
             <GuxButton
               accent="primary"
-              onClick={startVideoMeeting}
+              onClick={() => startVideoMeeting(roomJid)}
             >
               Join with conferenceId
             </GuxButton>
@@ -144,30 +137,13 @@ export default function Video() {
             >
               Screen Share
             </GuxButton>
-          </div>
-          <div className="video-container-container">
-            <audio ref={audioRef} autoPlay/>
-            <div>
-              <p>Theirs</p>
-              <div className="video-container">
-                <video ref={videoRef} autoPlay playsInline
-                       style={{visibility: incomingStreamIsActive ? 'visible' : 'hidden'}}
-                />
-              </div>
-            </div>
-            <div>
-              <p>Yours</p>
-              <div className='video-container'>
-                <video ref={vanityVideoRef} autoPlay playsInline
-                       style={{visibility: outgoingStreamIsActive && !(
-                         videoConversations.find(v => v.loadingVideo)
-                         )  ? 'visible' : 'hidden'}}
-                />
-              </div>
-            </div>
-          </div>
+          </Card>
+
+          <VideoElements audioRef={audioRef} videoRef={videoRef} incomingStreamIsActive={incomingStreamIsActive}
+                         vanityVideoRef={vanityVideoRef} outgoingStreamIsActive={outgoingStreamIsActive}
+          ></VideoElements>
+          <ActiveVideoConversationsTable></ActiveVideoConversationsTable>
         </div>
-        <ActiveVideoConversationsTable></ActiveVideoConversationsTable>
       </Card>
     </>
   );

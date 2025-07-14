@@ -8,12 +8,12 @@
   gap: 20px;
 }
 
-.video-container {
-  width: 200px;
-  height: 150px;
-  border: 1px solid black;
-  border-style: dashed;
-}
+/*.video-container {*/
+/*  width: 200px;*/
+/*  height: 150px;*/
+/*  border: 1px solid black;*/
+/*  border-style: dashed;*/
+/*}*/
 
 .place-conference {
   display: inline-flex;

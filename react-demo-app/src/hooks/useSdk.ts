@@ -91,6 +91,18 @@ export default function useSdk() {
 
   function handleSessionStarted() {}
 
+  function startVideoConference(roomJid: string): void {
+    sdk.startVideoConference(roomJid);
+  }
+
+  function startVideoMeeting(roomJid: string): void {
+    sdk.startVideoMeeting(roomJid)
+  }
+
+  async function startMedia(opts: {video: boolean, audio: boolean}): Promise<void> {
+    await sdk.media.startMedia(opts);
+  }
+
   function handleSessionEnded(session: GenesysCloudMediaSession) {}
 
   function handleDisconnected() {}
@@ -183,6 +195,10 @@ export default function useSdk() {
     updateAudioVolume,
     destroySdk,
     updateOnQueueStatus,
-    disconnectPersistentConnection
+    disconnectPersistentConnection,
+    handleSessionStarted,
+    startVideoConference,
+    startVideoMeeting,
+    startMedia
   };
 }

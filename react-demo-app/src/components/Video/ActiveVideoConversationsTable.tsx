@@ -1,16 +1,16 @@
 import { useDispatch, useSelector } from "react-redux";
 import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
-import useSdk from "../hooks/useSdk.ts";
+import useSdk from "../../hooks/useSdk.ts";
 import {
   IActiveVideoConversationsState,
   toggleAudioMute,
   toggleVideoMute
-} from "../features/conversationsSlice.ts";
-import Card from "./Card.tsx";
+} from "../../features/conversationsSlice.ts";
+import Card from "../Card.tsx";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: any) => state.conversations.activeVideoConversations
+    (state: unknown) => state.conversations.activeVideoConversations
   );
   const dispatch = useDispatch();
   const {endSession} = useSdk();
@@ -24,7 +24,7 @@ export default function ActiveVideoConversationsTable() {
   function handleVideoMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
     if (participant) {
-      // @ts-ignore
+    // @ts-expect-error
       dispatch(toggleVideoMute({
         mute: !participant.videoMuted,
         conversationId: videoConversations[index].conversationId,
