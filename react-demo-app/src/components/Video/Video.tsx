@@ -12,6 +12,7 @@ import {
   forceVideoConversationUpdate,
   removeVideoConversationFromActive,
   IActiveVideoConversationsState,
+  updateConversationMediaStreams,
 } from "../../features/conversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 import useSdk from "../../hooks/useSdk.ts";
@@ -75,8 +76,23 @@ export default function Video() {
   function setupSessionListenersForVideo(session: VideoMediaSession) {
 
     session.on('incomingMedia', () => {
-      if (vanityVideoRef.current && session?._outboundStream) {
-        vanityVideoRef.current.srcObject = session._outboundStream;
+      if (session.pc && session.pc.getReceivers) {
+        const receivers = session.pc.getReceivers();
+        const inboundTracks = receivers.map(receiver => receiver.track).filter(track => track);
+        if (inboundTracks.length > 0) {
+          const inboundStream = new MediaStream(inboundTracks);
+          dispatch(updateConversationMediaStreams({
+            conversationId: session.conversationId,
+            inboundStream: inboundStream,
+          }));
+        }
+      }
+
+      if (session?._outboundStream) {
+        dispatch(updateConversationMediaStreams({
+          conversationId: session.conversationId,
+          outboundStream: session._outboundStream,
+        }));
       }
     });
 

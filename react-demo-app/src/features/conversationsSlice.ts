@@ -7,6 +7,7 @@ interface IConversationsState {
   handledPendingSessions: IPendingSession[],
   activeConversations: IActiveConversationsState,
   activeVideoConversations: IActiveVideoConversationsState[],
+  currentlyDisplayedConversationId: string | null,
 }
 
 interface IActiveConversationsState {
@@ -19,6 +20,8 @@ export interface IActiveVideoConversationsState {
   participantsUpdate: IParticipantsUpdate;
   loadingVideo: boolean;
   loadingAudio: boolean;
+  inboundStream?: MediaStream;
+  outboundStream?: MediaStream;
 }
 
 const initialState: IConversationsState = {
@@ -26,6 +29,7 @@ const initialState: IConversationsState = {
   handledPendingSessions: [],
   activeConversations: {},
   activeVideoConversations: [],
+  currentlyDisplayedConversationId: null,
 }
 
 export const toggleVideoMute = createAsyncThunk(
@@ -91,8 +95,14 @@ export const conversationsSlice = createSlice({
         ...action.payload,
         loadingVideo: false,
         loadingAudio: false,
+        inboundStream: undefined,
+        outboundStream: undefined,
       };
       state.activeVideoConversations.push(newConversation);
+      const noPreviousConversations = state.activeVideoConversations.length === 1;
+      if (noPreviousConversations) {
+        state.currentlyDisplayedConversationId = action.payload.conversationId;
+      }
     },
     addParticipantUpdateToVideoConversation: (state, action) => {
       const conv = state.activeVideoConversations.find(
@@ -106,6 +116,12 @@ export const conversationsSlice = createSlice({
         convo => convo.conversationId === action.payload.conversationId);
       if (index !== -1) {
         state.activeVideoConversations.splice(index, 1);
+
+        if (state.currentlyDisplayedConversationId === action.payload.conversationId) {
+          state.currentlyDisplayedConversationId = state.activeVideoConversations.length > 0
+            ? state.activeVideoConversations[0].conversationId
+            : null;
+        }
       }
     },
     forceVideoConversationUpdate: (state, action) => {
@@ -127,6 +143,21 @@ export const conversationsSlice = createSlice({
         conv => conv.conversationId === action.payload.convId);
       if (conv) {
         conv.loadingVideo = action.payload.loading;
+      }
+    },
+    setCurrentlyDisplayedConversation: (state, action) => {
+      state.currentlyDisplayedConversationId = action.payload.conversationId;
+    },
+    updateConversationMediaStreams: (state, action) => {
+      const conv = state.activeVideoConversations.find(
+        conv => conv.conversationId === action.payload.conversationId);
+      if (conv) {
+        if (action.payload.inboundStream !== undefined) {
+          conv.inboundStream = action.payload.inboundStream;
+        }
+        if (action.payload.outboundStream !== undefined) {
+          conv.outboundStream = action.payload.outboundStream;
+        }
       }
     },
   },
@@ -182,5 +213,7 @@ export const {
   forceVideoConversationUpdate,
   updateAudioLoading,
   updateVideoLoading,
+  setCurrentlyDisplayedConversation,
+  updateConversationMediaStreams,
 } = conversationsSlice.actions;
 export default conversationsSlice.reducer;
