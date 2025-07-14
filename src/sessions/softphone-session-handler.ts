@@ -174,7 +174,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
     if (pendingSession.autoAnswer) {
       if (this.sdk._config.disableAutoAnswer) {
-        this.log('info', 'received and autoAnswer tagged propose but sdk has disableAutoAnswer.', logInfo);
+        // It is possible that the consuming client has its own logic for auto-answering calls (eg. web-dir).
+        this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
       } else {
         await this.proceedWithSession(pendingSession);
       }
