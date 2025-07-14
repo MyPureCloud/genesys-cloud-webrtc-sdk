@@ -1,6 +1,6 @@
 import { GuxButton } from "genesys-spark-components-react";
 import Card from "../Card.tsx";
-import { useEffect } from "react";
+import { RefObject, useEffect } from "react";
 import {
   IActiveVideoConversationsState,
   setCurrentlyDisplayedConversation
@@ -11,18 +11,20 @@ export default function VideoElements({
                                         audioRef,
                                         videoRef,
                                         vanityVideoRef,
-                                      }) {
+                                      }: {
+  audioRef: RefObject<HTMLAudioElement>,
+  videoRef: RefObject<HTMLVideoElement>,
+  vanityVideoRef: RefObject<HTMLVideoElement>
+}) {
   const dispatch = useDispatch();
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state: unknown) => state.conversations.activeVideoConversations
   );
-
-  const currentlyDisplayedConversation = useSelector(
+  const currentlyDisplayedConversationId = useSelector(
     (state: unknown) => state.conversations.currentlyDisplayedConversationId
   );
-
   const activeVideoConv = videoConversations.find(conv =>
-    conv.conversationId === currentlyDisplayedConversation
+    conv.conversationId === currentlyDisplayedConversationId
   ) || videoConversations[videoConversations.length - 1];
 
   const localUserId = activeVideoConv?.session?.fromUserId;
@@ -32,7 +34,6 @@ export default function VideoElements({
   const localVideoVisible = localParticipant && !localParticipant?.videoMuted;
   const remoteVideoVisible = remoteParticipant && !remoteParticipant?.videoMuted;
 
-  // Update video elements with the current conversation's media streams
   useEffect(() => {
     if (activeVideoConv) {
       if (videoRef.current && activeVideoConv.inboundStream) {
@@ -51,23 +52,6 @@ export default function VideoElements({
   return (<>
       <Card className="video-elements-card">
         <div>
-          {videoConversations.length > 1 && (
-            <div style={{marginBottom: '20px'}}>
-              <h4>Active Conversations:</h4>
-              <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
-                {videoConversations.map((conv) => (
-                  <GuxButton
-                    key={conv.conversationId}
-                    accent={currentlyDisplayedConversation === conv.conversationId ? 'primary' : 'secondary'}
-                    onClick={() => handleConversationSwitch(conv.conversationId)}
-                  >
-                    {conv.session.originalRoomJid || conv.conversationId.slice(0, 8)}
-                  </GuxButton>
-                ))}
-              </div>
-            </div>
-          )}
-
           <audio ref={audioRef} autoPlay/>
           <div>
             <p>Remote Video</p>

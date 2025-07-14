@@ -2,7 +2,7 @@ import {
   GenesysCloudWebrtcSdk,
   ISdkConfig,
   ISdkConversationUpdateEvent,
-  SessionTypes
+  SessionTypes, VideoMediaSession
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -73,12 +73,30 @@ export default function useSdk() {
       console.error('Must enter a valid phone number.');
       return;
     }
-    sdk.startSoftphoneSession({ phoneNumber });
+    sdk.startSoftphoneSession({phoneNumber});
+  }
+
+  function sessionStarted(callback: (arg0: VideoMediaSession) => Promise<void>) {
+    sdk.on('sessionStarted', (session: any) => callback(session));
+  }
+
+  function removeSessionStarted() {
+    sdk.removeAllListeners('sessionStarted');
+  }
+
+  function acceptSession(opts: {
+    conversationId: string,
+    audioElement: HTMLAudioElement,
+    videoElement: HTMLAudioElement,
+    mediaStream: MediaStream
+  }) {
+    sdk.acceptSession(opts);
   }
 
   function handlePendingSession(pendingSession: IPendingSession): void {
     dispatch(updatePendingSessions(pendingSession));
   }
+
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(pendingSession: IPendingSession): void {
     dispatch(removePendingSession(pendingSession));
@@ -89,7 +107,8 @@ export default function useSdk() {
     dispatch(storeHandledPendingSession(pendingSession))
   }
 
-  function handleSessionStarted() {}
+  function handleSessionStarted() {
+  }
 
   function startVideoConference(roomJid: string): void {
     sdk.startVideoConference(roomJid);
@@ -99,36 +118,43 @@ export default function useSdk() {
     sdk.startVideoMeeting(roomJid)
   }
 
-  async function startMedia(opts: {video: boolean, audio: boolean}): Promise<void> {
-    await sdk.media.startMedia(opts);
+  async function startMedia(opts: {video: boolean, audio: boolean}): Promise<MediaStream> {
+    return await sdk.media.startMedia(opts);
   }
 
-  function handleSessionEnded(session: GenesysCloudMediaSession) {}
+  function handleSessionEnded(session: GenesysCloudMediaSession) {
+  }
 
-  function handleDisconnected() {}
+  function handleDisconnected() {
+  }
 
-  function handleConnected() {}
+  function handleConnected() {
+  }
 
   function handleConversationUpdate(update: ISdkConversationUpdateEvent): void {
     dispatch(updateConversations(update));
   }
 
   function endSession(conversationId: string): void {
-    sdk.endSession({ conversationId });
+    sdk.endSession({conversationId});
   }
+
   async function toggleAudioMute(mute: boolean, conversationId: string): Promise<void> {
-    await sdk.setAudioMute({ mute, conversationId });
+    await sdk.setAudioMute({mute, conversationId});
   }
+
   async function toggleVideoMute(mute: boolean, conversationId: string): Promise<void> {
     await sdk.setVideoMute({mute, conversationId});
   }
+
   async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
-    await sdk.setConversationHeld({ held, conversationId });
+    await sdk.setConversationHeld({held, conversationId});
   }
 
   function handleMediaStateChange(state: void): void {
     dispatch(updateMediaState(state));
   }
+
   function handleGumRequest(state: void): void {
     dispatch(updateGumRequests(state));
   }
@@ -139,12 +165,15 @@ export default function useSdk() {
       updateActiveSessions: true,
     });
   }
+
   function enumerateDevices(): void {
     sdk.media.enumerateDevices(true);
   }
+
   function requestDevicePermissions(type: string): void {
     sdk.media.requestMediaPermissions(type);
   }
+
   function updateAudioVolume(volume: string): void {
     sdk.updateAudioVolume(volume);
   }
@@ -163,15 +192,15 @@ export default function useSdk() {
 
     let presenceDefinition;
     if (onQueue) {
-      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'ON_QUEUE')
+      presenceDefinition = systemPresences.data.find((p: {name: string;}) => p.name === 'ON_QUEUE')
     } else {
-      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'AVAILABLE')
+      presenceDefinition = systemPresences.data.find((p: {name: string;}) => p.name === 'AVAILABLE')
     }
     const requestOptions = {
       method: 'patch',
       host: sdk._config.environment,
       authToken: sdk._config.accessToken,
-      data: JSON.stringify({ presenceDefinition })
+      data: JSON.stringify({presenceDefinition})
     };
 
     await sdk._http.requestApi(`users/${sdk._personDetails.id}/presences/PURECLOUD`, requestOptions);
@@ -199,6 +228,9 @@ export default function useSdk() {
     handleSessionStarted,
     startVideoConference,
     startVideoMeeting,
-    startMedia
+    startMedia,
+    acceptSession,
+    sessionStarted,
+    removeSessionStarted
   };
 }

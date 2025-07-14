@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
 import useSdk from "../../hooks/useSdk.ts";
 import {
-  IActiveVideoConversationsState,
+  IActiveVideoConversationsState, setCurrentlyDisplayedConversation,
   toggleAudioMute,
   toggleVideoMute
 } from "../../features/conversationsSlice.ts";
@@ -14,6 +14,9 @@ export default function ActiveVideoConversationsTable() {
   );
   const dispatch = useDispatch();
   const {endSession} = useSdk();
+  const currentlyDisplayedConversationId = useSelector(
+    (state: unknown) => state.conversations.currentlyDisplayedConversationId
+  );
 
   function getParticipantUsingDemoApp(index: number) {
     return videoConversations[index].participantsUpdate?.activeParticipants.find(
@@ -45,6 +48,10 @@ export default function ActiveVideoConversationsTable() {
     }
   }
 
+  const handleConversationSwitch = (conversationId: string) => {
+    dispatch(setCurrentlyDisplayedConversation({conversationId}));
+  };
+
   function generateActiveVideoConversationsTable() {
     if (!videoConversations.length) {
       return (<p>No active sessions.</p>);
@@ -59,6 +66,7 @@ export default function ActiveVideoConversationsTable() {
               <th>Room JID/Meeting ID</th>
               <th>Connection State</th>
               <th>Session State</th>
+              <th>Select</th>
               <th>Audio Mute</th>
               <th>Video Mute</th>
               <th>End</th>
@@ -71,6 +79,13 @@ export default function ActiveVideoConversationsTable() {
                 <td>{convo.session.originalRoomJid}</td>
                 <td>{convo.session.connectionState}</td>
                 <td>{convo.session.state}</td>
+                <td>
+                  <GuxButton onClick={() => {
+                    handleConversationSwitch(convo.conversationId)
+                  }}>
+                    {currentlyDisplayedConversationId === convo.conversationId ? 'Selected' : 'Select'}
+                  </GuxButton>
+                </td>
                 <td>
                   <GuxButton onClick={() => handleAudioMuteToggle(index)}>
                     {videoConversations?.[index].loadingAudio ?

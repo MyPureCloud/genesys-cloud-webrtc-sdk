@@ -124,13 +124,6 @@ export const conversationsSlice = createSlice({
         }
       }
     },
-    forceVideoConversationUpdate: (state, action) => {
-      const conv = state.activeVideoConversations.find(
-        conv => conv.conversationId === action.payload.conversationId);
-      if (conv) {
-        // RTK will handle the update automatically
-      }
-    },
     updateAudioLoading: (state, action) => {
       const conv = state.activeVideoConversations.find(
         conv => conv.conversationId === action.payload.convId);
@@ -210,7 +203,6 @@ export const {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
   removeVideoConversationFromActive,
-  forceVideoConversationUpdate,
   updateAudioLoading,
   updateVideoLoading,
   setCurrentlyDisplayedConversation,

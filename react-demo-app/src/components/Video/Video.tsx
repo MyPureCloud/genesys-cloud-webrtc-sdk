@@ -21,30 +21,35 @@ import VideoElements from "./VideoElements.tsx";
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
   const [sessionState, setSessionState] = useState<VideoMediaSession>();
-  const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: unknown) => state.conversations.activeVideoConversations
-  );
-  const sdk = useSelector((state: unknown) => state.sdk.sdk);
-  const {startVideoConference, startVideoMeeting, startMedia} = useSdk();
+  const {
+    startVideoConference,
+    startVideoMeeting,
+    startMedia,
+    acceptSession,
+    sessionStarted,
+    removeSessionStarted
+  } = useSdk();
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    sdk.on('sessionStarted', async (session: VideoMediaSession) => {
+    const callback = async (session: VideoMediaSession) => {
       if (session.sessionType === 'collaborateVideo') {
         setSessionState(session);
         logRelevantSessionEvents(session);
 
         const mediaStream = await startMedia({video: true, audio: false});
 
-        sdk.acceptSession({
-          conversationId: session.conversationId,
-          audioElement: audioRef.current,
-          videoElement: videoRef.current,
-          mediaStream
-        });
+        if (audioRef.current && videoRef.current) {
+          acceptSession({
+            conversationId: session.conversationId,
+            audioElement: audioRef.current,
+            videoElement: videoRef.current,
+            mediaStream
+          });
+        }
 
         dispatch(addVideoConversationToActive({
           session: session,
@@ -53,9 +58,10 @@ export default function Video() {
 
         setupSessionListenersForVideo(session);
       }
-    });
+    }
+    sessionStarted(callback);
     return () => {
-      sdk.removeAllListeners('sessionStarted');
+      removeSessionStarted();
     }
   }, []);
 
@@ -94,14 +100,6 @@ export default function Video() {
           outboundStream: session._outboundStream,
         }));
       }
-    });
-
-    session.on('sessionState', () => {
-      dispatch(forceVideoConversationUpdate({conversationId: session.conversationId}));
-    });
-
-    session.on('connectionState', () => {
-      dispatch(forceVideoConversationUpdate({conversationId: session.conversationId}));
     });
 
     session.on('participantsUpdate', partsUpdate => {
@@ -145,7 +143,6 @@ export default function Video() {
               Screen Share
             </GuxButton>
           </Card>
-
           <VideoElements audioRef={audioRef} videoRef={videoRef}
                          vanityVideoRef={vanityVideoRef}
           ></VideoElements>
