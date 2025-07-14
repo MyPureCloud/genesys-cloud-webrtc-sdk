@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...HEAD)
 # Changed
 * [STREAM-626](https://inindca.atlassian.net/browse/STREAM-626) - Removed pipeline infra from open-source. Updated CODEOWNERS.
+* [STREAM-654](https://inindca.atlassian.net/browse/STREAM-654) - Changed logging for disableAutoAnswer to clarify that if the SDK has disableAutoAnswer, the consuming client should handle auto-answering calls.
+
 ### Fixed
 * [#923](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/923) - Update docs for `useServerSidePings` to reflect the correct default value of `false`.
 
