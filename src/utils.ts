@@ -6,6 +6,7 @@ import { GenesysCloudWebrtcSdk } from './client';
 import { SdkErrorTypes, LogLevels } from './types/enums';
 import { IPendingSession, ISessionInfo } from './types/interfaces';
 import { ILogger } from 'genesys-cloud-client-logger';
+import { ConversationUpdate } from './conversations/conversation-update';
 
 export class SdkError extends Error {
   type: SdkErrorTypes;
@@ -88,6 +89,15 @@ export function buildRequestApiOptions (sdk: GenesysCloudWebrtcSdk, opts: Partia
     opts.method = 'get';
   }
 
+  if (!opts.customHeaders && sdk._config.customHeaders) {
+    opts.customHeaders = sdk._config.customHeaders;
+  }
+
+  opts.customHeaders = {
+    ...(sdk._config.customHeaders || {}),
+    ...(opts.customHeaders || {})
+  }
+
   return opts;
 }
 
@@ -153,4 +163,19 @@ export async function delay (timeMs: number): Promise<void> {
   await new Promise((resolve) => {
     setTimeout(resolve, timeMs);
   });
+}
+
+export function removeAddressFieldFromConversationUpdate(update: ConversationUpdate) {
+  if (Array.isArray(update)) {
+    return update.map(removeAddressFieldFromConversationUpdate);
+  } else if (update && typeof update === 'object') {
+    const clone = {};
+    for (const [key, value] of Object.entries(update)) {
+      if (key !== 'address') {
+        clone[key] = removeAddressFieldFromConversationUpdate(value);
+      }
+    }
+    return clone;
+  }
+  return update;
 }

@@ -3,7 +3,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...HEAD)
+# Changed
+* [STREAM-626](https://inindca.atlassian.net/browse/STREAM-626) - Removed pipeline infra from open-source. Updated CODEOWNERS.
+* [STREAM-654](https://inindca.atlassian.net/browse/STREAM-654) - Changed logging for disableAutoAnswer to clarify that if the SDK has disableAutoAnswer, the consuming client should handle auto-answering calls.
+
+### Fixed
+* [#923](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/923) - Update docs for `useServerSidePings` to reflect the correct default value of `false`.
+
+# [v11.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.2...v11.2.3)
+### Fixed
+* [STREAM-582](https://inindca.atlassian.net/browse/STREAM-582) - Bump streaming-client to fix an issue where `session-initiate` was not ignored when SDP-over-XMPP was turned on for a session.
+
+# [v11.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.1...v11.2.2)
+### Added
+* [STREAM-63](https://inindca.atlassian.net/browse/STREAM-63) - Adds in logic to use `customHeaders` in during the API requests
+
+### Fixed
+* [STREAM-534](https://inindca.atlassian.net/browse/STREAM-534) - Bump streaming-client to fix an issue where the sdpOverXmpp flag could be overwritten by simultaneous proposes.
+
+# [v11.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.0...v11.2.1)
+### Changed
+* [STREAM-517](https://inindca.atlassian.net/browse/STREAM-517) - Remove address field from conversation update log because it could potentially contain PII.
+* [STREAM-523](https://inindca.atlassian.net/browse/STREAM-523) - Updated `genesys-cloud-streaming-client` dependency to properly proxy `connectionState` event emit
+* [STREAM-536](https://inindca.atlassian.net/browse/STREAM-536) - Removed references to WebRTC screenshare from docs and README as it is end of life and no longer supported.
+
+# [v11.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.1.1...v11.2.0)
 ### Changed
 * [STREAM-357](https://inindca.atlassian.net/browse/STREAM-357) - Updated streaming-client to maintain a JID resource across websockets/stanza instances. If a JID resource is not provided, a random UUID will be generated and saved for that streaming-client instance.
 

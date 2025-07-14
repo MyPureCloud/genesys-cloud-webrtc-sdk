@@ -50,7 +50,7 @@ describe('createAndEmitSdkError', () => {
     const createdError = utils.createAndEmitSdkError.call(sdk, SdkErrorTypes.generic, origError);
     expect(createdError).toBeInstanceOf(SdkError);
     expect(createdError).toEqual(origError);
-    
+
     jest.runAllTimers();
     const emittedError = spy.mock.calls[0][0];
     expect(emittedError).toBeInstanceOf(SdkError);
@@ -159,6 +159,7 @@ describe('requestApi', () => {
     await utils.requestApi.call(sdk, '/path');
 
     expect(httpSpy).toHaveBeenCalledWith('/path', {
+      customHeaders: {},
       authToken: sdk._config.accessToken,
       host: sdk._config.environment,
       method: 'get'
@@ -175,6 +176,7 @@ describe('requestApi', () => {
     await utils.requestApi.call(sdk, '/path', { authToken, method, host });
 
     expect(httpSpy).toHaveBeenCalledWith('/path', {
+      customHeaders: {},
       authToken,
       method,
       host
@@ -197,6 +199,7 @@ describe('requestApi', () => {
     await utils.requestApi.call(sdk, '/', { noAuthHeader: true });
 
     expect(httpSpy).toHaveBeenCalledWith('/', {
+      customHeaders: {},
       method: 'get',
       host: 'mypurecloud.com',
       noAuthHeader: true
@@ -213,6 +216,7 @@ describe('buildRequestApiOptions', () => {
     sdk._config.environment = host;
 
     const expected: Partial<RequestApiOptions> = {
+      customHeaders: {},
       authToken,
       host,
       method: 'get'
@@ -227,12 +231,14 @@ describe('buildRequestApiOptions', () => {
     const method = 'post';
 
     const expected: Partial<RequestApiOptions> = {
+      customHeaders: {},
       authToken,
       host,
       method
     };
 
     expect(utils.buildRequestApiOptions(sdk, {
+      customHeaders: {},
       host,
       authToken,
       method
@@ -245,6 +251,7 @@ describe('buildRequestApiOptions', () => {
     const method = 'get';
 
     const expected: Partial<RequestApiOptions> = {
+      customHeaders: {},
       noAuthHeader,
       host,
       method
@@ -256,6 +263,23 @@ describe('buildRequestApiOptions', () => {
       method
     })).toEqual(expected);
   });
+
+  it('should use config customHeaders if none are passed in AND the SDK was initialized with a customHeader', () => {
+    sdk._config.customHeaders = {
+      'Genesys-App': 'test-app'
+    };
+
+    const expected: Partial<RequestApiOptions> ={
+      authToken: undefined,
+      host: "mypurecloud.com",
+      method: "get",
+      customHeaders: {
+        'Genesys-App': 'test-app'
+      }
+    };
+
+    expect(utils.buildRequestApiOptions(sdk, {})).toEqual(expected);
+  })
 });
 
 describe('parseJwt', () => {
@@ -350,5 +374,58 @@ describe('getBareJid', () => {
     };
 
     expect(utils.getBareJid(sdk as any)).toEqual(jid);
+  });
+});
+
+describe('removeAddressFieldFromConversationUpdate', () => {
+  it('should remove address field from conversation updates', () => {
+    const update: any = {
+      id: 1,
+      address: 'test',
+      details: {
+        address: 'some-pii',
+        userId: 'user-123'
+      }
+    };
+
+    const sanitzed = {
+      id: 1,
+      details: {
+        userId: 'user-123'
+      }
+    };
+
+    const result = utils.removeAddressFieldFromConversationUpdate(update);
+    expect(result).toEqual(sanitzed);
+  });
+
+  it('should handle deeply nested address fields in conversation updates', () => {
+    const update: any = {
+      id: 1,
+      address: 'some-pii',
+      data: {
+        participant: {
+          address: 'more-pii',
+          details: {
+            address: 'more-pii-again',
+            userId: 'user-123'
+          }
+        }
+      }
+    };
+
+    const sanitized = {
+      id: 1,
+      data: {
+        participant: {
+          details: {
+            userId: 'user-123'
+          }
+        }
+      }
+    };
+
+    const result = utils.removeAddressFieldFromConversationUpdate(update);
+    expect(result).toEqual(sanitized);
   });
 });

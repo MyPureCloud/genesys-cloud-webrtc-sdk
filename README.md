@@ -10,17 +10,14 @@ The Genesys Cloud WebRTC SDK is a client library for connecting to Genesys Cloud
 services. Supported WebRTC Features:
 
 - WebRTC SoftPhone (Authenticated Business User/Agent Telephony - inbound/outbound, etc)
-- WebRTC Screen Share (Unauthenticated User/Guest)
 - WebRTC Video (Authenticated Business User)
+- WebRTC Screen Recording (server initiated)
 
 Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/
 - Demo requires Genesys Cloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
 
 Not yet supported:
-
 - WebRTC Video (Unauthenticated User/Guest)
-- WebRTC Screen Share (Authenticated Business User/Agent Telephony)
-- WebRTC Screen Recording
 - WebRTC Click-to-Call (Unauthenticated user SoftPhone, Telephony)
 
 ### Installation
@@ -29,7 +26,7 @@ Not yet supported:
 # npm
 npm install --save genesys-cloud-webrtc-sdk
 # yarn
-yarn genesys-cloud-webrtc-sdk
+yarn add genesys-cloud-webrtc-sdk
 ```
 
 See [documentation][4] for usage and implementation details.
