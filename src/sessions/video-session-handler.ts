@@ -275,6 +275,9 @@ export class VideoSessionHandler extends BaseSessionHandler {
         mediaPurpose: SessionTypes.collaborateVideo,
         sessionType: this.sessionType
       };
+      this.log('info', 'starting video session with a jwt', { decodedJwt, opts });
+
+      // Use the streaming-client to send upgradeMediaPresence stanza.
       await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
       return { conversationId: decodedJwt.data.conversationId };
     } else if (startParams.inviteeJid) {
@@ -283,12 +286,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
       participant = { address: this.sdk._personDetails.chat.jabberId };
     }
 
-    // If using a JWT, the field name is conferenceId, otherwise it's roomId - their values are the same.
-    const fieldName = this.sdk._config.jwt ? 'conferenceId' : 'roomId';
     const data = JSON.stringify({
-      [fieldName]: startParams.jid,
+      roomId: startParams.jid,
       participant
     });
+
     this.requestedSessions[startParams.jid] = true;
 
     try {
@@ -412,8 +414,10 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session._outboundStream = stream;
-
+    // If using a JWT, we can't subscribe to the media change events.
+    if (!this.sdk._config.jwt) {
     await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
+    }
 
     await this.addMediaToSession(session, stream);
 
@@ -460,8 +464,12 @@ export class VideoSessionHandler extends BaseSessionHandler {
     await this.setInitialMuteStates(session);
 
     logDeviceChange(this.sdk, session, 'sessionStarted');
-    /* if we haven't received a conversation event in .5 sec, we need to go fetch one */
-    setTimeout(this.checkInitialConversationParticipants.bind(this, session), 500);
+
+    // If using a JWT, we can't hit the conversations endpoint.
+    if (!this.sdk._config.jwt) {
+      /* if we haven't received a conversation event in .5 sec, we need to go fetch one */
+      setTimeout(this.checkInitialConversationParticipants.bind(this, session), 500);
+    }
   }
 
   async checkInitialConversationParticipants (session: VideoMediaSession) {
