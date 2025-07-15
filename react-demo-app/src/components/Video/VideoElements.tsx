@@ -1,9 +1,7 @@
 import Card from "../Card.tsx";
 import { RefObject, useEffect } from "react";
 import {
-  IActiveVideoConversationsState,
-  setCurrentlyDisplayedConversation
-} from "../../features/videoConversationsSlice.ts";
+  IActiveVideoConversationsState} from "../../features/videoConversationsSlice.ts";
 import { useSelector, useDispatch } from "react-redux";
 
 export default function VideoElements({
@@ -15,7 +13,6 @@ export default function VideoElements({
   videoRef: RefObject<HTMLVideoElement>,
   vanityVideoRef: RefObject<HTMLVideoElement>
 }) {
-  const dispatch = useDispatch();
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state: unknown) => state.videoConversations.activeVideoConversations
   );
@@ -35,18 +32,15 @@ export default function VideoElements({
 
   useEffect(() => {
     if (activeVideoConv) {
-      if (videoRef.current && activeVideoConv.inboundStream) {
+      if (videoRef.current && activeVideoConv.inboundStream && videoRef.current.srcObject !== activeVideoConv.inboundStream) {
         videoRef.current.srcObject = activeVideoConv.inboundStream;
       }
-      if (vanityVideoRef.current && activeVideoConv.outboundStream) {
+      if (vanityVideoRef.current && activeVideoConv.outboundStream && vanityVideoRef.current.srcObject !== activeVideoConv.outboundStream) {
         vanityVideoRef.current.srcObject = activeVideoConv.outboundStream;
       }
     }
   }, [activeVideoConv, videoRef, vanityVideoRef]);
 
-  const handleConversationSwitch = (conversationId: string) => {
-    dispatch(setCurrentlyDisplayedConversation({conversationId}));
-  };
 
   return (<>
       <Card className="video-elements-card">
