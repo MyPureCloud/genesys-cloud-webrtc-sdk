@@ -72,25 +72,17 @@ export const videoConversationsSlice = createSlice({
       }
     },
     removeVideoConversationFromActive: (state, action) => {
-      const conv = findConvInState(state, action.payload.conversationId);
-      if (conv) {
-        state.activeVideoConversations = [...(state.activeVideoConversations.filter(c => c !== conv))]
-        if (state.currentlyDisplayedConversationId === conv.conversationId) {
-          state.currentlyDisplayedConversationId = state.activeVideoConversations[state.activeVideoConversations.length - 1].conversationId || null;
+      const index = state.activeVideoConversations.findIndex(
+        convo => convo.conversationId === action.payload.conversationId)
+      if (index !== -1) {
+        state.activeVideoConversations.splice(index, 1);
+
+        if (state.currentlyDisplayedConversationId === action.payload.conversationId) {
+          state.currentlyDisplayedConversationId = state.activeVideoConversations.length > 0
+            ? state.activeVideoConversations[state.activeVideoConversations.length - 1].conversationId
+            : null;
         }
       }
-
-      // const index = state.activeVideoConversations.findIndex(
-      //   convo => convo.conversationId === action.payload.conversationId)
-      // if (index !== -1) {
-      //   state.activeVideoConversations.splice(index, 1);
-      //
-      //   if (state.currentlyDisplayedConversationId === action.payload.conversationId) {
-      //     state.currentlyDisplayedConversationId = state.activeVideoConversations.length > 0
-      //       ? state.activeVideoConversations[state.activeVideoConversations.length - 1].conversationId
-      //       : null;
-      //   }
-      // }
     },
     setCurrentlyDisplayedConversation: (state, action) => {
       state.currentlyDisplayedConversationId = action.payload.conversationId;

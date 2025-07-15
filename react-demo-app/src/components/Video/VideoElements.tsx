@@ -2,7 +2,8 @@ import Card from "../Card.tsx";
 import { RefObject, useEffect } from "react";
 import {
   IActiveVideoConversationsState} from "../../features/videoConversationsSlice.ts";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import './VideoElements.css'
 
 export default function VideoElements({
                                         audioRef,
@@ -14,10 +15,10 @@ export default function VideoElements({
   vanityVideoRef: RefObject<HTMLVideoElement>
 }) {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: unknown) => state.videoConversations.activeVideoConversations
+    (state: any) => state.videoConversations.activeVideoConversations
   );
   const currentlyDisplayedConversationId = useSelector(
-    (state: unknown) => state.videoConversations.currentlyDisplayedConversationId
+    (state: any) => state.videoConversations.currentlyDisplayedConversationId
   );
   const activeVideoConv = videoConversations.find(conv =>
     conv.conversationId === currentlyDisplayedConversationId
@@ -42,32 +43,27 @@ export default function VideoElements({
   }, [activeVideoConv, videoRef, vanityVideoRef]);
 
 
-  return (<>
-      <Card className="video-elements-card">
-        <div>
-          <audio ref={audioRef} autoPlay/>
-          <div>
-            <p>Remote Video</p>
-            <Card className="video-container-card">
-              <div className="video-container">
-                <video ref={videoRef} autoPlay playsInline
-                       style={{visibility: remoteVideoVisible ? 'visible' : 'hidden'}}
-                />
-              </div>
-            </Card>
-          </div>
-          <div>
-            <p>Local Video</p>
-            <Card className="video-container-card">
-              <div className='video-container'>
-                <video ref={vanityVideoRef} autoPlay playsInline
-                       style={{visibility: localVideoVisible ? 'visible' : 'hidden'}}
-                />
-              </div>
-            </Card>
+  return (
+    <Card className="video-elements-card">
+      <audio ref={audioRef} autoPlay/>
+      <div className="video-sections-container">
+        <div className="video-section">
+          <h4>Remote Video</h4>
+          <div className="video-element-container">
+            <video ref={videoRef} autoPlay playsInline
+                   style={{visibility: remoteVideoVisible ? 'visible' : 'hidden'}}
+            />
           </div>
         </div>
-      </Card>
-    </>
+        <div className="video-section">
+          <h4>Local Video</h4>
+          <div className="video-element-container">
+            <video ref={vanityVideoRef} autoPlay playsInline
+                   style={{visibility: localVideoVisible ? 'visible' : 'hidden'}}
+            />
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }

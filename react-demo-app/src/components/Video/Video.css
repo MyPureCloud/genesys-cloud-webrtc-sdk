@@ -8,12 +8,17 @@
   gap: 20px;
 }
 
-/*.video-container {*/
-/*  width: 200px;*/
-/*  height: 150px;*/
-/*  border: 1px solid black;*/
-/*  border-style: dashed;*/
-/*}*/
+.video-container {
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.video-container > * {
+  flex: 0 0 auto;
+  margin: 0.5rem;
+}
 
 .place-conference {
   display: inline-flex;
@@ -28,3 +33,9 @@ video {
   width: 100%;
   height: 100%;
 }
+
+.video-call-card {
+  display: flex;
+  flex-direction: column;
+}
+

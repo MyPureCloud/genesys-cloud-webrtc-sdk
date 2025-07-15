@@ -114,7 +114,7 @@ export default function Video() {
       <Card className="video-card">
         <h2 className="gux-heading-lg-semibold">Video</h2>
         <div className="video-container">
-          <Card className="softphone-call-card">
+          <Card className="video-call-card">
             <h3>Place Video Call</h3>
             <form>
               <input
@@ -125,17 +125,22 @@ export default function Video() {
             </form>
             <GuxButton
               accent="primary"
+              className="video-call-btn"
+              type="submit"
               onClick={() => startVideoConference(roomJid)}
             >
               Join with roomJid
             </GuxButton>
             <GuxButton
               accent="primary"
+              className="video-call-btn"
               onClick={() => startVideoMeeting(roomJid)}
             >
               Join with conferenceId
             </GuxButton>
             <GuxButton
+              accent="secondary"
+              className="video-call-btn"
               onClick={startScreenShare}
             >
               Screen Share
