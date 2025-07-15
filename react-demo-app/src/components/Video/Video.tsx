@@ -9,11 +9,9 @@ import { IExtendedMediaSession, VideoMediaSession } from "../../../../src";
 import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
-  forceVideoConversationUpdate,
   removeVideoConversationFromActive,
-  IActiveVideoConversationsState,
   updateConversationMediaStreams,
-} from "../../features/conversationsSlice.ts";
+} from "../../features/videoConversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 import useSdk from "../../hooks/useSdk.ts";
 import VideoElements from "./VideoElements.tsx";

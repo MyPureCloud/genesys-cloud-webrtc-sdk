@@ -5,17 +5,17 @@ import {
   IActiveVideoConversationsState, setCurrentlyDisplayedConversation,
   toggleAudioMute,
   toggleVideoMute
-} from "../../features/conversationsSlice.ts";
+} from "../../features/videoConversationsSlice.ts";
 import Card from "../Card.tsx";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: unknown) => state.conversations.activeVideoConversations
+    (state: unknown) => state.videoConversations.activeVideoConversations
   );
   const dispatch = useDispatch();
   const {endSession} = useSdk();
   const currentlyDisplayedConversationId = useSelector(
-    (state: unknown) => state.conversations.currentlyDisplayedConversationId
+    (state: unknown) => state.videoConversations.currentlyDisplayedConversationId
   );
 
   function getParticipantUsingDemoApp(index: number) {
@@ -27,7 +27,7 @@ export default function ActiveVideoConversationsTable() {
   function handleVideoMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
     if (participant) {
-    // @ts-expect-error
+      // @ts-expect-error
       dispatch(toggleVideoMute({
         mute: !participant.videoMuted,
         conversationId: videoConversations[index].conversationId,

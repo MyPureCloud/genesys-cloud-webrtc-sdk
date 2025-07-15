@@ -1,10 +1,9 @@
-import { GuxButton } from "genesys-spark-components-react";
 import Card from "../Card.tsx";
 import { RefObject, useEffect } from "react";
 import {
   IActiveVideoConversationsState,
   setCurrentlyDisplayedConversation
-} from "../../features/conversationsSlice.ts";
+} from "../../features/videoConversationsSlice.ts";
 import { useSelector, useDispatch } from "react-redux";
 
 export default function VideoElements({
@@ -18,10 +17,10 @@ export default function VideoElements({
 }) {
   const dispatch = useDispatch();
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: unknown) => state.conversations.activeVideoConversations
+    (state: unknown) => state.videoConversations.activeVideoConversations
   );
   const currentlyDisplayedConversationId = useSelector(
-    (state: unknown) => state.conversations.currentlyDisplayedConversationId
+    (state: unknown) => state.videoConversations.currentlyDisplayedConversationId
   );
   const activeVideoConv = videoConversations.find(conv =>
     conv.conversationId === currentlyDisplayedConversationId
