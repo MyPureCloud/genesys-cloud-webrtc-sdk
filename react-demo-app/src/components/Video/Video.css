@@ -2,15 +2,10 @@
   margin-bottom: 20px;
 }
 
-.video-container-container {
-  display: flex;
-  text-align: center;
-  gap: 20px;
-}
-
 .video-container {
   align-items: start;
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
   margin: 1rem 0;
 }
@@ -37,5 +32,33 @@ video {
 .video-call-card {
   display: flex;
   flex-direction: column;
+}
+
+.video-container .active-video-table-container {
+  flex: 0 0 100%;
+  max-height: 400px;
+  overflow: auto;
+  max-width: fit-content  ;
+}
+
+.video-container .active-video-table-container .active-conversations-card {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.video-container .active-video-table-container gux-table {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.video-call-card > .card-content {
+  align-items: center;
+  justify-content: start;
+}
+
+.video-call-card > .card-content > div > form {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.3rem 0 1rem 0;
 }
 

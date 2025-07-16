@@ -7,6 +7,7 @@ import {
   toggleVideoMute
 } from "../../features/videoConversationsSlice.ts";
 import Card from "../Card.tsx";
+import './Video.css'
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
@@ -116,7 +117,7 @@ export default function ActiveVideoConversationsTable() {
 
   return (
     <>
-      <Card className='active-conversations-card'>
+      <Card className='active-video-table-container'>
         <h3>Active Video Sessions</h3>
         {generateActiveVideoConversationsTable()}
       </Card>
