@@ -28,7 +28,7 @@ export default function VideoElements({
 
   const localParticipant = activeVideoConv?.participantsUpdate?.activeParticipants.find(p => p.userId === localUserId)
   const remoteParticipant = activeVideoConv?.participantsUpdate?.activeParticipants.find(p => p.userId !== localUserId)
-  const localVideoVisible = localParticipant && !localParticipant?.videoMuted;
+  const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
   const remoteVideoVisible = remoteParticipant && !remoteParticipant?.videoMuted;
 
   useEffect(() => {
@@ -36,7 +36,10 @@ export default function VideoElements({
       if (videoRef.current && activeVideoConv.inboundStream && videoRef.current.srcObject !== activeVideoConv.inboundStream) {
         videoRef.current.srcObject = activeVideoConv.inboundStream;
       }
-      if (vanityVideoRef.current && activeVideoConv.outboundStream && vanityVideoRef.current.srcObject !== activeVideoConv.outboundStream) {
+      if (vanityVideoRef.current && activeVideoConv.screenOutboundStream && localParticipant?.sharingScreen && vanityVideoRef.current.srcObject !== activeVideoConv.screenOutboundStream) {
+        vanityVideoRef.current.srcObject = activeVideoConv.screenOutboundStream;
+      }
+      if (vanityVideoRef.current && !localParticipant?.sharingScreen &&  activeVideoConv.outboundStream && vanityVideoRef.current.srcObject !== activeVideoConv.outboundStream) {
         vanityVideoRef.current.srcObject = activeVideoConv.outboundStream;
       }
     }

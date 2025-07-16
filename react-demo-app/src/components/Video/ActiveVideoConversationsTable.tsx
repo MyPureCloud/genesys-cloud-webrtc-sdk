@@ -4,7 +4,7 @@ import useSdk from "../../hooks/useSdk.ts";
 import {
   IActiveVideoConversationsState, setCurrentlyDisplayedConversation,
   toggleAudioMute,
-  toggleVideoMute
+  toggleVideoMute, updateConversationMediaStreams
 } from "../../features/videoConversationsSlice.ts";
 import Card from "../Card.tsx";
 import './Video.css'
@@ -65,7 +65,7 @@ export default function ActiveVideoConversationsTable() {
   });
 
   function handleScreenShare(index: number) {
-    const session = videoConversations[index].session
+    const session = videoConversations[index].session;
 
     if (amISharingScreen[index] && session) {
       stopScreenShare(session);
@@ -74,8 +74,12 @@ export default function ActiveVideoConversationsTable() {
     }
   }
 
-  function startScreenShare(session: VideoMediaSession) {
-    session.startScreenShare && session.startScreenShare();
+  async function startScreenShare(session: VideoMediaSession) {
+    session.startScreenShare && await session.startScreenShare();
+    dispatch(updateConversationMediaStreams({
+      conversationId: session.conversationId,
+      screenOutboundStream: session._screenShareStream,
+    }));
   }
 
   function stopScreenShare(session: VideoMediaSession) {

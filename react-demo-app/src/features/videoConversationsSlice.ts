@@ -9,6 +9,7 @@ export interface IActiveVideoConversationsState { // rename this to remove the '
   loadingAudio: boolean;
   inboundStream?: MediaStream;
   outboundStream?: MediaStream;
+  screenOutboundStream?: MediaStream;
 }
 
 interface IVideoConversationsState {
@@ -95,6 +96,9 @@ export const videoConversationsSlice = createSlice({
         }
         if (action.payload.outboundStream !== undefined) {
           conv.outboundStream = action.payload.outboundStream;
+        }
+        if (action.payload.screenOutboundStream !== undefined) {
+          conv.screenOutboundStream = action.payload.screenOutboundStream;
         }
       }
     }
