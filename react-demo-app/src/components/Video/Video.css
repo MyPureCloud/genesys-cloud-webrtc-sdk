@@ -10,11 +10,6 @@
   margin: 1rem 0;
 }
 
-.video-container > * {
-  flex: 0 0 auto;
-  margin: 0.5rem;
-}
-
 .place-conference {
   display: inline-flex;
   gap: 10px;

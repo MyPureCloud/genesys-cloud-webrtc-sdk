@@ -8,6 +8,7 @@ import {
 } from "../../features/videoConversationsSlice.ts";
 import Card from "../Card.tsx";
 import './Video.css'
+import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
@@ -27,6 +28,11 @@ export default function ActiveVideoConversationsTable() {
 
   function handleVideoMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
+
+    if (participant?.sharingScreen) {
+      return;
+    }
+
     if (participant) {
       // @ts-expect-error
       dispatch(toggleVideoMute({
@@ -40,7 +46,7 @@ export default function ActiveVideoConversationsTable() {
   function handleAudioMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
     if (participant) {
-      // @ts-ignore
+      // @ts-expect-error
       dispatch(toggleAudioMute({
         mute: !participant.audioMuted,
         conversationId: videoConversations[index].conversationId,
@@ -52,6 +58,29 @@ export default function ActiveVideoConversationsTable() {
   const handleConversationSwitch = (conversationId: string) => {
     dispatch(setCurrentlyDisplayedConversation({conversationId}));
   };
+
+  const amISharingScreen: boolean[] = videoConversations.map(vc => {
+    const localPart = vc?.participantsUpdate?.activeParticipants?.find(p => p.userId === vc.session.fromUserId);
+    return !!localPart?.sharingScreen;
+  });
+
+  function handleScreenShare(index: number) {
+    const session = videoConversations[index].session
+
+    if (amISharingScreen[index] && session) {
+      stopScreenShare(session);
+    } else {
+      startScreenShare(session);
+    }
+  }
+
+  function startScreenShare(session: VideoMediaSession) {
+    session.startScreenShare && session.startScreenShare();
+  }
+
+  function stopScreenShare(session: VideoMediaSession) {
+    session.stopScreenShare && session.stopScreenShare();
+  }
 
   function generateActiveVideoConversationsTable() {
     if (!videoConversations.length) {
@@ -65,26 +94,31 @@ export default function ActiveVideoConversationsTable() {
             <tr>
               <th>Conversation ID</th>
               <th>Room JID/Meeting ID</th>
-              <th>Connection State</th>
-              <th>Session State</th>
+              <th>Connection</th>
+              <th>Session</th>
               <th>Select</th>
+              <th>Screen</th>
               <th>Audio Mute</th>
               <th>Video Mute</th>
               <th>End</th>
             </tr>
             </thead>
             <tbody>
-            {videoConversations.map((convo, index: number) => (
+            {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => (
               <tr key={`${convo.conversationId}${convo.session.id}`}>
                 <td>{convo.conversationId}</td>
                 <td>{convo.session.originalRoomJid}</td>
                 <td>{convo.session.connectionState}</td>
                 <td>{convo.session.state}</td>
                 <td>
-                  <GuxButton onClick={() => {
-                    handleConversationSwitch(convo.conversationId)
-                  }}>
+                  <GuxButton onClick={() => handleConversationSwitch(convo.conversationId)}
+                             disabled={currentlyDisplayedConversationId === convo.conversationId}>
                     {currentlyDisplayedConversationId === convo.conversationId ? 'Selected' : 'Select'}
+                  </GuxButton>
+                </td>
+                <td>
+                  <GuxButton onClick={() => handleScreenShare(index)}>
+                    {amISharingScreen[index] ? 'Stop' : 'Start'}
                   </GuxButton>
                 </td>
                 <td>
@@ -95,7 +129,7 @@ export default function ActiveVideoConversationsTable() {
                   </GuxButton>
                 </td>
                 <td>
-                  <GuxButton onClick={() => handleVideoMuteToggle(index)}>
+                  <GuxButton onClick={() => handleVideoMuteToggle(index)} disabled={amISharingScreen[index]}>
                     {videoConversations?.[index].loadingVideo ?
                       <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
                       getParticipantUsingDemoApp(index)?.videoMuted ? 'Unmute' : 'Mute'}

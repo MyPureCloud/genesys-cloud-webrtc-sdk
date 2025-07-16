@@ -1,6 +1,6 @@
 import Card from "../Card.tsx";
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { GuxButton } from "genesys-spark-components-react";
 import { SessionEvents } from 'genesys-cloud-streaming-client';
 import './Video.css';
@@ -18,7 +18,6 @@ import VideoElements from "./VideoElements.tsx";
 
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
-  const [sessionState, setSessionState] = useState<VideoMediaSession>();
   const {
     startVideoConference,
     startVideoMeeting,
@@ -35,7 +34,6 @@ export default function Video() {
   useEffect(() => {
     const callback = async (session: VideoMediaSession) => {
       if (session.sessionType === 'collaborateVideo') {
-        setSessionState(session);
         logRelevantSessionEvents(session);
 
         const mediaStream = await startMedia({video: true, audio: false});
@@ -62,13 +60,6 @@ export default function Video() {
       removeSessionStarted();
     }
   }, []);
-
-  function startScreenShare() {
-    if (!sessionState?.startScreenShare) {
-      return;
-    }
-    sessionState.startScreenShare();
-  }
 
   function logRelevantSessionEvents(session: IExtendedMediaSession) {
     const sessionEventsToLog: Array<keyof SessionEvents> = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
@@ -109,52 +100,40 @@ export default function Video() {
     });
   }
 
+
   return (
-    <>
-      <Card className="video-card">
-        <h2 className="gux-heading-lg-semibold">Video</h2>
-        <div className="video-container">
-          <div style={{display: "flex", flexDirection: 'row', gap: '1rem'}}>
-            <Card className="video-call-card">
-              <h3>Place Video Call</h3>
-              <div style={{display: "flex", flexDirection: "column", justifyContent: 'center'}}>
-                <form>
-                  <input
-                    value={roomJid}
-                    onChange={(e) => setRoomJid(e.target.value)}
-                  />
-                </form>
-                <GuxButton
-                  accent="primary"
-                  className="video-call-btn"
-                  type="submit"
-                  onClick={() => startVideoConference(roomJid)}
-                >
-                  Join with roomJid
-                </GuxButton>
-                <GuxButton
-                  accent="primary"
-                  className="video-call-btn"
-                  onClick={() => startVideoMeeting(roomJid)}
-                >
-                  Join with conferenceId
-                </GuxButton>
-                <GuxButton
-                  accent="secondary"
-                  className="video-call-btn"
-                  onClick={startScreenShare}
-                >
-                  Screen Share
-                </GuxButton>
-              </div>
-            </Card>
-            <VideoElements audioRef={audioRef} videoRef={videoRef}
-                           vanityVideoRef={vanityVideoRef}
-            ></VideoElements>
+    <Card className="video-container">
+      <h2 className="gux-heading-lg-semibold">Video</h2>
+      <div style={{display: "flex", flexDirection: "row", gap: "1rem"}}>
+        <Card className="video-call-card">
+          <h3>Place Video Call</h3>
+          <div style={{display: "flex", flexDirection: "column", justifyContent: 'center'}}>
+            <form>
+              <input
+                value={roomJid}
+                onChange={(e) => setRoomJid(e.target.value)}
+              />
+            </form>
+            <GuxButton
+              accent="primary"
+              className="video-call-btn"
+              type="submit"
+              onClick={() => startVideoConference(roomJid)}
+            >
+              Join with roomJid
+            </GuxButton>
+            <GuxButton
+              accent="primary"
+              className="video-call-btn"
+              onClick={() => startVideoMeeting(roomJid)}
+            >
+              Join with conferenceId
+            </GuxButton>
           </div>
-          <ActiveVideoConversationsTable></ActiveVideoConversationsTable>
-        </div>
-      </Card>
-    </>
+        </Card>
+        <ActiveVideoConversationsTable/>
+      </div>
+      <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef}/>
+    </Card>
   );
 }
