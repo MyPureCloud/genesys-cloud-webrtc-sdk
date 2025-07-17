@@ -6,7 +6,10 @@ jobs:
     strategy:
       matrix:
         node-version: [16, 18, 20]
-        operating-system: [ubuntu-latest, windows-latest, macos-latest]
+        operating-system:
+          - ubuntu-latest
+          - windows-latest
+          # - macos-latest -> Rollup is not supported on ARM64 - https://github.com/npm/cli/issues/4828
     runs-on: ${{ matrix.operating-system }}
     steps:
       - name: Checkout
@@ -17,12 +20,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install and Cache Dependencies
         uses: ./.github/actions/cached-deps
-      - name: Clean and Reinstall (macOS only)
-        if: runner.os == 'macOS'
-        run: |
-          rm -rf node_modules
-          rm -f package-lock.json
-          npm install
       - name: Build
         run: npm run build
   test:
@@ -41,11 +38,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install and Cache Dependencies
         uses: ./.github/actions/cached-deps
-      - name: Clean and Reinstall (macOS only)
-        if: runner.os == 'macOS'
-        run: |
-          rm -rf node_modules
-          rm -f package-lock.json
-          npm install
       - name: Test
         run: npm run test
