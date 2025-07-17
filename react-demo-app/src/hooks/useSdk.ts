@@ -1,5 +1,5 @@
 import {
-  GenesysCloudWebrtcSdk,
+  GenesysCloudWebrtcSdk, IAcceptSessionRequest,
   ISdkConfig,
   ISdkConversationUpdateEvent,
   SessionTypes, VideoMediaSession
@@ -84,12 +84,7 @@ export default function useSdk() {
     sdk.removeAllListeners('sessionStarted');
   }
 
-  function acceptSession(opts: {
-    conversationId: string,
-    audioElement: HTMLAudioElement,
-    videoElement: HTMLAudioElement,
-    mediaStream: MediaStream
-  }) {
+  function acceptSession(opts: IAcceptSessionRequest) {
     sdk.acceptSession(opts);
   }
 

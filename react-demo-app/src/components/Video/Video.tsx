@@ -36,14 +36,14 @@ export default function Video() {
       if (session.sessionType === 'collaborateVideo') {
         logRelevantSessionEvents(session);
 
-        const mediaStream = await startMedia({video: true, audio: false});
+        const localMediaStream = await startMedia({video: true, audio: true});
 
         if (audioRef.current && videoRef.current) {
           acceptSession({
             conversationId: session.conversationId,
             audioElement: audioRef.current,
             videoElement: videoRef.current,
-            mediaStream
+            mediaStream: localMediaStream
           });
         }
 
@@ -51,6 +51,14 @@ export default function Video() {
           session: session,
           conversationId: session.conversationId,
         }));
+
+        // Setup Vanity Video
+        if (session?._outboundStream) {
+          dispatch(updateConversationMediaStreams({
+            conversationId: session.conversationId,
+            outboundStream: session._outboundStream,
+          }));
+        }
 
         setupSessionListenersForVideo(session);
       }
@@ -69,9 +77,9 @@ export default function Video() {
   }
 
   function setupSessionListenersForVideo(session: VideoMediaSession) {
-
     session.on('incomingMedia', () => {
-      if (session.pc && session.pc.getReceivers) {
+      // Save the incoming (remote) media stream to allow switching between conversations
+      if (session.pc.getReceivers) {
         const receivers = session.pc.getReceivers();
         const inboundTracks = receivers.map(receiver => receiver.track).filter(track => track);
         if (inboundTracks.length > 0) {
@@ -82,24 +90,18 @@ export default function Video() {
           }));
         }
       }
-
-      if (session?._outboundStream) {
-        dispatch(updateConversationMediaStreams({
-          conversationId: session.conversationId,
-          outboundStream: session._outboundStream,
-        }));
-      }
     });
 
+    // Used for mute/unmute, screen share
     session.on('participantsUpdate', partsUpdate => {
       dispatch(addParticipantUpdateToVideoConversation(partsUpdate));
     });
 
+    // Remove conversation from store
     session.on('terminated', reason => {
       dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
     });
   }
-
 
   return (
     <Card className="video-container">

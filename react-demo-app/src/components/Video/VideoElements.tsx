@@ -61,7 +61,7 @@ export default function VideoElements({
         <div className="video-section">
           <h4>Local Video</h4>
           <div className="video-element-container">
-            <video ref={vanityVideoRef} autoPlay playsInline
+            <video ref={vanityVideoRef} autoPlay playsInline muted={true}
                    style={{visibility: localVideoVisible ? 'visible' : 'hidden'}}
             />
           </div>
