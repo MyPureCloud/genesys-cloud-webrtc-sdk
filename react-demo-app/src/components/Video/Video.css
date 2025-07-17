@@ -1,22 +1,9 @@
-.buttons-and-video-container {
-  margin-bottom: 20px;
-}
-
 .video-container {
   align-items: start;
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
   margin: 1rem 0;
-}
-
-.place-conference {
-  display: inline-flex;
-  gap: 10px;
-}
-
-.conference-input {
-  margin-right: 10px;
 }
 
 video {
@@ -41,19 +28,23 @@ video {
   overflow: auto;
 }
 
-.video-container .active-video-table-container gux-table {
-  max-width: 100%;
-  overflow: auto;
-}
+.video-call-card > .card-content > div {
 
-.video-call-card > .card-content {
-  align-items: center;
-  justify-content: start;
 }
 
 .video-call-card > .card-content > div > form {
-  width: 100%;
-  box-sizing: border-box;
   margin: 0.3rem 0 1rem 0;
+  padding: 0;
+  width: 100%;
 }
 
+.video-call-card > .card-content > div > form > input {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.video-call-card > .card-content {
+  justify-content: start;
+}
