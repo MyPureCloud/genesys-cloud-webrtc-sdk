@@ -13,7 +13,7 @@ export default function AudioDevices() {
     sdk._config.defaults.audioVolume
   );
 
-  function updateVolume(volume: string) {
+  function updateVolume(volume: number) {
     updateAudioVolume(volume);
     setAudioVolume(volume);
   }
@@ -45,7 +45,7 @@ export default function AudioDevices() {
             min="0"
             max="100"
             value={audioVolume}
-            onChange={(e) => updateVolume(e.target.value)}
+            onChange={(e) => updateVolume(+e.target.value)}
           />
           <span className="audio-volume-tooltip">{audioVolume}%</span>
         </div>

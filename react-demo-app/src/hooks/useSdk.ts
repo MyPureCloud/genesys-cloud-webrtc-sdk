@@ -1,8 +1,8 @@
 import {
-  GenesysCloudWebrtcSdk, IAcceptSessionRequest,
+  GenesysCloudWebrtcSdk, IAcceptSessionRequest, IExtendedMediaSession,
   ISdkConfig,
-  ISdkConversationUpdateEvent,
-  SessionTypes, VideoMediaSession
+  ISdkConversationUpdateEvent, ISdkGumRequest, SdkMediaStateWithType,
+  SessionTypes, VideoMediaSession, ISessionIdAndConversationId
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -15,7 +15,7 @@ import {
 import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
-import { GenesysCloudMediaSession, IPendingSession } from 'genesys-cloud-streaming-client';
+import { RequestApiOptions, IPendingSession } from 'genesys-cloud-streaming-client';
 
 interface IAuthData {
   token: string;
@@ -28,7 +28,7 @@ interface IAuthData {
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch();
-  const sdk = useSelector((state) => state.sdk.sdk);
+  const sdk: GenesysCloudWebrtcSdk = useSelector((state) => state.sdk.sdk);
 
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {
@@ -93,11 +93,11 @@ export default function useSdk() {
   }
 
   // If a pendingSession was cancelled or handled, we can remove it from our state.
-  function handleCancelPendingSession(pendingSession: IPendingSession): void {
+  function handleCancelPendingSession(pendingSession: ISessionIdAndConversationId): void {
     dispatch(removePendingSession(pendingSession));
   }
 
-  function handledPendingSession(pendingSession: IPendingSession): void {
+  function handledPendingSession(pendingSession: ISessionIdAndConversationId): void {
     dispatch(removePendingSession(pendingSession));
     dispatch(storeHandledPendingSession(pendingSession))
   }
@@ -117,7 +117,7 @@ export default function useSdk() {
     return await sdk.media.startMedia(opts);
   }
 
-  function handleSessionEnded(session: GenesysCloudMediaSession) {
+  function handleSessionEnded(_session: IExtendedMediaSession) {
   }
 
   function handleDisconnected() {
@@ -146,12 +146,12 @@ export default function useSdk() {
     await sdk.setConversationHeld({held, conversationId});
   }
 
-  function handleMediaStateChange(state: void): void {
+  function handleMediaStateChange(state: SdkMediaStateWithType): void {
     dispatch(updateMediaState(state));
   }
 
-  function handleGumRequest(state: void): void {
-    dispatch(updateGumRequests(state));
+  function handleGumRequest(_state: ISdkGumRequest): void {
+    dispatch(updateGumRequests());
   }
 
   function updateDefaultDevices(options: any): void {
@@ -165,11 +165,11 @@ export default function useSdk() {
     sdk.media.enumerateDevices(true);
   }
 
-  function requestDevicePermissions(type: string): void {
+  function requestDevicePermissions(type: 'audio' | 'video' | 'both'): void {
     sdk.media.requestMediaPermissions(type);
   }
 
-  function updateAudioVolume(volume: string): void {
+  function updateAudioVolume(volume: number): void {
     sdk.updateAudioVolume(volume);
   }
 
@@ -181,7 +181,7 @@ export default function useSdk() {
   async function updateOnQueueStatus(onQueue: boolean): Promise<void> {
     const systemPresences = await sdk._http.requestApi(`systempresences`, {
       method: 'get',
-      host: sdk._config.environment,
+      host: sdk._config.environment || 'inindca.com',
       authToken: sdk._config.accessToken
     });
 
@@ -191,9 +191,9 @@ export default function useSdk() {
     } else {
       presenceDefinition = systemPresences.data.find((p: {name: string;}) => p.name === 'AVAILABLE')
     }
-    const requestOptions = {
+    const requestOptions: RequestApiOptions = {
       method: 'patch',
-      host: sdk._config.environment,
+      host: sdk._config.environment || 'inindca.com',
       authToken: sdk._config.accessToken,
       data: JSON.stringify({presenceDefinition})
     };
@@ -202,8 +202,8 @@ export default function useSdk() {
   }
 
   function disconnectPersistentConnection(): void {
-    const sessions = sdk.sessionManager.getAllActiveSessions().filter((session: GenesysCloudMediaSession) => session.sessionType === SessionTypes.softphone);
-    sessions.forEach((session: GenesysCloudMediaSession) => sdk.forceTerminateSession(session.id));
+    const sessions = sdk.sessionManager.getAllActiveSessions().filter((session: IExtendedMediaSession) => session.sessionType === SessionTypes.softphone);
+    sessions.forEach((session: IExtendedMediaSession) => sdk.forceTerminateSession(session.id));
   }
 
   return {
