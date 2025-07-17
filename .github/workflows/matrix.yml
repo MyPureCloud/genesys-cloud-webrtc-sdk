@@ -1,9 +1,17 @@
 name: Test Matrix
-on: push
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
 jobs:
   build:
-    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
         node-version: [16, 18, 20]
         operating-system:
@@ -23,8 +31,8 @@ jobs:
       - name: Build
         run: npm run build
   test:
-    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
         node-version: [16, 18, 20]
         operating-system: [ubuntu-latest, windows-latest, macos-latest]
@@ -40,3 +48,15 @@ jobs:
         uses: ./.github/actions/cached-deps
       - name: Test
         run: npm run test
+
+  check:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build matrix status
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - name: All jobs succeeded
+        if: contains(needs.*.result, 'failure') != true && contains(needs.*.result, 'cancelled') != true
+        run: echo "All jobs completed successfully!"
