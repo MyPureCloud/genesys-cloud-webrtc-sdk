@@ -105,12 +105,12 @@ export default function useSdk() {
   function handleSessionStarted() {
   }
 
-  function startVideoConference(roomJid: string): void {
-    sdk.startVideoConference(roomJid);
+  function startVideoConference(roomJid: string): Promise<{conversationId: string;}> {
+    return sdk.startVideoConference(roomJid);
   }
 
-  function startVideoMeeting(roomJid: string): void {
-    sdk.startVideoMeeting(roomJid)
+  function startVideoMeeting(roomJid: string): Promise<{conversationId: string;}> {
+    return sdk.startVideoMeeting(roomJid);
   }
 
   async function startMedia(opts: {video: boolean, audio: boolean}): Promise<MediaStream> {

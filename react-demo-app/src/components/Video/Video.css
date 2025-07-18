@@ -28,6 +28,10 @@ video {
   overflow: auto;
 }
 
+.video-container > .card-content > h3 {
+  margin-top: 0;
+}
+
 .video-call-card > .card-content > div {
 
 }

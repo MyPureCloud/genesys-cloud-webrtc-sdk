@@ -30,6 +30,7 @@ export default function Video() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState();
 
   useEffect(() => {
     const callback = async (session: VideoMediaSession) => {
@@ -120,14 +121,28 @@ export default function Video() {
               accent="primary"
               className="video-call-btn"
               type="submit"
-              onClick={() => startVideoConference(roomJid)}
+              onClick={async () => {
+                try {
+                  await startVideoConference(roomJid);
+                  setError(undefined);
+                } catch (e: any) {
+                  setError(e.message);
+                }
+              }}
             >
               Join with roomJid
             </GuxButton>
             <GuxButton
               accent="primary"
               className="video-call-btn"
-              onClick={() => startVideoMeeting(roomJid)}
+              onClick={async () => {
+                try {
+                  await startVideoMeeting(roomJid);
+                  setError(undefined);
+                } catch (e: any) {
+                  setError(e.message);
+                }
+              }}
             >
               Join with conferenceId
             </GuxButton>
@@ -135,6 +150,7 @@ export default function Video() {
         </Card>
         <ActiveVideoConversationsTable/>
       </div>
+      {!!error && <h3 style={{color: 'red'}}>Error: {error}</h3>}
       <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef}/>
     </Card>
   );
