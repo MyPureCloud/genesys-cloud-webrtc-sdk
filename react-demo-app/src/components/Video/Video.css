@@ -6,6 +6,10 @@
   margin: 1rem 0;
 }
 
+.video-container > * {
+  margin: 0.5rem;
+}
+
 video {
   width: 100%;
   height: 100%;
@@ -40,4 +44,9 @@ video {
 
 .video-call-card > .card-content {
   justify-content: start;
+}
+
+.join-video-inputs {
+  display: flex;
+  flex-direction: column;
 }

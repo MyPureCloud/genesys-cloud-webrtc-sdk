@@ -122,7 +122,7 @@ export default function Video() {
       <div className="first-row">
         <Card className="video-call-card">
           <h3>Place Video Call</h3>
-          <div style={{display: "flex", flexDirection: "column", justifyContent: 'center'}}>
+          <div className="join-video-inputs">
             <form>
               <input
                 value={roomJid}

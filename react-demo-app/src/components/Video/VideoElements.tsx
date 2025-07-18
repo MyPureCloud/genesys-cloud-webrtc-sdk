@@ -15,19 +15,19 @@ export default function VideoElements({
   vanityVideoRef: RefObject<HTMLVideoElement>
 }) {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: any) => state.videoConversations.activeVideoConversations
+    (state: unknown) => state.videoConversations.activeVideoConversations
   );
   const currentlyDisplayedConversationId = useSelector(
-    (state: any) => state.videoConversations.currentlyDisplayedConversationId
+    (state: unknown) => state.videoConversations.currentlyDisplayedConversationId
   );
-  const activeVideoConv = videoConversations.find(conv =>
-    conv.conversationId === currentlyDisplayedConversationId
-  ) || videoConversations[videoConversations.length - 1];
+  const activeVideoConv = videoConversations
+    .find(conv => conv.conversationId === currentlyDisplayedConversationId)
+    || videoConversations[videoConversations.length - 1];
 
   const localUserId = activeVideoConv?.session?.fromUserId;
-
-  const localParticipant = activeVideoConv?.participantsUpdate?.activeParticipants.find(p => p.userId === localUserId)
-  const remoteParticipant = activeVideoConv?.participantsUpdate?.activeParticipants.find(p => p.userId !== localUserId)
+  const activeParts = activeVideoConv?.participantsUpdate?.activeParticipants;
+  const localParticipant = activeParts.find(p => p.userId === localUserId);
+  const remoteParticipant = activeParts.find(p => p.userId !== localUserId);
   const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
   const remoteVideoVisible = remoteParticipant && !remoteParticipant?.videoMuted;
 
@@ -44,7 +44,6 @@ export default function VideoElements({
       }
     }
   }, [activeVideoConv, videoRef, vanityVideoRef]);
-
 
   return (
     <Card className="video-elements-card">
