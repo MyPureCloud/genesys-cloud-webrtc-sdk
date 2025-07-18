@@ -91,19 +91,19 @@ export default function ActiveVideoConversationsTable() {
       return (<p>No active sessions.</p>);
     }
     return (
-      <GuxTable style={{ maxWidth: '1000px' }}>
-        <table slot='data' className='active-convo-table' style={{inlineSize: "100%", tableLayout: "fixed"}}>
+      <GuxTable style={{maxWidth: '1050px'}}>
+        <table slot='data' className='active-convo-table' style={{width: '100%', tableLayout: 'fixed'}}>
           <thead>
           <tr>
-            <th>Conversation ID</th>
-            <th>Room JID/Meeting ID</th>
-            <th>Connection</th>
-            <th>Session</th>
-            <th>Select</th>
-            <th>Screen</th>
-            <th>Audio Mute</th>
-            <th>Video Mute</th>
-            <th>End</th>
+            <th style={{width: '20%'}}>Conversation ID</th>
+            <th style={{width: '24%'}}>Room JID/Meeting ID</th>
+            <th style={{width: '9%'}}>Connection</th>
+            <th style={{width: '8%'}}>Session</th>
+            <th style={{width: '8%'}}>Select</th>
+            <th style={{width: '7%'}}>Screen</th>
+            <th style={{width: '9%'}}>Audio Mute</th>
+            <th style={{width: '9%'}}>Video Mute</th>
+            <th style={{width: '6%'}}>End</th>
           </tr>
           </thead>
           <tbody>
