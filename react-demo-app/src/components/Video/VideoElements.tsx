@@ -26,8 +26,8 @@ export default function VideoElements({
 
   const localUserId = activeVideoConv?.session?.fromUserId;
   const activeParts = activeVideoConv?.participantsUpdate?.activeParticipants;
-  const localParticipant = activeParts.find(p => p.userId === localUserId);
-  const remoteParticipant = activeParts.find(p => p.userId !== localUserId);
+  const localParticipant = activeParts?.find(p => p.userId === localUserId);
+  const remoteParticipant = activeParts?.find(p => p.userId !== localUserId);
   const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
   const remoteVideoVisible = remoteParticipant && !remoteParticipant?.videoMuted;
 
