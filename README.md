@@ -1,7 +1,5 @@
-[![Build Status](https://travis-ci.com/MyPureCloud/genesys-cloud-webrtc-sdk.svg?branch=master)](https://travis-ci.com/MyPureCloud/genesys-cloud-webrtc-sdk)
 [![npm version](https://badge.fury.io/js/genesys-cloud-webrtc-sdk.svg)](https://badge.fury.io/js/genesys-cloud-webrtc-sdk)
 [![codecov](https://codecov.io/gh/MyPureCloud/genesys-cloud-webrtc-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/MyPureCloud/genesys-cloud-webrtc-sdk)
-[![dependabot-status](https://flat.badgen.net/dependabot/MyPureCloud/genesys-cloud-webrtc-sdk/?icon=dependabot)](https://dependabot.com)
 
 # Genesys Cloud WebRTC SDK
 
@@ -26,7 +24,7 @@ Not yet supported:
 # npm
 npm install --save genesys-cloud-webrtc-sdk
 # yarn
-yarn genesys-cloud-webrtc-sdk
+yarn add genesys-cloud-webrtc-sdk
 ```
 
 See [documentation][4] for usage and implementation details.
