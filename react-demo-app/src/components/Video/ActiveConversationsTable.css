@@ -10,3 +10,8 @@
   border: 1px solid #ddd;
   table-layout: fixed;
 }
+
+.td-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

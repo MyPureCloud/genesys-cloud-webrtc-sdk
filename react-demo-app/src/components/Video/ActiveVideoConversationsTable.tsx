@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { GuxButton, GuxRadialLoading, GuxTable, GuxTruncate } from "genesys-spark-components-react";
+import { GuxButton, GuxCopyToClipboard, GuxRadialLoading, GuxTable, GuxTruncate } from "genesys-spark-components-react";
 import useSdk from "../../hooks/useSdk.ts";
 import {
   IActiveVideoConversationsState, setCurrentlyDisplayedConversation,
@@ -8,6 +8,7 @@ import {
 } from "../../features/videoConversationsSlice.ts";
 import Card from "../Card.tsx";
 import './Video.css'
+import './ActiveConversationsTable.css'
 import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
 
 export default function ActiveVideoConversationsTable() {
@@ -92,14 +93,14 @@ export default function ActiveVideoConversationsTable() {
     }
     return (
       <GuxTable style={{maxWidth: '1050px'}}>
-        <table slot='data' className='active-convo-table' style={{width: '100%', tableLayout: 'fixed'}}>
+        <table slot='data' className='active-convo-table' style={{inlineSize: '100%', tableLayout: 'fixed'}}>
           <thead>
           <tr>
             <th style={{width: '20%'}}>Conversation ID</th>
             <th style={{width: '24%'}}>Room JID/Meeting ID</th>
             <th style={{width: '9%'}}>Connection</th>
-            <th style={{width: '8%'}}>Session</th>
-            <th style={{width: '8%'}}>Select</th>
+            <th style={{width: '7%'}}>Session</th>
+            <th style={{width: '9%'}}>Select</th>
             <th style={{width: '7%'}}>Screen</th>
             <th style={{width: '9%'}}>Audio Mute</th>
             <th style={{width: '9%'}}>Video Mute</th>
@@ -109,8 +110,12 @@ export default function ActiveVideoConversationsTable() {
           <tbody>
           {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => (
             <tr key={`${convo.conversationId}${convo.session.id}`}>
-              <td><GuxTruncate>{convo.conversationId}</GuxTruncate></td>
-              <td><GuxTruncate>{convo.session.originalRoomJid}</GuxTruncate></td>
+              <td className="td-overflow">
+                {convo.conversationId}
+              </td>
+              <td className="td-overflow">
+                {convo.session.originalRoomJid}
+              </td>
               <td>{convo.session.connectionState}</td>
               <td>{convo.session.state}</td>
               <td>
