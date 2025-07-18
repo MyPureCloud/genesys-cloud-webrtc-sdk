@@ -16,24 +16,13 @@ video {
   flex-direction: column;
 }
 
-.video-container .active-video-table-container {
-  flex: 0 0 100%;
-  max-height: 400px;
-  overflow: auto;
-  max-width: fit-content  ;
-}
-
-.video-container .active-video-table-container .active-conversations-card {
-  max-width: 100%;
-  overflow: auto;
-}
-
-.video-container > .card-content > h3 {
+.error-message {
   margin-top: 0;
 }
 
-.video-call-card > .card-content > div {
-
+.first-row {
+  display: flex;
+  gap: 1rem;
 }
 
 .video-call-card > .card-content > div > form {

@@ -35,19 +35,20 @@ export default function Video() {
   useEffect(() => {
     const callback = async (session: VideoMediaSession) => {
       if (session.sessionType === 'collaborateVideo') {
-        logRelevantSessionEvents(session);
+        setupSessionLogging(session);
 
         const localMediaStream = await startMedia({video: true, audio: true});
 
         if (audioRef.current && videoRef.current) {
           acceptSession({
             conversationId: session.conversationId,
-            audioElement: audioRef.current,
-            videoElement: videoRef.current,
-            mediaStream: localMediaStream
+            audioElement: audioRef.current, // where the remote audio will play
+            videoElement: videoRef.current, // where the remote video will show (for everybody)
+            mediaStream: localMediaStream // our stream (audio and video)
           });
         }
 
+        // Save the conversation in the Store
         dispatch(addVideoConversationToActive({
           session: session,
           conversationId: session.conversationId,
@@ -70,7 +71,7 @@ export default function Video() {
     }
   }, []);
 
-  function logRelevantSessionEvents(session: IExtendedMediaSession) {
+  function setupSessionLogging(session: IExtendedMediaSession) {
     const sessionEventsToLog: Array<keyof SessionEvents> = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
     sessionEventsToLog.forEach((eventName) => {
       session.on(eventName, (e) => console.info(eventName, e));
@@ -78,11 +79,13 @@ export default function Video() {
   }
 
   function setupSessionListenersForVideo(session: VideoMediaSession) {
+    // Save the incoming media stream to allow switching between conversations
     session.on('incomingMedia', () => {
-      // Save the incoming (remote) media stream to allow switching between conversations
       if (session.pc.getReceivers) {
         const receivers = session.pc.getReceivers();
-        const inboundTracks = receivers.map(receiver => receiver.track).filter(track => track);
+        const inboundTracks = receivers
+          .map(receiver => receiver.track)
+          .filter(track => track);
         if (inboundTracks.length > 0) {
           const inboundStream = new MediaStream(inboundTracks);
           dispatch(updateConversationMediaStreams({
@@ -104,10 +107,19 @@ export default function Video() {
     });
   }
 
+  async function startConv(callback: (arg0: string) => Promise<{conversationId: string}>) {
+    try {
+      await callback(roomJid);
+      setError(undefined);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
+
   return (
     <Card className="video-container">
       <h2 className="gux-heading-lg-semibold">Video</h2>
-      <div style={{display: "flex", flexDirection: "row", gap: "1rem"}}>
+      <div className="first-row">
         <Card className="video-call-card">
           <h3>Place Video Call</h3>
           <div style={{display: "flex", flexDirection: "column", justifyContent: 'center'}}>
@@ -121,28 +133,14 @@ export default function Video() {
               accent="primary"
               className="video-call-btn"
               type="submit"
-              onClick={async () => {
-                try {
-                  await startVideoConference(roomJid);
-                  setError(undefined);
-                } catch (e: any) {
-                  setError(e.message);
-                }
-              }}
+              onClick={startConv.bind(null, startVideoConference)}
             >
               Join with roomJid
             </GuxButton>
             <GuxButton
               accent="primary"
               className="video-call-btn"
-              onClick={async () => {
-                try {
-                  await startVideoMeeting(roomJid);
-                  setError(undefined);
-                } catch (e: any) {
-                  setError(e.message);
-                }
-              }}
+              onClick={() => startConv(startVideoMeeting)}
             >
               Join with conferenceId
             </GuxButton>
@@ -150,7 +148,7 @@ export default function Video() {
         </Card>
         <ActiveVideoConversationsTable/>
       </div>
-      {!!error && <h3 style={{color: 'red'}}>Error: {error}</h3>}
+      {!!error && <h3 className="error-message">Error: {error}</h3>}
       <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef}/>
     </Card>
   );

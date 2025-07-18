@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
+import { GuxButton, GuxRadialLoading, GuxTable, GuxTruncate } from "genesys-spark-components-react";
 import useSdk from "../../hooks/useSdk.ts";
 import {
   IActiveVideoConversationsState, setCurrentlyDisplayedConversation,
@@ -91,65 +91,63 @@ export default function ActiveVideoConversationsTable() {
       return (<p>No active sessions.</p>);
     }
     return (
-      <>
-        <GuxTable>
-          <table slot='data' className='active-convo-table'>
-            <thead>
-            <tr>
-              <th>Conversation ID</th>
-              <th>Room JID/Meeting ID</th>
-              <th>Connection</th>
-              <th>Session</th>
-              <th>Select</th>
-              <th>Screen</th>
-              <th>Audio Mute</th>
-              <th>Video Mute</th>
-              <th>End</th>
+      <GuxTable style={{ maxWidth: '1000px' }}>
+        <table slot='data' className='active-convo-table' style={{inlineSize: "100%", tableLayout: "fixed"}}>
+          <thead>
+          <tr>
+            <th>Conversation ID</th>
+            <th>Room JID/Meeting ID</th>
+            <th>Connection</th>
+            <th>Session</th>
+            <th>Select</th>
+            <th>Screen</th>
+            <th>Audio Mute</th>
+            <th>Video Mute</th>
+            <th>End</th>
+          </tr>
+          </thead>
+          <tbody>
+          {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => (
+            <tr key={`${convo.conversationId}${convo.session.id}`}>
+              <td><GuxTruncate>{convo.conversationId}</GuxTruncate></td>
+              <td><GuxTruncate>{convo.session.originalRoomJid}</GuxTruncate></td>
+              <td>{convo.session.connectionState}</td>
+              <td>{convo.session.state}</td>
+              <td>
+                <GuxButton onClick={() => handleConversationSwitch(convo.conversationId)}
+                           disabled={currentlyDisplayedConversationId === convo.conversationId}>
+                  {currentlyDisplayedConversationId === convo.conversationId ? 'Selected' : 'Select'}
+                </GuxButton>
+              </td>
+              <td>
+                <GuxButton onClick={() => handleScreenShare(index)}>
+                  {amISharingScreen[index] ? 'Stop' : 'Start'}
+                </GuxButton>
+              </td>
+              <td>
+                <GuxButton onClick={() => handleAudioMuteToggle(index)}>
+                  {videoConversations?.[index].loadingAudio ?
+                    <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
+                    getParticipantUsingDemoApp(index)?.audioMuted ? 'Unmute' : 'Mute'}
+                </GuxButton>
+              </td>
+              <td>
+                <GuxButton onClick={() => handleVideoMuteToggle(index)} disabled={amISharingScreen[index]}>
+                  {videoConversations?.[index].loadingVideo ?
+                    <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
+                    getParticipantUsingDemoApp(index)?.videoMuted ? 'Unmute' : 'Mute'}
+                </GuxButton>
+              </td>
+              <td>
+                <GuxButton onClick={() => endSession(convo.conversationId)} accent='danger'>
+                  End
+                </GuxButton>
+              </td>
             </tr>
-            </thead>
-            <tbody>
-            {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => (
-              <tr key={`${convo.conversationId}${convo.session.id}`}>
-                <td>{convo.conversationId}</td>
-                <td>{convo.session.originalRoomJid}</td>
-                <td>{convo.session.connectionState}</td>
-                <td>{convo.session.state}</td>
-                <td>
-                  <GuxButton onClick={() => handleConversationSwitch(convo.conversationId)}
-                             disabled={currentlyDisplayedConversationId === convo.conversationId}>
-                    {currentlyDisplayedConversationId === convo.conversationId ? 'Selected' : 'Select'}
-                  </GuxButton>
-                </td>
-                <td>
-                  <GuxButton onClick={() => handleScreenShare(index)}>
-                    {amISharingScreen[index] ? 'Stop' : 'Start'}
-                  </GuxButton>
-                </td>
-                <td>
-                  <GuxButton onClick={() => handleAudioMuteToggle(index)}>
-                    {videoConversations?.[index].loadingAudio ?
-                      <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
-                      getParticipantUsingDemoApp(index)?.audioMuted ? 'Unmute' : 'Mute'}
-                  </GuxButton>
-                </td>
-                <td>
-                  <GuxButton onClick={() => handleVideoMuteToggle(index)} disabled={amISharingScreen[index]}>
-                    {videoConversations?.[index].loadingVideo ?
-                      <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
-                      getParticipantUsingDemoApp(index)?.videoMuted ? 'Unmute' : 'Mute'}
-                  </GuxButton>
-                </td>
-                <td>
-                  <GuxButton onClick={() => endSession(convo.conversationId)} accent='danger'>
-                    End
-                  </GuxButton>
-                </td>
-              </tr>
-            ))}
-            </tbody>
-          </table>
-        </GuxTable>
-      </>
+          ))}
+          </tbody>
+        </table>
+      </GuxTable>
     );
   }
 
