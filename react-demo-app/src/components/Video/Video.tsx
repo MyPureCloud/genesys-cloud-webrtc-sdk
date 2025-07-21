@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { GuxButton } from "genesys-spark-components-react";
 import { SessionEvents } from 'genesys-cloud-streaming-client';
+import { MemberStatusMessage } from 'genesys-cloud-webrtc-sdk';
 import './Video.css';
 
 import { IExtendedMediaSession, VideoMediaSession } from "../../../../src";
@@ -18,6 +19,13 @@ import VideoElements from "./VideoElements.tsx";
 
 export default function Video() {
   const [roomJid, setRoomJid] = useState("2@conference.com");
+  const roomJidRef = useRef(roomJid);
+  roomJidRef.current = roomJid;
+  const memberStatusUpdateRef = useRef<{
+    roomJid: string,
+    memberStatusMessage: MemberStatusMessage
+  }>();
+  const [speakers, setSpeakers] = useState<any[]>([]);
   const {
     startVideoConference,
     startVideoMeeting,
@@ -105,7 +113,28 @@ export default function Video() {
     session.on('terminated', reason => {
       dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
     });
+
+    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage));
   }
+
+  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage) => {
+    const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
+    const mergedUpdateParams = {...lastUpdateParams, ...memberStatusMessage.params}
+    const mergedUpdate = {...memberStatusMessage, params: mergedUpdateParams}
+
+    if (memberStatusMessage?.params?.incomingStreams) {
+      const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
+        const appId = stream.appId || stream.appid;
+        return {userId: appId?.sourceUserId}
+      });
+      setSpeakers(userIds);
+    }
+
+    memberStatusUpdateRef.current = {
+      roomJid: currentRoomJid,
+      memberStatusMessage: mergedUpdate
+    };
+  };
 
   async function startConv(callback: (arg0: string) => Promise<{conversationId: string}>) {
     try {
@@ -132,8 +161,7 @@ export default function Video() {
             <GuxButton
               accent="primary"
               className="video-call-btn"
-              type="submit"
-              onClick={startConv.bind(null, startVideoConference)}
+              onClick={() => startConv(startVideoConference)}
             >
               Join with roomJid
             </GuxButton>
@@ -149,7 +177,7 @@ export default function Video() {
         <ActiveVideoConversationsTable/>
       </div>
       {!!error && <h3 className="error-message">Error: {error}</h3>}
-      <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef}/>
+      <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef} speakers={speakers}/>
     </Card>
   );
 }
