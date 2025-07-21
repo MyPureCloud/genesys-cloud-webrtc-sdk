@@ -10,12 +10,10 @@ export default function VideoElements({
                                         audioRef,
                                         videoRef,
                                         vanityVideoRef,
-                                        speakers
                                       }: {
   audioRef: RefObject<HTMLAudioElement>,
   videoRef: RefObject<HTMLVideoElement>,
   vanityVideoRef: RefObject<HTMLVideoElement>,
-  speakers: any[]
 }) {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state: unknown) => state.videoConversations.activeVideoConversations
@@ -34,7 +32,7 @@ export default function VideoElements({
   const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
 
   function shouldShowLogo() {
-    const id = speakers?.[0]
+    const id = activeVideoConv?.activeParticipants?.[0];
     if (!id) return true;
     const activeParticipantHasCameraOn = !remoteParticipants?.find(p => p.userId === id?.userId)?.videoMuted;
     return activeParticipantHasCameraOn ? false : true;

@@ -11,7 +11,7 @@ import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
   removeVideoConversationFromActive,
-  updateConversationMediaStreams,
+  updateConversationMediaStreams, setActiveParticipants,
 } from "../../features/videoConversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 import useSdk from "../../hooks/useSdk.ts";
@@ -25,7 +25,6 @@ export default function Video() {
     roomJid: string,
     memberStatusMessage: MemberStatusMessage
   }>();
-  const [speakers, setSpeakers] = useState<any[]>([]);
   const {
     startVideoConference,
     startVideoMeeting,
@@ -114,10 +113,10 @@ export default function Video() {
       dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
     });
 
-    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage));
+    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage, session.conversationId));
   }
 
-  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage) => {
+  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage, convId: string) => {
     const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
     const mergedUpdateParams = {...lastUpdateParams, ...memberStatusMessage.params}
     const mergedUpdate = {...memberStatusMessage, params: mergedUpdateParams}
@@ -127,7 +126,10 @@ export default function Video() {
         const appId = stream.appId || stream.appid;
         return {userId: appId?.sourceUserId}
       });
-      setSpeakers(userIds);
+      dispatch(setActiveParticipants({
+        conversationId: convId,
+        activeParticipants: userIds
+      }));
     }
 
     memberStatusUpdateRef.current = {
@@ -177,7 +179,7 @@ export default function Video() {
         <ActiveVideoConversationsTable/>
       </div>
       {!!error && <h3 className="error-message">Error: {error}</h3>}
-      <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef} speakers={speakers}/>
+      <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef}/>
     </Card>
   );
 }

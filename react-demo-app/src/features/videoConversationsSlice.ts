@@ -10,6 +10,7 @@ export interface IActiveVideoConversationsState { // rename this to remove the '
   inboundStream?: MediaStream;
   outboundStream?: MediaStream;
   screenOutboundStream?: MediaStream;
+  activeParticipants?: any[];
 }
 
 interface IVideoConversationsState {
@@ -101,6 +102,12 @@ export const videoConversationsSlice = createSlice({
           conv.screenOutboundStream = action.payload.screenOutboundStream;
         }
       }
+    },
+    setActiveParticipants: (state, action) => {
+      const conv = findConvInState(state, action.payload.conversationId);
+      if (conv) {
+        conv.activeParticipants = action.payload.activeParticipants;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -145,6 +152,7 @@ export const {
   addParticipantUpdateToVideoConversation,
   removeVideoConversationFromActive,
   setCurrentlyDisplayedConversation,
-  updateConversationMediaStreams
+  updateConversationMediaStreams,
+  setActiveParticipants
 } = videoConversationsSlice.actions;
 export default videoConversationsSlice.reducer;

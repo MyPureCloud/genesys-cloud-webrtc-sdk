@@ -16,11 +16,11 @@
   text-overflow: ellipsis;
 }
 
-gux-table {
+.first-row > div > div > gux-table {
   max-width: 1050px;
 }
 
-table {
+.first-row > div > div > gux-table > table {
   inline-size: 100%;
   table-layout: fixed;
 }
