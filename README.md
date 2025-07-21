@@ -1,5 +1,6 @@
 [![npm version](https://badge.fury.io/js/genesys-cloud-webrtc-sdk.svg)](https://badge.fury.io/js/genesys-cloud-webrtc-sdk)
 [![codecov](https://codecov.io/gh/MyPureCloud/genesys-cloud-webrtc-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/MyPureCloud/genesys-cloud-webrtc-sdk)
+[![Test Matrix](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/actions/workflows/matrix.yml/badge.svg?branch=develop)](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/actions/workflows/matrix.yml)
 
 # Genesys Cloud WebRTC SDK
 
