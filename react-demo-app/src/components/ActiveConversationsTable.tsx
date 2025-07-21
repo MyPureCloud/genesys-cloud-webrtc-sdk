@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import useSdk from '../hooks/useSdk';
-import './Video/ActiveConversationsTable.css';
+import './ActiveConversationsTable.css';
 import { GuxButton, GuxTable, GuxRadialLoading } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';

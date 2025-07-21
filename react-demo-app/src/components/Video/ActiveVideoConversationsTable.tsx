@@ -8,7 +8,7 @@ import {
 } from "../../features/videoConversationsSlice.ts";
 import Card from "../Card.tsx";
 import './Video.css'
-import './ActiveConversationsTable.css'
+import './ActiveVideoConversationsTable.css'
 import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
 
 export default function ActiveVideoConversationsTable() {
