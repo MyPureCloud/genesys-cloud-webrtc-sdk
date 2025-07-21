@@ -1,5 +1,5 @@
 import Card from "../Card.tsx";
-import { RefObject, useEffect } from "react";
+import { RefObject } from "react";
 import {
   IActiveVideoConversationsState
 } from "../../features/videoConversationsSlice.ts";
@@ -33,8 +33,6 @@ export default function VideoElements({
   const remoteParticipants = activeParts?.filter(p => p.userId !== localUserId);
   const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
 
-  // const remoteVideoVisible = remoteParticipants?.length && remoteParticipants.some(p => !p.videoMuted);
-
   function shouldShowLogo() {
     const id = speakers?.[0]
     if (!id) return true;
@@ -42,20 +40,22 @@ export default function VideoElements({
     return activeParticipantHasCameraOn ? false : true;
   }
 
-  useEffect(() => {
-    // DO I EVEN NEED TO USE REF HERE I COULD JSUT COMPUTE IT
-    if (activeVideoConv) {
-      if (videoRef.current && activeVideoConv.inboundStream && videoRef.current.srcObject !== activeVideoConv.inboundStream) {
-        videoRef.current.srcObject = activeVideoConv.inboundStream;
-      }
-      if (vanityVideoRef.current && activeVideoConv.screenOutboundStream && localParticipant?.sharingScreen && vanityVideoRef.current.srcObject !== activeVideoConv.screenOutboundStream) {
+  if (activeVideoConv) {
+    const inboundChanged = activeVideoConv.inboundStream !== videoRef.current?.srcObject;
+    if (inboundChanged && videoRef.current && activeVideoConv.inboundStream) {
+      videoRef.current.srcObject = activeVideoConv.inboundStream;
+    }
+    if (vanityVideoRef.current) {
+      const screenSharedChanged = activeVideoConv.screenOutboundStream !== vanityVideoRef.current?.srcObject;
+      const outboundChanged = activeVideoConv.outboundStream !== vanityVideoRef.current?.srcObject;
+      if (screenSharedChanged && activeVideoConv.screenOutboundStream && localParticipant?.sharingScreen) {
         vanityVideoRef.current.srcObject = activeVideoConv.screenOutboundStream;
       }
-      if (vanityVideoRef.current && !localParticipant?.sharingScreen && activeVideoConv.outboundStream && vanityVideoRef.current.srcObject !== activeVideoConv.outboundStream) {
+      if (outboundChanged && activeVideoConv.outboundStream && !localParticipant?.sharingScreen) {
         vanityVideoRef.current.srcObject = activeVideoConv.outboundStream;
       }
     }
-  }, [activeVideoConv, videoRef, vanityVideoRef]);
+  }
 
   const defaultPersonSvg = <img src={`https://dhqbrvplips7x.cloudfront.net/volt/1.12.1-178/assets/default-person.svg`}/>
 
@@ -72,20 +72,26 @@ export default function VideoElements({
             }}>
               <video ref={videoRef} autoPlay playsInline controls={true}
               />
-              {shouldShowLogo() && <div className="logo-container">
-                {defaultPersonSvg}
-              </div>}
+              {shouldShowLogo() &&
+                  <div className="logo-container">
+                    {defaultPersonSvg}
+                  </div>}
             </div>
           </div>
         </div>
         <div className="video-section">
           <h4>Local Video</h4>
           <div className="video-element-container">
-            <video ref={vanityVideoRef} autoPlay playsInline muted={true} controls={true}
-                   style={{visibility: activeVideoConv ? 'visible' : 'hidden'}}/>
-            {activeVideoConv && !localVideoVisible && <div className="logo-container">
-              {defaultPersonSvg}
-            </div>}
+            <div style={{
+              visibility: activeVideoConv?.session?.connectionState === 'connected' &&
+              activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden'
+            }}>
+              <video ref={vanityVideoRef} autoPlay playsInline muted={true} controls={true}/>
+              {activeVideoConv && !localVideoVisible &&
+                  <div className="logo-container">
+                    {defaultPersonSvg}
+                  </div>}
+            </div>
           </div>
         </div>
       </div>
