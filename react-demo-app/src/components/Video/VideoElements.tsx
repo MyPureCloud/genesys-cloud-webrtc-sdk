@@ -74,6 +74,7 @@ export default function VideoElements({
         <div className="video-section">
           <h4>Remote Video</h4>
           <div style={{
+            borderRadius: '4px',
             boxSizing: "border-box",
             border: isRemoteUserOnScreenTalking() ? '10px solid rgb(121 222 176)' : '10px solid transparent'
           }}>
@@ -92,10 +93,12 @@ export default function VideoElements({
               </div>
             </div>
           </div>
+          {activeVideoConv && <span style={{color: "#1b2c48", fontWeight: 'bold'}}>User id: {activeVideoConv?.activeParticipants?.[0]?.userId}</span>}
         </div>
         <div className="video-section">
           <h4>Local Video</h4>
           <div style={{
+            borderRadius: '4px',
             boxSizing: "border-box",
             border: isLocalUserTalking() ? '10px solid rgb(121 222 176)' : '10px solid transparent'
           }}>
@@ -113,6 +116,7 @@ export default function VideoElements({
               </div>
             </div>
           </div>
+          {activeVideoConv && <span style={{color: "#1b2c48", fontWeight: 'bold'}}>User id: {localUserId}</span>}
         </div>
       </div>
     </Card>

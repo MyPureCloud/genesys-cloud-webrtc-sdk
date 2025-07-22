@@ -136,7 +136,6 @@ export default function Video() {
       const usersTalking = memberStatusMessage.params.speakers.reduce((acc, current) => {
         return {...acc, [current.appId.sourceUserId]: current.activity === 'speaking'}
       }, {});
-      console.table(usersTalking)
       dispatch(setUsersTalking({
         conversationId: convId,
         usersTalking
