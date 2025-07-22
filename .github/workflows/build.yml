@@ -12,6 +12,16 @@ jobs:
           caching: 'false'
       - name: Lint code
         run: npm run lint
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install and Cache Dependencies
+        uses: ./.github/actions/cached-deps
+      - name: Run security audit
+        id: security-audit
+        run: npm audit --audit-level=critical --omit=dev
   test:
     runs-on: ubuntu-latest
     steps:
