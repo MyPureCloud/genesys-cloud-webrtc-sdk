@@ -18,14 +18,20 @@ export default function AudioDevices() {
     setAudioVolume(volume);
   }
 
+  // We have to do this because we are not using directory service
+  const selectedDeviceId = sdk?._config?.defaults?.audioDeviceId || deviceState.audioDevices[0]?.deviceId;
+  if (sdk && deviceState.audioDevices.length && !sdk._config?.defaults?.audioDeviceId) {
+    updateDefaultDevices({ audioDeviceId: selectedDeviceId });
+  }
+
   function displayAudioDevices() {
     if (deviceState.audioDevices.length) {
       return <>
         <div className="audio-device-list">
           <GuxDropdown
-            value={deviceState.audioDevices[0].deviceId}
+            value={selectedDeviceId}
             onInput={(e) =>
-              updateDefaultDevices({ audioDeviceId: e.target.value })
+              updateDefaultDevices({ audioDeviceId: e.currentTarget.value })
             }
           >
             <GuxListbox>

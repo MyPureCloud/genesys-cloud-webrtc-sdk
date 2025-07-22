@@ -6,6 +6,13 @@ import Card from './Card';
 export default function OutputDevices() {
   const { updateDefaultDevices } = useSdk();
   const deviceState = useSelector((state) => state.devices.currentState);
+  const sdk = useSelector(state => state.sdk.sdk);
+
+  // We have to do this because we are not using directory service
+  const selectedDeviceId = sdk?._config?.defaults?.outputDeviceId || deviceState.outputDevices[0]?.deviceId;
+  if (sdk && deviceState.outputDevices.length && !sdk._config?.defaults?.outputDeviceId) {
+    updateDefaultDevices({ outputDeviceId: selectedDeviceId });
+  }
 
   return (
     <>
@@ -13,9 +20,9 @@ export default function OutputDevices() {
         <h4>Output Devices</h4>
         {deviceState.outputDevices.length ? (
           <GuxDropdown
-            value={deviceState.outputDevices[0].deviceId}
+            value={selectedDeviceId}
             onInput={(e) =>
-              updateDefaultDevices({ outputDeviceId: e.target.value })
+              updateDefaultDevices({ outputDeviceId: e.currentTarget.value })
             }
           >
             <GuxListbox>

@@ -1,5 +1,5 @@
 import Card from "../Card.tsx";
-import { useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { GuxButton } from "genesys-spark-components-react";
 import { SessionEvents } from 'genesys-cloud-streaming-client';
@@ -44,7 +44,7 @@ export default function Video() {
       if (session.sessionType === 'collaborateVideo') {
         setupSessionLogging(session);
 
-        const localMediaStream = await startMedia({video: true, audio: true});
+        const localMediaStream = await startMedia({ video: true, audio: true });
 
         if (audioRef.current && videoRef.current) {
           acceptSession({
@@ -110,7 +110,7 @@ export default function Video() {
 
     // Remove conversation from store
     session.on('terminated', reason => {
-      dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
+      dispatch(removeVideoConversationFromActive({ conversationId: session.conversationId, reason: reason }));
     });
 
     session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage, session.conversationId, session.fromUserId));
@@ -118,13 +118,13 @@ export default function Video() {
 
   const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage, convId: string, userId: string) => {
     const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
-    const mergedUpdateParams = {...lastUpdateParams, ...memberStatusMessage.params}
-    const mergedUpdate = {...memberStatusMessage, params: mergedUpdateParams}
+    const mergedUpdateParams = { ...lastUpdateParams, ...memberStatusMessage.params }
+    const mergedUpdate = { ...memberStatusMessage, params: mergedUpdateParams }
 
     if (memberStatusMessage?.params?.incomingStreams) {
       const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
         const appId = stream.appId || stream.appid;
-        return {userId: appId?.sourceUserId}
+        return { userId: appId?.sourceUserId }
       });
       dispatch(setActiveParticipants({
         conversationId: convId,
@@ -134,7 +134,7 @@ export default function Video() {
 
     if (memberStatusMessage?.params?.speakers) {
       const usersTalking = memberStatusMessage.params.speakers.reduce((acc, current) => {
-        return {...acc, [current.appId.sourceUserId]: current.activity === 'speaking'}
+        return { ...acc, [current.appId.sourceUserId]: current.activity === 'speaking' }
       }, {});
       dispatch(setUsersTalking({
         conversationId: convId,
@@ -148,8 +148,13 @@ export default function Video() {
     };
   };
 
-  async function startConv(callback: (arg0: string) => Promise<{conversationId: string}>) {
+  async function startConv(callback: (arg0: string) => Promise<{
+    conversationId: string
+  }>, event?: FormEvent<HTMLFormElement>) {
     try {
+      if (event) {
+        event.preventDefault();
+      }
       await callback(roomJid);
       setError(undefined);
     } catch (e: any) {
@@ -164,8 +169,10 @@ export default function Video() {
         <Card className="video-call-card">
           <h3>Place Video Call</h3>
           <div className="join-video-inputs">
-            <form>
+            <form onSubmit={(e) => startConv(startVideoConference, e)}>
               <input
+                type="text"
+                slot="input"
                 value={roomJid}
                 onChange={(e) => setRoomJid(e.target.value)}
               />
@@ -173,6 +180,7 @@ export default function Video() {
             <GuxButton
               accent="primary"
               className="video-call-btn"
+              type="submit"
               onClick={() => startConv(startVideoConference)}
             >
               Join with roomJid
