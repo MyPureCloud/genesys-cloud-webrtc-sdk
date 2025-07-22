@@ -1,5 +1,5 @@
 import { IParticipantsUpdate, VideoMediaSession } from "genesys-cloud-webrtc-sdk";
-import { createAsyncThunk, createSlice, Draft, StateFromReducersMapObject } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, Draft } from "@reduxjs/toolkit";
 
 export interface IActiveVideoConversationsState { // rename this to remove the 's'?
   conversationId: string;
@@ -11,6 +11,7 @@ export interface IActiveVideoConversationsState { // rename this to remove the '
   outboundStream?: MediaStream;
   screenOutboundStream?: MediaStream;
   activeParticipants?: any[];
+  usersTalking?: {[userId: string]: boolean};
 }
 
 interface IVideoConversationsState {
@@ -108,6 +109,12 @@ export const videoConversationsSlice = createSlice({
       if (conv) {
         conv.activeParticipants = action.payload.activeParticipants;
       }
+    },
+    setUsersTalking: (state, action) => {
+      const conv = findConvInState(state, action.payload.conversationId);
+      if (conv) {
+        conv.usersTalking = action.payload.usersTalking;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -153,6 +160,7 @@ export const {
   removeVideoConversationFromActive,
   setCurrentlyDisplayedConversation,
   updateConversationMediaStreams,
-  setActiveParticipants
+  setActiveParticipants,
+  setUsersTalking
 } = videoConversationsSlice.actions;
 export default videoConversationsSlice.reducer;

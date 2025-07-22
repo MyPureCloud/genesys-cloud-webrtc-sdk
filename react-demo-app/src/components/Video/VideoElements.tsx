@@ -38,6 +38,16 @@ export default function VideoElements({
     return activeParticipantHasCameraOn ? false : true;
   }
 
+  function isRemoteUserOnScreenTalking() {
+    const activeParticipantId = activeVideoConv?.activeParticipants?.[0]?.userId;
+    const isActiveParticipantTalking = activeVideoConv?.usersTalking?.[activeParticipantId]
+    return !!isActiveParticipantTalking;
+  }
+
+  function isLocalUserTalking() {
+    return activeVideoConv?.usersTalking?.[localUserId]
+  }
+
   if (activeVideoConv) {
     const inboundChanged = activeVideoConv.inboundStream !== videoRef.current?.srcObject;
     if (inboundChanged && videoRef.current && activeVideoConv.inboundStream) {
@@ -63,32 +73,44 @@ export default function VideoElements({
       <div className="video-sections-container">
         <div className="video-section">
           <h4>Remote Video</h4>
-          <div className="video-element-container">
-            <div style={{
-              visibility: activeVideoConv?.session?.connectionState === 'connected' &&
-              activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden'
-            }}>
-              <video ref={videoRef} autoPlay playsInline controls={true}
-              />
-              {shouldShowLogo() &&
-                  <div className="logo-container">
-                    {defaultPersonSvg}
-                  </div>}
+          <div style={{
+            boxSizing: "border-box",
+            border: isRemoteUserOnScreenTalking() ? '10px solid rgb(121 222 176)' : '10px solid transparent'
+          }}>
+            <div className="video-element-container">
+              <div style={{
+                height: "100%", width: "100%",
+                visibility: activeVideoConv?.session?.connectionState === 'connected' &&
+                activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden',
+              }}>
+                <video ref={videoRef} autoPlay playsInline
+                />
+                {shouldShowLogo() &&
+                    <div className="logo-container">
+                      {defaultPersonSvg}
+                    </div>}
+              </div>
             </div>
           </div>
         </div>
         <div className="video-section">
           <h4>Local Video</h4>
-          <div className="video-element-container">
-            <div style={{
-              visibility: activeVideoConv?.session?.connectionState === 'connected' &&
-              activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden'
-            }}>
-              <video ref={vanityVideoRef} autoPlay playsInline muted={true} controls={true}/>
-              {activeVideoConv && !localVideoVisible &&
-                  <div className="logo-container">
-                    {defaultPersonSvg}
-                  </div>}
+          <div style={{
+            boxSizing: "border-box",
+            border: isLocalUserTalking() ? '10px solid rgb(121 222 176)' : '10px solid transparent'
+          }}>
+            <div className="video-element-container">
+              <div style={{
+                height: "100%", width: "100%",
+                visibility: activeVideoConv?.session?.connectionState === 'connected' &&
+                activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden'
+              }}>
+                <video ref={vanityVideoRef} autoPlay playsInline muted={true}/>
+                {activeVideoConv && !localVideoVisible &&
+                    <div className="logo-container">
+                      {defaultPersonSvg}
+                    </div>}
+              </div>
             </div>
           </div>
         </div>

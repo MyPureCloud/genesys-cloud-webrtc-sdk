@@ -11,7 +11,7 @@ import {
   addVideoConversationToActive,
   addParticipantUpdateToVideoConversation,
   removeVideoConversationFromActive,
-  updateConversationMediaStreams, setActiveParticipants,
+  updateConversationMediaStreams, setActiveParticipants, setUsersTalking,
 } from "../../features/videoConversationsSlice.ts";
 import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 import useSdk from "../../hooks/useSdk.ts";
@@ -113,10 +113,10 @@ export default function Video() {
       dispatch(removeVideoConversationFromActive({conversationId: session.conversationId, reason: reason}));
     });
 
-    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage, session.conversationId));
+    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage, session.conversationId, session.fromUserId));
   }
 
-  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage, convId: string) => {
+  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage, convId: string, userId: string) => {
     const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
     const mergedUpdateParams = {...lastUpdateParams, ...memberStatusMessage.params}
     const mergedUpdate = {...memberStatusMessage, params: mergedUpdateParams}
@@ -129,6 +129,17 @@ export default function Video() {
       dispatch(setActiveParticipants({
         conversationId: convId,
         activeParticipants: userIds
+      }));
+    }
+
+    if (memberStatusMessage?.params?.speakers) {
+      const usersTalking = memberStatusMessage.params.speakers.reduce((acc, current) => {
+        return {...acc, [current.appId.sourceUserId]: current.activity === 'speaking'}
+      }, {});
+      console.table(usersTalking)
+      dispatch(setUsersTalking({
+        conversationId: convId,
+        usersTalking
       }));
     }
 

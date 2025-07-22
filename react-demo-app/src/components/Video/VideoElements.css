@@ -2,8 +2,6 @@
   position: relative;
   height: 459px;
   width: 612px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
   overflow: hidden;
   background-color: #f2f2f2;
 }
