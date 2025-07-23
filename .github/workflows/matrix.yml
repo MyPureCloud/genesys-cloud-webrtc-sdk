@@ -10,6 +10,7 @@ on:
       - master
 jobs:
   build:
+    runs-on: ${{ matrix.operating-system }}
     strategy:
       fail-fast: false
       matrix:
@@ -17,8 +18,7 @@ jobs:
         operating-system:
           - ubuntu-latest
           - windows-latest
-          # - macos-latest -> Rollup is not supported on ARM64 - https://github.com/npm/cli/issues/4828
-    runs-on: ${{ matrix.operating-system }}
+          - macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,17 +26,32 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install and Cache Dependencies
-        uses: ./.github/actions/cached-deps
+      - name: Remove old install # Rollup bug workaround ->  https://github.com/npm/cli/issues/4828
+        run: rm -rf node_modules package-lock.json
+      - name: Restore node_modules cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
+      - name: Install dependencies
+        run: npm install
+      - name: Cache node_modules (post-install)
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
       - name: Build
         run: npm run build
   test:
+    runs-on: ${{ matrix.operating-system }}
     strategy:
       fail-fast: false
       matrix:
         node-version: [16, 18, 20]
         operating-system: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.operating-system }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,7 +63,6 @@ jobs:
         uses: ./.github/actions/cached-deps
       - name: Test
         run: npm run test
-
   check:
     needs: [build, test]
     runs-on: ubuntu-latest
