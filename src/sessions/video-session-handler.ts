@@ -24,6 +24,7 @@ import { createNewStreamWithTrack, logDeviceChange } from '../media/media-utils'
 import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendingSession, isAgentVideoJid } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { jwtDecode } from "jwt-decode";
 
 /**
  * speakers is an array of audio track ids sending audio
@@ -261,9 +262,25 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   private async startVideoSession (startParams: IStartVideoSessionParams): Promise<{ conversationId: string }> {
+    const videoApiUrl = '/conversations/videos';
     let participant: { address: string };
 
-    if (startParams.inviteeJid) {
+
+    if (this.sdk._config.jwt) {
+      const decodedJwt: any = jwtDecode(this.sdk._config.jwt);
+      const opts = {
+        jid: decodedJwt.data.jid,
+        conversationId: decodedJwt.data.conversationId,
+        sourceCommunicationId: decodedJwt.data.sourceCommunicationId,
+        mediaPurpose: SessionTypes.collaborateVideo,
+        sessionType: this.sessionType
+      };
+      this.log('info', 'starting video session with a jwt', { decodedJwt, opts });
+
+      // Use the streaming-client to send upgradeMediaPresence stanza.
+      await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);
+      return { conversationId: decodedJwt.data.conversationId };
+    } else if (startParams.inviteeJid) {
       participant = { address: startParams.inviteeJid };
     } else {
       participant = { address: this.sdk._personDetails.chat.jabberId };
@@ -277,7 +294,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     this.requestedSessions[startParams.jid] = true;
 
     try {
-      const response = await requestApi.call(this.sdk, `/conversations/videos`, {
+      const response = await requestApi.call(this.sdk, videoApiUrl, {
         method: 'post',
         data
       });
@@ -397,8 +414,10 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session._outboundStream = stream;
-
+    // If using a JWT, we can't subscribe to the media change events.
+    if (!this.sdk._config.jwt) {
     await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
+    }
 
     await this.addMediaToSession(session, stream);
 
@@ -445,8 +464,12 @@ export class VideoSessionHandler extends BaseSessionHandler {
     await this.setInitialMuteStates(session);
 
     logDeviceChange(this.sdk, session, 'sessionStarted');
-    /* if we haven't received a conversation event in .5 sec, we need to go fetch one */
-    setTimeout(this.checkInitialConversationParticipants.bind(this, session), 500);
+
+    // If using a JWT, we can't hit the conversations endpoint.
+    if (!this.sdk._config.jwt) {
+      /* if we haven't received a conversation event in .5 sec, we need to go fetch one */
+      setTimeout(this.checkInitialConversationParticipants.bind(this, session), 500);
+    }
   }
 
   async checkInitialConversationParticipants (session: VideoMediaSession) {

@@ -85,7 +85,6 @@
     "@types/nock": "^11.1.0",
     "@types/node": "^20.12.12",
     "@types/uuid": "^9.0.8",
-    "@types/webrtc": "^0.0.43",
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
     "@typescript-eslint/parser": "^7.11.0",
