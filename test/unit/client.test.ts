@@ -256,8 +256,18 @@ describe('Client', () => {
       });
     });
 
-    xit('should include JWT in video session request', async () => {
+    it('should include JWT in video session request', async () => {
       const testJwt = 'test.jwt.token';
+      const mockDecodedJwt = {
+        data: {
+          jid: 'test-user@test.com',
+          conversationId: 'test-conversation-id',
+          sourceCommunicationId: 'test-source-comm-id'
+        }
+      };
+
+      jwtDecodeSpy.mockReturnValue(mockDecodedJwt);
+
       sdk = constructSdk({ jwt: testJwt });
       const handler = new VideoSessionHandler(sdk, sessionManagerMock);
 
@@ -269,25 +279,34 @@ describe('Client', () => {
         }
       };
 
-      jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: { conversationId: '123' } });
+      const mockInitiateRtcSession = jest.fn().mockResolvedValue(undefined);
+      sdk._streamingConnection = {
+        webrtcSessions: {
+          initiateRtcSession: mockInitiateRtcSession
+        },
+        disconnect: jest.fn().mockResolvedValue(undefined)
+      } as any;
 
-      await handler.startSession({
+      const requestApiSpy = jest.spyOn(utils, 'requestApi');
+
+      const result = await handler.startSession({
         jid: 'test-room@conference.com',
         sessionType: SessionTypes.collaborateVideo
       });
 
-      const expected = JSON.stringify({
-        conferenceId: 'test-room@conference.com',
-        participant: {
-          address: 'test-user@test.com',
-          jwt: testJwt
-        }
+      expect(mockInitiateRtcSession).toHaveBeenCalledWith({
+        jid: mockDecodedJwt.data.jid,
+        conversationId: mockDecodedJwt.data.conversationId,
+        sourceCommunicationId: mockDecodedJwt.data.sourceCommunicationId,
+        mediaPurpose: SessionTypes.collaborateVideo,
+        sessionType: SessionTypes.collaborateVideo
       });
 
-      expect(utils.requestApi).toHaveBeenCalledWith(
-        '/conversations/videos',
-        { method: 'post', data: expected }
-      );
+      expect(result).toEqual({
+        conversationId: mockDecodedJwt.data.conversationId
+      });
+
+      expect(requestApiSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -1189,7 +1208,7 @@ describe('Client', () => {
     });
 
     it('should return false if no customerData is present', () => {
-      let customerData: any = undefined;
+      const customerData: any = undefined;
       expect(isCustomerData(customerData)).toBe(false);
     });
 
