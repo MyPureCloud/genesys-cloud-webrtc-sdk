@@ -45,8 +45,22 @@ jobs:
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
-      - name: Build
-        run: npm run build
+      - name: Debug environment
+        run: |
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "TypeScript version: $(npx tsc --version)"
+          echo "@types/webrtc version: $(npm list @types/webrtc)"
+      - name: Test TypeScript compilation
+        run: npx tsc -p . --noEmit --listFiles | tail -10
+      - name: Build (with error capture)
+        run: |
+          echo "Running build..."
+          npm run build || {
+            echo "Build failed. Running TypeScript compilation directly to see error:"
+            npx tsc -p . --pretty --listFiles
+            exit 1
+          }
   test:
     strategy:
       fail-fast: false
