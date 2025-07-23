@@ -1,5 +1,5 @@
 import Card from "../Card.tsx";
-import { RefObject } from "react";
+import { RefObject, useEffect } from "react";
 import {
   IActiveVideoConversationsState
 } from "../../features/videoConversationsSlice.ts";
@@ -31,9 +31,39 @@ export default function VideoElements({
   const remoteParticipants = activeParts?.filter(p => p.userId !== localUserId);
   const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
 
+
+  useEffect(() => {
+    if (!activeVideoConv) return;
+
+    const inboundChanged = activeVideoConv.inboundStream !== videoRef.current?.srcObject;
+    if (inboundChanged && videoRef.current && activeVideoConv.inboundStream) {
+      videoRef.current.srcObject = activeVideoConv.inboundStream;
+    }
+
+
+    if (vanityVideoRef.current) {
+      const isScreenSharing = localParticipant?.sharingScreen;
+      const targetStream = isScreenSharing
+        ? activeVideoConv.screenOutboundStream
+        : activeVideoConv.outboundStream;
+
+      const outboundChanged = targetStream !== vanityVideoRef.current?.srcObject;
+      if (outboundChanged && targetStream) {
+        vanityVideoRef.current.srcObject = targetStream;
+      }
+    }
+  }, [
+    activeVideoConv?.inboundStream,
+    activeVideoConv?.outboundStream,
+    activeVideoConv?.screenOutboundStream,
+    localParticipant?.sharingScreen,
+    videoRef,
+    vanityVideoRef
+  ]);
+
   function shouldShowLogo() {
     const id = activeVideoConv?.activeParticipants?.[0];
-    if (!id) return true;
+    if (!id) return false;
     const activeParticipantHasCameraOn = !remoteParticipants?.find(p => p.userId === id?.userId)?.videoMuted;
     return activeParticipantHasCameraOn ? false : true;
   }
@@ -90,10 +120,16 @@ export default function VideoElements({
                     <div className="logo-container">
                       {defaultPersonSvg}
                     </div>}
+                {!remoteParticipants?.length
+                  ? <div className="logo-container"
+                         style={{ color: "#1b2c48", backgroundColor: "#f3f3f3", width: "100%", height: "100%" }}>
+                    <h3>Waiting for others to connect...</h3>
+                  </div>
+                  : null}
               </div>
             </div>
           </div>
-          {activeVideoConv && <span style={{color: "#1b2c48", fontWeight: 'bold'}}>User id: {activeVideoConv?.activeParticipants?.[0]?.userId}</span>}
+          {activeVideoConv && !!remoteParticipants?.length && <span style={{ color: "#1b2c48", fontWeight: 'bold' }}>User id: {activeVideoConv?.activeParticipants?.[0]?.userId}</span>}
         </div>
         <div className="video-section">
           <h4>Local Video</h4>
@@ -116,7 +152,7 @@ export default function VideoElements({
               </div>
             </div>
           </div>
-          {activeVideoConv && <span style={{color: "#1b2c48", fontWeight: 'bold'}}>User id: {localUserId}</span>}
+          {activeVideoConv && <span style={{ color: "#1b2c48", fontWeight: 'bold' }}>User id: {localUserId}</span>}
         </div>
       </div>
     </Card>
