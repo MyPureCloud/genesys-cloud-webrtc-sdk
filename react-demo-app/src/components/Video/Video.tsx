@@ -113,10 +113,10 @@ export default function Video() {
       dispatch(removeVideoConversationFromActive({ conversationId: session.conversationId, reason: reason }));
     });
 
-    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage, session.conversationId, session.fromUserId));
+    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateStuff(roomJidRef.current, memberStatusMessage, session.conversationId));
   }
 
-  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage, convId: string, userId: string) => {
+  const updateStuff = (currentRoomJid: string, memberStatusMessage: MemberStatusMessage, convId: string) => {
     const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
     const mergedUpdateParams = { ...lastUpdateParams, ...memberStatusMessage.params }
     const mergedUpdate = { ...memberStatusMessage, params: mergedUpdateParams }
