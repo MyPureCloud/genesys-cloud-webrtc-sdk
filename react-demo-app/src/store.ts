@@ -5,7 +5,8 @@ import videoConversationReducer from './features/videoConversationsSlice';
 import devicesReducer from './features/devicesSlice';
 import sdkReducer from './features/sdkSlice';
 
-export const store = configureStore({
+
+export const store= configureStore({
   reducer: {
     auth: authReducer,
     conversations: conversationsReducer,

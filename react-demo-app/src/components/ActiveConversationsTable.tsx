@@ -4,12 +4,11 @@ import './ActiveConversationsTable.css';
 import { GuxButton, GuxTable, GuxRadialLoading } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';
-import {IStoredConversationState} from 'genesys-cloud-webrtc-sdk'
 import { RootState } from "../store.ts";
 
 
 export default function ActiveConversationsTable() {
-  const conversations: IStoredConversationState[] = useSelector(
+  const conversations = useSelector(
     (state: RootState) => state.conversations.activeConversations
   );
   const { endSession, toggleAudioMute, toggleHoldState } = useSdk();

@@ -1,9 +1,9 @@
 import { useSelector } from 'react-redux';
+import { RootState } from "../store.ts";
 import useAuth from '../hooks/useAuth';
 import Card from './Card';
 import './Header.css';
 import { GuxButton, GuxIcon } from 'genesys-spark-components-react';
-import { RootState } from "../store.ts";
 
 export default function Header() {
   const { logout } = useAuth();

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # Added
 * [STREAM-785](https://inindca.atlassian.net/browse/STREAM-785) - Added GitHub Actions for linting, testing, and building in an effort to make the build process more transparent and reliable.
 * [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
+* [STREAM-600](https://inindca.atlassian.net/browse/STREAM-600) - Add Video to SDK demo app
 
 # Changed
 * [STREAM-798](https://inindca.atlassian.net/browse/STREAM-798) - Bump streaming-client to version 19.3.0 to pick up the following fixes/changes:
@@ -28,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v11.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.1...v11.2.2)
 ### Added
 * [STREAM-63](https://inindca.atlassian.net/browse/STREAM-63) - Adds in logic to use `customHeaders` in during the API requests
-* [STREAM-600](https://inindca.atlassian.net/browse/STREAM-600) - Add Video to SDK demo app
 
 ### Fixed
 * [STREAM-534](https://inindca.atlassian.net/browse/STREAM-534) - Bump streaming-client to fix an issue where the sdpOverXmpp flag could be overwritten by simultaneous proposes.

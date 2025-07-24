@@ -74,7 +74,7 @@ export default function useSdk() {
       console.error('Must enter a valid phone number.');
       return;
     }
-    sdk.startSoftphoneSession({phoneNumber});
+    sdk.startSoftphoneSession({ phoneNumber });
   }
 
   function sessionStarted(callback: (arg0: VideoMediaSession) => Promise<void>) {
@@ -103,54 +103,46 @@ export default function useSdk() {
     dispatch(storeHandledPendingSession(pendingSession))
   }
 
-  function handleSessionStarted() {
-  }
+  function handleSessionStarted() {}
 
-  function startVideoConference(roomJid: string): Promise<{conversationId: string;}> {
+  function startVideoConference(roomJid: string): Promise<{ conversationId: string; }> {
     return sdk.startVideoConference(roomJid);
   }
 
-  function startVideoMeeting(roomJid: string): Promise<{conversationId: string;}> {
+  function startVideoMeeting(roomJid: string): Promise<{ conversationId: string; }> {
     return sdk.startVideoMeeting(roomJid);
   }
 
-  async function startMedia(opts: {video: boolean, audio: boolean}): Promise<MediaStream> {
+  async function startMedia(opts: { video: boolean, audio: boolean }): Promise<MediaStream> {
     return await sdk.media.startMedia(opts);
   }
 
-  function handleSessionEnded(_session: IExtendedMediaSession) {
-  }
+  function handleSessionEnded(_session: IExtendedMediaSession) {}
 
-  function handleDisconnected() {
-  }
+  function handleDisconnected() {}
 
-  function handleConnected() {
-  }
+  function handleConnected() {}
 
   function handleConversationUpdate(update: ISdkConversationUpdateEvent): void {
     dispatch(updateConversations(update));
   }
 
   function endSession(conversationId: string): void {
-    sdk.endSession({conversationId});
+    sdk.endSession({ conversationId });
   }
-
   async function toggleAudioMute(mute: boolean, conversationId: string): Promise<void> {
-    await sdk.setAudioMute({mute, conversationId});
+    await sdk.setAudioMute({ mute, conversationId });
   }
-
   async function toggleVideoMute(mute: boolean, conversationId: string): Promise<void> {
-    await sdk.setVideoMute({mute, conversationId});
+    await sdk.setVideoMute({ mute, conversationId });
   }
-
   async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
-    await sdk.setConversationHeld({held, conversationId});
+    await sdk.setConversationHeld({ held, conversationId });
   }
 
   function handleMediaStateChange(state: SdkMediaStateWithType): void {
     dispatch(updateMediaState(state));
   }
-
   function handleGumRequest(_state: ISdkGumRequest): void {
     dispatch(updateGumRequests());
   }
@@ -161,15 +153,12 @@ export default function useSdk() {
       updateActiveSessions: true,
     });
   }
-
   function enumerateDevices(): void {
     sdk.media.enumerateDevices(true);
   }
-
   function requestDevicePermissions(type: 'audio' | 'video' | 'both'): void {
     sdk.media.requestMediaPermissions(type);
   }
-
   function updateAudioVolume(volume: number): void {
     sdk.updateAudioVolume(volume);
   }
@@ -188,15 +177,15 @@ export default function useSdk() {
 
     let presenceDefinition;
     if (onQueue) {
-      presenceDefinition = systemPresences.data.find((p: {name: string;}) => p.name === 'ON_QUEUE')
+      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'ON_QUEUE')
     } else {
-      presenceDefinition = systemPresences.data.find((p: {name: string;}) => p.name === 'AVAILABLE')
+      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'AVAILABLE')
     }
     const requestOptions: RequestApiOptions = {
       method: 'patch',
       host: sdk._config.environment || 'inindca.com',
       authToken: sdk._config.accessToken,
-      data: JSON.stringify({presenceDefinition})
+      data: JSON.stringify({ presenceDefinition })
     };
 
     await sdk._http.requestApi(`users/${sdk._personDetails.id}/presences/PURECLOUD`, requestOptions);

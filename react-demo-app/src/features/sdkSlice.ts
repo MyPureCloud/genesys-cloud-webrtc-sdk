@@ -4,7 +4,6 @@ import { GenesysCloudWebrtcSdk } from "genesys-cloud-webrtc-sdk";
 interface SdkState {
   sdk: GenesysCloudWebrtcSdk | null;
 }
-
 const initialState: SdkState = {
   sdk: null,
 }

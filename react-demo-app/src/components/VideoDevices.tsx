@@ -9,7 +9,8 @@ export default function VideoDevices() {
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
-  // We have to do this because we are not using directory service
+  // We have to do this to set Device defaults on boot
+  // because we are not using directory service
   const selectedDeviceId = sdk?._config?.defaults?.videoDeviceId || deviceState.videoDevices[0]?.deviceId;
   if (sdk && deviceState.videoDevices.length && !sdk?._config?.defaults?.videoDeviceId) {
     updateDefaultDevices({ videoDeviceId: selectedDeviceId });
@@ -36,7 +37,6 @@ export default function VideoDevices() {
       return <p>No video devices.</p>;
     }
   }
-
   return (
     <>
       <Card className="video-devices-container">
