@@ -28,9 +28,6 @@ export default function VideoElements({
   const localUserId = activeVideoConv?.session?.fromUserId;
   const activeParts = activeVideoConv?.participantsUpdate?.activeParticipants;
   const localParticipant = activeParts?.find(p => p.userId === localUserId);
-  const remoteParticipants = activeParts?.filter(p => p.userId !== localUserId);
-  const localVideoVisible = localParticipant && !localParticipant?.videoMuted || localParticipant?.sharingScreen;
-
 
   useEffect(() => {
     if (!activeVideoConv) return;
@@ -39,7 +36,6 @@ export default function VideoElements({
     if (inboundChanged && videoRef.current && activeVideoConv.inboundStream) {
       videoRef.current.srcObject = activeVideoConv.inboundStream;
     }
-
 
     if (vanityVideoRef.current) {
       const isScreenSharing = localParticipant?.sharingScreen;
@@ -53,34 +49,10 @@ export default function VideoElements({
       }
     }
   }, [
-    activeVideoConv?.inboundStream,
-    activeVideoConv?.outboundStream,
-    activeVideoConv?.screenOutboundStream,
-    localParticipant?.sharingScreen,
-    videoRef,
-    vanityVideoRef
-  ]);
+    activeVideoConv?.inboundStream, activeVideoConv?.outboundStream, activeVideoConv?.screenOutboundStream,
+    localParticipant?.sharingScreen, videoRef, vanityVideoRef]);
 
   const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
-
-  function shouldShowLogo() {
-    const participantOnScreenId = participantIdOnScreen;
-    if (!participantOnScreenId) return false;
-    return !!remoteParticipants
-      ?.find(p => p.userId === participantOnScreenId)?.videoMuted;
-  }
-
-  function isRemoteUserOnScreenTalking(): boolean {
-    return !!participantIdOnScreen && isUserTalking(participantIdOnScreen);
-  }
-
-  function isLocalUserTalking(): boolean {
-    return isUserTalking(localUserId);
-  }
-
-  function isUserTalking(userId: string): boolean {
-    return !!activeVideoConv?.usersTalking?.[userId];
-  }
 
   if (activeVideoConv) {
     const inboundChanged = activeVideoConv.inboundStream !== videoRef.current?.srcObject;
@@ -99,19 +71,12 @@ export default function VideoElements({
     }
   }
 
-  const hideVideoElement = activeVideoConv?.session?.connectionState === 'connected' && activeVideoConv?.session?.state === 'active';
-
   return (
     <Card className="video-elements-card">
       <audio ref={audioRef} autoPlay/>
       <div className="video-sections-container">
-        <VideoElement showSvg={shouldShowLogo()} showWaitingForOthers={!remoteParticipants?.length && !!activeVideoConv}
-                      talking={isRemoteUserOnScreenTalking()} videoRef={videoRef}
-                      videoVisible={hideVideoElement} userId={participantIdOnScreen}/>
-        <VideoElement showSvg={!localVideoVisible} showWaitingForOthers={false} talking={isLocalUserTalking()}
-                      userId={localUserId}
-                      videoRef={vanityVideoRef}
-                      videoVisible={hideVideoElement}/>
+        <VideoElement videoRef={videoRef} userId={participantIdOnScreen}/>
+        <VideoElement videoRef={vanityVideoRef} userId={localUserId}/>
       </div>
     </Card>
   );

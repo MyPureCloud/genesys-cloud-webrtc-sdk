@@ -1,0 +1,17 @@
+.waiting-for-others {
+  color: #1b2c48;
+  background-color: #f3f3f3;
+}
+
+.border {
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.active-border {
+  border: 10px solid rgb(121 222 176);
+}
+
+.inactive-border {
+  border: 10px solid transparent;
+}
