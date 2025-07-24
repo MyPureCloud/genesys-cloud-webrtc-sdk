@@ -1,5 +1,6 @@
 import { IParticipantsUpdate, VideoMediaSession } from "genesys-cloud-webrtc-sdk";
 import { createAsyncThunk, createSlice, Draft } from "@reduxjs/toolkit";
+import { RootState } from "../store.ts";
 
 export interface IActiveVideoConversationsState { // rename this to remove the 's'?
   conversationId: string;
@@ -27,7 +28,7 @@ const initialState: IVideoConversationsState = {
 export const toggleVideoMute = createAsyncThunk(
   'videoConversations/toggleVideoMute',
   async (data: {mute: boolean; conversationId: string, userId: string}, thunkAPI) => {
-    const state = thunkAPI.getState() as any;
+    const state = thunkAPI.getState() as RootState;
     const sdk = state.sdk.sdk;
     if (!sdk) {
       throw new Error('SDK is not initialized');
