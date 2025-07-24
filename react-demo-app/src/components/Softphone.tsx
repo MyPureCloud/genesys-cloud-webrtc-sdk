@@ -8,13 +8,14 @@ import ActiveConversationsTable from "./ActiveConversationsTable";
 import HandledPendingSessionsTable from "./HandledPendingSessionsTable";
 import StationDetails from "./StationDetails";
 import { useSelector } from "react-redux";
+import { RootState } from "../store.ts";
 
 export default function Softphone() {
   const [phoneNumber, setPhoneNumber] = useState("*86");
   const [onQueueStatus, setOnQueueStatus] = useState(false);
   const { startSoftphoneSession, updateOnQueueStatus, disconnectPersistentConnection } = useSdk();
-  const sdk = useSelector(state => state.sdk.sdk);
-  const [persistentConnectionEnabled] = useState(sdk.station.webRtcPersistentEnabled);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
+  const [persistentConnectionEnabled] = useState(sdk?.station?.webRtcPersistentEnabled);
 
   function placeCall(event?: FormEvent<HTMLFormElement>) {
     if (event) {

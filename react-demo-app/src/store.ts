@@ -5,8 +5,7 @@ import videoConversationReducer from './features/videoConversationsSlice';
 import devicesReducer from './features/devicesSlice';
 import sdkReducer from './features/sdkSlice';
 
-
-export const store= configureStore({
+export const store = configureStore({
   reducer: {
     auth: authReducer,
     conversations: conversationsReducer,
@@ -16,3 +15,6 @@ export const store= configureStore({
   },
   middleware: getDefaultMiddleware => getDefaultMiddleware({serializableCheck: false})
 })
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

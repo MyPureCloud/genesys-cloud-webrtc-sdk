@@ -10,15 +10,16 @@ import Card from "../Card.tsx";
 import './Video.css'
 import './ActiveVideoConversationsTable.css'
 import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
+import { RootState } from "../../store.ts";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: unknown) => state.videoConversations.activeVideoConversations
+    (state: RootState) => state.videoConversations.activeVideoConversations
   );
   const dispatch = useDispatch();
   const {endSession} = useSdk();
   const currentlyDisplayedConversationId = useSelector(
-    (state: unknown) => state.videoConversations.currentlyDisplayedConversationId
+    (state: RootState) => state.videoConversations.currentlyDisplayedConversationId
   );
 
   function getParticipantUsingDemoApp(index: number) {

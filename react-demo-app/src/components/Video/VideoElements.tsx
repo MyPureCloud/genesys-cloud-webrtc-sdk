@@ -4,6 +4,7 @@ import {
   IVideoConversationsState
 } from "../../features/videoConversationsSlice.ts";
 import { useSelector } from "react-redux";
+import { RootState } from "../../store.ts";
 import './VideoElements.css'
 import VideoElement from "./VideoElement.tsx";
 
@@ -17,7 +18,7 @@ export default function VideoElements({
   vanityVideoRef: RefObject<HTMLVideoElement>,
 }) {
   const videoConversations: IVideoConversationsState = useSelector(
-    (state: unknown) => state.videoConversations
+    (state: RootState) => state.videoConversations
   );
 
   const activeVideoConvs = videoConversations.activeVideoConversations;

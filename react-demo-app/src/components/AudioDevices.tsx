@@ -4,13 +4,14 @@ import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-rea
 import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from "../store.ts";
 
 export default function AudioDevices() {
   const { updateDefaultDevices, updateAudioVolume } = useSdk();
-  const deviceState = useSelector((state) => state.devices.currentState);
-  const sdk = useSelector(state => state.sdk.sdk);
+  const deviceState = useSelector((state: RootState) => state.devices.currentState);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
   const [audioVolume, setAudioVolume] = useState(
-    sdk._config.defaults.audioVolume
+    sdk?._config?.defaults?.audioVolume
   );
 
   function updateVolume(volume: number) {

@@ -1,10 +1,11 @@
 import { GuxTable } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from "../store.ts";
 
 export default function HandledPendingSessionsTable() {
   const handledPendingSessions = useSelector(
-    (state) => state.conversations.handledPendingSessions
+    (state: RootState) => state.conversations.handledPendingSessions
   );
 
   function generateHandledPendingSessionsTable() {

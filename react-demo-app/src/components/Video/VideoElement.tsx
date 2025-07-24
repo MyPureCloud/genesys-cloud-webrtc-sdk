@@ -1,17 +1,18 @@
 import { RefObject } from "react";
-import { IVideoConversationsState } from "../../features/videoConversationsSlice.ts";
+import { IActiveVideoConversationsState, IVideoConversationsState } from "../../features/videoConversationsSlice.ts";
 import { useSelector } from "react-redux";
 import './VideoElement.css'
+import { RootState } from "../../store.ts";
 
 export default function VideoElement({ videoRef, userId }: {
   videoRef: RefObject<HTMLVideoElement>,
   userId: string | undefined
 }) {
   const SVG_LINK = "https://dhqbrvplips7x.cloudfront.net/volt/1.12.1-178/assets/default-person.svg"
-  const videoConversations: IVideoConversationsState = useSelector((state: any) => state.videoConversations);
+  const videoConversations: IVideoConversationsState = useSelector((state: RootState) => state.videoConversations);
 
-  const activeVideoConv = videoConversations.activeVideoConversations
-      .find(conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId)
+  const activeVideoConv: IActiveVideoConversationsState = videoConversations.activeVideoConversations.find(
+    conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId)
     || videoConversations.activeVideoConversations[videoConversations.activeVideoConversations.length - 1];
   const videoVisible = activeVideoConv?.session?.connectionState === 'connected' && activeVideoConv?.session?.state === 'active';
 

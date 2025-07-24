@@ -2,11 +2,12 @@ import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-rea
 import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from "../store.ts";
 
 export default function OutputDevices() {
   const { updateDefaultDevices } = useSdk();
-  const deviceState = useSelector((state) => state.devices.currentState);
-  const sdk = useSelector(state => state.sdk.sdk);
+  const deviceState = useSelector((state: RootState) => state.devices.currentState);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
   // We have to do this because we are not using directory service
   const selectedDeviceId = sdk?._config?.defaults?.outputDeviceId || deviceState.outputDevices[0]?.deviceId;

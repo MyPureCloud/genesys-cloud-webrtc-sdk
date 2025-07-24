@@ -5,11 +5,12 @@ import { GuxButton, GuxTable, GuxRadialLoading } from 'genesys-spark-components-
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import {IStoredConversationState} from 'genesys-cloud-webrtc-sdk'
+import { RootState } from "../store.ts";
 
 
 export default function ActiveConversationsTable() {
   const conversations: IStoredConversationState[] = useSelector(
-    (state) => state.conversations.activeConversations
+    (state: RootState) => state.conversations.activeConversations
   );
   const { endSession, toggleAudioMute, toggleHoldState } = useSdk();
   const [holdLabels, setHoldLabels ] = useState<Array<string | JSX.Element>>([]);

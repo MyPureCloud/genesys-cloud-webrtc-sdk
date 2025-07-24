@@ -16,6 +16,7 @@ import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
 import { RequestApiOptions, IPendingSession } from 'genesys-cloud-streaming-client';
+import { RootState } from "../store.ts";
 
 interface IAuthData {
   token: string;
@@ -28,7 +29,7 @@ interface IAuthData {
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch();
-  const sdk: GenesysCloudWebrtcSdk = useSelector((state) => state.sdk.sdk);
+  const sdk: GenesysCloudWebrtcSdk = useSelector((state: RootState) => state.sdk.sdk!);
 
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {

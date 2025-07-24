@@ -2,10 +2,10 @@ import './App.css';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import { useSelector } from 'react-redux';
-import { IAuthState } from './features/authSlice';
+import { RootState } from "./store.ts";
 
 function App() {
-  const isAuthenticated = useSelector((state: IAuthState) => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   function renderDashboard() {
     if (isAuthenticated) {
