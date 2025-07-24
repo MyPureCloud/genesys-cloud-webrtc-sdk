@@ -42,7 +42,7 @@ export default function useVideoSession({ audioRef, videoRef, roomJid }: UseVide
     if (memberStatusMessage?.params?.incomingStreams) {
       const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
         const appId = stream.appId || stream.appid;
-        return { userId: appId?.sourceUserId }
+        return appId?.sourceUserId
       });
       dispatch(setActiveParticipants({
         conversationId: convId,

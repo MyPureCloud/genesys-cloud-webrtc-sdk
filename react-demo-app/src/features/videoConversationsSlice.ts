@@ -10,11 +10,11 @@ export interface IActiveVideoConversationsState { // rename this to remove the '
   inboundStream?: MediaStream;
   outboundStream?: MediaStream;
   screenOutboundStream?: MediaStream;
-  activeParticipants?: any[];
+  activeParticipants?: string[];
   usersTalking?: {[userId: string]: boolean};
 }
 
-interface IVideoConversationsState {
+export interface IVideoConversationsState {
   activeVideoConversations: IActiveVideoConversationsState[];
   currentlyDisplayedConversationId: string | null;
 }

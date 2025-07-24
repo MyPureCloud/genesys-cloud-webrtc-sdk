@@ -1,10 +1,11 @@
 import Card from "../Card.tsx";
 import { RefObject, useEffect } from "react";
 import {
-  IActiveVideoConversationsState
+  IVideoConversationsState
 } from "../../features/videoConversationsSlice.ts";
 import { useSelector } from "react-redux";
 import './VideoElements.css'
+import VideoElement from "./VideoElement.tsx";
 
 export default function VideoElements({
                                         audioRef,
@@ -15,15 +16,14 @@ export default function VideoElements({
   videoRef: RefObject<HTMLVideoElement>,
   vanityVideoRef: RefObject<HTMLVideoElement>,
 }) {
-  const videoConversations: IActiveVideoConversationsState[] = useSelector(
-    (state: unknown) => state.videoConversations.activeVideoConversations
+  const videoConversations: IVideoConversationsState = useSelector(
+    (state: unknown) => state.videoConversations
   );
-  const currentlyDisplayedConversationId = useSelector(
-    (state: unknown) => state.videoConversations.currentlyDisplayedConversationId
-  );
-  const activeVideoConv = videoConversations
-      .find(conv => conv.conversationId === currentlyDisplayedConversationId)
-    || videoConversations[videoConversations.length - 1];
+
+  const activeVideoConvs = videoConversations.activeVideoConversations;
+  const activeVideoConv = activeVideoConvs
+      .find(conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId)
+    || activeVideoConvs[activeVideoConvs.length - 1];
 
   const localUserId = activeVideoConv?.session?.fromUserId;
   const activeParts = activeVideoConv?.participantsUpdate?.activeParticipants;
@@ -61,21 +61,25 @@ export default function VideoElements({
     vanityVideoRef
   ]);
 
+  const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
+
   function shouldShowLogo() {
-    const id = activeVideoConv?.activeParticipants?.[0];
-    if (!id) return false;
-    const activeParticipantHasCameraOn = !remoteParticipants?.find(p => p.userId === id?.userId)?.videoMuted;
-    return activeParticipantHasCameraOn ? false : true;
+    const participantOnScreenId = participantIdOnScreen;
+    if (!participantOnScreenId) return false;
+    return !!remoteParticipants
+      ?.find(p => p.userId === participantOnScreenId)?.videoMuted;
   }
 
-  function isRemoteUserOnScreenTalking() {
-    const activeParticipantId = activeVideoConv?.activeParticipants?.[0]?.userId;
-    const isActiveParticipantTalking = activeVideoConv?.usersTalking?.[activeParticipantId]
-    return !!isActiveParticipantTalking;
+  function isRemoteUserOnScreenTalking(): boolean {
+    return !!participantIdOnScreen && isUserTalking(participantIdOnScreen);
   }
 
-  function isLocalUserTalking() {
-    return activeVideoConv?.usersTalking?.[localUserId]
+  function isLocalUserTalking(): boolean {
+    return isUserTalking(localUserId);
+  }
+
+  function isUserTalking(userId: string): boolean {
+    return !!activeVideoConv?.usersTalking?.[userId];
   }
 
   if (activeVideoConv) {
@@ -95,65 +99,19 @@ export default function VideoElements({
     }
   }
 
-  const defaultPersonSvg = <img src={`https://dhqbrvplips7x.cloudfront.net/volt/1.12.1-178/assets/default-person.svg`}/>
+  const hideVideoElement = activeVideoConv?.session?.connectionState === 'connected' && activeVideoConv?.session?.state === 'active';
 
   return (
     <Card className="video-elements-card">
       <audio ref={audioRef} autoPlay/>
       <div className="video-sections-container">
-        <div className="video-section">
-          <h4>Remote Video</h4>
-          <div style={{
-            borderRadius: '4px',
-            boxSizing: "border-box",
-            border: isRemoteUserOnScreenTalking() ? '10px solid rgb(121 222 176)' : '10px solid transparent'
-          }}>
-            <div className="video-element-container">
-              <div style={{
-                height: "100%", width: "100%",
-                visibility: activeVideoConv?.session?.connectionState === 'connected' &&
-                activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden',
-              }}>
-                <video ref={videoRef} autoPlay playsInline
-                />
-                {shouldShowLogo() &&
-                    <div className="logo-container">
-                      {defaultPersonSvg}
-                    </div>}
-                {!remoteParticipants?.length
-                  ? <div className="logo-container"
-                         style={{ color: "#1b2c48", backgroundColor: "#f3f3f3", width: "100%", height: "100%" }}>
-                    <h3>Waiting for others to connect...</h3>
-                  </div>
-                  : null}
-              </div>
-            </div>
-          </div>
-          {activeVideoConv && !!remoteParticipants?.length && <span style={{ color: "#1b2c48", fontWeight: 'bold' }}>User id: {activeVideoConv?.activeParticipants?.[0]?.userId}</span>}
-        </div>
-        <div className="video-section">
-          <h4>Local Video</h4>
-          <div style={{
-            borderRadius: '4px',
-            boxSizing: "border-box",
-            border: isLocalUserTalking() ? '10px solid rgb(121 222 176)' : '10px solid transparent'
-          }}>
-            <div className="video-element-container">
-              <div style={{
-                height: "100%", width: "100%",
-                visibility: activeVideoConv?.session?.connectionState === 'connected' &&
-                activeVideoConv?.session?.state === 'active' ? 'visible' : 'hidden'
-              }}>
-                <video ref={vanityVideoRef} autoPlay playsInline muted={true}/>
-                {activeVideoConv && !localVideoVisible &&
-                    <div className="logo-container">
-                      {defaultPersonSvg}
-                    </div>}
-              </div>
-            </div>
-          </div>
-          {activeVideoConv && <span style={{ color: "#1b2c48", fontWeight: 'bold' }}>User id: {localUserId}</span>}
-        </div>
+        <VideoElement showSvg={shouldShowLogo()} showWaitingForOthers={!remoteParticipants?.length && !!activeVideoConv}
+                      talking={isRemoteUserOnScreenTalking()} videoRef={videoRef}
+                      videoVisible={hideVideoElement} userId={participantIdOnScreen}/>
+        <VideoElement showSvg={!localVideoVisible} showWaitingForOthers={false} talking={isLocalUserTalking()}
+                      userId={localUserId}
+                      videoRef={vanityVideoRef}
+                      videoVisible={hideVideoElement}/>
       </div>
     </Card>
   );
