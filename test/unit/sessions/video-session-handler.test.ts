@@ -12,6 +12,11 @@ import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, V
 import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
 import { ConversationUpdate, GenesysDataChannelMessageParams, ICallStateFromParticipant, IConversationParticipantFromEvent, IParticipantVideo, IPersonDetails } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { jwtDecode } from 'jwt-decode';
+
+jest.mock('jwt-decode', () => ({
+  jwtDecode: jest.fn()
+}));
 
 let handler: VideoSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
@@ -236,7 +241,7 @@ describe('handleConversationUpdate', () => {
 
     expect(session.emit).toHaveBeenCalledTimes(1);
 
-    let emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
     expect(emittedUpdate.activeParticipants.length).toEqual(1);
     expect(emittedUpdate.removedParticipants.length).toEqual(0);
   });
@@ -591,6 +596,63 @@ describe('startSession', () => {
     expect(logSpy).toHaveBeenCalledWith('Failed to request video meeting session', expect.anything(), undefined);
     expect(Object.values(handler.requestedMeetingSessions).length).toBe(0);
   });
+
+  describe('startSession with JWT', () => {
+    const mockJwt = 'test.jwt.token';
+    const mockJid = 'test-jid';
+    const mockConversationId = 'test-conversation-id';
+    const mockSourceCommunicationId = 'test-source-id';
+
+    beforeEach(() => {
+      mockSdk._config.jwt = mockJwt;
+      (mockSdk._streamingConnection as any).webrtcSessions = {
+        initiateRtcSession: jest.fn().mockResolvedValue(undefined)
+      };
+    });
+
+    it('should start video session with JWT data', async () => {
+      (jwtDecode as jest.Mock).mockReturnValue({
+        data: {
+          jid: mockJid,
+          conversationId: mockConversationId,
+          sourceCommunicationId: mockSourceCommunicationId
+        }
+      });
+
+      const result = await handler.startSession({
+        jid: mockJid,
+        sessionType: SessionTypes.collaborateVideo
+      });
+
+      expect(mockSdk._streamingConnection.webrtcSessions.initiateRtcSession).toHaveBeenCalledWith({
+        jid: mockJid,
+        conversationId: mockConversationId,
+        sourceCommunicationId: mockSourceCommunicationId,
+        mediaPurpose: SessionTypes.collaborateVideo,
+        sessionType: handler.sessionType
+      });
+
+      expect(result).toEqual({ conversationId: mockConversationId });
+    });
+
+    it('should handle malformed JWT data', async () => {
+      (jwtDecode as jest.Mock).mockReturnValue({
+        data: {}
+      });
+
+      const result = await handler.startSession({
+        jid: mockJid,
+        sessionType: SessionTypes.collaborateVideo
+      });
+
+      expect(result).toEqual({ conversationId: undefined });
+    });
+
+    afterEach(() => {
+      delete mockSdk._config.jwt;
+      jest.resetAllMocks();
+    });
+  });
 });
 
 describe('handlePropose', () => {
@@ -669,6 +731,8 @@ describe('handlePropose', () => {
     const jid = 'peer-123@conference.com';
 
     jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(true);
+    jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(false);
 
     const emitSpy = jest.fn();
 
@@ -694,6 +758,8 @@ describe('handlePropose', () => {
     const jid = 'peer-123@conference.com';
 
     jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(true);
+    jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(false);
 
     const emitSpy = jest.fn();
 
@@ -718,6 +784,8 @@ describe('handlePropose', () => {
     const jid = 'agent-123@conference.com';
 
     jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(false);
+    jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(true);
 
     const emitSpy = jest.fn();
 

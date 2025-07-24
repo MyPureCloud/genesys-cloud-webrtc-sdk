@@ -4,7 +4,7 @@ jest.mock('genesys-cloud-client-logger', () => {
   return loggerConstructorSpy;
 });
 
-import StreamingClient, { IPendingSession } from 'genesys-cloud-streaming-client';
+import StreamingClient from 'genesys-cloud-streaming-client';
 import { Logger } from 'genesys-cloud-client-logger';
 import * as clientPrivate from '../../src/client-private';
 import * as windows11Utils from '../../src/windows11-first-session-hack';
@@ -28,7 +28,8 @@ import {
   isCustomerData,
   IStation,
   IPersonDetails,
-  ISessionIdAndConversationId
+  ISessionIdAndConversationId,
+  VideoSessionHandler
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
@@ -60,7 +61,7 @@ describe('Client', () => {
     constructSdk = (config?: ISdkConfig) => {
       /* if we have no config, then use some defaults */
       if (config === undefined) {
-        config = { logger: mockLogger as any, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true };
+        config = { logger: mockLogger as any, accessToken: 'secure', jwt: 'test-jwt', environment: 'mypurecloud.com', optOutOfTelemetry: true };
       }
       /* if we have `truthy`, make sure we always have the mock logger */
       else if (config) {
@@ -229,7 +230,102 @@ describe('Client', () => {
         await sdk.startVideoConference('123');
         fail('should have failed');
       } catch (e) {
-        expect(e).toEqual(new Error('video conferencing not supported for guests'));
+        expect(e).toEqual(new Error('Video conferencing requires authentication via JWT or access token.'));
+        expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
+      }
+    });
+
+    it('should allow video conference with JWT authentication', async () => {
+      const testJwt = 'test.jwt.token';
+      sdk = constructSdk({ jwt: testJwt });
+
+      sdk._personDetails = {
+        id: 'test-user-id',
+        name: 'Test User',
+        chat: {
+          jabberId: 'test-user@test.com'
+        }
+      };
+
+      sessionManagerMock.startSession.mockResolvedValue({});
+      await sdk.startVideoConference('test-room@conference.com');
+
+      expect(sessionManagerMock.startSession).toBeCalledWith({
+        jid: 'test-room@conference.com',
+        sessionType: SessionTypes.collaborateVideo
+      });
+    });
+
+    it('should include JWT in video session request', async () => {
+      const testJwt = 'test.jwt.token';
+      const mockDecodedJwt = {
+        data: {
+          jid: 'test-user@test.com',
+          conversationId: 'test-conversation-id',
+          sourceCommunicationId: 'test-source-comm-id'
+        }
+      };
+
+      jwtDecodeSpy.mockReturnValue(mockDecodedJwt);
+
+      sdk = constructSdk({ jwt: testJwt });
+      const handler = new VideoSessionHandler(sdk, sessionManagerMock);
+
+      sdk._personDetails = {
+        id: 'test-user-id',
+        name: 'Test User',
+        chat: {
+          jabberId: 'test-user@test.com'
+        }
+      };
+
+      const mockInitiateRtcSession = jest.fn().mockResolvedValue(undefined);
+      sdk._streamingConnection = {
+        webrtcSessions: {
+          initiateRtcSession: mockInitiateRtcSession
+        },
+        disconnect: jest.fn().mockResolvedValue(undefined)
+      } as any;
+
+      const requestApiSpy = jest.spyOn(utils, 'requestApi');
+
+      const result = await handler.startSession({
+        jid: 'test-room@conference.com',
+        sessionType: SessionTypes.collaborateVideo
+      });
+
+      expect(mockInitiateRtcSession).toHaveBeenCalledWith({
+        jid: mockDecodedJwt.data.jid,
+        conversationId: mockDecodedJwt.data.conversationId,
+        sourceCommunicationId: mockDecodedJwt.data.sourceCommunicationId,
+        mediaPurpose: SessionTypes.collaborateVideo,
+        sessionType: SessionTypes.collaborateVideo
+      });
+
+      expect(result).toEqual({
+        conversationId: mockDecodedJwt.data.conversationId
+      });
+
+      expect(requestApiSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('startVideoMeeting()', () => {
+    it('should call session manager to start video meeting', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.startSession.mockResolvedValue({});
+      await sdk.startVideoMeeting('123abc');
+      expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
+    });
+
+    it('should throw if guest user', async () => {
+      sdk = constructSdk({ organizationId: 'some-org' }); // no access_token is a guest user
+      try {
+        await sdk.startVideoMeeting('123');
+        fail('should have failed');
+      } catch (e) {
+        expect(e).toEqual(new Error('video conferencing meetings not supported for guests'));
         expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
       }
     });
@@ -1025,6 +1121,37 @@ describe('Client', () => {
     });
   });
 
+  describe('setJwt()', () => {
+    it('should set _config.jwt and pass it to logger and streamingclient', () => {
+      sdk = constructSdk();
+
+      expect(sdk._config.jwt).toBe('test-jwt');
+      expect(sdk._streamingConnection.config.jwt).toBe(undefined);
+
+      const newToken = 'hi-jwt-token';
+      sdk.setJwt(newToken);
+
+      expect(sdk._config.jwt).toBe(newToken);
+      // expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
+      expect(sdk._streamingConnection.config.jwt).toBe(newToken);
+    });
+
+    it('should not pass it to the streaming-client if it does not exist', () => {
+      sdk = constructSdk();
+
+      /* mock that we haven't initialized yet */
+      delete (sdk as any)._streamingConnection;
+      expect(sdk._config.jwt).toBe('test-jwt');
+
+      const newToken = 'hi-jwt-token';
+      sdk.setJwt(newToken);
+
+      expect(sdk._config.jwt).toBe(newToken);
+      // expect(mockLogger.setAccessToken).toHaveBeenCalledWith(newToken);
+      expect(sdk._streamingConnection).toBeFalsy();
+    });
+  });
+
   describe('setDefaultAudioStream()', () => {
     it('should call through to media.setDefaultAudioStream()', () => {
       sdk = constructSdk();
@@ -1081,7 +1208,7 @@ describe('Client', () => {
     });
 
     it('should return false if no customerData is present', () => {
-      let customerData: any = undefined;
+      const customerData: any = undefined;
       expect(isCustomerData(customerData)).toBe(false);
     });
 

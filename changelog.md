@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...HEAD)
 # Added
 * [STREAM-785](https://inindca.atlassian.net/browse/STREAM-785) - Added GitHub Actions for linting, testing, and building in an effort to make the build process more transparent and reliable.
+* [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
 
 # Changed
 * [STREAM-798](https://inindca.atlassian.net/browse/STREAM-798) - Bump streaming-client to version 19.3.0 to pick up the following fixes/changes:
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * [#923](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/923) - Update docs for `useServerSidePings` to reflect the correct default value of `false`.
+* [STREAM-804](https://inindca.atlassian.net/browse/STREAM-804) - Bump client-logger to `4.2.17` and axios to `1.10.0` to address Snyk vulnerabilities. Added Github action for auditing dependencies.
 
 # [v11.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.2...v11.2.3)
 ### Fixed
