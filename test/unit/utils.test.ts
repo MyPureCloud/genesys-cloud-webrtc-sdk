@@ -327,6 +327,13 @@ describe('jid utils', () => {
     expect(utils.isPeerVideoJid('sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isPeerVideoJid('peer-sdkfjk@conference.test.com')).toBeTruthy();
   });
+
+  it('isVideoJid', () => {
+    expect(utils.isAgentVideoJid('agent-@conference.test.com')).toBeTruthy();
+    expect(utils.isAgentVideoJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isAgentVideoJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isAgentVideoJid('sdkfjk@test.com')).toBeFalsy();
+  });
 });
 
 describe('logPendingSession()', () => {

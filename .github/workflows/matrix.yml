@@ -1,0 +1,79 @@
+name: Test Matrix
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18, 20]
+        operating-system:
+          - ubuntu-latest
+          - windows-latest
+          # - macos-latest -> Rollup is not supported on ARM64 - https://github.com/npm/cli/issues/4828
+    runs-on: ${{ matrix.operating-system }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Remove old install # Rollup bug workaround ->  https://github.com/npm/cli/issues/4828
+        shell: pwsh
+        run: |
+          if (Test-Path "node_modules") { Remove-Item -Recurse -Force "node_modules" }
+          if (Test-Path "package-lock.json") { Remove-Item -Force "package-lock.json" }
+      - name: Restore node_modules cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
+      - name: Install dependencies
+        run: npm install
+      - name: Cache node_modules (post-install)
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+      - name: Build
+        run: npm run build
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18, 20]
+        operating-system: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.operating-system }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install and Cache Dependencies
+        uses: ./.github/actions/cached-deps
+      - name: Test
+        run: npm run test
+
+  check:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build matrix status
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - name: All jobs succeeded
+        if: contains(needs.*.result, 'failure') != true && contains(needs.*.result, 'cancelled') != true
+        run: echo "All jobs completed successfully!"
