@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...HEAD)
+
+# [v11.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...v11.3.0)
 # Added
 * [STREAM-785](https://inindca.atlassian.net/browse/STREAM-785) - Added GitHub Actions for linting, testing, and building in an effort to make the build process more transparent and reliable.
 * [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
