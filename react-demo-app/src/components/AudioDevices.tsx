@@ -11,7 +11,7 @@ export default function AudioDevices() {
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
   const [audioVolume, setAudioVolume] = useState(
-    sdk?._config?.defaults?.audioVolume
+    sdk._config.defaults?.audioVolume
   );
 
   function updateVolume(volume: number) {
@@ -20,8 +20,8 @@ export default function AudioDevices() {
   }
 
   // We have to do this because we are not using directory service
-  const selectedDeviceId = sdk?._config?.defaults?.audioDeviceId || deviceState.audioDevices[0]?.deviceId;
-  if (sdk && deviceState.audioDevices.length && !sdk._config?.defaults?.audioDeviceId) {
+  const selectedDeviceId = sdk._config.defaults?.audioDeviceId || deviceState.audioDevices[0]?.deviceId;
+  if (sdk && deviceState.audioDevices.length && !sdk._config.defaults?.audioDeviceId) {
     updateDefaultDevices({ audioDeviceId: selectedDeviceId });
   }
 

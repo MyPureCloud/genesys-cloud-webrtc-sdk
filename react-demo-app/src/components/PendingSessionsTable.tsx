@@ -13,9 +13,9 @@ export default function PendingSessionsTable() {
 
   function handlePendingSession(accept: boolean, conversationId: string): void {
     if (accept) {
-      sdk?.acceptPendingSession({ conversationId });
+      sdk.acceptPendingSession({ conversationId });
     } else {
-     sdk?.rejectPendingSession({ conversationId });
+     sdk.rejectPendingSession({ conversationId });
     }
   }
 

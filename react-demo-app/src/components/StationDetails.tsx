@@ -6,7 +6,7 @@ import { RootState } from "../store.ts";
 
 export default function StationDetails() {
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
-  const [stationDetails] = useState(sdk?.station);
+  const [stationDetails] = useState(sdk.station);
 
 
   return (

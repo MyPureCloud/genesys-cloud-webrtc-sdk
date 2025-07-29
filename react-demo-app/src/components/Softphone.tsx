@@ -15,7 +15,7 @@ export default function Softphone() {
   const [onQueueStatus, setOnQueueStatus] = useState(false);
   const { startSoftphoneSession, updateOnQueueStatus, disconnectPersistentConnection } = useSdk();
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
-  const [persistentConnectionEnabled] = useState(sdk?.station?.webRtcPersistentEnabled);
+  const [persistentConnectionEnabled] = useState(sdk.station?.webRtcPersistentEnabled);
 
   function placeCall(event?: FormEvent<HTMLFormElement>) {
     if (event) {

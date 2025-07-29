@@ -32,12 +32,12 @@ export const conversationsSlice = createSlice({
       const currentConversations = action.payload.current;
       state.activeConversations = currentConversations;
     },
-    // removeConversations: (state, action) => {
-    //   const removedConversations = action.payload.removed;
-    //   for (const id in removedConversations) {
-    //     delete state.activeConversations[id];
-    //   }
-    // },
+    removeConversations: (state, action) => {
+      const removedConversations = action.payload.removed;
+      for (const id in removedConversations) {
+        delete state.activeConversations[id];
+      }
+    },
     storeHandledPendingSession: (state, action) => {
       const existingSession = state.handledPendingSessions.find(session => session.conversationId === action.payload.conversationId);
       if (!existingSession) {

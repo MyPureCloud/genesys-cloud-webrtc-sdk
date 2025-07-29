@@ -3,21 +3,20 @@ import { IActiveVideoConversationsState, IVideoConversationsState } from "../../
 import { useSelector } from "react-redux";
 import './VideoElement.css'
 import { RootState } from "../../store.ts";
+import { GuxIcon } from "genesys-spark-components-react";
 
 export default function VideoElement({ videoRef, userId }: {
   videoRef: RefObject<HTMLVideoElement>,
   userId: string | undefined
 }) {
-  const SVG_LINK = "https://dhqbrvplips7x.cloudfront.net/volt/1.12.1-178/assets/default-person.svg"
   const videoConversations: IVideoConversationsState = useSelector((state: RootState) => state.videoConversations);
 
-  const activeVideoConv: IActiveVideoConversationsState = videoConversations.activeVideoConversations.find(
-    conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId)
-    || videoConversations.activeVideoConversations[videoConversations.activeVideoConversations.length - 1];
-  const videoVisible = activeVideoConv?.session?.connectionState === 'connected' && activeVideoConv?.session?.state === 'active';
+  const activeVideoConv: IActiveVideoConversationsState | undefined = videoConversations.activeVideoConversations.find(
+    conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
+  const activeVideoCall = activeVideoConv?.session.connectionState === 'connected' && activeVideoConv?.session.state === 'active';
 
-  function isUserTalking(userId: string): boolean {
-    return !!activeVideoConv?.usersTalking?.[userId];
+  function isUserTalking(userId: string | undefined): boolean {
+    return !!userId && !!activeVideoConv?.usersTalking?.[userId];
   }
 
   function showSvg() {
@@ -42,23 +41,29 @@ export default function VideoElement({ videoRef, userId }: {
     return !remoteParticipants?.length && !!activeVideoConv
   }
 
-  return (
-    <div className={"video-section"}>
-      <h4>Title here</h4>
-      <div className={isUserTalking(userId || '') ? "border active-border" : "border inactive-border"}>
-        <div className="video-element-container">
-          <div style={{ visibility: videoVisible ? 'visible' : 'hidden' }}>
-            <video ref={videoRef} autoPlay playsInline/>
-            {showSvg() && <div className="logo-container">
-              <img src={SVG_LINK}/>
-            </div>}
-            {showWaitingForOthers() && <div className="logo-container waiting-for-others">
-              <h3>Waiting for others to connect...</h3>
-            </div>}
-          </div>
-        </div>
+  const cameraOffElement = () => {
+    return showSvg() && (<div className="logo-container">
+      <GuxIcon decorative iconName="fa/user-solid" size="large" className="gux-icon"/>
+    </div>)
+  }
+
+  const waitingForOthersElement = () => {
+    return showWaitingForOthers() && (
+      <div className="logo-container waiting-for-others">
+        <h3>Waiting for others to connect...</h3>
       </div>
-      {videoVisible && userId && <h4>User id: {userId}</h4>}
+    );
+  }
+
+  return activeVideoCall ? (
+    <div className={`border ${isUserTalking(userId) ? 'active-border' : 'inactive-border'}`}>
+      <div className="video-element-container">
+        <video ref={videoRef} autoPlay playsInline/>
+        {cameraOffElement()}
+        {waitingForOthersElement()}
+      </div>
     </div>
-  );
+  ) : (<div className="border inactive-border">
+    <div className=" video-element-container"/>
+  </div>);
 }

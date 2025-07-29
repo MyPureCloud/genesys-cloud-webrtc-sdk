@@ -7,7 +7,6 @@ import ActiveVideoConversationsTable from "./ActiveVideoConversationsTable.tsx";
 import useSdk from "../../hooks/useSdk.ts";
 import VideoElements from "./VideoElements.tsx";
 import useVideoForm from "../../hooks/useVideoForm.ts";
-import useVideoSession from "../../hooks/useVideoSession.ts";
 
 export default function Video() {
   const { startVideoConference, startVideoMeeting } = useSdk();
@@ -16,8 +15,6 @@ export default function Video() {
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
 
   const { roomJid, setRoomJid, error, startConv } = useVideoForm();
-
-  useVideoSession({ audioRef, videoRef, roomJid });
 
   return (
     <Card className="video-container">

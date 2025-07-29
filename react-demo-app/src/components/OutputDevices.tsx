@@ -10,8 +10,8 @@ export default function OutputDevices() {
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
   // We have to do this because we are not using directory service
-  const selectedDeviceId = sdk?._config?.defaults?.outputDeviceId || deviceState.outputDevices[0]?.deviceId;
-  if (sdk && deviceState.outputDevices.length && !sdk._config?.defaults?.outputDeviceId) {
+  const selectedDeviceId = sdk._config.defaults?.outputDeviceId || deviceState.outputDevices[0]?.deviceId;
+  if (sdk && deviceState.outputDevices.length && !sdk._config.defaults?.outputDeviceId) {
     updateDefaultDevices({ outputDeviceId: selectedDeviceId });
   }
 

@@ -23,8 +23,7 @@ export default function VideoElements({
 
   const activeVideoConvs = videoConversations.activeVideoConversations;
   const activeVideoConv = activeVideoConvs
-      .find(conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId)
-    || activeVideoConvs[activeVideoConvs.length - 1];
+    .find(conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
 
   const localUserId = activeVideoConv?.session?.fromUserId;
   const activeParts = activeVideoConv?.participantsUpdate?.activeParticipants;
@@ -72,12 +71,29 @@ export default function VideoElements({
     }
   }
 
+  const userId = (id: string | undefined) => {
+    if (!id) return;
+    if (activeVideoConv?.session.state !== 'active' ||
+      activeVideoConv?.session.connectionState !== 'connected') return;
+    return (
+      <h4>User id: {id}</h4>
+    );
+  }
+
   return (
     <Card className="video-elements-card">
       <audio ref={audioRef} autoPlay/>
       <div className="video-sections-container">
-        <VideoElement videoRef={videoRef} userId={participantIdOnScreen}/>
-        <VideoElement videoRef={vanityVideoRef} userId={localUserId}/>
+        <div className={"video-section"}>
+          <h4>Remote Video</h4>
+          <VideoElement videoRef={videoRef} userId={participantIdOnScreen}/>
+          {userId(participantIdOnScreen)}
+        </div>
+        <div className={"video-section"}>
+          <h4>Local Video</h4>
+          <VideoElement videoRef={vanityVideoRef} userId={localUserId}/>
+          {userId(localUserId)}
+        </div>
       </div>
     </Card>
   );
