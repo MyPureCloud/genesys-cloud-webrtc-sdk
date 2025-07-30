@@ -17,14 +17,15 @@ export default function ActiveVideoConversationsTable() {
     (state: RootState) => state.videoConversations.activeVideoConversations
   );
   const dispatch = useDispatch<AppDispatch>();
-  const { endSession } = useSdk();
+  const { endSession, getSession } = useSdk();
   const currentlyDisplayedConversationId = useSelector(
     (state: RootState) => state.videoConversations.currentlyDisplayedConversationId
   );
 
   function getParticipantUsingDemoApp(index: number) {
+    const session = getSession(videoConversations[index].conversationId);
     return videoConversations[index].participantsUpdate?.activeParticipants.find(
-      participant => videoConversations[index].session.fromUserId === participant.userId
+      participant => session.fromUserId === participant.userId
     );
   }
 
@@ -54,13 +55,15 @@ export default function ActiveVideoConversationsTable() {
     dispatch(setCurrentlyDisplayedConversation({ conversationId }));
   };
 
-  const isLocalPartSharingScreen: boolean[] = videoConversations.map(vc => {
-    const localPart = vc?.participantsUpdate?.activeParticipants?.find(p => p.userId === vc.session.fromUserId);
-    return !!localPart?.sharingScreen;
-  });
+  const isLocalPartSharingScreen: boolean[] =
+    videoConversations.map(vc => {
+      const localPart = vc.participantsUpdate?.activeParticipants
+        ?.find(p => p.userId === getSession(vc.conversationId).fromUserId);
+      return !!localPart?.sharingScreen;
+    });
 
   function handleScreenShare(index: number) {
-    const session = videoConversations[index].session;
+    const session = getSession(videoConversations[index].conversationId);
     if (isLocalPartSharingScreen[index]) {
       stopScreenShare(session);
     } else {
@@ -146,19 +149,23 @@ export default function ActiveVideoConversationsTable() {
           </tr>
           </thead>
           <tbody>
-          {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => (
-            <tr key={`${convo.conversationId}${convo.session.id}`}>
-              <td className="td-overflow">{convo.conversationId}</td>
-              <td className="td-overflow">{convo.session.originalRoomJid}</td>
-              <td>{convo.session.connectionState}</td>
-              <td>{convo.session.state}</td>
-              <td>{selectConvButton(convo)}</td>
-              <td>{screenShareButton(index)}</td>
-              <td>{audioMuteButton(index)}</td>
-              <td>{videoMuteButton(index)}</td>
-              <td>{endCallButton(convo.conversationId)}</td>
-            </tr>
-          ))}
+          {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => {
+            const session = getSession(convo.conversationId)
+            return (
+              <tr key={`${convo.conversationId}${session.id}`}>
+                <td className="td-overflow">{convo.conversationId}</td>
+                <td className="td-overflow">{session.originalRoomJid}</td>
+                <td>{session.connectionState}</td>
+                <td>{session.state}</td>
+                <td>{selectConvButton(convo)}</td>
+                <td>{screenShareButton(index)}</td>
+                <td>{audioMuteButton(index)}</td>
+                <td>{videoMuteButton(index)}</td>
+                <td>{endCallButton(convo.conversationId)}</td>
+              </tr>
+            );
+          })
+          }
           </tbody>
         </table>
       </GuxTable>

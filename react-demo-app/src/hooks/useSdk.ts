@@ -2,7 +2,7 @@ import {
   GenesysCloudWebrtcSdk, IExtendedMediaSession,
   ISdkConfig,
   ISdkConversationUpdateEvent, ISdkGumRequest, SdkMediaStateWithType,
-  SessionTypes, ISessionIdAndConversationId, MemberStatusMessage
+  SessionTypes, ISessionIdAndConversationId, MemberStatusMessage, VideoMediaSession
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -297,6 +297,10 @@ export default function useSdk() {
     sessions.forEach((session: IExtendedMediaSession) => sdk.forceTerminateSession(session.id));
   }
 
+  function getSession(conversationId: string): VideoMediaSession {
+    return sdk.sessionManager.getSession({conversationId}) as VideoMediaSession;
+  }
+
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -313,5 +317,6 @@ export default function useSdk() {
     disconnectPersistentConnection,
     startVideoConference,
     startVideoMeeting,
+    getSession
   };
 }

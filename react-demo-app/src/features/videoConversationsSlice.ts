@@ -1,18 +1,17 @@
-import { IParticipantsUpdate, VideoMediaSession } from "genesys-cloud-webrtc-sdk";
+import { IParticipantsUpdate } from "genesys-cloud-webrtc-sdk";
 import { createAsyncThunk, createSlice, Draft } from "@reduxjs/toolkit";
 import { RootState } from "../store.ts";
 
 export interface IActiveVideoConversationsState { // rename this to remove the 's'?
   conversationId: string;
-  session: VideoMediaSession;
-  participantsUpdate: IParticipantsUpdate;
+  participantsUpdate?: IParticipantsUpdate;
   loadingVideo: boolean;
   loadingAudio: boolean;
   inboundStream?: MediaStream;
   outboundStream?: MediaStream;
   screenOutboundStream?: MediaStream;
   activeParticipants?: string[];
-  usersTalking?: {[userId: string]: boolean};
+  usersTalking?: { [userId: string]: boolean };
 }
 
 export interface IVideoConversationsState {
@@ -27,23 +26,23 @@ const initialState: IVideoConversationsState = {
 
 export const toggleVideoMute = createAsyncThunk(
   'videoConversations/toggleVideoMute',
-  async (data: {mute: boolean; conversationId: string, userId: string}, thunkAPI) => {
+  async (data: { mute: boolean; conversationId: string, userId: string }, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const sdk = state.sdk.sdk;
 
-    await sdk.setVideoMute({mute: data.mute, conversationId: data.conversationId});
-    return {mute: data.mute, conversationId: data.conversationId, userId: data.userId};
+    await sdk.setVideoMute({ mute: data.mute, conversationId: data.conversationId });
+    return { mute: data.mute, conversationId: data.conversationId, userId: data.userId };
   }
 );
 
 export const toggleAudioMute = createAsyncThunk(
   'videoConversations/toggleAudioMute',
-  async (data: {mute: boolean; conversationId: string, userId: string}, thunkAPI) => {
+  async (data: { mute: boolean; conversationId: string, userId: string }, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const sdk = state.sdk.sdk;
 
-    await sdk.setAudioMute({mute: data.mute, conversationId: data.conversationId});
-    return {mute: data.mute, conversationId: data.conversationId, userId: data.userId};
+    await sdk.setAudioMute({ mute: data.mute, conversationId: data.conversationId });
+    return { mute: data.mute, conversationId: data.conversationId, userId: data.userId };
   }
 );
 
@@ -53,13 +52,12 @@ function findConvInState(state: Draft<IVideoConversationsState>, convId: string)
   return conversation;
 }
 
-
 export const videoConversationsSlice = createSlice({
   name: 'videoConversations',
   initialState,
   reducers: {
     addVideoConversationToActive: (state, action) => {
-      const newConversation = {...action.payload, loadingVideo: false, loadingAudio: false} // change this back to false if broken
+      const newConversation = { ...action.payload, loadingVideo: false, loadingAudio: false }
       state.activeVideoConversations.push(newConversation);
       state.currentlyDisplayedConversationId = action.payload.conversationId;
     },
@@ -124,7 +122,7 @@ export const videoConversationsSlice = createSlice({
         const conv = findConvInState(state, action.meta.arg.conversationId);
         if (conv) {
           conv.loadingVideo = false;
-          const participant = conv.participantsUpdate.activeParticipants.find(p => p.userId === action.meta.arg.userId);
+          const participant = conv.participantsUpdate?.activeParticipants.find(p => p.userId === action.meta.arg.userId);
           if (participant) {
             participant.videoMuted = action.meta.arg.mute;
           }
@@ -140,7 +138,7 @@ export const videoConversationsSlice = createSlice({
         const conv = findConvInState(state, action.meta.arg.conversationId);
         if (conv) {
           conv.loadingAudio = false;
-          const participant = conv.participantsUpdate.activeParticipants.find(p => p.userId === action.meta.arg.userId);
+          const participant = conv.participantsUpdate?.activeParticipants.find(p => p.userId === action.meta.arg.userId);
           if (participant) {
             participant.audioMuted = action.meta.arg.mute;
           }

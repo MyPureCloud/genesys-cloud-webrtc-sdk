@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store.ts";
 import './VideoElements.css'
 import VideoElement from "./VideoElement.tsx";
+import useSdk from "../../hooks/useSdk.ts";
 
 export default function VideoElements({
                                         audioRef,
@@ -20,12 +21,14 @@ export default function VideoElements({
   const videoConversations: IVideoConversationsState = useSelector(
     (state: RootState) => state.videoConversations
   );
+  const { getSession } = useSdk();
 
   const activeVideoConvs = videoConversations.activeVideoConversations;
   const activeVideoConv = activeVideoConvs
     .find(conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
 
-  const localUserId = activeVideoConv?.session?.fromUserId;
+  const session = activeVideoConv?.conversationId ? getSession(activeVideoConv.conversationId) : undefined;
+  const localUserId = session?.fromUserId;
   const activeParts = activeVideoConv?.participantsUpdate?.activeParticipants;
   const localParticipant = activeParts?.find(p => p.userId === localUserId);
 
@@ -48,8 +51,7 @@ export default function VideoElements({
         vanityVideoRef.current.srcObject = targetStream;
       }
     }
-  }, [
-    activeVideoConv?.inboundStream, activeVideoConv?.outboundStream, activeVideoConv?.screenOutboundStream,
+  }, [activeVideoConv?.inboundStream, activeVideoConv?.outboundStream, activeVideoConv?.screenOutboundStream,
     localParticipant?.sharingScreen, videoRef, vanityVideoRef]);
 
   const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
@@ -73,8 +75,8 @@ export default function VideoElements({
 
   const userId = (id: string | undefined) => {
     if (!id) return;
-    if (activeVideoConv?.session.state !== 'active' ||
-      activeVideoConv?.session.connectionState !== 'connected') return;
+    if (session?.state !== 'active' ||
+      session?.connectionState !== 'connected') return;
     return (
       <h4>User id: {id}</h4>
     );
