@@ -29,6 +29,7 @@ import { SessionManager } from './session-manager';
 import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
 import { HeadsetProxyService } from '../headsets/headset';
 import { removeAddressFieldFromConversationUpdate } from '../utils';
+import { StatsAggregator } from '../stats-aggregator';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -585,6 +586,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
+
+    session.statsAggregator = new StatsAggregator();
 
     const acceptParams: IAcceptSessionRequest = { conversationId: session.conversationId };
 
