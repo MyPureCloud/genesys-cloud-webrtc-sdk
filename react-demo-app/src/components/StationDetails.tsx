@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useSelector } from 'react-redux';
 import Card from "./Card";
 import { GuxTable } from 'genesys-spark-components-react';
+import { RootState } from "../store.ts";
 
 export default function StationDetails() {
-  const sdk = useSelector(state => state.sdk.sdk);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
   const [stationDetails] = useState(sdk.station);
 
 

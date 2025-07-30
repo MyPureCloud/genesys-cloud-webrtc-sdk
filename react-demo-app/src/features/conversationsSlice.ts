@@ -1,20 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { IPendingSession, IStoredConversationState } from '../../../dist/es';
+import { IPendingSession } from '../../../dist/es';
+import { IStoredConversationState} from 'genesys-cloud-webrtc-sdk';
 
 interface IConversationsState {
   pendingSessions: IPendingSession[],
   handledPendingSessions: IPendingSession[],
-  activeConversations: IActiveConversationsState
-}
-
-interface IActiveConversationsState {
-  [key: string]: IStoredConversationState;
+  activeConversations: IStoredConversationState[]
 }
 
 const initialState: IConversationsState = {
   pendingSessions: [],
   handledPendingSessions: [],
-  activeConversations: {}
+  activeConversations: []
 }
 
 export const conversationsSlice = createSlice({

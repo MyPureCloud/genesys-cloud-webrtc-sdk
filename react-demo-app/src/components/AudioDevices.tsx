@@ -4,18 +4,25 @@ import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-rea
 import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from "../store.ts";
 
 export default function AudioDevices() {
   const { updateDefaultDevices, updateAudioVolume } = useSdk();
-  const deviceState = useSelector((state) => state.devices.currentState);
-  const sdk = useSelector(state => state.sdk.sdk);
+  const deviceState = useSelector((state: RootState) => state.devices.currentState);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
   const [audioVolume, setAudioVolume] = useState(
-    sdk._config.defaults.audioVolume
+    sdk._config.defaults?.audioVolume
   );
 
-  function updateVolume(volume: string) {
+  function updateVolume(volume: number) {
     updateAudioVolume(volume);
     setAudioVolume(volume);
+  }
+
+  // We have to do this because we are not using directory service
+  const selectedDeviceId = sdk._config.defaults?.audioDeviceId || deviceState.audioDevices[0]?.deviceId;
+  if (sdk && deviceState.audioDevices.length && !sdk._config.defaults?.audioDeviceId) {
+    updateDefaultDevices({ audioDeviceId: selectedDeviceId });
   }
 
   function displayAudioDevices() {
@@ -23,9 +30,9 @@ export default function AudioDevices() {
       return <>
         <div className="audio-device-list">
           <GuxDropdown
-            value={deviceState.audioDevices[0].deviceId}
+            value={selectedDeviceId}
             onInput={(e) =>
-              updateDefaultDevices({ audioDeviceId: e.target.value })
+              updateDefaultDevices({ audioDeviceId: e.currentTarget.value })
             }
           >
             <GuxListbox>
@@ -45,7 +52,7 @@ export default function AudioDevices() {
             min="0"
             max="100"
             value={audioVolume}
-            onChange={(e) => updateVolume(e.target.value)}
+            onChange={(e) => updateVolume(+e.target.value)}
           />
           <span className="audio-volume-tooltip">{audioVolume}%</span>
         </div>

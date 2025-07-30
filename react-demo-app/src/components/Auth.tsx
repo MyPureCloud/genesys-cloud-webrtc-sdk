@@ -5,12 +5,12 @@ import { GuxButton, GuxRadialLoading } from 'genesys-spark-components-react';
 import Header from './Header';
 import Card from './Card';
 import { useSelector } from 'react-redux';
-import { IAuthState } from '../features/authSlice';
+import { RootState } from "../store.ts";
 
 export default function Auth() {
   const { checkAuthToken, authenticateWithPkce } = useAuth();
-  const authLoading = useSelector((state: IAuthState) => state.auth.authLoading);
-  const authError = useSelector((state: IAuthState) => state.auth.authError);
+  const authLoading = useSelector((state: RootState) => state.auth.authLoading);
+  const authError = useSelector((state: RootState) => state.auth.authError);
   const [token, setToken] = useState('');
   const [env, setEnv] = useState('dca');
 

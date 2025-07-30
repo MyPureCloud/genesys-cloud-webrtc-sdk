@@ -2,12 +2,13 @@ import './PendingSessionsTable.css';
 import { GuxTable, GuxButton } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from "../store.ts";
 
 export default function PendingSessionsTable() {
   const conversations = useSelector(
-    (state) => state.conversations.pendingSessions
+    (state: RootState) => state.conversations.pendingSessions
   );
-  const sdk = useSelector(state => state.sdk.sdk);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
 
   function handlePendingSession(accept: boolean, conversationId: string): void {

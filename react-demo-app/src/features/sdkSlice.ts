@@ -1,7 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { GenesysCloudWebrtcSdk } from "genesys-cloud-webrtc-sdk";
 
-const initialState = {
-  sdk: null
+interface SdkState {
+  sdk: GenesysCloudWebrtcSdk;
+}
+const initialState: SdkState = {
+  sdk: null as any,
 }
 
 export const sdkSlice = createSlice({
