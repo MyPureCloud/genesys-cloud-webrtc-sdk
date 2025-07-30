@@ -10,14 +10,14 @@ import Card from "../Card.tsx";
 import './Video.css'
 import './ActiveVideoConversationsTable.css'
 import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
-import { RootState } from "../../store.ts";
+import { AppDispatch, RootState } from "../../store.ts";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
     (state: RootState) => state.videoConversations.activeVideoConversations
   );
-  const dispatch = useDispatch();
-  const {endSession} = useSdk();
+  const dispatch = useDispatch<AppDispatch>();
+  const { endSession } = useSdk();
   const currentlyDisplayedConversationId = useSelector(
     (state: RootState) => state.videoConversations.currentlyDisplayedConversationId
   );
@@ -30,13 +30,7 @@ export default function ActiveVideoConversationsTable() {
 
   function handleVideoMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
-
-    if (participant?.sharingScreen) {
-      return;
-    }
-
-    if (participant) {
-      // @ts-expect-error
+    if (participant && !participant.sharingScreen) {
       dispatch(toggleVideoMute({
         mute: !participant.videoMuted,
         conversationId: videoConversations[index].conversationId,
@@ -48,7 +42,6 @@ export default function ActiveVideoConversationsTable() {
   function handleAudioMuteToggle(index: number) {
     const participant = getParticipantUsingDemoApp(index);
     if (participant) {
-      // @ts-expect-error
       dispatch(toggleAudioMute({
         mute: !participant.audioMuted,
         conversationId: videoConversations[index].conversationId,
@@ -58,7 +51,7 @@ export default function ActiveVideoConversationsTable() {
   }
 
   const handleConversationSwitch = (conversationId: string) => {
-    dispatch(setCurrentlyDisplayedConversation({conversationId}));
+    dispatch(setCurrentlyDisplayedConversation({ conversationId }));
   };
 
   const isLocalPartSharingScreen: boolean[] = videoConversations.map(vc => {
@@ -68,8 +61,7 @@ export default function ActiveVideoConversationsTable() {
 
   function handleScreenShare(index: number) {
     const session = videoConversations[index].session;
-
-    if (isLocalPartSharingScreen[index] && session) {
+    if (isLocalPartSharingScreen[index]) {
       stopScreenShare(session);
     } else {
       startScreenShare(session);
@@ -142,15 +134,15 @@ export default function ActiveVideoConversationsTable() {
         <table slot='data' className='active-convo-table'>
           <thead>
           <tr>
-            <th style={{width: '20%'}}>Conversation ID</th>
-            <th style={{width: '24%'}}>Room JID/Meeting ID</th>
-            <th style={{width: '9%'}}>Connection</th>
-            <th style={{width: '7%'}}>Session</th>
-            <th style={{width: '9%'}}>Select</th>
-            <th style={{width: '7%'}}>Screen</th>
-            <th style={{width: '9%'}}>Audio Mute</th>
-            <th style={{width: '9%'}}>Video Mute</th>
-            <th style={{width: '6%'}}>End</th>
+            <th style={{ width: '20%' }}>Conversation ID</th>
+            <th style={{ width: '24%' }}>Room JID/Meeting ID</th>
+            <th style={{ width: '9%' }}>Connection</th>
+            <th style={{ width: '7%' }}>Session</th>
+            <th style={{ width: '9%' }}>Select</th>
+            <th style={{ width: '7%' }}>Screen</th>
+            <th style={{ width: '9%' }}>Audio Mute</th>
+            <th style={{ width: '9%' }}>Video Mute</th>
+            <th style={{ width: '6%' }}>End</th>
           </tr>
           </thead>
           <tbody>

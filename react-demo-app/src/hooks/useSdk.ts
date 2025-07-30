@@ -16,7 +16,7 @@ import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
 import { RequestApiOptions, IPendingSession, SessionEvents } from 'genesys-cloud-streaming-client';
-import { RootState } from "../store.ts";
+import { RootState, AppDispatch } from "../store.ts";
 import {
   addParticipantUpdateToVideoConversation,
   addVideoConversationToActive, removeVideoConversationFromActive,
@@ -37,7 +37,7 @@ type IMediaTypes = 'audio' | 'video' | 'both'
 
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const memberStatusUpdateRef = useRef<{ memberStatusMessage: MemberStatusMessage }>();
 
