@@ -104,7 +104,6 @@ export default function useSdk() {
   }
 
   async function handleSessionStarted(session: IExtendedMediaSession) {
-    console.log("ASDNEGIURHFEJDFHGIUEJOAIDF")
     if (session.sessionType === 'collaborateVideo') {
 
       const sessionEventsToLog: Array<keyof SessionEvents> = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];

@@ -56,23 +56,6 @@ export default function VideoElements({
 
   const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
 
-  if (activeVideoConv) {
-    const inboundChanged = activeVideoConv.inboundStream !== videoRef.current?.srcObject;
-    if (inboundChanged && videoRef.current && activeVideoConv.inboundStream) {
-      videoRef.current.srcObject = activeVideoConv.inboundStream;
-    }
-    if (vanityVideoRef.current) {
-      const screenSharedChanged = activeVideoConv.screenOutboundStream !== vanityVideoRef.current?.srcObject;
-      const outboundChanged = activeVideoConv.outboundStream !== vanityVideoRef.current?.srcObject;
-      if (screenSharedChanged && activeVideoConv.screenOutboundStream && localParticipant?.sharingScreen) {
-        vanityVideoRef.current.srcObject = activeVideoConv.screenOutboundStream;
-      }
-      if (outboundChanged && activeVideoConv.outboundStream && !localParticipant?.sharingScreen) {
-        vanityVideoRef.current.srcObject = activeVideoConv.outboundStream;
-      }
-    }
-  }
-
   const userId = (id: string | undefined) => {
     if (!id) return;
     if (session?.state !== 'active' ||
