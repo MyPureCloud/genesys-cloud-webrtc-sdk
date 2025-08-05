@@ -1,4 +1,4 @@
-import StatsGatherer from "webrtc-stats-gatherer";
+import StatsGatherer, { StatsEvent } from "webrtc-stats-gatherer";
 import { v4 as uuidv4 } from "uuid";
 
 import GenesysCloudWebrtSdk, { IExtendedMediaSession } from ".";
@@ -12,7 +12,11 @@ export class StatsAggregator {
     this.mediaResourceId = uuidv4();
 
     this.statsGatherer = new StatsGatherer(session.peerConnection)
-    this.statsGatherer.on('stats', this.sendStats.bind(this));
+    this.statsGatherer.on('stats', this.handleStatsUpdate.bind(this));
+  }
+
+  private handleStatsUpdate (stats: StatsEvent) {
+    this.sendStats();
   }
 
   private sendStats () {
