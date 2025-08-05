@@ -124,6 +124,7 @@ class MockPC extends EventTarget {
   _senders: MockSender[] = [];
   _receivers: MockReceiver[] = [];
   connectionState = 'connected';
+  getStats = jest.fn().mockResolvedValue(null);
 
   constructor (session: MockSession) {
     super();

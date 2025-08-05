@@ -587,7 +587,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
 
-    session.statsAggregator = new StatsAggregator(this.sdk);
+    session.statsAggregator = new StatsAggregator(session, this.sdk);
 
     const acceptParams: IAcceptSessionRequest = { conversationId: session.conversationId };
 

@@ -1,13 +1,23 @@
-import GenesysCloudWebrtSdk from ".";
+import StatsGatherer from "webrtc-stats-gatherer";
+import { v4 as uuidv4 } from "uuid";
+
+import GenesysCloudWebrtSdk, { IExtendedMediaSession } from ".";
 import { requestApi } from "./utils";
 
 export class StatsAggregator {
-  constructor (private sdk: GenesysCloudWebrtSdk) { }
+  private mediaResourceId: string;
+  private statsGatherer: StatsGatherer;
+
+  constructor (private session: IExtendedMediaSession, private sdk: GenesysCloudWebrtSdk) {
+    this.mediaResourceId = uuidv4();
+
+    this.statsGatherer = new StatsGatherer(session.peerConnection)
+    this.statsGatherer.on('stats', this.sendStats.bind(this));
+  }
 
   private sendStats () {
-    const conversationId = "";
+    const conversationId = this.session.conversationId;
     const communicationId = "";
-    const mediaResourceId = "";
 
     const {
       originAppId,
@@ -33,7 +43,7 @@ export class StatsAggregator {
       reconnectAttemptCount: 0
     }
 
-    requestApi.call(this.sdk, `telephony/providers/edges/mediastatistics/conversations/${conversationId}/communications/${communicationId}/mediaresources/${mediaResourceId}`, {
+    requestApi.call(this.sdk, `telephony/providers/edges/mediastatistics/conversations/${conversationId}/communications/${communicationId}/mediaresources/${this.mediaResourceId}`, {
       method: 'post',
       data: statsData
     });

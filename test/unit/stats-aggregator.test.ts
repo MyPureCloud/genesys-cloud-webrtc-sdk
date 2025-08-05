@@ -1,25 +1,29 @@
-import GenesysCloudWebrtSdk, { utils } from "../../src";
+import GenesysCloudWebrtSdk, { IExtendedMediaSession, utils } from "../../src";
 import { StatsAggregator } from "../../src/stats-aggregator"
-import { SimpleMockSdk } from "../test-utils";
+import { MockSession, SimpleMockSdk } from "../test-utils";
 
 describe('StatsAggregator', () => {
   describe('constructor', () => {
     it('should be created', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      const aggregator = new StatsAggregator(sdk);
+      const aggregator = new StatsAggregator(mockSession, sdk);
       expect(aggregator).toBeTruthy();
     });
   });
 
   describe('sendStats', () => {
     it('should call requestApi', () => {
-      jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
-
+      const requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      const aggregator = new StatsAggregator(sdk);
+      const aggregator = new StatsAggregator(mockSession, sdk);
+
       aggregator['sendStats']();
 
-      expect(utils.requestApi).toHaveBeenCalled();
+      const urlArgument = requestApiSpy.mock.calls[0][0];
+      expect(urlArgument).toBeTruthy();
+      expect(urlArgument).toContain(mockSession.conversationId);
     });
   });
 });
