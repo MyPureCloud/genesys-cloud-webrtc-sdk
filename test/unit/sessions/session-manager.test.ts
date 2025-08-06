@@ -913,7 +913,7 @@ describe('validateOutgoingMediaTracks()', () => {
     setMediaStateDevices(testDevices);
     mediaState = mockSdk.media.getState();
 
-    mockGetSessionById = jest.spyOn(sessionManager, 'getSessionBySessionId').mockImplementation((id) => sessions.find(s => s.id === id));
+    mockGetSessionById = jest.spyOn(sessionManager, 'getSessionBySessionId').mockImplementation((id) => sessions.find(s => s.id === id)!);
     mockGetSessionHandler = jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockSessionHandler as any);
   });
 
