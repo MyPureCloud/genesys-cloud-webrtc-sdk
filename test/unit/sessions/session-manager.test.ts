@@ -141,6 +141,37 @@ describe('handleConversationUpdate', () => {
   });
 });
 
+describe('handleConversationUpdateRaw', () => {
+  it('should find all session that match the sessionType and call the associated handlers', () => {
+    const conversationId = 'convoid123';
+
+    const spy = jest.fn();
+    const fakeHandler = { handleConversationUpdateRaw: spy, sessionType: SessionTypes.collaborateVideo };
+    sessionManager.sessionHandlers = [fakeHandler] as any;
+
+    const fakeUpdate = {
+      id: conversationId
+    };
+    sessionManager.handleConversationUpdateRaw(fakeUpdate as any);
+    expect(spy).toBeCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(fakeUpdate);
+  });
+
+  it('should not pass update to handler if the handler is disabled', async () => {
+    const conversationId = 'convoid123'; 
+
+    const spy = jest.fn();
+    const fakeHandler = { handleConversationUpdateRaw: spy, disabled: true };
+    sessionManager.sessionHandlers = [fakeHandler] as any;
+
+    const fakeUpdate = {
+      id: conversationId
+    };
+    sessionManager.handleConversationUpdateRaw(fakeUpdate as any);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
 describe('getSession', () => {
   let session1: any;
   let session2: any;
