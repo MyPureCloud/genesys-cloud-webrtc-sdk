@@ -1,4 +1,4 @@
-import StatsGatherer, { StatsEvent } from "webrtc-stats-gatherer";
+import StatsGatherer, { GetStatsEvent, StatsEvent } from "webrtc-stats-gatherer";
 import { v4 as uuidv4 } from "uuid";
 
 import GenesysCloudWebrtSdk, { IExtendedMediaSession } from ".";
@@ -16,7 +16,26 @@ export class StatsAggregator {
   }
 
   private handleStatsUpdate (stats: StatsEvent) {
+    if (!this.isGetStatsEvent(stats)) {
+      return;
+    }
+
+    if (stats.tracks.length === 0) {
+      return;
+    }
+
+    const trackStats = stats.tracks[0];
+    const jitter = trackStats.jitter;
+    const packetLoss = trackStats.intervalPacketLoss;
+    if (jitter === undefined || packetLoss === undefined) {
+      return;
+    }
+
     this.sendStats();
+  }
+
+  private isGetStatsEvent (stats: StatsEvent): stats is GetStatsEvent {
+    return stats.name === 'getStats';
   }
 
   private sendStats () {
