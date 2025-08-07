@@ -20,27 +20,43 @@ export class StatsAggregator {
       return;
     }
 
-    if (stats.tracks.length === 0) {
+    if (stats.tracks.length === 0 || stats.remoteTracks.length === 0) {
       return;
     }
 
     const trackStats = stats.tracks[0];
+    const remoteTrackStats = stats.remoteTracks[0];
+
+    const packetsSent = trackStats.packetsSent;
+    const packetsReceived = remoteTrackStats.packetsReceived;
     const jitter = trackStats.jitter;
     const packetLoss = trackStats.intervalPacketLoss;
-    if (jitter === undefined || packetLoss === undefined) {
+    if (packetsSent === undefined || packetsReceived === undefined || jitter === undefined || packetLoss === undefined) {
       return;
     }
 
-    this.sendStats();
+    const rtpStats = {
+      packetsReceived,
+      packetsSent,
+      averageJitter: jitter,
+      estimatedAverageMos: 5
+    }
+
+    this.sendStats(rtpStats);
   }
 
   private isGetStatsEvent (stats: StatsEvent): stats is GetStatsEvent {
     return stats.name === 'getStats';
   }
 
-  private sendStats () {
+  private sendStats (rtpStats: {
+    packetsReceived: number,
+    packetsSent: number,
+    averageJitter: number
+    estimatedAverageMos: number
+  }) {
     const conversationId = this.session.conversationId;
-    const communicationId = "";
+    const communicationId = "hjon-test-data";
 
     const {
       originAppId,
@@ -55,14 +71,7 @@ export class StatsAggregator {
         originAppId,
         originAppVersion
       },
-      rtp: {
-        packetsReceived: 0,
-        packetsSent: 0,
-        rtpEventsReceived: 0,
-        rtpEventsSent: 0,
-        averageJitter: 0,
-        estimatedAverageMos: 5
-      },
+      rtp: rtpStats,
       reconnectAttemptCount: 0
     }
 
