@@ -29,17 +29,19 @@ export class StatsAggregator {
 
     const packetsSent = trackStats.packetsSent;
     const packetsReceived = remoteTrackStats.packetsReceived;
-    const jitter = trackStats.jitter;
-    const packetLoss = trackStats.intervalPacketLoss;
-    if (packetsSent === undefined || packetsReceived === undefined || jitter === undefined || packetLoss === undefined) {
+    const roundTripTimeInSeconds = trackStats.roundTripTime;
+    const jitterInSeconds = trackStats.jitter;
+    const packetLossPercent = trackStats.intervalPacketLoss;
+    if (packetsSent === undefined || packetsReceived === undefined || jitterInSeconds === undefined || packetLossPercent === undefined) {
       return;
     }
 
+    const mos = this.calculateMos(roundTripTimeInSeconds, jitterInSeconds, packetLossPercent)
     const rtpStats = {
       packetsReceived,
       packetsSent,
-      averageJitter: jitter,
-      estimatedAverageMos: 5
+      averageJitter: jitterInSeconds,
+      estimatedAverageMos: mos
     }
 
     this.sendStats(rtpStats);
@@ -47,6 +49,19 @@ export class StatsAggregator {
 
   private isGetStatsEvent (stats: StatsEvent): stats is GetStatsEvent {
     return stats.name === 'getStats';
+  }
+
+  private calculateMos (roundTripTimeInSeconds: number, jitterInSeconds: number, packetLossPercent: number) {
+    const effectiveLatencyMS = (roundTripTimeInSeconds * 1000) + (jitterInSeconds * 1000) * 2 + 10;
+    let r: number;
+    if (effectiveLatencyMS < 160) {
+      r = 93.2 - (effectiveLatencyMS / 40);
+    } else {
+      r = 93.2 - (effectiveLatencyMS - 120) / 10;
+    }
+    r = r - (packetLossPercent * 2.5);
+
+    return 1 + (0.035 * r) + (0.000007 * r * (r - 60) * (100 - r));
   }
 
   private sendStats (rtpStats: {

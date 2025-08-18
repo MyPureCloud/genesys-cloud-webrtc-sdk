@@ -87,6 +87,38 @@ describe('StatsAggregator', () => {
     });
   });
 
+  describe('calculateMos', () => {
+    it('should calculate a correct MOS when effective latency is less than 160ms', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      const stats = {
+        jitter: 0.002,
+        roundTripTime: 0.1,
+        intervalPacketLoss: 0
+      };
+
+      const mos = statsAggregator['calculateMos'](stats.roundTripTime, stats.jitter, stats.intervalPacketLoss);
+
+      expect(mos).toBeCloseTo(4.35);
+    });
+
+    it('should calculate a correct MOS when effective latency is greater than 160ms', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      const stats = {
+        jitter: 0.002,
+        roundTripTime: 0.2,
+        intervalPacketLoss: 0
+      };
+
+      const mos = statsAggregator['calculateMos'](stats.roundTripTime, stats.jitter, stats.intervalPacketLoss);
+
+      expect(mos).toBeCloseTo(4.16);
+    });
+  });
+
   describe('sendStats', () => {
     it('should call requestApi', () => {
       const requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
