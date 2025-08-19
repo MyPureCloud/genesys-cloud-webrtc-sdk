@@ -4,6 +4,13 @@ import { v4 as uuidv4 } from "uuid";
 import GenesysCloudWebrtSdk, { IExtendedMediaSession } from ".";
 import { requestApi } from "./utils";
 
+interface ISentStats {
+  packetsReceived: number;
+  packetsSent: number;
+  averageJitter: number;
+  estimatedAverageMos: number;
+}
+
 export class StatsAggregator {
   private mediaResourceId: string;
   private statsGatherer: StatsGatherer;
@@ -21,6 +28,10 @@ export class StatsAggregator {
   }
 
   private handleStatsUpdate (stats: StatsEvent) {
+    // We want the time to be as close to the cretion of the stats as possible, even
+    // though we may throw this away in some cases.
+    const dateCreated = new Date();
+
     if (!this.isGetStatsEvent(stats)) {
       return;
     }
@@ -66,7 +77,7 @@ export class StatsAggregator {
       estimatedAverageMos: mos
     }
 
-    this.sendStats(rtpStats);
+    this.sendStats(rtpStats, dateCreated);
   }
 
   // This follows a code snippet from the backend that I got from Sean Conrad, which follows
@@ -90,12 +101,7 @@ export class StatsAggregator {
     }
   }
 
-  private sendStats (rtpStats: {
-    packetsReceived: number,
-    packetsSent: number,
-    averageJitter: number
-    estimatedAverageMos: number
-  }) {
+  private sendStats (rtpStats: ISentStats, dateCreated: Date) {
     const conversationId = this.session.conversationId;
     const communicationId = "hjon-test-data";
 
@@ -113,6 +119,7 @@ export class StatsAggregator {
         originAppVersion
       },
       rtp: rtpStats,
+      dateCreated: dateCreated.toISOString(),
       reconnectAttemptCount: 0
     }
 

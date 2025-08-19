@@ -1,5 +1,6 @@
 import GenesysCloudWebrtSdk, { IExtendedMediaSession, utils } from "../../src";
 import { StatsAggregator } from "../../src/stats-aggregator"
+import { requestApiWithRetry } from "../../src/utils";
 import { MockSession, SimpleMockSdk } from "../test-utils";
 
 describe('StatsAggregator', () => {
@@ -83,12 +84,20 @@ describe('StatsAggregator', () => {
       statsAggregator['handleStatsUpdate'](event1);
       statsAggregator['handleStatsUpdate'](event2);
 
-      expect(statsAggregator['sendStats']).toHaveBeenNthCalledWith(1, expect.objectContaining({
-        averageJitter: 0.004
-      }));
-      expect(statsAggregator['sendStats']).toHaveBeenNthCalledWith(2, expect.objectContaining({
-        averageJitter: 0.003
-      }));
+      expect(statsAggregator['sendStats']).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          averageJitter: 0.004
+        }),
+        expect.anything()
+      );
+      expect(statsAggregator['sendStats']).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          averageJitter: 0.003
+        }),
+        expect.anything()
+      );
     });
 
     it('should send stats when we have everything we want', () => {
@@ -163,11 +172,18 @@ describe('StatsAggregator', () => {
         estimatedAverageMos: 5
       }
 
-      statsAggregator['sendStats'](rtpStats);
+      statsAggregator['sendStats'](rtpStats, new Date());
 
       const urlArgument = requestApiSpy.mock.calls[0][0];
+      // Add check for timestamp format?
+      // I like that; don't need to mock out Date for that here
+      const optionsArgument = requestApiSpy.mock.calls[0][1];
+      const statsArgument = optionsArgument?.data;
       expect(urlArgument).toBeTruthy();
       expect(urlArgument).toContain(mockSession.conversationId);
+      expect(statsArgument).toBeTruthy();
+      // This should actually check it
+      expect(statsArgument['dateCreated']).toBeTruthy();
     });
   });
 });
