@@ -2,7 +2,7 @@ import {
   GenesysCloudWebrtcSdk, IExtendedMediaSession,
   ISdkConfig,
   ISdkConversationUpdateEvent, ISdkGumRequest, SdkMediaStateWithType,
-  SessionTypes, ISessionIdAndConversationId, MemberStatusMessage, VideoMediaSession
+  SessionTypes, ISessionIdAndConversationId, MemberStatusMessage, VideoMediaSession, IParticipantsUpdate
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -39,7 +39,7 @@ export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch<AppDispatch>();
 
-  const memberStatusUpdateRef = useRef<{ memberStatusMessage: MemberStatusMessage }>();
+  // const memberStatusUpdateRef = useRef<{ memberStatusMessage: MemberStatusMessage }>();
 
   const sdk: GenesysCloudWebrtcSdk = useSelector((state: RootState) => state.sdk.sdk);
 
@@ -137,20 +137,20 @@ export default function useSdk() {
   }
 
   const updateMemberStatus = (memberStatusMessage: MemberStatusMessage, convId: string) => {
-    const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
-    const mergedUpdateParams = { ...lastUpdateParams, ...memberStatusMessage.params }
-    const mergedUpdate = { ...memberStatusMessage, params: mergedUpdateParams }
-
-    if (memberStatusMessage?.params?.incomingStreams) {
-      const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
-        const appId = stream.appId || stream.appid;
-        return appId?.sourceUserId
-      });
-      dispatch(setActiveParticipants({
-        conversationId: convId,
-        activeParticipants: userIds
-      }));
-    }
+    // const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
+    // const mergedUpdateParams = { ...lastUpdateParams, ...memberStatusMessage.params }
+    // const mergedUpdate = { ...memberStatusMessage, params: mergedUpdateParams }
+    //
+    // if (memberStatusMessage?.params?.incomingStreams) {
+    //   const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
+    //     const appId = stream.appId || stream.appid;
+    //     return appId?.sourceUserId
+    //   });
+    //   dispatch(setActiveParticipants({
+    //     conversationId: convId,
+    //     activeParticipants: userIds
+    //   }));
+    // }
 
     if (memberStatusMessage?.params?.speakers) {
       const usersTalking = memberStatusMessage.params.speakers.reduce((acc, current) => {
@@ -162,9 +162,9 @@ export default function useSdk() {
       }));
     }
 
-    memberStatusUpdateRef.current = {
-      memberStatusMessage: mergedUpdate
-    };
+    // memberStatusUpdateRef.current = {
+    //   memberStatusMessage: mergedUpdate
+    // };
   }
 
   const setupSessionListeners = (session: IExtendedMediaSession) => {
@@ -186,7 +186,7 @@ export default function useSdk() {
     });
 
     // Used for mute/unmute, screen share
-    session.on('participantsUpdate', partsUpdate => {
+    session.on('participantsUpdate', (partsUpdate: IParticipantsUpdate) => {
       dispatch(addParticipantUpdateToVideoConversation(partsUpdate));
     });
 
@@ -297,7 +297,7 @@ export default function useSdk() {
   }
 
   function getSession(conversationId: string): VideoMediaSession {
-    return sdk.sessionManager.getSession({conversationId}) as VideoMediaSession;
+    return sdk.sessionManager.getSession({ conversationId }) as VideoMediaSession;
   }
 
   return {

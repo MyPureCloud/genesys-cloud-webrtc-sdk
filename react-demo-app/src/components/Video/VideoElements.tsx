@@ -54,7 +54,8 @@ export default function VideoElements({
   }, [activeVideoConv?.inboundStream, activeVideoConv?.outboundStream, activeVideoConv?.screenOutboundStream,
     localParticipant?.sharingScreen, videoRef, vanityVideoRef]);
 
-  const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
+  // const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
+  const participantIdOnScreen = activeVideoConv?.participantsUpdate?.activeParticipants?.[0]?.userId;
 
   const userId = (id: string | undefined) => {
     if (!id) return;

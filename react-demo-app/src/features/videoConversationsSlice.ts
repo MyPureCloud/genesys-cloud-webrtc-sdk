@@ -100,7 +100,7 @@ export const videoConversationsSlice = createSlice({
     setActiveParticipants: (state, action) => {
       const conv = findConvInState(state, action.payload.conversationId);
       if (conv) {
-        conv.activeParticipants = action.payload.activeParticipants;
+        // conv.activeParticipants = action.payload.activeParticipants;
       }
     },
     setUsersTalking: (state, action) => {
