@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.0...HEAD)
+# Changed
+* [STREAM-850](https://inindca.atlassian.net/browse/STREAM-850) - Suppress `error.ininedgecontrol.session.inactive` errors to prevent consuming UIs from presenting benign errors
 
 # [v11.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...v11.3.0)
 # Added

@@ -2550,6 +2550,22 @@ describe('checkForCallErrors', () => {
 
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it('should return out if call error is inactive with "is inactive for" message', () => {
+    const update = { id: 'convoUpdate' };
+    const participant = { id: 'participantId' };
+    const callState = {
+      errorInfo: {
+        code: 'error.ininedgecontrol.session.inactive',
+        message: 'is inactive for 10 seconds'
+      }
+    };
+
+    const spy = jest.spyOn(handler, 'debouncedEmitCallError');
+    handler.checkForCallErrors(update as any, participant as any, callState as any);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
 
 describe('getActiveConversations', () => {
