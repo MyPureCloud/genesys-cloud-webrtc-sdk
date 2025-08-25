@@ -392,7 +392,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     callState: ICallStateFromParticipant
   ): void {
     if (callState.errorInfo) {
-      if (callState.errorInfo.code === 'error.ininedgecontrol.session.inactive' && callState.errorInfo.message.includes('is inactive for')) {
+      if (callState.errorInfo.code === 'error.ininedgecontrol.session.inactive') {
         return;
       }
       this.debouncedEmitCallError(update, participant, callState);
