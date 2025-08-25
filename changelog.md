@@ -27,24 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [#923](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/923) - Update docs for `useServerSidePings` to reflect the correct default value of `false`.
 * [STREAM-804](https://inindca.atlassian.net/browse/STREAM-804) - Bump client-logger to `4.2.17` and axios to `1.10.0` to address Snyk vulnerabilities. Added Github action for auditing dependencies.
 
-# [v11.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...v11.3.0)
-# Added
-* [STREAM-785](https://inindca.atlassian.net/browse/STREAM-785) - Added GitHub Actions for linting, testing, and building in an effort to make the build process more transparent and reliable.
-* [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
-
-# Changed
-* [STREAM-798](https://inindca.atlassian.net/browse/STREAM-798) - Bump streaming-client to version 19.3.0 to pick up the following fixes/changes:
-  - [STREAM-154](https://inindca.atlassian.net/browse/STREAM-154) - Track StanzaMediaSessions so events can still be processed if streaming-client is disconnected and reconnected.
-  - [STREAM-155](https://inindca.atlassian.net/browse/STREAM-155) - Calling `disconnect` will now stop any in-progress connection attempts.
-  - [STREAM-85](https://inindca.atlassian.net/browse/STREAM-85) - Handle connection transfer (`v2.system.socket_closing`) message from Hawk signaling a reconnect is necessary
-  - [STREAM-653](https://inindca.atlassian.net/browse/STREAM-653) - Added fields to upgradeMediaPresence stanza definition.
-* [STREAM-626](https://inindca.atlassian.net/browse/STREAM-626) - Removed pipeline infra from open-source. Updated CODEOWNERS.
-* [STREAM-654](https://inindca.atlassian.net/browse/STREAM-654) - Changed logging for disableAutoAnswer to clarify that if the SDK has disableAutoAnswer, the consuming client should handle auto-answering calls.
-
-### Fixed
-* [#923](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/923) - Update docs for `useServerSidePings` to reflect the correct default value of `false`.
-* [STREAM-804](https://inindca.atlassian.net/browse/STREAM-804) - Bump client-logger to `4.2.17` and axios to `1.10.0` to address Snyk vulnerabilities. Added Github action for auditing dependencies.
-
 # [v11.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.2...v11.2.3)
 ### Fixed
 * [STREAM-582](https://inindca.atlassian.net/browse/STREAM-582) - Bump streaming-client to fix an issue where `session-initiate` was not ignored when SDP-over-XMPP was turned on for a session.
