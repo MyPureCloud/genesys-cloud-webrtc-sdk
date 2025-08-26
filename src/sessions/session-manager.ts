@@ -21,7 +21,8 @@ import {
   IConversationHeldRequest,
   IPendingSessionActionParams,
   VideoMediaSession,
-  IActiveConversationDescription
+  IActiveConversationDescription,
+  SubscriptionEvent
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
@@ -71,6 +72,15 @@ export class SessionManager {
       .filter(handler => !handler.disabled)
       .forEach(handler =>
         handler.handleConversationUpdate(update, sessions.filter(s => s.sessionType === handler.sessionType))
+      );
+  }
+
+  handleConversationUpdateRaw (update: SubscriptionEvent): void {
+    /* let each enabled handler process updates */
+    this.sessionHandlers
+      .filter(handler => !handler.disabled)
+      .forEach(handler =>
+        handler.handleConversationUpdateRaw(update)
       );
   }
 
