@@ -69,6 +69,34 @@ describe('StatsAggregator', () => {
       expect(statsAggregator['sendStats']).not.toHaveBeenCalled();
     });
 
+    it('should average the jitter for the whole call', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      statsAggregator['sendStats'] = jest.fn();
+
+      const event1 = {
+        name: 'getStats',
+        tracks: [{ packetsSent: 1, jitter: 0.004, intervalPacketLoss: 0 }],
+        remoteTracks: [{ packetsReceived: 1}]
+      };
+      const event2 = {
+        name: 'getStats',
+        tracks: [{ packetsSent: 1, jitter: 0.002, intervalPacketLoss: 0 }],
+        remoteTracks: [{ packetsReceived: 1}]
+      };
+
+      statsAggregator['handleStatsUpdate'](event1);
+      statsAggregator['handleStatsUpdate'](event2);
+
+      expect(statsAggregator['sendStats']).toHaveBeenNthCalledWith(1, expect.objectContaining({
+        averageJitter: 0.004
+      }));
+      expect(statsAggregator['sendStats']).toHaveBeenNthCalledWith(2, expect.objectContaining({
+        averageJitter: 0.003
+      }));
+    });
+
     it('should send stats when we have everything we want', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;

@@ -7,6 +7,7 @@ import { requestApi } from "./utils";
 export class StatsAggregator {
   private mediaResourceId: string;
   private statsGatherer: StatsGatherer;
+  private jitterValues: number[] = [];
 
   constructor (private session: IExtendedMediaSession, private sdk: GenesysCloudWebrtSdk) {
     this.mediaResourceId = uuidv4();
@@ -36,11 +37,14 @@ export class StatsAggregator {
       return;
     }
 
+    this.jitterValues.push(jitterInSeconds);
+    const averageJitter = this.jitterValues.reduce((sum, jitter) => sum + jitter, 0) / this.jitterValues.length;
+
     const mos = this.calculateMos(roundTripTimeInSeconds, jitterInSeconds, packetLossPercent)
     const rtpStats = {
       packetsReceived,
       packetsSent,
-      averageJitter: jitterInSeconds,
+      averageJitter,
       estimatedAverageMos: mos
     }
 
