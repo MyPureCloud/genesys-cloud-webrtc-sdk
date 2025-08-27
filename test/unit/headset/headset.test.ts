@@ -145,11 +145,11 @@ describe('SdkHeadsetService', () => {
   describe('endCurrentCall', () => {
     it('should call the proper function in the headset library', () => {
       const endCurrentCallSpy = jest.spyOn(headsetLibrary, 'endCall');
-      sdkHeadset.endCurrentCall('');
+      sdkHeadset.endCurrentCall('', false);
       expect(endCurrentCallSpy).not.toHaveBeenCalled();
 
-      sdkHeadset.endCurrentCall('123');
-      expect(endCurrentCallSpy).toHaveBeenCalledWith('123');
+      sdkHeadset.endCurrentCall('123', false);
+      expect(endCurrentCallSpy).toHaveBeenCalledWith('123', false);
 
       const endAllCallsSpy = jest.spyOn(headsetLibrary, 'endAllCalls');
       sdkHeadset.endAllCalls();
@@ -235,7 +235,7 @@ describe('SdkHeadsetServiceStub', () => {
 
   describe('endCurrentCall()', () => {
     it('should return an empty promise', async () => {
-      expect(await headsetStub.endCurrentCall('')).toBe(undefined);
+      expect(await headsetStub.endCurrentCall('', false)).toBe(undefined);
     });
   });
 
@@ -867,8 +867,8 @@ describe('HeadsetProxyService', () => {
   describe('endCurrentCall', () => {
     it('should proxy to headsetService', () => {
       const spy = currentHeadsetService.endCurrentCall = jest.fn();
-      proxyService.endCurrentCall('123');
-      expect(spy).toHaveBeenCalledWith('123');
+      proxyService.endCurrentCall('123', false);
+      expect(spy).toHaveBeenCalledWith('123', false);
     });
   });
 

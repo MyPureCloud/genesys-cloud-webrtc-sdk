@@ -304,8 +304,8 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     return this.currentHeadsetService.outgoingCall(callInfo);
   }
 
-  endCurrentCall (conversationId: string): Promise<void> {
-    return this.currentHeadsetService.endCurrentCall(conversationId);
+  endCurrentCall (conversationId: string, hasOtherActiveCalls: boolean): Promise<void> {
+    return this.currentHeadsetService.endCurrentCall(conversationId, hasOtherActiveCalls);
   }
 
   endAllCalls (): Promise<void> {
