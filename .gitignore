@@ -26,3 +26,5 @@ test/test-pages/*/index.html
 /coverage
 
 /.npmrc
+
+/test-results

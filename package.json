@@ -1,6 +1,6 @@
 {
   "name": "genesys-cloud-webrtc-sdk",
-  "version": "11.3.0",
+  "version": "11.3.1",
   "description": "client for the interfacing with Genesys Cloud WebRTC",
   "repository": "https://github.com/mypurecloud/genesys-cloud-webrtc-sdk",
   "license": "MIT",
@@ -104,6 +104,7 @@
     "eslint-plugin-jsdoc": "^48.2.6",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "npm-watch": "^0.13.0",
     "pre-push": "^0.1.4",
     "purecloud-platform-client-v2": "^116.0.0",
