@@ -10,9 +10,9 @@
 # cp -R /Users/jon.hjelle/Development/stream/streaming-client/STREAM-155/dist /Users/jon.hjelle/Development/stream/sdk/STREAM-155/node_modules/genesys-cloud-streaming-client
 
 # Build SDK
-cd /Users/jon.hjelle/Development/stream/sdk/STREAM-151
+cd /Users/jon.hjelle/Development/stream/jj-sdk
 npm run build
 
 # Run Demo app with changes
-cd /Users/jon.hjelle/Development/stream/sdk/STREAM-151/react-demo-app
+cd /Users/jon.hjelle/Development/stream/jj-sdk/react-demo-app
 npx vite --force

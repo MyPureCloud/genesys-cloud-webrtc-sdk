@@ -41,22 +41,17 @@ describe('StatsAggregator', () => {
       };
       const eventWithNoPacketsSent = {
         name: 'getStats',
-        tracks: [{ jitter: 0.002, intervalPacketLoss: 0 }],
+        tracks: [{ jitter: 0.002 }],
         remoteTracks: [{ packetsReceived: 1}]
       };
       const eventWithNoPacketsReceived = {
         name: 'getStats',
-        tracks: [{ packetsSent: 1, jitter: 0.002, intervalPacketLoss: 0 }],
+        tracks: [{ packetsSent: 1, jitter: 0.002 }],
         remoteTracks: []
       };
       const eventWithNoJitter = {
         name: 'getStats',
-        tracks: [{ packetsSent: 1, intervalPacketLoss: 0 }],
-        remoteTracks: [{ packetsReceived: 1}]
-      };
-      const eventWithNoPacketLoss = {
-        name: 'getStats',
-        tracks: [{ packetsSent: 1, jitter: 0.002 }],
+        tracks: [{ packetsSent: 1 }],
         remoteTracks: [{ packetsReceived: 1}]
       };
 
@@ -64,7 +59,6 @@ describe('StatsAggregator', () => {
       statsAggregator['handleStatsUpdate'](eventWithNoPacketsSent);
       statsAggregator['handleStatsUpdate'](eventWithNoPacketsReceived);
       statsAggregator['handleStatsUpdate'](eventWithNoJitter);
-      statsAggregator['handleStatsUpdate'](eventWithNoPacketLoss);
 
       expect(statsAggregator['sendStats']).not.toHaveBeenCalled();
     });
@@ -120,13 +114,11 @@ describe('StatsAggregator', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
-      const stats = {
-        jitter: 0.002,
-        roundTripTime: 0.1,
-        intervalPacketLoss: 0
-      };
+      const latency = 0.1;
+      const jitter = 0.002;
+      const packetLoss = 0;
 
-      const mos = statsAggregator['calculateMos'](stats.roundTripTime, stats.jitter, stats.intervalPacketLoss);
+      const mos = statsAggregator['calculateMos'](latency, jitter, packetLoss);
 
       expect(mos).toBeCloseTo(4.35);
     });
@@ -135,15 +127,26 @@ describe('StatsAggregator', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
-      const stats = {
-        jitter: 0.002,
-        roundTripTime: 0.2,
-        intervalPacketLoss: 0
-      };
+      const latency = 0.2;
+      const jitter = 0.002;
+      const packetLoss = 0;
 
-      const mos = statsAggregator['calculateMos'](stats.roundTripTime, stats.jitter, stats.intervalPacketLoss);
+      const mos = statsAggregator['calculateMos'](latency, jitter, packetLoss);
 
       expect(mos).toBeCloseTo(4.16);
+    });
+
+    it('should calculate a correct MOS when rFactor is less than 0', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      const latency = 1;
+      const jitter = 0.09;
+      const packetLoss = 6;
+
+      const mos = statsAggregator['calculateMos'](latency, jitter, packetLoss);
+
+      expect(mos).toBeCloseTo(1);
     });
   });
 

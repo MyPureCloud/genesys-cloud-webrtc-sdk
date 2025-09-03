@@ -16,6 +16,10 @@ export class StatsAggregator {
     this.statsGatherer.on('stats', this.handleStatsUpdate.bind(this));
   }
 
+  private isGetStatsEvent (stats: StatsEvent): stats is GetStatsEvent {
+    return stats.name === 'getStats';
+  }
+
   private handleStatsUpdate (stats: StatsEvent) {
     if (!this.isGetStatsEvent(stats)) {
       return;
@@ -25,22 +29,36 @@ export class StatsAggregator {
       return;
     }
 
+    console.log('Hjon: statsEvent:\n', stats);
+
     const trackStats = stats.tracks[0];
     const remoteTrackStats = stats.remoteTracks[0];
 
+    // Looks like I want the remote-inbound-rtp
+    // - jitter - yes, this is coming from the remote
+    // - roundTripTime - yes, this is coming from the remote
+    // - I could get the total and the total measurements and average that way...or just average like the jitter?
+    //
+    // - packetsLost?
+    // - fractionLost?
     const packetsSent = trackStats.packetsSent;
     const packetsReceived = remoteTrackStats.packetsReceived;
     const roundTripTimeInSeconds = trackStats.roundTripTime;
     const jitterInSeconds = trackStats.jitter;
-    const packetLossPercent = trackStats.intervalPacketLoss;
-    if (packetsSent === undefined || packetsReceived === undefined || jitterInSeconds === undefined || packetLossPercent === undefined) {
+    if (packetsSent === undefined || packetsReceived === undefined || jitterInSeconds === undefined) {
       return;
     }
 
+    // Calculate values to use for calculating MOS
+    // I want this to be for the whole call, though
+    // **** WIP ****
+    const latencyInSeconds = roundTripTimeInSeconds / 2; // Approximate the one-way latency
     this.jitterValues.push(jitterInSeconds);
     const averageJitter = this.jitterValues.reduce((sum, jitter) => sum + jitter, 0) / this.jitterValues.length;
+    const packetsLost = packetsReceived - packetsSent;
+    const packetLossPercent = 100 * (packetsLost / packetsSent);
 
-    const mos = this.calculateMos(roundTripTimeInSeconds, jitterInSeconds, packetLossPercent)
+    const mos = this.calculateMos(latencyInSeconds, averageJitter, packetLossPercent);
     const rtpStats = {
       packetsReceived,
       packetsSent,
@@ -51,21 +69,25 @@ export class StatsAggregator {
     this.sendStats(rtpStats);
   }
 
-  private isGetStatsEvent (stats: StatsEvent): stats is GetStatsEvent {
-    return stats.name === 'getStats';
-  }
+  // This follows a code snippet from the backend that I got from Sean Conrad, which follows
+  // https://netbeez.net/blog/impact-of-packet-loss-jitter-and-latency-on-voip/
+  private calculateMos (latencyInSeconds: number, averageJitterInSeconds: number, packetLossPercent: number) {
+    const maxMosRFactor = 93.2;
+    let rFactor: number;
 
-  private calculateMos (roundTripTimeInSeconds: number, jitterInSeconds: number, packetLossPercent: number) {
-    const effectiveLatencyMS = (roundTripTimeInSeconds * 1000) + (jitterInSeconds * 1000) * 2 + 10;
-    let r: number;
+    const effectiveLatencyMS = (latencyInSeconds * 1000) + (averageJitterInSeconds * 1000 * 2) + 10;
     if (effectiveLatencyMS < 160) {
-      r = 93.2 - (effectiveLatencyMS / 40);
+      rFactor = maxMosRFactor - (effectiveLatencyMS / 40);
     } else {
-      r = 93.2 - (effectiveLatencyMS - 120) / 10;
+      rFactor = maxMosRFactor - (effectiveLatencyMS - 120) / 10;
     }
-    r = r - (packetLossPercent * 2.5);
 
-    return 1 + (0.035 * r) + (0.000007 * r * (r - 60) * (100 - r));
+    rFactor = rFactor - (2.5 * packetLossPercent);
+    if (rFactor < 0) {
+      return 1;
+    } else {
+      return 1 + (0.035 * rFactor) + (0.000007 * rFactor * (rFactor - 60) * (100 - rFactor));
+    }
   }
 
   private sendStats (rtpStats: {
