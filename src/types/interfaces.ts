@@ -1020,6 +1020,7 @@ export interface SdkEvents {
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;
   conversationUpdate: ISdkConversationUpdateEvent;
+  conversationUpdateRaw: SubscriptionEvent;
   station: (event: { action: 'Associated' | 'Disassociated', station: IStation | null }) => void;
   concurrentSoftphoneSessionsEnabled: boolean; // lineAppearence > 1
   resolutionUpdated: IResolutionChange

@@ -17,6 +17,7 @@ import {
   IUpdateOutgoingMedia,
   IConversationHeldRequest,
   IActiveConversationDescription,
+  SubscriptionEvent,
 } from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -45,6 +46,10 @@ export default abstract class BaseSessionHandler {
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
   abstract handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]): void;
+
+  handleConversationUpdateRaw (update: SubscriptionEvent): void {
+    this.sdk.emit('conversationUpdateRaw', update);
+  }
 
   protected log (level: LogLevels, message: any, details?: any, logOptions?: ILogMessageOptions): void {
     this.sdk.logger[level].call(this.sdk.logger, message, details, logOptions);
