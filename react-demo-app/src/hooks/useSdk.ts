@@ -187,7 +187,7 @@ export default function useSdk() {
       dispatch(removeVideoConversationFromActive({ conversationId: session.conversationId, reason: reason }));
     });
 
-    // set green border when talking
+    // detect active participant and set green border when talking
     session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateMemberStatus(memberStatusMessage, session.conversationId));
   }
 
