@@ -23,7 +23,6 @@ import {
   setActiveParticipants, setUsersTalking,
   updateConversationMediaStreams
 } from "../features/videoConversationsSlice.ts";
-import { useRef } from "react";
 
 interface IAuthData {
   token: string;
@@ -38,8 +37,6 @@ type IMediaTypes = 'audio' | 'video' | 'both'
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch<AppDispatch>();
-
-  // const memberStatusUpdateRef = useRef<{ memberStatusMessage: MemberStatusMessage }>();
 
   const sdk: GenesysCloudWebrtcSdk = useSelector((state: RootState) => state.sdk.sdk);
 
@@ -137,21 +134,20 @@ export default function useSdk() {
   }
 
   const updateMemberStatus = (memberStatusMessage: MemberStatusMessage, convId: string) => {
-    // const lastUpdateParams = memberStatusUpdateRef.current?.memberStatusMessage?.params || {};
-    // const mergedUpdateParams = { ...lastUpdateParams, ...memberStatusMessage.params }
-    // const mergedUpdate = { ...memberStatusMessage, params: mergedUpdateParams }
-    //
-    // if (memberStatusMessage?.params?.incomingStreams) {
-    //   const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
-    //     const appId = stream.appId || stream.appid;
-    //     return appId?.sourceUserId
-    //   });
-    //   dispatch(setActiveParticipants({
-    //     conversationId: convId,
-    //     activeParticipants: userIds
-    //   }));
-    // }
-
+    // Detect which remote user is shown
+    if (memberStatusMessage?.params?.incomingStreams) {
+      const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
+        const appId = stream.appId || stream.appid;
+        return appId?.sourceUserId
+      });
+      // We don't show more than one remote stream at a time
+      const userId = userIds[0]
+      dispatch(setActiveParticipants({
+        conversationId: convId,
+        activeParticipant: userId
+      }));
+    }
+    // Detect if the user that is shown is 'speaking'
     if (memberStatusMessage?.params?.speakers) {
       const usersTalking = memberStatusMessage.params.speakers.reduce((acc, current) => {
         return { ...acc, [current.appId.sourceUserId]: current.activity === 'speaking' }
@@ -161,10 +157,6 @@ export default function useSdk() {
         usersTalking
       }));
     }
-
-    // memberStatusUpdateRef.current = {
-    //   memberStatusMessage: mergedUpdate
-    // };
   }
 
   const setupSessionListeners = (session: IExtendedMediaSession) => {

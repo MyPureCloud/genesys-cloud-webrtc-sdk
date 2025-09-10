@@ -27,8 +27,7 @@ export default function VideoElement({ videoRef, userId }: {
         .find(p => p.userId === session?.fromUserId);
       return localUser?.videoMuted && !localUser?.sharingScreen;
     } else {
-      // const participantIdOnScreen = activeVideoConv?.activeParticipants?.[0];
-      const participantIdOnScreen = activeVideoConv?.participantsUpdate?.activeParticipants?.[0]?.userId;
+      const participantIdOnScreen = activeVideoConv?.activeParticipant;
       const participant = activeVideoConv?.participantsUpdate?.activeParticipants
         .find(p => p.userId === participantIdOnScreen);
       return participant?.videoMuted && !participant?.sharingScreen;

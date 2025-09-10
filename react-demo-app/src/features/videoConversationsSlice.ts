@@ -10,8 +10,8 @@ export interface IActiveVideoConversationsState { // rename this to remove the '
   inboundStream?: MediaStream;
   outboundStream?: MediaStream;
   screenOutboundStream?: MediaStream;
-  activeParticipants?: string[];
-  usersTalking?: { [userId: string]: boolean };
+  activeParticipant?: string;
+  usersTalking?: {[userId: string]: boolean};
 }
 
 export interface IVideoConversationsState {
@@ -100,7 +100,7 @@ export const videoConversationsSlice = createSlice({
     setActiveParticipants: (state, action) => {
       const conv = findConvInState(state, action.payload.conversationId);
       if (conv) {
-        // conv.activeParticipants = action.payload.activeParticipants;
+        conv.activeParticipant = action.payload.activeParticipant;
       }
     },
     setUsersTalking: (state, action) => {
