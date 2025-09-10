@@ -1,7 +1,7 @@
 import StatsGatherer, { GetStatsEvent, StatsEvent } from "webrtc-stats-gatherer";
 import { v4 as uuidv4 } from "uuid";
 
-import GenesysCloudWebrtSdk, { IExtendedMediaSession } from ".";
+import GenesysCloudWebrtSdk, { IConversationParticipantFromEvent, IExtendedMediaSession } from ".";
 import { requestApi } from "./utils";
 
 interface ISentStats {
@@ -28,6 +28,8 @@ export class StatsAggregator {
   }
 
   private handleStatsUpdate (stats: StatsEvent) {
+
+
     // We want the time to be as close to the cretion of the stats as possible, even
     // though we may throw this away in some cases.
     const dateCreated = new Date();
@@ -102,8 +104,22 @@ export class StatsAggregator {
   }
 
   private sendStats (rtpStats: ISentStats, dateCreated: Date) {
+    // Not sure if this is where I want to do this yet, but I'm sketching
+    const pcParticipant = this.session.pcParticipant;
+    console.log('Hjon: This is the pcParticpant: ', pcParticipant);
+    if (!pcParticipant) {
+      console.warn('Hjon: no pcParticipant');
+      return;
+    }
+    const calls = pcParticipant['calls'] ?? [];
+    if (calls.length === 0) {
+      console.warn('Hjon: I\'m wrong, no calls exist on this pcParticipant');
+      return;
+    }
+    const participant = pcParticipant as unknown as IConversationParticipantFromEvent;
+    const communicationId = participant.calls[0].id;
+
     const conversationId = this.session.conversationId;
-    const communicationId = "hjon-test-data";
 
     const {
       originAppId,
