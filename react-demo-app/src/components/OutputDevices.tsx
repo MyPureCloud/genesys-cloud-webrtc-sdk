@@ -2,10 +2,11 @@ import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-rea
 import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from '../types/store';
 
 export default function OutputDevices() {
   const { updateDefaultDevices } = useSdk();
-  const deviceState = useSelector((state) => state.devices.currentState);
+  const deviceState = useSelector((state: RootState) => state.devices.currentState);
 
   return (
     <>
@@ -15,11 +16,11 @@ export default function OutputDevices() {
           <GuxDropdown
             value={deviceState.outputDevices[0].deviceId}
             onInput={(e) =>
-              updateDefaultDevices({ outputDeviceId: e.target.value })
+              updateDefaultDevices({ outputDeviceId: (e.target as HTMLSelectElement).value })
             }
           >
             <GuxListbox>
-              {deviceState.outputDevices.map((device) => (
+              {deviceState.outputDevices.map((device: any) => (
                 <GuxOption key={device.deviceId} value={device.deviceId}>
                   {device.label}
                 </GuxOption>

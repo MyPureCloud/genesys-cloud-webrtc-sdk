@@ -2,10 +2,11 @@ import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-rea
 import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
+import { RootState } from '../types/store';
 
-export default function OutputDevices() {
+export default function VideoDevices() {
   const { updateDefaultDevices } = useSdk();
-  const deviceState = useSelector((state) => state.devices.currentState);
+  const deviceState = useSelector((state: RootState) => state.devices.currentState);
 
   function generateVideoDevices() {
     if (deviceState.videoDevices.length) {
@@ -13,11 +14,11 @@ export default function OutputDevices() {
         <GuxDropdown
           value={deviceState.videoDevices[0].deviceId}
           onInput={(e) =>
-            updateDefaultDevices({ videoDeviceId: e.target.value })
+            updateDefaultDevices({ videoDeviceId: (e.target as HTMLSelectElement).value })
           }
         >
           <GuxListbox>
-            {deviceState.videoDevices.map((device) => (
+            {deviceState.videoDevices.map((device: any) => (
               <GuxOption key={device.deviceId} value={device.deviceId}>
                 {device.label}
               </GuxOption>

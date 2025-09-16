@@ -1,6 +1,10 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-const initialState = {
+interface SdkState {
+  sdk: any;
+}
+
+const initialState: SdkState = {
   sdk: null
 }
 
@@ -8,7 +12,7 @@ export const sdkSlice = createSlice({
   name: 'sdk',
   initialState: initialState,
   reducers: {
-    setSdk: (state, action) => {
+    setSdk: (state, action: PayloadAction<any>) => {
       state.sdk = action.payload;
     }
   }
