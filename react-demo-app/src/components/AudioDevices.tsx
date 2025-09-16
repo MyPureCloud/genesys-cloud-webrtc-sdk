@@ -30,7 +30,7 @@ export default function AudioDevices() {
             }
           >
             <GuxListbox>
-              {deviceState.audioDevices.map((device: any) => (
+              {deviceState.audioDevices.map((device: MediaDeviceInfo) => (
                 <GuxOption key={device.deviceId} value={device.deviceId}>
                   {device.label}
                 </GuxOption>

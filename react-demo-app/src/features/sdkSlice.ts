@@ -1,7 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { MinimalSdk } from '../types/sdk';
 
 interface SdkState {
-  sdk: any;
+  sdk: MinimalSdk | null;
 }
 
 const initialState: SdkState = {
@@ -12,7 +13,7 @@ export const sdkSlice = createSlice({
   name: 'sdk',
   initialState: initialState,
   reducers: {
-    setSdk: (state, action: PayloadAction<any>) => {
+    setSdk: (state, action: PayloadAction<MinimalSdk>) => {
       state.sdk = action.payload;
     }
   }

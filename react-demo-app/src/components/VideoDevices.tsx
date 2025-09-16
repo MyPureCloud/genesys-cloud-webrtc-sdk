@@ -18,7 +18,7 @@ export default function VideoDevices() {
           }
         >
           <GuxListbox>
-            {deviceState.videoDevices.map((device: any) => (
+            {deviceState.videoDevices.map((device: MediaDeviceInfo) => (
               <GuxOption key={device.deviceId} value={device.deviceId}>
                 {device.label}
               </GuxOption>

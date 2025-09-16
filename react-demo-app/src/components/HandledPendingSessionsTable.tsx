@@ -2,6 +2,7 @@ import { GuxTable } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
+import { IPendingSession } from 'genesys-cloud-webrtc-sdk';
 
 export default function HandledPendingSessionsTable() {
   const handledPendingSessions = useSelector(
@@ -23,7 +24,7 @@ export default function HandledPendingSessionsTable() {
               </tr>
             </thead>
             <tbody>
-              {handledPendingSessions.map((convo: any) => (
+              {handledPendingSessions.map((convo: IPendingSession) => (
                 <tr key={convo.conversationId}>
                   <td>{convo.conversationId}</td>
                   <td>{convo.sessionId}</td>

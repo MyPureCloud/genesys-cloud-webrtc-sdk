@@ -20,7 +20,7 @@ export default function OutputDevices() {
             }
           >
             <GuxListbox>
-              {deviceState.outputDevices.map((device: any) => (
+              {deviceState.outputDevices.map((device: MediaDeviceInfo) => (
                 <GuxOption key={device.deviceId} value={device.deviceId}>
                   {device.label}
                 </GuxOption>

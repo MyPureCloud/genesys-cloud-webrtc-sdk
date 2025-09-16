@@ -5,7 +5,8 @@ import {
   SessionTypes,
   ISessionIdAndConversationId,
   SdkMediaStateWithType,
-  ISdkGumRequest
+  ISdkGumRequest,
+  IExtendedMediaSession
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -20,6 +21,7 @@ import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
 import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
+import { MinimalSdk } from '../types/sdk';
 
 interface IAuthData {
   token: string;
@@ -46,7 +48,7 @@ export default function useSdk() {
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
-    dispatch(setSdk(webrtcSdk));
+    dispatch(setSdk(webrtcSdk as MinimalSdk));
 
     connectEventHandlers();
 
@@ -129,7 +131,7 @@ export default function useSdk() {
     dispatch(updateGumRequests());
   }
 
-  function updateDefaultDevices(options: any): void {
+  function updateDefaultDevices(options: { audioDeviceId?: string; videoDeviceId?: string; outputDeviceId?: string }): void {
     if (!sdk) return;
     sdk.updateDefaultDevices({
       ...options,
@@ -156,7 +158,7 @@ export default function useSdk() {
 
   /* Misc Functions */
   async function updateOnQueueStatus(onQueue: boolean): Promise<void> {
-    if (!sdk) return;
+    if (!sdk || !sdk._http || !sdk._config || !sdk._personDetails) return;
     const systemPresences = await sdk._http.requestApi(`systempresences`, {
       method: 'get' as const,
       host: sdk._config.environment || '',
@@ -164,10 +166,11 @@ export default function useSdk() {
     });
 
     let presenceDefinition;
+    const presences = systemPresences.data as Array<{ name: string }>;
     if (onQueue) {
-      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'ON_QUEUE')
+      presenceDefinition = presences.find((p: { name: string; }) => p.name === 'ON_QUEUE')
     } else {
-      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'AVAILABLE')
+      presenceDefinition = presences.find((p: { name: string; }) => p.name === 'AVAILABLE')
     }
     const requestOptions = {
       method: 'patch' as const,
@@ -181,8 +184,8 @@ export default function useSdk() {
 
   function disconnectPersistentConnection(): void {
     if (!sdk) return;
-    const sessions = sdk.sessionManager.getAllActiveSessions().filter((session: any) => session.sessionType === SessionTypes.softphone);
-    sessions.forEach((session: any) => sdk.forceTerminateSession(session.id));
+    const sessions = sdk.sessionManager.getAllActiveSessions().filter((session: IExtendedMediaSession) => session.sessionType === SessionTypes.softphone);
+    sessions.forEach((session: IExtendedMediaSession) => sdk.forceTerminateSession(session.id));
   }
 
   return {
