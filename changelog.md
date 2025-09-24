@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.0...HEAD)
+
+# Changed
+* [STREAM-912](https://inindca.atlassian.net/browse/STREAM-912) - Bump streaming-client to `19.4.0` to remove SDP answer payload from logging.
+* [NO-JIRA] - Bump axios to `1.12.2` to address Snyk vulnerability.
+
 # Added
 * [STREAM-866](https://inindca.atlassian.net/browse/STREAM-850) - Generate a test report in JUnit.xml format
 
