@@ -105,7 +105,7 @@ describe('sendMetadataWhenSessionConnects', () => {
     pc.connectionState = 'disconnected';
     pc.dispatchEvent(new Event('connectionstatechange'));
     expect(spy).not.toHaveBeenCalled();
-    
+
     // since the above state was disconnected, the observable should have ended and should no longer process changes
     pc.connectionState = 'connected';
     pc.dispatchEvent(new Event('connectionstatechange'));
@@ -169,7 +169,7 @@ describe('acceptSession', () => {
 
     expect(metadatasSpy).not.toHaveBeenCalled();
   });
-  
+
   it('should throw if no metadatas are empty', async () => {
     const metadatasSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     const session = {
@@ -242,7 +242,16 @@ describe('updateOutgoingMedia', () => {
 });
 
 describe('updateScreenRecordingMetadatas', () => {
-  it('should replace trackIds with mid', async () => {
+  let mockRetryRequest: any;
+
+  beforeEach(() => {
+    mockRetryRequest = {
+      promise: Promise.resolve()
+    };
+    jest.spyOn(utils, 'requestApiWithRetry').mockReturnValue(mockRetryRequest);
+  });
+
+  it('should replace trackIds with mid and use retry logic', async () => {
     const metas = [
       {
         trackId: 'trackId123'
@@ -276,10 +285,12 @@ describe('updateScreenRecordingMetadatas', () => {
     const session = {
       pc: {
         getTransceivers: jest.fn().mockReturnValue(transceivers)
-      }
+      },
+      conversationId: 'conv123',
+      id: 'session456'
     };
 
-    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+    const logSpy = jest.spyOn(handler as any, 'log');
 
     await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
 
@@ -288,9 +299,16 @@ describe('updateScreenRecordingMetadatas', () => {
 
     expect(metas[1].trackId).toBe('7');
     expect((metas[1] as any)._trackId).toBe('trackId456');
+
+    expect(utils.requestApiWithRetry).toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('info', 'Screen recording metadata sent.', expect.objectContaining({
+      conversationId: 'conv123',
+      sessionId: 'session456',
+      metadatas: metas
+    }));
   });
 
-  it('should use the backgroundassistant url', async () => {
+  it('should use the backgroundassistant url with retry logic', async () => {
     const metas = [
       { trackId: 'trackId123' }
     ];
@@ -307,10 +325,10 @@ describe('updateScreenRecordingMetadatas', () => {
     const session = {
       pc: {
         getTransceivers: jest.fn().mockReturnValue(transceivers)
-      }
+      },
+      conversationId: 'conv123',
+      id: 'session456'
     };
-
-    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
 
     Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => true });
     mockSdk._config.jwt = 'myjwt';
@@ -318,12 +336,14 @@ describe('updateScreenRecordingMetadatas', () => {
 
     await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
 
-    expect(utils.requestApi).toHaveBeenCalledWith(
+    expect(utils.requestApiWithRetry).toHaveBeenCalledWith(
       expect.stringContaining('backgroundassistant'),
       expect.objectContaining({
-        authToken: 'myjwt'
-      }
-    ));
+        method: 'post',
+        authToken: 'myjwt',
+        data: expect.any(String)
+      })
+    );
     expect(metas[0].trackId).toBe('3');
     expect((metas[0] as any)._trackId).toBe('trackId123');
   });
@@ -340,14 +360,113 @@ describe('updateScreenRecordingMetadatas', () => {
     const session = {
       pc: {
         getTransceivers: jest.fn().mockReturnValue([])
-      }
+      },
+      conversationId: 'conv123',
+      id: 'session456'
     };
 
-    jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     const logSpy = jest.spyOn(handler as any, 'log');
 
     await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
 
     expect(logSpy).toHaveBeenCalledWith('warn', expect.stringContaining('Failed to find transceiver'), expect.anything());
+  });
+
+  it('should log error and re-throw when retry request fails', async () => {
+    const error = new Error('Network failure after retries');
+    mockRetryRequest.promise = Promise.reject(error);
+
+    const metas = [{ trackId: 'trackId123' }];
+    const transceivers = [{
+      mid: '3',
+      sender: { track: { id: metas[0].trackId } }
+    }];
+
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue(transceivers)
+      },
+      conversationId: 'conv123',
+      id: 'session456'
+    };
+
+    const logSpy = jest.spyOn(handler as any, 'log');
+
+    await expect(handler['updateScreenRecordingMetadatas'](session as any, metas as any))
+      .rejects.toThrow('Network failure after retries');
+
+    expect(logSpy).toHaveBeenCalledWith('error', 'Failed to send screen recording metadata.', expect.objectContaining({
+      error,
+      conversationId: 'conv123',
+      sessionId: 'session456',
+      metadatas: metas
+    }));
+    expect(utils.requestApiWithRetry).toHaveBeenCalled();
+  });
+
+  it('should use accessToken when not jwt auth', async () => {
+    const metas = [{ trackId: 'trackId123' }];
+    const transceivers = [{
+      mid: '3',
+      sender: { track: { id: metas[0].trackId } }
+    }];
+
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue(transceivers)
+      },
+      conversationId: 'conv123',
+      id: 'session456'
+    };
+
+    Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => false });
+    mockSdk._config.accessToken = 'access123';
+    mockSdk._config.jwt = null;
+
+    await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
+
+    expect(utils.requestApiWithRetry).toHaveBeenCalledWith(
+      '/recordings/screensessions/metadata',
+      expect.objectContaining({
+        method: 'post',
+        authToken: 'access123',
+        data: expect.any(String)
+      })
+    );
+  });
+
+  it('should include correct payload in the request', async () => {
+    const metas = [{ trackId: 'trackId123', someProperty: 'value' }];
+    const transceivers = [{
+      mid: '3',
+      sender: { track: { id: metas[0].trackId } }
+    }];
+
+    const session = {
+      pc: {
+        getTransceivers: jest.fn().mockReturnValue(transceivers)
+      },
+      conversationId: 'conv123',
+      id: 'session456',
+      originalRoomJid: 'room@conference.example.com'
+    };
+
+    jest.spyOn(utils, 'getBareJid').mockReturnValue('user@example.com');
+
+    await handler['updateScreenRecordingMetadatas'](session as any, metas as any);
+
+    const requestCall = (utils.requestApiWithRetry as jest.Mock).mock.calls[0];
+    const requestData = JSON.parse(requestCall[1].data);
+
+    expect(requestData).toEqual({
+      participantJid: 'user@example.com',
+      metaData: [expect.objectContaining({
+        trackId: '3',
+        someProperty: 'value',
+        _trackId: 'trackId123'
+      })],
+      roomId: 'room@conference.example.com',
+      conversationId: 'conv123'
+    });
   });
 });
