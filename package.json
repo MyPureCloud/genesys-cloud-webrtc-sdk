@@ -57,7 +57,7 @@
   "dependencies": {
     "@babel/runtime": "^7.24.6",
     "@babel/runtime-corejs3": "^7.24.6",
-    "axios": "^1.10.0",
+    "axios": "^1.12.2",
     "browserama": "^3.2.2",
     "core-js": "^3.37.1",
     "genesys-cloud-client-logger": "^4.2.17",
