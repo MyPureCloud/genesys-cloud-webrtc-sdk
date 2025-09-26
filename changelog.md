@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-926](https://inindca.atlassian.net/browse/STREAM-926) - Updated screen recording metadata request to use `requestApiWithRetry` to retry failed requests with exponential backoff.
 * [STREAM-912](https://inindca.atlassian.net/browse/STREAM-912) - Bump streaming-client to `19.4.0` to remove SDP answer payload from logging.
 * [NO-JIRA] - Bump axios to `1.12.2` to address Snyk vulnerability.
+* [STREAM-599](https://inindca.atlassian.net/browse/STREAM-599) - Addressed Snyk vulnerabilities and type insecurities in demo app.
 
 ### Added
 * [STREAM-866](https://inindca.atlassian.net/browse/STREAM-850) - Generate a test report in JUnit.xml format
