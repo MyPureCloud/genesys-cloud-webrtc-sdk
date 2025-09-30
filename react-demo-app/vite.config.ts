@@ -7,10 +7,20 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 export default defineConfig({
   plugins: [react(), nodePolyfills(), basicSsl()],
   define: {
-    global: {}
+    global: 'globalThis'
   },
   server: {
     host: 'localhost',
     port: 8443
+  },
+  build: {
+    rollupOptions: {
+      external: [
+        'vite-plugin-node-polyfills/shims/process',
+        'vite-plugin-node-polyfills/shims/buffer',
+        'vite-plugin-node-polyfills/shims/util',
+        'vite-plugin-node-polyfills/shims/global'
+      ]
+    }
   }
 })

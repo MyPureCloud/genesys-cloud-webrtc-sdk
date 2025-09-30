@@ -9,7 +9,7 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
-import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApi } from '../utils';
+import { createAndEmitSdkError, getBareJid, isPeerConnectionDisconnected, isScreenRecordingJid, requestApiWithRetry } from '../utils';
 import { filter, fromEvent, take, takeWhile } from 'rxjs';
 
 export class ScreenRecordingSessionHandler extends BaseSessionHandler {
@@ -95,7 +95,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   }
 
   private updateScreenRecordingMetadatas (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
-    this.log('debug', 'sending screen metadatas', { conversationId: session.conversationId, sessionId: session.id, metadatas })
+    this.log('info', 'sending screen metadatas', { conversationId: session.conversationId, sessionId: session.id, metadatas })
     metadatas.forEach((meta) => {
       // adding any here because I don't want to add this to the public interface
       (meta as any)._trackId = meta.trackId;
@@ -124,11 +124,28 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
       url += '/backgroundassistant';
     }
 
-    return requestApi.call(this.sdk, url, {
-      method: 'post',
-      authToken: accessToken || jwt,
-      data
-    });
+    return requestApiWithRetry
+      .call(this.sdk, url, {
+        method: 'post',
+        authToken: accessToken || jwt,
+        data,
+      })
+      .promise.then(() => {
+        this.log('info', 'Screen recording metadata sent.', {
+          conversationId: session.conversationId,
+          sessionId: session.id,
+          metadatas,
+        });
+      })
+      .catch((e) => {
+        this.log('error', 'Failed to send screen recording metadata.', {
+          error: e,
+          conversationId: session.conversationId,
+          sessionId: session.id,
+          metadatas,
+        });
+        throw e;
+      });
   }
 }
 
