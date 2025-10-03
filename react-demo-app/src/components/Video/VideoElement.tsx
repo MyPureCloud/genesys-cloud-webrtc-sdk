@@ -58,11 +58,12 @@ export default function VideoElement({ videoRef, userId }: {
   }
 
   const activeVideoCall = session?.connectionState === 'connected' && session?.state === 'active';
+  const shouldMuteAudio = session?.fromUserId === userId;
 
   return activeVideoCall ? (
     <div className={`border ${isUserTalking() ? 'active-border' : 'inactive-border'}`}>
       <div className="video-element-container">
-        <video ref={videoRef} autoPlay playsInline/>
+        <video ref={videoRef} autoPlay playsInline muted={shouldMuteAudio}/>
         {cameraOffElement()}
         {waitingForOthersElement()}
       </div>
