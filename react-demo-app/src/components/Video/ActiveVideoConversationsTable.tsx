@@ -55,7 +55,7 @@ export default function ActiveVideoConversationsTable() {
     dispatch(setCurrentlyDisplayedConversation({ conversationId }));
   };
 
-  const isLocalPartSharingScreen: boolean[] =
+  const isLocalParticipantScreensharing: boolean[] =
     videoConversations.map(vc => {
       const localPart = vc.participantsUpdate?.activeParticipants
         ?.find(p => p.userId === getSession(vc.conversationId).fromUserId);
@@ -64,7 +64,7 @@ export default function ActiveVideoConversationsTable() {
 
   function handleScreenShare(index: number) {
     const session = getSession(videoConversations[index].conversationId);
-    if (isLocalPartSharingScreen[index]) {
+    if (isLocalParticipantScreensharing[index]) {
       stopScreenShare(session);
     } else {
       startScreenShare(session);
@@ -95,7 +95,7 @@ export default function ActiveVideoConversationsTable() {
   const screenShareButton = (index: number) => {
     return (
       <GuxButton onClick={() => handleScreenShare(index)}>
-        {isLocalPartSharingScreen[index] ? 'Stop' : 'Start'}
+        {isLocalParticipantScreensharing[index] ? 'Stop' : 'Start'}
       </GuxButton>
     );
   }
@@ -112,7 +112,7 @@ export default function ActiveVideoConversationsTable() {
 
   const videoMuteButton = (index: number) => {
     return (
-      <GuxButton onClick={() => handleVideoMuteToggle(index)} disabled={isLocalPartSharingScreen[index]}>
+      <GuxButton onClick={() => handleVideoMuteToggle(index)} disabled={isLocalParticipantScreensharing[index]}>
         {videoConversations?.[index].loadingVideo ?
           <GuxRadialLoading context='input' screenreaderText='Loading...'></GuxRadialLoading> :
           getParticipantUsingDemoApp(index)?.videoMuted ? 'Unmute' : 'Mute'}

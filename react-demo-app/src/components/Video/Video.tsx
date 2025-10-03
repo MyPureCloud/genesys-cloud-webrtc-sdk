@@ -47,14 +47,14 @@ export default function Video() {
               type="submit"
               onClick={() => startConv(startVideoConference)}
             >
-              Join with roomJid
+              Join with Room JID
             </GuxButton>
             <GuxButton
               accent="primary"
               className="video-call-btn"
               onClick={() => startConv(startVideoMeeting)}
             >
-              Join with conferenceId
+              Join with Conference ID
             </GuxButton>
           </div>
         </Card>

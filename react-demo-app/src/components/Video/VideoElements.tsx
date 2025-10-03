@@ -10,10 +10,10 @@ import VideoElement from "./VideoElement.tsx";
 import useSdk from "../../hooks/useSdk.ts";
 
 export default function VideoElements({
-                                        audioRef,
-                                        videoRef,
-                                        vanityVideoRef,
-                                      }: {
+  audioRef,
+  videoRef,
+  vanityVideoRef,
+}: {
   audioRef: RefObject<HTMLAudioElement>,
   videoRef: RefObject<HTMLVideoElement>,
   vanityVideoRef: RefObject<HTMLVideoElement>,

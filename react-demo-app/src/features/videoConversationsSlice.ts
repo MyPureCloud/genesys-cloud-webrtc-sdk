@@ -46,7 +46,7 @@ export const toggleAudioMute = createAsyncThunk(
   }
 );
 
-function findConvInState(state: Draft<IVideoConversationsState>, convId: string) {
+function findConversationInState(state: Draft<IVideoConversationsState>, convId: string) {
   const conversations = state.activeVideoConversations;
   const conversation = conversations.find((conv) => conv.conversationId === convId);
   return conversation;
@@ -62,7 +62,7 @@ export const videoConversationsSlice = createSlice({
       state.currentlyDisplayedConversationId = action.payload.conversationId;
     },
     addParticipantUpdateToVideoConversation: (state, action) => {
-      const conv = findConvInState(state, action.payload.conversationId);
+      const conv = findConversationInState(state, action.payload.conversationId);
       if (conv) {
         conv.participantsUpdate = action.payload;
       }
@@ -84,7 +84,7 @@ export const videoConversationsSlice = createSlice({
       state.currentlyDisplayedConversationId = action.payload.conversationId;
     },
     updateConversationMediaStreams: (state, action) => {
-      const conv = findConvInState(state, action.payload.conversationId);
+      const conv = findConversationInState(state, action.payload.conversationId);
       if (conv) {
         if (action.payload.inboundStream !== undefined) {
           conv.inboundStream = action.payload.inboundStream;
@@ -98,13 +98,13 @@ export const videoConversationsSlice = createSlice({
       }
     },
     setActiveParticipants: (state, action) => {
-      const conv = findConvInState(state, action.payload.conversationId);
+      const conv = findConversationInState(state, action.payload.conversationId);
       if (conv) {
         conv.activeParticipant = action.payload.activeParticipant;
       }
     },
     setUsersTalking: (state, action) => {
-      const conv = findConvInState(state, action.payload.conversationId);
+      const conv = findConversationInState(state, action.payload.conversationId);
       if (conv) {
         conv.usersTalking = action.payload.usersTalking;
       }
@@ -113,13 +113,13 @@ export const videoConversationsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(toggleVideoMute.pending, (state, action) => {
-        const conv = findConvInState(state, action.meta.arg.conversationId);
+        const conv = findConversationInState(state, action.meta.arg.conversationId);
         if (conv) {
           conv.loadingVideo = true;
         }
       })
       .addCase(toggleVideoMute.fulfilled, (state, action) => {
-        const conv = findConvInState(state, action.meta.arg.conversationId);
+        const conv = findConversationInState(state, action.meta.arg.conversationId);
         if (conv) {
           conv.loadingVideo = false;
           const participant = conv.participantsUpdate?.activeParticipants.find(p => p.userId === action.meta.arg.userId);
@@ -129,13 +129,13 @@ export const videoConversationsSlice = createSlice({
         }
       })
       .addCase(toggleAudioMute.pending, (state, action) => {
-        const conv = findConvInState(state, action.meta.arg.conversationId);
+        const conv = findConversationInState(state, action.meta.arg.conversationId);
         if (conv) {
           conv.loadingAudio = true;
         }
       })
       .addCase(toggleAudioMute.fulfilled, (state, action) => {
-        const conv = findConvInState(state, action.meta.arg.conversationId);
+        const conv = findConversationInState(state, action.meta.arg.conversationId);
         if (conv) {
           conv.loadingAudio = false;
           const participant = conv.participantsUpdate?.activeParticipants.find(p => p.userId === action.meta.arg.userId);

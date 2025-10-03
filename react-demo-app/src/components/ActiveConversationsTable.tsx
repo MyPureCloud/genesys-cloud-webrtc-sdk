@@ -17,8 +17,8 @@ export default function ActiveConversationsTable() {
 
   useEffect(() => {
     if (conversations.length) {
-      setHoldLabels(conversations.map((convo) => convo?.mostRecentCallState!.held ? 'Unhold' : 'Hold'));
-      setMuteLabels(conversations.map((convo) => convo.mostRecentCallState!.muted ? 'Unmute' : 'Mute'));
+      setHoldLabels(conversations.map((convo) => convo.mostRecentCallState?.held ? 'Unhold' : 'Hold'));
+      setMuteLabels(conversations.map((convo) => convo.mostRecentCallState?.muted ? 'Unmute' : 'Mute'));
     }
   }, [conversations]);
 
