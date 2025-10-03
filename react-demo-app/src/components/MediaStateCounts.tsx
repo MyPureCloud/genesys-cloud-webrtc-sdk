@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import Card from './Card';
-import { RootState } from "../store.ts";
+import { RootState } from '../types/store';
 
 export default function MediaStateCounts() {
   const gumRequests = useSelector((state: RootState) => state.devices.gumRequests);

@@ -1,18 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { GenesysCloudWebrtcSdk } from "genesys-cloud-webrtc-sdk";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { MinimalSdk } from '../types/sdk';
 
 interface SdkState {
-  sdk: GenesysCloudWebrtcSdk;
+  sdk: MinimalSdk | null;
 }
+
 const initialState: SdkState = {
-  sdk: null as any,
+  sdk: null
 }
 
 export const sdkSlice = createSlice({
   name: 'sdk',
   initialState: initialState,
   reducers: {
-    setSdk: (state, action) => {
+    setSdk: (state, action: PayloadAction<MinimalSdk>) => {
       state.sdk = action.payload;
     }
   }

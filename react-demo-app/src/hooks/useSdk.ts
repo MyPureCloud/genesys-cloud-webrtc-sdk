@@ -1,6 +1,11 @@
 import {
   GenesysCloudWebrtcSdk, IExtendedMediaSession,
   ISdkConfig,
+  ISdkConversationUpdateEvent,
+  SessionTypes,
+  ISessionIdAndConversationId,
+  SdkMediaStateWithType,
+  IExtendedMediaSession
   ISdkConversationUpdateEvent, ISdkGumRequest, SdkMediaStateWithType,
   SessionTypes, ISessionIdAndConversationId, MemberStatusMessage, VideoMediaSession, IParticipantsUpdate
 } from 'genesys-cloud-webrtc-sdk';
@@ -15,6 +20,9 @@ import {
 import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
+import { IPendingSession } from 'genesys-cloud-streaming-client';
+import { RootState } from '../types/store';
+import { MinimalSdk } from '../types/sdk';
 import { RequestApiOptions, IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState, AppDispatch } from "../store.ts";
 import {
@@ -52,7 +60,7 @@ export default function useSdk() {
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
-    dispatch(setSdk(webrtcSdk));
+    dispatch(setSdk(webrtcSdk as MinimalSdk));
 
     connectEventHandlers();
 
@@ -66,7 +74,7 @@ export default function useSdk() {
     webrtcSdk.on('cancelPendingSession', handleCancelPendingSession);
     webrtcSdk.on('handledPendingSession', handledPendingSession);
     webrtcSdk.on('sessionStarted', handleSessionStarted);
-    webrtcSdk.on('sessionEnded', (session) => handleSessionEnded(session));
+    webrtcSdk.on('sessionEnded', handleSessionEnded);
     // webrtcSdk.on('trace', trace);
     webrtcSdk.on('disconnected', handleDisconnected);
     webrtcSdk.on('connected', handleConnected);
@@ -83,21 +91,24 @@ export default function useSdk() {
       console.error('Must enter a valid phone number.');
       return;
     }
+    if (!sdk) {
+      console.error('SDK not initialized');
+      return;
+    }
     sdk.startSoftphoneSession({ phoneNumber });
   }
 
   function handlePendingSession(pendingSession: IPendingSession): void {
     dispatch(updatePendingSessions(pendingSession));
   }
-
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(pendingSession: ISessionIdAndConversationId): void {
     dispatch(removePendingSession(pendingSession));
   }
 
-  function handledPendingSession(pendingSession: ISessionIdAndConversationId): void {
-    dispatch(removePendingSession(pendingSession));
-    dispatch(storeHandledPendingSession(pendingSession))
+  function handledPendingSession(sessionInfo: ISessionIdAndConversationId): void {
+    dispatch(removePendingSession(sessionInfo));
+    dispatch(storeHandledPendingSession(sessionInfo))
   }
 
   async function handleSessionStarted(session: IExtendedMediaSession) {
@@ -209,10 +220,11 @@ export default function useSdk() {
   }
 
   function endSession(conversationId: string): void {
+    if (!sdk) return;
     sdk.endSession({ conversationId });
   }
-
   async function toggleAudioMute(mute: boolean, conversationId: string): Promise<void> {
+    if (!sdk) return;
     await sdk.setAudioMute({ mute, conversationId });
   }
 
@@ -221,6 +233,7 @@ export default function useSdk() {
   }
 
   async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
+    if (!sdk) return;
     await sdk.setConversationHeld({ held, conversationId });
   }
 
@@ -232,46 +245,51 @@ export default function useSdk() {
     dispatch(updateGumRequests());
   }
 
-  function updateDefaultDevices(options: any): void {
+  function updateDefaultDevices(options: { audioDeviceId?: string; videoDeviceId?: string; outputDeviceId?: string }): void {
+    if (!sdk) return;
     sdk.updateDefaultDevices({
       ...options,
       updateActiveSessions: true,
     });
   }
-
   function enumerateDevices(): void {
+    if (!sdk) return;
     sdk.media.enumerateDevices(true);
   }
-
-  function requestDevicePermissions(type: IMediaTypes): void {
-    sdk.media.requestMediaPermissions(type);
+  function requestDevicePermissions(type: string): void {
+    if (!sdk) return;
+    sdk.media.requestMediaPermissions(type as 'audio' | 'video' | 'both');
   }
 
   function updateAudioVolume(volume: number): void {
+    if (!sdk) return;
     sdk.updateAudioVolume(volume);
   }
 
   async function destroySdk(): Promise<void> {
+    if (!sdk) return;
     await sdk.destroy();
   }
 
   /* Misc Functions */
   async function updateOnQueueStatus(onQueue: boolean): Promise<void> {
+    if (!sdk || !sdk._http || !sdk._config || !sdk._personDetails) return;
     const systemPresences = await sdk._http.requestApi(`systempresences`, {
-      method: 'get',
-      host: sdk._config.environment || 'inindca.com',
+      method: 'get' as const,
+      host: sdk._config.environment || '',
       authToken: sdk._config.accessToken
     });
 
     let presenceDefinition;
+    const presences = systemPresences.data as Array<{ name: string }>;
     if (onQueue) {
-      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'ON_QUEUE')
+      presenceDefinition = presences.find((p: { name: string; }) => p.name === 'ON_QUEUE')
     } else {
-      presenceDefinition = systemPresences.data.find((p: { name: string; }) => p.name === 'AVAILABLE')
+      presenceDefinition = presences.find((p: { name: string; }) => p.name === 'AVAILABLE')
     }
-    const requestOptions: RequestApiOptions = {
-      method: 'patch',
-      host: sdk._config.environment || 'inindca.com',
+    const requestOptions = {
+      method: 'patch' as const,
+      host: sdk._config.environment || '',
       authToken: sdk._config.accessToken,
       data: JSON.stringify({ presenceDefinition })
     };
@@ -280,6 +298,7 @@ export default function useSdk() {
   }
 
   function disconnectPersistentConnection(): void {
+    if (!sdk) return;
     const sessions = sdk.sessionManager.getAllActiveSessions().filter((session: IExtendedMediaSession) => session.sessionType === SessionTypes.softphone);
     sessions.forEach((session: IExtendedMediaSession) => sdk.forceTerminateSession(session.id));
   }

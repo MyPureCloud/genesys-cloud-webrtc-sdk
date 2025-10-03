@@ -3,7 +3,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...HEAD)
+
+# [v11.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.1...v11.3.2)
+### Changed
+* [STREAM-926](https://inindca.atlassian.net/browse/STREAM-926) - Updated screen recording metadata request to use `requestApiWithRetry` to retry failed requests with exponential backoff.
+* [STREAM-912](https://inindca.atlassian.net/browse/STREAM-912) - Bump streaming-client to `19.4.0` to remove SDP answer payload from logging.
+* [NO-JIRA] - Bump axios to `1.12.2` to address Snyk vulnerability.
+* [STREAM-599](https://inindca.atlassian.net/browse/STREAM-599) - Addressed Snyk vulnerabilities and type insecurities in demo app.
+
+### Added
+* [STREAM-866](https://inindca.atlassian.net/browse/STREAM-850) - Generate a test report in JUnit.xml format
+
+# [v11.3.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.0...v11.3.1)
+# Changed
+* [STREAM-850](https://inindca.atlassian.net/browse/STREAM-850) - Suppress `error.ininedgecontrol.session.inactive` errors to prevent consuming UIs from presenting benign errors
 
 # [v11.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...v11.3.0)
 # Added
