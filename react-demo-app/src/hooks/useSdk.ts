@@ -133,12 +133,7 @@ export default function useSdk() {
   const updateMemberStatus = (memberStatusMessage: MemberStatusMessage, convId: string) => {
     // Detect which remote user is shown
     if (memberStatusMessage?.params?.incomingStreams) {
-      const userIds = memberStatusMessage.params.incomingStreams.map(stream => {
-        const appId = stream.appId || stream.appid;
-        return appId?.sourceUserId
-      });
-      // We don't show more than one remote stream at a time
-      const userId = userIds[0]
+      const userId = memberStatusMessage.params.incomingStreams[0].appId?.sourceUserId;
       dispatch(setActiveParticipants({
         conversationId: convId,
         activeParticipant: userId
@@ -146,9 +141,13 @@ export default function useSdk() {
     }
     // Detect if the user that is shown is 'speaking'
     if (memberStatusMessage?.params?.speakers) {
-      const usersTalking = memberStatusMessage.params.speakers.reduce((acc, current) => {
-        return { ...acc, [current.appId.sourceUserId]: current.activity === 'speaking' }
-      }, {});
+      const usersTalking = memberStatusMessage.params.speakers.reduce((acc, speaker) =>
+          ({
+            ...acc,
+            [speaker.appId.sourceUserId]: speaker.activity === 'speaking'
+          }),
+        {});
+
       dispatch(setUsersTalking({
         conversationId: convId,
         usersTalking
