@@ -1,7 +1,6 @@
 import { GuxTable } from 'genesys-spark-components-react';
 import { useSelector } from 'react-redux';
 import Card from './Card';
-import { RootState } from "../store.ts";
 import { RootState } from '../types/store';
 import { IPendingSession } from 'genesys-cloud-webrtc-sdk';
 

@@ -29,6 +29,7 @@ export const toggleVideoMute = createAsyncThunk(
   async (data: { mute: boolean; conversationId: string, userId: string }, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const sdk = state.sdk.sdk;
+    if (!sdk) return
 
     await sdk.setVideoMute({ mute: data.mute, conversationId: data.conversationId });
     return { mute: data.mute, conversationId: data.conversationId, userId: data.userId };
@@ -40,6 +41,7 @@ export const toggleAudioMute = createAsyncThunk(
   async (data: { mute: boolean; conversationId: string, userId: string }, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const sdk = state.sdk.sdk;
+    if (!sdk) return
 
     await sdk.setAudioMute({ mute: data.mute, conversationId: data.conversationId });
     return { mute: data.mute, conversationId: data.conversationId, userId: data.userId };

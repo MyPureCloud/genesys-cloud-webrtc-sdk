@@ -1,5 +1,3 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { GenesysCloudWebrtcSdk } from "genesys-cloud-webrtc-sdk";
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MinimalSdk } from '../types/sdk';
 

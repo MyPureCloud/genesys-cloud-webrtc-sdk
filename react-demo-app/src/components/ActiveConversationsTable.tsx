@@ -6,7 +6,6 @@ import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
 import { IStoredConversationState } from 'genesys-cloud-webrtc-sdk';
-import { RootState } from "../store.ts";
 
 
 export default function ActiveConversationsTable() {

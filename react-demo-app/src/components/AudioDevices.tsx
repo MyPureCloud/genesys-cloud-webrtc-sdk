@@ -5,7 +5,6 @@ import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
-import { RootState } from "../store.ts";
 
 export default function AudioDevices() {
   const { updateDefaultDevices, updateAudioVolume } = useSdk();
@@ -21,8 +20,9 @@ export default function AudioDevices() {
   }
 
   // We have to do this because we are not using directory service
-  const selectedDeviceId = sdk._config.defaults?.audioDeviceId || deviceState.audioDevices[0]?.deviceId;
-  if (sdk && deviceState.audioDevices.length && !sdk._config.defaults?.audioDeviceId) {
+  let selectedDeviceId: string | undefined;
+  if (sdk?._config && deviceState.audioDevices.length && sdk._config.defaults?.audioDeviceId) {
+    selectedDeviceId = sdk._config.defaults?.audioDeviceId || deviceState.audioDevices[0]?.deviceId;
     updateDefaultDevices({ audioDeviceId: selectedDeviceId });
   }
 
@@ -31,7 +31,7 @@ export default function AudioDevices() {
       return <>
         <div className="audio-device-list">
           <GuxDropdown
-            value={selectedDeviceId}
+            value={selectedDeviceId || deviceState.audioDevices[0]?.deviceId}
             onInput={(e) =>
               updateDefaultDevices({ audioDeviceId: e.currentTarget.value })
             }

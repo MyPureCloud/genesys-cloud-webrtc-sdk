@@ -11,7 +11,7 @@ export default function VideoDevices() {
 
   // We have to do this to set Device defaults on boot
   // because we are not using directory service
-  const selectedDeviceId = sdk._config.defaults?.videoDeviceId || deviceState.videoDevices[0]?.deviceId;
+  const selectedDeviceId = sdk?._config.defaults?.videoDeviceId || deviceState.videoDevices[0]?.deviceId;
   if (sdk && deviceState.videoDevices.length && !sdk._config.defaults?.videoDeviceId) {
     updateDefaultDevices({ videoDeviceId: selectedDeviceId });
   }

@@ -1,13 +1,15 @@
 import {
-  GenesysCloudWebrtcSdk, IExtendedMediaSession,
+  GenesysCloudWebrtcSdk,
+  IExtendedMediaSession,
   ISdkConfig,
   ISdkConversationUpdateEvent,
+  ISdkGumRequest,
+  SdkMediaStateWithType,
   SessionTypes,
   ISessionIdAndConversationId,
-  SdkMediaStateWithType,
-  IExtendedMediaSession
-  ISdkConversationUpdateEvent, ISdkGumRequest, SdkMediaStateWithType,
-  SessionTypes, ISessionIdAndConversationId, MemberStatusMessage, VideoMediaSession, IParticipantsUpdate
+  MemberStatusMessage,
+  VideoMediaSession,
+  IParticipantsUpdate
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -23,14 +25,13 @@ import { useSelector } from 'react-redux';
 import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
-import { RequestApiOptions, IPendingSession } from 'genesys-cloud-streaming-client';
-import { RootState, AppDispatch } from "../store.ts";
 import {
   addParticipantUpdateToVideoConversation,
   addVideoConversationToActive, removeVideoConversationFromActive,
   setActiveParticipants, setUsersTalking,
   updateConversationMediaStreams
 } from "../features/videoConversationsSlice.ts";
+import { AppDispatch } from "../store.ts";
 
 interface IAuthData {
   token: string;
@@ -40,13 +41,11 @@ interface IAuthData {
   };
 }
 
-type IMediaTypes = 'audio' | 'video' | 'both'
-
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch<AppDispatch>();
 
-  const sdk: GenesysCloudWebrtcSdk = useSelector((state: RootState) => state.sdk.sdk);
+  const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {
@@ -101,6 +100,7 @@ export default function useSdk() {
   function handlePendingSession(pendingSession: IPendingSession): void {
     dispatch(updatePendingSessions(pendingSession));
   }
+
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(pendingSession: ISessionIdAndConversationId): void {
     dispatch(removePendingSession(pendingSession));
@@ -199,11 +199,17 @@ export default function useSdk() {
   }
 
   function startVideoConference(roomJid: string): Promise<{ conversationId: string; }> {
+    if (!sdk) {
+      return Promise.reject();
+    }
     return sdk.startVideoConference(roomJid);
   }
 
   function startVideoMeeting(roomJid: string): Promise<{ conversationId: string; }> {
-    return sdk.startVideoMeeting(roomJid);
+    if (!sdk) {
+      return Promise.reject();
+    }
+    return sdk?.startVideoMeeting(roomJid);
   }
 
   function handleSessionEnded(_session: IExtendedMediaSession) {
@@ -223,12 +229,16 @@ export default function useSdk() {
     if (!sdk) return;
     sdk.endSession({ conversationId });
   }
+
   async function toggleAudioMute(mute: boolean, conversationId: string): Promise<void> {
     if (!sdk) return;
     await sdk.setAudioMute({ mute, conversationId });
   }
 
   async function toggleVideoMute(mute: boolean, conversationId: string): Promise<void> {
+    if (!sdk) {
+      return Promise.reject();
+    }
     await sdk.setVideoMute({ mute, conversationId });
   }
 
@@ -245,17 +255,23 @@ export default function useSdk() {
     dispatch(updateGumRequests());
   }
 
-  function updateDefaultDevices(options: { audioDeviceId?: string; videoDeviceId?: string; outputDeviceId?: string }): void {
+  function updateDefaultDevices(options: {
+    audioDeviceId?: string;
+    videoDeviceId?: string;
+    outputDeviceId?: string
+  }): void {
     if (!sdk) return;
     sdk.updateDefaultDevices({
       ...options,
       updateActiveSessions: true,
     });
   }
+
   function enumerateDevices(): void {
     if (!sdk) return;
     sdk.media.enumerateDevices(true);
   }
+
   function requestDevicePermissions(type: string): void {
     if (!sdk) return;
     sdk.media.requestMediaPermissions(type as 'audio' | 'video' | 'both');
@@ -304,7 +320,8 @@ export default function useSdk() {
   }
 
   function getSession(conversationId: string): VideoMediaSession {
-    return sdk.sessionManager.getSession({ conversationId }) as VideoMediaSession;
+    if (!sdk) return {fromUserId: '', sessionType: 'collaborateVideo'} as VideoMediaSession;
+    return sdk.sessionManager.getSession({ conversationId });
   }
 
   return {

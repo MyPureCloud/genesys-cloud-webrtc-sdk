@@ -14,16 +14,10 @@ export default function Video() {
   const vanityVideoRef = useRef<HTMLVideoElement>(null);
 
   const [roomJid, setRoomJid] = useState("2@conference.com");
-  const [error, setError] = useState<string | undefined>();
 
   const startConv = async (callback: (roomJid: string) => Promise<any>, event?: FormEvent<HTMLFormElement>) => {
     if (event) event.preventDefault();
-    try {
-      await callback(roomJid);
-      setError(undefined);
-    } catch (e: any) {
-      setError(e.message);
-    }
+    await callback(roomJid);
   };
 
   return (
@@ -60,7 +54,6 @@ export default function Video() {
         </Card>
         <ActiveVideoConversationsTable/>
       </div>
-      {error && <h3 className="error-message">Error: {error}</h3>}
       <VideoElements audioRef={audioRef} videoRef={videoRef} vanityVideoRef={vanityVideoRef}/>
     </Card>
   );
