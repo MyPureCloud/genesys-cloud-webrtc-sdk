@@ -15,7 +15,7 @@ import {
 import { setSdk } from '../features/sdkSlice';
 import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
-import { RequestApiOptions, IPendingSession, SessionEvents } from 'genesys-cloud-streaming-client';
+import { RequestApiOptions, IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState, AppDispatch } from "../store.ts";
 import {
   addParticipantUpdateToVideoConversation,
@@ -103,10 +103,7 @@ export default function useSdk() {
   async function handleSessionStarted(session: IExtendedMediaSession) {
     if (session.sessionType === 'collaborateVideo') {
 
-      const sessionEventsToLog: Array<keyof SessionEvents> = ['participantsUpdate', 'activeVideoParticipantsUpdate', 'speakersUpdate'];
-      sessionEventsToLog.forEach((eventName) => {
-        session.on(eventName, (e) => console.info(eventName, e));
-      })
+      session.on('participantsUpdate', (e: IParticipantsUpdate) => console.log('participantsUpdate', e));
 
       const localMediaStream = await webrtcSdk.media.startMedia({ video: true, audio: true });
 
