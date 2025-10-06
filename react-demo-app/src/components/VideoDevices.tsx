@@ -3,31 +3,40 @@ import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
+import { useEffect } from "react";
 
 export default function VideoDevices() {
-  const { updateDefaultDevices } = useSdk();
+  const { updateDefaultDevices, getDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
-  const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
-  // We have to do this to set Device defaults on boot
-  // because we are not using directory service
-  const selectedDeviceId = sdk?._config.defaults?.videoDeviceId || deviceState.videoDevices[0]?.deviceId;
-  if (sdk && deviceState.videoDevices.length && !sdk._config.defaults?.videoDeviceId) {
-    updateDefaultDevices({ videoDeviceId: selectedDeviceId });
+  useEffect(() => {
+    const id = localStorage.getItem('videoDeviceId');
+    if (id) {
+      updateDefaultDevices({ videoDeviceId: id });
+    } else {
+      const defaultDeviceId = getDefaultDevices()?.videoDeviceId || deviceState.videoDevices[0].deviceId;
+      updateDefaultDevices({ videoDeviceId: defaultDeviceId });
+      localStorage.setItem('videoDeviceId', defaultDeviceId);
+    }
+  }, []);
+
+  function updateDevice(id: string) {
+    updateDefaultDevices({ videoDeviceId: id });
+    localStorage.setItem('videoDeviceId', id);
   }
 
   function generateVideoDevices() {
     if (deviceState.videoDevices.length) {
       return (
         <GuxDropdown
-          value={selectedDeviceId}
+          value={getDefaultDevices()?.videoDeviceId}
           onInput={(e) =>
-            updateDefaultDevices({ videoDeviceId: e.currentTarget.value })
+            updateDevice(e.currentTarget.value)
           }
         >
           <GuxListbox>
             {deviceState.videoDevices.map((device: MediaDeviceInfo) => (
-              <GuxOption key={device.deviceId} value={device.deviceId}>
+              <GuxOption key={`${device.deviceId}${device.label}`} value={device.deviceId}>
                 {device.label}
               </GuxOption>
             ))}

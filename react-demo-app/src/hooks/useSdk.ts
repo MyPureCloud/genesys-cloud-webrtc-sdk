@@ -323,6 +323,16 @@ export default function useSdk() {
     return sdk.sessionManager.getSession({ conversationId });
   }
 
+  function getDefaultDevices(): {
+    audioVolume?: number | undefined
+    audioDeviceId?: string | undefined
+    videoDeviceId?: string | undefined
+    outputDeviceId?: string | undefined
+  } | undefined {
+    if (!sdk) return
+    return sdk._config.defaults;
+  }
+
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -339,6 +349,7 @@ export default function useSdk() {
     disconnectPersistentConnection,
     startVideoConference,
     startVideoMeeting,
-    getSession
+    getSession,
+    getDefaultDevices
   };
 }

@@ -3,16 +3,26 @@ import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
+import { useEffect } from "react";
 
 export default function OutputDevices() {
-  const { updateDefaultDevices } = useSdk();
+  const { updateDefaultDevices, getDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
-  const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
-  // We have to do this because we are not using directory service
-  const selectedDeviceId = sdk?._config.defaults?.outputDeviceId || deviceState.outputDevices[0]?.deviceId;
-  if (selectedDeviceId && !sdk?._config.defaults?.outputDeviceId) {
-    updateDefaultDevices({ outputDeviceId: selectedDeviceId });
+  useEffect(() => {
+    const id = localStorage.getItem('outputDeviceId');
+    if (id) {
+      updateDefaultDevices({ outputDeviceId: id });
+    } else {
+      const defaultDeviceId = getDefaultDevices()?.outputDeviceId || deviceState.outputDevices[0].deviceId;
+      updateDefaultDevices({ outputDeviceId: defaultDeviceId });
+      localStorage.setItem('outputDeviceId', defaultDeviceId);
+    }
+  }, []);
+
+  function updateDevice(id: string) {
+    updateDefaultDevices({ outputDeviceId: id });
+    localStorage.setItem('outputDeviceId', id);
   }
 
   return (
@@ -21,14 +31,14 @@ export default function OutputDevices() {
         <h4>Output Devices</h4>
         {deviceState.outputDevices.length ? (
           <GuxDropdown
-            value={selectedDeviceId}
+            value={getDefaultDevices()?.outputDeviceId}
             onInput={(e) =>
-              updateDefaultDevices({ outputDeviceId: e.currentTarget.value })
+              updateDevice(e.currentTarget.value)
             }
           >
             <GuxListbox>
               {deviceState.outputDevices.map((device: MediaDeviceInfo) => (
-                <GuxOption key={device.deviceId} value={device.deviceId}>
+                <GuxOption key={`${device.deviceId}${device.label}`} value={device.deviceId}>
                   {device.label}
                 </GuxOption>
               ))}
