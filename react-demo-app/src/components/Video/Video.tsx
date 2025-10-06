@@ -15,7 +15,7 @@ export default function Video() {
 
   const [roomJid, setRoomJid] = useState("2@conference.com");
 
-  const startConv = async (callback: (roomJid: string) => Promise<any>, event?: FormEvent<HTMLFormElement>) => {
+  const startConv = async (callback: (roomJid: string) => Promise<{conversationId: string}>, event?: FormEvent<HTMLFormElement>) => {
     if (event) event.preventDefault();
     await callback(roomJid);
   };

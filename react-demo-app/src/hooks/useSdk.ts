@@ -3,7 +3,6 @@ import {
   IExtendedMediaSession,
   ISdkConfig,
   ISdkConversationUpdateEvent,
-  ISdkGumRequest,
   SdkMediaStateWithType,
   SessionTypes,
   ISessionIdAndConversationId,
@@ -212,7 +211,7 @@ export default function useSdk() {
     return sdk?.startVideoMeeting(roomJid);
   }
 
-  function handleSessionEnded(_session: IExtendedMediaSession) {
+  function handleSessionEnded(/*_session: IExtendedMediaSession*/) {
   }
 
   function handleDisconnected() {
@@ -251,7 +250,7 @@ export default function useSdk() {
     dispatch(updateMediaState(mediaState));
   }
 
-  function handleGumRequest(_gumRequest: ISdkGumRequest): void {
+  function handleGumRequest(/*_gumRequest: ISdkGumRequest*/): void {
     dispatch(updateGumRequests());
   }
 
