@@ -3,24 +3,29 @@ import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function OutputDevices() {
-  const { updateDefaultDevices, getDefaultDevices } = useSdk();
+  const { updateDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
+  const [deviceId, setDeviceId] = useState('');
 
   useEffect(() => {
     const id = localStorage.getItem('outputDeviceId');
     if (id) {
+      setDeviceId(id);
       updateDefaultDevices({ outputDeviceId: id });
     } else {
-      const defaultDeviceId = getDefaultDevices()?.outputDeviceId || deviceState.outputDevices[0].deviceId;
-      updateDefaultDevices({ outputDeviceId: defaultDeviceId });
-      localStorage.setItem('outputDeviceId', defaultDeviceId);
+      const outputDeviceId =
+        deviceState.outputDevices.find(d => d.label.toLowerCase().includes('default'))?.deviceId || deviceState.outputDevices[0].deviceId;
+      setDeviceId(outputDeviceId);
+      updateDefaultDevices({ outputDeviceId });
+      localStorage.setItem('outputDeviceId', outputDeviceId);
     }
   }, []);
 
   function updateDevice(id: string) {
+    setDeviceId(id);
     updateDefaultDevices({ outputDeviceId: id });
     localStorage.setItem('outputDeviceId', id);
   }
@@ -31,7 +36,7 @@ export default function OutputDevices() {
         <h4>Output Devices</h4>
         {deviceState.outputDevices.length ? (
           <GuxDropdown
-            value={getDefaultDevices()?.outputDeviceId}
+            value={deviceId}
             onInput={(e) =>
               updateDevice(e.currentTarget.value)
             }

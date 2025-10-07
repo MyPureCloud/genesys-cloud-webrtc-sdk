@@ -8,7 +8,8 @@ import {
   ISessionIdAndConversationId,
   MemberStatusMessage,
   VideoMediaSession,
-  IParticipantsUpdate
+  IParticipantsUpdate,
+  ISdkGumRequest
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -30,7 +31,7 @@ import {
   setActiveParticipants, setUsersTalking,
   updateConversationMediaStreams
 } from "../features/videoConversationsSlice.ts";
-import { AppDispatch } from "../store.ts";
+import { AppDispatch } from "../types/store.ts";
 
 interface IAuthData {
   token: string;
@@ -43,7 +44,6 @@ interface IAuthData {
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch<AppDispatch>();
-
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
   async function initWebrtcSDK(authData: IAuthData) {
@@ -101,8 +101,8 @@ export default function useSdk() {
   }
 
   // If a pendingSession was cancelled or handled, we can remove it from our state.
-  function handleCancelPendingSession(pendingSession: ISessionIdAndConversationId): void {
-    dispatch(removePendingSession(pendingSession));
+  function handleCancelPendingSession(sessionInfo: ISessionIdAndConversationId): void {
+    dispatch(removePendingSession(sessionInfo));
   }
 
   function handledPendingSession(sessionInfo: ISessionIdAndConversationId): void {
@@ -211,7 +211,7 @@ export default function useSdk() {
     return sdk?.startVideoMeeting(roomJid);
   }
 
-  function handleSessionEnded(/*_session: IExtendedMediaSession*/) {
+  function handleSessionEnded() {
   }
 
   function handleDisconnected() {
@@ -246,11 +246,11 @@ export default function useSdk() {
     await sdk.setConversationHeld({ held, conversationId });
   }
 
-  function handleMediaStateChange(mediaState: SdkMediaStateWithType): void {
-    dispatch(updateMediaState(mediaState));
+  function handleMediaStateChange(state: SdkMediaStateWithType): void {
+    dispatch(updateMediaState(state));
   }
 
-  function handleGumRequest(/*_gumRequest: ISdkGumRequest*/): void {
+  function handleGumRequest(_request: ISdkGumRequest): void {
     dispatch(updateGumRequests());
   }
 
@@ -276,9 +276,9 @@ export default function useSdk() {
     sdk.media.requestMediaPermissions(type as 'audio' | 'video' | 'both');
   }
 
-  function updateAudioVolume(volume: number): void {
+  function updateAudioVolume(volume: string): void {
     if (!sdk) return;
-    sdk.updateAudioVolume(volume);
+    sdk.updateAudioVolume(parseInt(volume));
   }
 
   async function destroySdk(): Promise<void> {
@@ -319,7 +319,7 @@ export default function useSdk() {
   }
 
   function getSession(conversationId: string): VideoMediaSession {
-    if (!sdk) return {fromUserId: '', sessionType: 'collaborateVideo'} as VideoMediaSession;
+    if (!sdk) return { fromUserId: '', sessionType: 'collaborateVideo' } as VideoMediaSession;
     return sdk.sessionManager.getSession({ conversationId });
   }
 

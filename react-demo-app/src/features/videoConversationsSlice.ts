@@ -1,6 +1,6 @@
 import { IParticipantsUpdate } from "genesys-cloud-webrtc-sdk";
 import { createAsyncThunk, createSlice, Draft } from "@reduxjs/toolkit";
-import { RootState } from "../store.ts";
+import { RootState } from "../types/store.ts";
 
 export interface IActiveVideoConversationsState { // rename this to remove the 's'?
   conversationId: string;

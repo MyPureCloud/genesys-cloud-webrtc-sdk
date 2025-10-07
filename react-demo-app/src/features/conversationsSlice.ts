@@ -1,17 +1,20 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { IPendingSession } from '../../../dist/es';
-import { IStoredConversationState} from 'genesys-cloud-webrtc-sdk';
+import { IPendingSession, IStoredConversationState } from '../../../dist/es';
 
 interface IConversationsState {
   pendingSessions: IPendingSession[],
   handledPendingSessions: IPendingSession[],
-  activeConversations: IStoredConversationState[]
+  activeConversations: IActiveConversationsState
+}
+
+interface IActiveConversationsState {
+  [key: string]: IStoredConversationState;
 }
 
 const initialState: IConversationsState = {
   pendingSessions: [],
   handledPendingSessions: [],
-  activeConversations: []
+  activeConversations: {}
 }
 
 export const conversationsSlice = createSlice({
@@ -32,13 +35,12 @@ export const conversationsSlice = createSlice({
       const currentConversations = action.payload.current;
       state.activeConversations = currentConversations;
     },
-    // Unused. typerror
-    // removeConversations: (state, action) => {
-    //   const removedConversations = action.payload.removed;
-    //   for (const id in removedConversations) {
-    //     delete state.activeConversations[id];
-    //   }
-    // },
+    removeConversations: (state, action) => {
+      const removedConversations = action.payload.removed;
+      for (const id in removedConversations) {
+        delete state.activeConversations[id];
+      }
+    },
     storeHandledPendingSession: (state, action) => {
       const existingSession = state.handledPendingSessions.find(session => session.conversationId === action.payload.conversationId);
       if (!existingSession) {

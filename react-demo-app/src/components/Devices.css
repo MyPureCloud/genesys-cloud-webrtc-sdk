@@ -17,3 +17,7 @@
 .device-enum-btn, .device-permissions-btn {
   margin-bottom: 0.5rem;
 }
+
+gux-dropdown {
+  width: 100%;
+}

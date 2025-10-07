@@ -3,24 +3,28 @@ import useSdk from '../hooks/useSdk';
 import { useSelector } from 'react-redux';
 import Card from './Card';
 import { RootState } from '../types/store';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function VideoDevices() {
-  const { updateDefaultDevices, getDefaultDevices } = useSdk();
+  const { updateDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
+  const [deviceId, setDeviceId] = useState('');
 
   useEffect(() => {
     const id = localStorage.getItem('videoDeviceId');
     if (id) {
+      setDeviceId(id);
       updateDefaultDevices({ videoDeviceId: id });
     } else {
-      const defaultDeviceId = getDefaultDevices()?.videoDeviceId || deviceState.videoDevices[0].deviceId;
-      updateDefaultDevices({ videoDeviceId: defaultDeviceId });
-      localStorage.setItem('videoDeviceId', defaultDeviceId);
+      const videoDeviceId = deviceState.videoDevices[0].deviceId;
+      setDeviceId(videoDeviceId);
+      updateDefaultDevices({ videoDeviceId });
+      localStorage.setItem('videoDeviceId', videoDeviceId);
     }
   }, []);
 
   function updateDevice(id: string) {
+    setDeviceId(id);
     updateDefaultDevices({ videoDeviceId: id });
     localStorage.setItem('videoDeviceId', id);
   }
@@ -29,7 +33,7 @@ export default function VideoDevices() {
     if (deviceState.videoDevices.length) {
       return (
         <GuxDropdown
-          value={getDefaultDevices()?.videoDeviceId}
+          value={deviceId}
           onInput={(e) =>
             updateDevice(e.currentTarget.value)
           }

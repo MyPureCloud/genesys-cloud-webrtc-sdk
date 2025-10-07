@@ -4,7 +4,7 @@ import {
   IVideoConversationsState
 } from "../../features/videoConversationsSlice.ts";
 import { useSelector } from "react-redux";
-import { RootState } from "../../store.ts";
+import { RootState } from "../../types/store.ts";
 import './VideoElements.css'
 import VideoElement from "./VideoElement.tsx";
 import useSdk from "../../hooks/useSdk.ts";

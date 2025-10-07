@@ -2,7 +2,7 @@ import { RefObject } from "react";
 import { IActiveVideoConversationsState, IVideoConversationsState } from "../../features/videoConversationsSlice.ts";
 import { useSelector } from "react-redux";
 import './VideoElement.css'
-import { RootState } from "../../store.ts";
+import { RootState } from "../../types/store.ts";
 import { GuxIcon } from "genesys-spark-components-react";
 import useSdk from "../../hooks/useSdk.ts";
 

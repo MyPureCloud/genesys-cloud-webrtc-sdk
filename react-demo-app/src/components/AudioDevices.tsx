@@ -9,29 +9,32 @@ import { RootState } from '../types/store';
 export default function AudioDevices() {
   const { updateDefaultDevices, updateAudioVolume, getDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
-  const [audioVolume, setAudioVolume] = useState(
-    getDefaultDevices()?.audioVolume
-  );
+  const [audioVolume, setAudioVolume] = useState(getDefaultDevices()?.audioVolume);
+  const [deviceId, setDeviceId] = useState('');
 
   useEffect(() => {
     const id = localStorage.getItem('inputDeviceId');
     if (id) {
+      setDeviceId(id);
       updateDefaultDevices({ audioDeviceId: id });
     } else {
-      const defaultDeviceId = getDefaultDevices()?.audioDeviceId || deviceState.audioDevices[0].deviceId;
-      updateDefaultDevices({ audioDeviceId: defaultDeviceId });
-      localStorage.setItem('inputDeviceId', defaultDeviceId);
+      const audioDeviceId =
+        deviceState.audioDevices.find(d => d.label.toLowerCase().includes('default'))?.deviceId || deviceState.audioDevices[0].deviceId;
+      setDeviceId(audioDeviceId);
+      updateDefaultDevices({ audioDeviceId });
+      localStorage.setItem('inputDeviceId', audioDeviceId);
     }
   }, []);
 
   function updateDevice(id: string) {
+    setDeviceId(id);
     updateDefaultDevices({ audioDeviceId: id });
     localStorage.setItem('inputDeviceId', id);
   }
 
-  function updateVolume(volume: number) {
+  function updateVolume(volume: string) {
     updateAudioVolume(volume);
-    setAudioVolume(volume);
+    setAudioVolume(parseInt(volume));
   }
 
   function displayAudioDevices() {
@@ -39,7 +42,7 @@ export default function AudioDevices() {
       return <>
         <div className="audio-device-list">
           <GuxDropdown
-            value={getDefaultDevices()?.audioDeviceId}
+            value={deviceId}
             onInput={(e) =>
               updateDevice(e.currentTarget.value)
             }
@@ -61,7 +64,7 @@ export default function AudioDevices() {
             min="0"
             max="100"
             value={audioVolume}
-            onChange={(e) => updateVolume(+e.target.value)}
+            onChange={(e) => updateVolume(e.target.value)}
           />
           <span className="audio-volume-tooltip">{audioVolume}%</span>
         </div>

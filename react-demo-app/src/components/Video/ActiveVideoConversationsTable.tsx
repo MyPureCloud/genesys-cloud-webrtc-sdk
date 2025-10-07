@@ -10,7 +10,7 @@ import Card from "../Card.tsx";
 import './Video.css'
 import './ActiveVideoConversationsTable.css'
 import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
-import { AppDispatch, RootState } from "../../store.ts";
+import { AppDispatch, RootState } from "../../types/store.ts";
 
 export default function ActiveVideoConversationsTable() {
   const videoConversations: IActiveVideoConversationsState[] = useSelector(
