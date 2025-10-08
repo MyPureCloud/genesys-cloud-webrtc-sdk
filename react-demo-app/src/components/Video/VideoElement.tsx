@@ -1,5 +1,5 @@
 import { RefObject } from "react";
-import { IActiveVideoConversationsState, IVideoConversationsState } from "../../features/videoConversationsSlice.ts";
+import { IActiveVideoConversationState, IVideoConversationsState } from "../../features/videoConversationsSlice.ts";
 import { useSelector } from "react-redux";
 import './VideoElement.css'
 import { RootState } from "../../types/store.ts";
@@ -14,7 +14,7 @@ export default function VideoElement({ videoRef, userId, videoElementId }: {
   const videoConversations: IVideoConversationsState = useSelector((state: RootState) => state.videoConversations);
   const { getSession } = useSdk();
 
-  const activeVideoConv: IActiveVideoConversationsState | undefined = videoConversations.activeVideoConversations.find(
+  const activeVideoConv: IActiveVideoConversationState | undefined = videoConversations.activeVideoConversations.find(
     conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
   const session = activeVideoConv ? getSession(activeVideoConv?.conversationId) : undefined;
   const activeVideoCall = session?.connectionState === 'connected' && session?.state === 'active';

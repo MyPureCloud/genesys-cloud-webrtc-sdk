@@ -1,15 +1,15 @@
 import {
   GenesysCloudWebrtcSdk,
-  IExtendedMediaSession,
   ISdkConfig,
   ISdkConversationUpdateEvent,
-  SdkMediaStateWithType,
   SessionTypes,
   ISessionIdAndConversationId,
+  SdkMediaStateWithType,
   MemberStatusMessage,
   VideoMediaSession,
   IParticipantsUpdate,
-  ISdkGumRequest
+  ISdkGumRequest,
+  IExtendedMediaSession
 } from 'genesys-cloud-webrtc-sdk';
 import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
@@ -99,7 +99,6 @@ export default function useSdk() {
   function handlePendingSession(pendingSession: IPendingSession): void {
     dispatch(updatePendingSessions(pendingSession));
   }
-
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(sessionInfo: ISessionIdAndConversationId): void {
     dispatch(removePendingSession(sessionInfo));
@@ -206,6 +205,7 @@ export default function useSdk() {
     return sdk.startVideoConference(roomJid);
   }
 
+
   function startVideoMeeting(roomJid: string): Promise<{ conversationId: string; }> {
     if (!sdk) {
       return Promise.reject();
@@ -213,14 +213,11 @@ export default function useSdk() {
     return sdk?.startVideoMeeting(roomJid);
   }
 
-  function handleSessionEnded() {
-  }
+  function handleSessionEnded() {}
 
-  function handleDisconnected() {
-  }
+  function handleDisconnected() {}
 
-  function handleConnected() {
-  }
+  function handleConnected() {}
 
   function handleConversationUpdate(update: ISdkConversationUpdateEvent): void {
     dispatch(updateConversations(update));
@@ -230,7 +227,6 @@ export default function useSdk() {
     if (!sdk) return;
     sdk.endSession({ conversationId });
   }
-
   async function toggleAudioMute(mute: boolean, conversationId: string): Promise<void> {
     if (!sdk) return;
     await sdk.setAudioMute({ mute, conversationId });
@@ -251,7 +247,6 @@ export default function useSdk() {
   function handleMediaStateChange(state: SdkMediaStateWithType): void {
     dispatch(updateMediaState(state));
   }
-
   function handleGumRequest(_request: ISdkGumRequest): void {
     dispatch(updateGumRequests());
   }
@@ -267,17 +262,14 @@ export default function useSdk() {
       updateActiveSessions: true,
     });
   }
-
   function enumerateDevices(): void {
     if (!sdk) return;
     sdk.media.enumerateDevices(true);
   }
-
   function requestDevicePermissions(type: string): void {
     if (!sdk) return;
     sdk.media.requestMediaPermissions(type as 'audio' | 'video' | 'both');
   }
-
   function updateAudioVolume(volume: string): void {
     if (!sdk) return;
     sdk.updateAudioVolume(parseInt(volume));
