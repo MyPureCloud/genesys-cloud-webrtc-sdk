@@ -17,6 +17,7 @@ export default function VideoElement({ videoRef, userId, videoElementId }: {
   const activeVideoConv: IActiveVideoConversationsState | undefined = videoConversations.activeVideoConversations.find(
     conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
   const session = activeVideoConv ? getSession(activeVideoConv?.conversationId) : undefined;
+  const activeVideoCall = session?.connectionState === 'connected' && session?.state === 'active';
 
   function isUserTalking(): boolean {
     return !!userId && !!activeVideoConv?.usersTalking?.[userId];
@@ -45,28 +46,25 @@ export default function VideoElement({ videoRef, userId, videoElementId }: {
   }
 
   const cameraOffElement = () => {
-    return showSvg() && (<div className="logo-container">
+    return showSvg() && activeVideoCall && (<div className="logo-container">
       <GuxIcon decorative iconName="fa/user-solid" size="large" className="gux-icon"/>
     </div>)
   }
 
   const waitingForOthersElement = () => {
-    return showWaitingForOthers() && (
+    return showWaitingForOthers() && activeVideoCall && (
       <div className="logo-container waiting-for-others">
         <h3>Waiting for others to connect...</h3>
       </div>
     );
   }
 
-  const activeVideoCall = session?.connectionState === 'connected' && session?.state === 'active';
-
   return (
     <div className={`border video-element-container ${isUserTalking() ? 'active-border ' : 'inactive-border'}`}>
-      <div style={{ visibility: activeVideoCall ? 'visible' : 'hidden' }}>
-        <video id={videoElementId} ref={videoRef} autoPlay playsInline muted={true}/>
-        {cameraOffElement()}
-        {waitingForOthersElement()}
-      </div>
+      <video style={{ visibility: !activeVideoCall || showWaitingForOthers() || showSvg() ? 'hidden' : 'visible' }} id={videoElementId}
+             ref={videoRef} autoPlay playsInline muted={true}/>
+      {cameraOffElement()}
+      {waitingForOthersElement()}
     </div>
   );
 }

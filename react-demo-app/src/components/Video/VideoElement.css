@@ -1,3 +1,16 @@
+.logo-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  background-color: #B8B8B8
+}
+
 .waiting-for-others {
   color: #1b2c48;
   background-color: #f3f3f3;
@@ -5,7 +18,6 @@
 
 .border {
   border-radius: 4px;
-  box-sizing: border-box;
 }
 
 .active-border {
@@ -14,4 +26,12 @@
 
 .inactive-border {
   border: 10px solid transparent;
+}
+
+.video-element-container {
+  position: relative;
+  height: 450px;
+  width: 600px;
+  overflow: hidden;
+  background-color: #f2f2f2;
 }
