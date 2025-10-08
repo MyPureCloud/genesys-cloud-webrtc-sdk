@@ -3,14 +3,6 @@
   border-collapse: collapse;
 }
 
-/*this one below is not really necessary*/
-.active-convo-table thead th, tr, td {
-  text-align: left;
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  table-layout: fixed;
-}
-
 .td-overflow {
   overflow: hidden;
   text-overflow: ellipsis;
