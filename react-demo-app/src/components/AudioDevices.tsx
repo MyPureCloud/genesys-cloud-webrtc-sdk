@@ -7,9 +7,8 @@ import Card from './Card';
 import { RootState } from '../types/store';
 
 export default function AudioDevices() {
-  const { updateDefaultDevices, updateAudioVolume, getDefaultDevices } = useSdk();
+  const { updateDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
-  const [audioVolume, setAudioVolume] = useState(getDefaultDevices()?.audioVolume);
   const [deviceId, setDeviceId] = useState('');
 
   useEffect(() => {
@@ -32,11 +31,6 @@ export default function AudioDevices() {
     localStorage.setItem('inputDeviceId', id);
   }
 
-  function updateVolume(volume: string) {
-    updateAudioVolume(volume);
-    setAudioVolume(parseInt(volume));
-  }
-
   function displayAudioDevices() {
     if (deviceState.audioDevices.length) {
       return <>
@@ -55,18 +49,6 @@ export default function AudioDevices() {
               ))}
             </GuxListbox>
           </GuxDropdown>
-        </div>
-        <div className="audio-device-volume">
-          <label htmlFor="audio-volume">Audio Volume</label>
-          <input
-            name="audio-volume"
-            type="range"
-            min="0"
-            max="100"
-            value={audioVolume}
-            onChange={(e) => updateVolume(e.target.value)}
-          />
-          <span className="audio-volume-tooltip">{audioVolume}%</span>
         </div>
       </>
     } else {

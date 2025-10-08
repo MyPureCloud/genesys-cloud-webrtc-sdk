@@ -6,9 +6,10 @@ import { RootState } from '../types/store';
 import { useEffect, useState } from "react";
 
 export default function OutputDevices() {
-  const { updateDefaultDevices } = useSdk();
+  const { updateDefaultDevices, getDefaultDevices, updateAudioVolume } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
   const [deviceId, setDeviceId] = useState('');
+  const [audioVolume, setAudioVolume] = useState(getDefaultDevices()?.audioVolume);
 
   useEffect(() => {
     const id = localStorage.getItem('outputDeviceId');
@@ -30,25 +31,44 @@ export default function OutputDevices() {
     localStorage.setItem('outputDeviceId', id);
   }
 
+  function updateVolume(volume: string) {
+    updateAudioVolume(volume);
+    setAudioVolume(parseInt(volume));
+  }
+
   return (
     <>
       <Card className="output-devices-container">
         <h4>Output Devices</h4>
         {deviceState.outputDevices.length ? (
-          <GuxDropdown
-            value={deviceId}
-            onInput={(e) =>
-              updateDevice(e.currentTarget.value)
-            }
-          >
-            <GuxListbox>
-              {deviceState.outputDevices.map((device: MediaDeviceInfo) => (
-                <GuxOption key={`${device.deviceId}${device.label}`} value={device.deviceId}>
-                  {device.label}
-                </GuxOption>
-              ))}
-            </GuxListbox>
-          </GuxDropdown>
+          <div>
+            <GuxDropdown
+              value={deviceId}
+              onInput={(e) =>
+                updateDevice(e.currentTarget.value)
+              }
+            >
+              <GuxListbox>
+                {deviceState.outputDevices.map((device: MediaDeviceInfo) => (
+                  <GuxOption key={`${device.deviceId}${device.label}`} value={device.deviceId}>
+                    {device.label}
+                  </GuxOption>
+                ))}
+              </GuxListbox>
+            </GuxDropdown>
+            <div className="audio-device-volume">
+              <label htmlFor="audio-volume">Audio Volume</label>
+              <input
+                name="audio-volume"
+                type="range"
+                min="0"
+                max="100"
+                value={audioVolume}
+                onChange={(e) => updateVolume(e.target.value)}
+              />
+              <span className="audio-volume-tooltip">{audioVolume}%</span>
+            </div>
+          </div>
         ) : (
           <p>No output devices.</p>
         )}

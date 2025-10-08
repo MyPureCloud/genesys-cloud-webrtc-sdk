@@ -38,6 +38,9 @@ export default function VideoElements({
     const inboundChanged = activeVideoConv.inboundStream !== videoRef.current?.srcObject;
     if (inboundChanged && videoRef.current && activeVideoConv.inboundStream) {
       videoRef.current.srcObject = activeVideoConv.inboundStream;
+      if (audioRef.current) {
+        audioRef.current.srcObject = activeVideoConv.inboundStream;
+      }
     }
 
     if (vanityVideoRef.current) {
@@ -52,14 +55,14 @@ export default function VideoElements({
       }
     }
   }, [activeVideoConv?.inboundStream, activeVideoConv?.outboundStream, activeVideoConv?.screenOutboundStream,
-    localParticipant?.sharingScreen, videoRef, vanityVideoRef]);
+    localParticipant?.sharingScreen, videoRef, vanityVideoRef, audioRef]);
 
   const participantIdOnScreen = activeVideoConv?.activeParticipant
 
   const userId = (id: string | undefined) => {
     if (!id) return;
-    if (session?.state !== 'active' ||
-      session?.connectionState !== 'connected') return;
+    if (session?.state !== 'active' || session?.connectionState !== 'connected') return;
+    if (!activeParts?.find(p => p.userId === id)) return;
     return (
       <h4>User id: {id}</h4>
     );
@@ -67,16 +70,16 @@ export default function VideoElements({
 
   return (
     <Card className="video-elements-card">
-      <audio ref={audioRef} autoPlay/>
+      <audio muted={true} id={'audio1'} ref={audioRef} autoPlay/>
       <div className="video-sections-container">
         <div className={"video-section"}>
           <h4>Remote Video</h4>
-          <VideoElement videoRef={videoRef} userId={participantIdOnScreen}/>
+          <VideoElement videoElementId={'video1'} videoRef={videoRef} userId={participantIdOnScreen}/>
           {userId(participantIdOnScreen)}
         </div>
         <div className={"video-section"}>
           <h4>Local Video</h4>
-          <VideoElement videoRef={vanityVideoRef} userId={localUserId}/>
+          <VideoElement videoRef={vanityVideoRef} userId={localUserId} />
           {userId(localUserId)}
         </div>
       </div>

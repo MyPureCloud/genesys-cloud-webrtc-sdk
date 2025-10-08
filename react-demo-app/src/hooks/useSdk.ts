@@ -117,10 +117,12 @@ export default function useSdk() {
 
       const localMediaStream = await webrtcSdk.media.startMedia({ video: true, audio: true });
 
+      const audioElement = document.getElementById('audio1') as HTMLAudioElement;
+      const videoElement = document.getElementById('video1') as HTMLVideoElement;
       webrtcSdk.acceptSession({
         conversationId: session.conversationId,
-        audioElement: document.createElement('audio'),
-        videoElement: document.createElement('video'),
+        audioElement: audioElement ?? undefined,
+        videoElement: videoElement ?? undefined,
         mediaStream: localMediaStream
       });
 

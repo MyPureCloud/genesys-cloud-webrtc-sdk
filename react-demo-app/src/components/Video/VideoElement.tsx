@@ -6,15 +6,16 @@ import { RootState } from "../../types/store.ts";
 import { GuxIcon } from "genesys-spark-components-react";
 import useSdk from "../../hooks/useSdk.ts";
 
-export default function VideoElement({ videoRef, userId }: {
+export default function VideoElement({ videoRef, userId, videoElementId }: {
   videoRef: RefObject<HTMLVideoElement>,
-  userId: string | undefined
+  userId: string | undefined,
+  videoElementId?: string
 }) {
   const videoConversations: IVideoConversationsState = useSelector((state: RootState) => state.videoConversations);
   const { getSession } = useSdk();
 
   const activeVideoConv: IActiveVideoConversationsState | undefined = videoConversations.activeVideoConversations.find(
-      conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
+    conv => conv.conversationId === videoConversations.currentlyDisplayedConversationId);
   const session = activeVideoConv ? getSession(activeVideoConv?.conversationId) : undefined;
 
   function isUserTalking(): boolean {
@@ -58,17 +59,14 @@ export default function VideoElement({ videoRef, userId }: {
   }
 
   const activeVideoCall = session?.connectionState === 'connected' && session?.state === 'active';
-  const shouldMuteAudio = session?.fromUserId === userId;
 
-  return activeVideoCall ? (
-    <div className={`border ${isUserTalking() ? 'active-border' : 'inactive-border'}`}>
-      <div className="video-element-container">
-        <video ref={videoRef} autoPlay playsInline muted={shouldMuteAudio}/>
+  return (
+    <div className={`border video-element-container ${isUserTalking() ? 'active-border ' : 'inactive-border'}`}>
+      <div style={{ visibility: activeVideoCall ? 'visible' : 'hidden' }}>
+        <video id={videoElementId} ref={videoRef} autoPlay playsInline muted={true}/>
         {cameraOffElement()}
         {waitingForOthersElement()}
       </div>
     </div>
-  ) : (<div className="border inactive-border">
-    <div className=" video-element-container"/>
-  </div>);
+  );
 }
