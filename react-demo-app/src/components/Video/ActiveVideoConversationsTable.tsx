@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { GuxButton, GuxRadialLoading, GuxTable } from "genesys-spark-components-react";
 import useSdk from "../../hooks/useSdk.ts";
 import {
-  IActiveVideoConversationsState, setCurrentlyDisplayedConversation,
+  IActiveVideoConversationState, setCurrentlyDisplayedConversation,
   toggleAudioMute,
   toggleVideoMute, updateConversationMediaStreams
 } from "../../features/videoConversationsSlice.ts";
@@ -13,7 +13,7 @@ import { VideoMediaSession } from "genesys-cloud-webrtc-sdk";
 import { AppDispatch, RootState } from "../../types/store.ts";
 
 export default function ActiveVideoConversationsTable() {
-  const videoConversations: IActiveVideoConversationsState[] = useSelector(
+  const videoConversations: IActiveVideoConversationState[] = useSelector(
     (state: RootState) => state.videoConversations.activeVideoConversations
   );
   const dispatch = useDispatch<AppDispatch>();
@@ -83,7 +83,7 @@ export default function ActiveVideoConversationsTable() {
     session.stopScreenShare && session.stopScreenShare();
   }
 
-  const selectConvButton = (convo: IActiveVideoConversationsState) => {
+  const selectConvButton = (convo: IActiveVideoConversationState) => {
     return (
       <GuxButton onClick={() => handleConversationSwitch(convo.conversationId)}
                  disabled={currentlyDisplayedConversationId === convo.conversationId}>
@@ -149,7 +149,7 @@ export default function ActiveVideoConversationsTable() {
           </tr>
           </thead>
           <tbody>
-          {videoConversations.map((convo: IActiveVideoConversationsState, index: number) => {
+          {videoConversations.map((convo: IActiveVideoConversationState, index: number) => {
             const session = getSession(convo.conversationId)
             return (
               <tr key={`${convo.conversationId}${session.id}`}>

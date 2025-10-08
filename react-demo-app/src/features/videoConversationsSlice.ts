@@ -2,7 +2,7 @@ import { IParticipantsUpdate } from "genesys-cloud-webrtc-sdk";
 import { createAsyncThunk, createSlice, Draft } from "@reduxjs/toolkit";
 import { RootState } from "../types/store.ts";
 
-export interface IActiveVideoConversationsState { // rename this to remove the 's'?
+export interface IActiveVideoConversationState {
   conversationId: string;
   participantsUpdate?: IParticipantsUpdate;
   loadingVideo: boolean;
@@ -11,11 +11,11 @@ export interface IActiveVideoConversationsState { // rename this to remove the '
   outboundStream?: MediaStream;
   screenOutboundStream?: MediaStream;
   activeParticipant?: string;
-  usersTalking?: {[userId: string]: boolean};
+  usersTalking?: { [userId: string]: boolean };
 }
 
 export interface IVideoConversationsState {
-  activeVideoConversations: IActiveVideoConversationsState[];
+  activeVideoConversations: IActiveVideoConversationState[];
   currentlyDisplayedConversationId: string | null;
 }
 
@@ -108,7 +108,13 @@ export const videoConversationsSlice = createSlice({
     setUsersTalking: (state, action) => {
       const conv = findConversationInState(state, action.payload.conversationId);
       if (conv) {
-        conv.usersTalking = action.payload.usersTalking;
+        const usersTalkingObj = action.payload.usersTalking;
+        for (const userId in usersTalkingObj) {
+          if (conv.usersTalking && conv.usersTalking[userId] !== usersTalkingObj[userId]) {
+            conv.usersTalking = action.payload.usersTalking;
+            break;
+          }
+        }
       }
     }
   },
