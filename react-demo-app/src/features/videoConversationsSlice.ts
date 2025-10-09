@@ -108,6 +108,9 @@ export const videoConversationsSlice = createSlice({
     setUsersTalking: (state, action) => {
       const conv = findConversationInState(state, action.payload.conversationId);
       if (conv) {
+        if (!conv.usersTalking) {
+          conv.usersTalking = {};
+        }
         const usersTalkingObj = action.payload.usersTalking;
         for (const userId in usersTalkingObj) {
           if (conv.usersTalking && conv.usersTalking[userId] !== usersTalkingObj[userId]) {
