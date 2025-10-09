@@ -70,7 +70,7 @@ export default function VideoElements({
 
   return (
     <Card className="video-elements-card">
-      <audio muted={true} id={'audio1'} ref={audioRef} autoPlay/>
+      <audio id={'audio1'} ref={audioRef} autoPlay/>
       <div className="video-sections-container">
         <div className={"video-section"}>
           <h4>Remote Video</h4>
