@@ -113,7 +113,7 @@ export const videoConversationsSlice = createSlice({
         }
         const usersTalkingObj = action.payload.usersTalking;
         for (const userId in usersTalkingObj) {
-          if (conv.usersTalking && conv.usersTalking[userId] !== usersTalkingObj[userId]) {
+          if (conv.usersTalking[userId] !== usersTalkingObj[userId]) {
             conv.usersTalking = action.payload.usersTalking;
             break;
           }

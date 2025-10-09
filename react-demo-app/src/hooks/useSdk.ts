@@ -232,13 +232,6 @@ export default function useSdk() {
     await sdk.setAudioMute({ mute, conversationId });
   }
 
-  async function toggleVideoMute(mute: boolean, conversationId: string): Promise<void> {
-    if (!sdk) {
-      return Promise.reject();
-    }
-    await sdk.setVideoMute({ mute, conversationId });
-  }
-
   async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
     if (!sdk) return;
     await sdk.setConversationHeld({ held, conversationId });
@@ -332,7 +325,6 @@ export default function useSdk() {
     startSoftphoneSession,
     endSession,
     toggleAudioMute,
-    toggleVideoMute,
     toggleHoldState,
     updateDefaultDevices,
     enumerateDevices,
