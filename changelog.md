@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v11.3.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...v11.3.3)
 #### Changed
-* [NO-JIRA] - Exposes raw webmessage data from conversation topic
+* [#937] - Exposes raw webmessage data from conversation topic
 
 # [v11.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.1...v11.3.2)
 ### Changed
