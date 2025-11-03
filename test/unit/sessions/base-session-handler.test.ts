@@ -466,6 +466,9 @@ describe('handleConversationUpdate', () => {
   it('nothing to test', () => {
     handler.handleConversationUpdate({} as any, {} as any);
   });
+  it('nothing to test', () => {
+    handler.handleConversationUpdateRaw({} as any);
+  });
 });
 
 describe('handlePropose', () => {
