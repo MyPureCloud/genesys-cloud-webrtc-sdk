@@ -544,7 +544,7 @@ describe('handleSessionInit', () => {
 
   it('should terminate session when connectionState becomes failed', async () => {
     const session: any = new MockSession();
-    const onSessionTerminatedSpy = jest.spyOn(handler, 'onSessionTerminated');
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession');
     const logSpy = jest.spyOn(handler, 'log' as any);
 
     session.id = '123abc';
@@ -560,7 +560,7 @@ describe('handleSessionInit', () => {
       sid: session.id,
       sessionType: session.sessionType
     });
-    expect(onSessionTerminatedSpy).toHaveBeenCalledWith(session, { condition: 'failed-transport' });
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'failed-transport');
   });
 
   it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {

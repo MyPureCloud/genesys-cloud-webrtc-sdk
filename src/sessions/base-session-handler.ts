@@ -118,7 +118,7 @@ export default abstract class BaseSessionHandler {
       /* If the RTCPeerConnection is in a 'failed' state, it is a state of finality and we need to clean up the session. */
       if (state === 'failed') {
         this.log('warn', 'RTCPeerConnection failed. Cleaning up session.', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
-        this.onSessionTerminated(session, { condition: Constants.JingleReasonCondition.FailedTransport });
+        this.forceEndSession(session, Constants.JingleReasonCondition.FailedTransport);
       }
     });
 
