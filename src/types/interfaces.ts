@@ -1215,6 +1215,13 @@ export interface IStartSoftphoneSessionParams extends IStartSessionParams {
   uuiData?: string;
 }
 
+export interface IStartScreenConferenceSessionParams extends IStartSessionParams {
+  /** Conference room JID to join */
+  conferenceJid: string;
+  /** Screen recording metadata to identify primary screen */
+  screenRecordingMetadatas: ScreenRecordingMetadata[];
+}
+
 export interface ISdkSoftphoneDestination {
   /** address or phone number */
   address: string;

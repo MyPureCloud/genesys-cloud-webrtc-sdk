@@ -14,12 +14,16 @@ test/test-pages/*/index.html
 
 *.tgz
 .ignore
+.DS_Store
 
 ## vscode specific files
 /.vscode
 
 ## webstorm specific files
 /.idea
+
+## jetbrains specific files
+genesys-cloud-webrtc-sdk.iml
 
 # tap specific files
 /.nyc_output

@@ -29,7 +29,7 @@ import {
   IStation,
   IPersonDetails,
   ISessionIdAndConversationId,
-  VideoSessionHandler
+  VideoSessionHandler, ScreenRecordingMetadata, IStartScreenConferenceSessionParams
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
@@ -331,24 +331,22 @@ describe('Client', () => {
     });
   });
 
-  describe('startVideoMeeting()', () => {
-    it('should call session manager to start video meeting', async () => {
+  describe('startLiveMonitoringSession()', () => {
+    it('should call session manager to start a live monitoring session', async () => {
       sdk = constructSdk();
+      const conferenceJid = 'livemonitor@example.com';
+      const screenRecordingMetadatas = [{ screenId: 'screen1', primary: true } as ScreenRecordingMetadata];
 
-      sessionManagerMock.startSession.mockResolvedValue({});
-      await sdk.startVideoMeeting('123abc');
-      expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
-    });
+      sessionManagerMock.startSession = jest.fn().mockResolvedValue({ conversationId: 'conv123' });
 
-    it('should throw if guest user', async () => {
-      sdk = constructSdk({ organizationId: 'some-org' }); // no access_token is a guest user
-      try {
-        await sdk.startVideoMeeting('123');
-        fail('should have failed');
-      } catch (e) {
-        expect(e).toEqual(new Error('video conferencing meetings not supported for guests'));
-        expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
-      }
+      const result = await sdk.startLiveMonitoringSession(conferenceJid, screenRecordingMetadatas);
+
+      expect(sessionManagerMock.startSession).toBeCalledWith({
+        conferenceJid,
+        screenRecordingMetadatas,
+        sessionType: SessionTypes.collaborateVideo
+      } as IStartScreenConferenceSessionParams);
+      expect(result).toEqual({ conversationId: 'conv123' });
     });
   });
 

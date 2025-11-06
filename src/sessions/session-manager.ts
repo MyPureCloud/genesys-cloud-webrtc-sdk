@@ -21,19 +21,21 @@ import {
   IConversationHeldRequest,
   IPendingSessionActionParams,
   VideoMediaSession,
-  IActiveConversationDescription
+  IActiveConversationDescription, IStartScreenConferenceSessionParams
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
 import { Constants } from 'stanza';
 import ScreenRecordingSessionHandler from './screen-recording-session-handler';
+import LiveMonitoringSessionHandler from './live-monitoring-session-handler';
 import { WebrtcExtensionAPI } from 'genesys-cloud-streaming-client/dist/es/webrtc';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
   VideoSessionHandler,
   ScreenShareSessionHandler,
-  ScreenRecordingSessionHandler
+  ScreenRecordingSessionHandler,
+  LiveMonitoringSessionHandler
 ];
 
 export class SessionManager {
@@ -175,7 +177,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams): Promise<any> {
+  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams | IStartScreenConferenceSessionParams): Promise<any> {
     if (!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
     }
@@ -400,7 +402,7 @@ export class SessionManager {
     }
 
     session._alreadyAccepted = true;
-    
+
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }

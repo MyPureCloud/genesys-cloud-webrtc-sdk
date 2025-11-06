@@ -157,6 +157,10 @@ class MockPC extends EventTarget {
   _addReceiver (track: MockTrack) {
     this._receivers.push(new MockReceiver(track));
   }
+
+  addTrack (track: MockTrack) {
+    this._addSender(track);
+  }
 }
 
 export class MockSession extends EventEmitter {
