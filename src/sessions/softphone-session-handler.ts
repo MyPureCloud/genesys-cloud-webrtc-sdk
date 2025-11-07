@@ -500,7 +500,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id).reverse();
+    // Filter out voicemail participants - user ID can appear multiple times with different purposes.
+    const participantsForUser = update.participants.filter((p) => p.userId === this.sdk._personDetails.id && p.purpose !== 'voicemail').reverse();
     let participant: IConversationParticipantFromEvent;
 
     if (!participantsForUser.length) {
