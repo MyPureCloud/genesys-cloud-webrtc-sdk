@@ -185,7 +185,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   getActiveConversations (): IActiveConversationDescription[] {
     const currentConversations = this.lastEmittedSdkConversationEvent?.current || [];
 
-    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
+    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo?.session.id, sessionType: this.sessionType }));
   }
 
   handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
