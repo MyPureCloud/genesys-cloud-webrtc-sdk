@@ -466,7 +466,8 @@ export default abstract class BaseSessionHandler {
         }
 
         this.log('debug', 'Adding track to session', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-        promises.push(session.peerConnection.addTrack(t));
+        // Use addTrack with the stream to ensure proper track handling for multiple tracks of the same kind
+        promises.push(session.peerConnection.addTrack(t, stream));
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
@@ -503,14 +504,18 @@ export default abstract class BaseSessionHandler {
       await this.waitForSessionConnected(session);
     }
 
-    // find a transceiver with the same kind of track
+    // find a transceiver with the same kind of track that doesn't already have a track
+    // or find the first available transceiver for replacement
     const transceiver = session.peerConnection.getTransceivers().find(t => {
+      return (t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind) && 
+             (!t.sender.track || t.sender.track.readyState === 'ended');
+    }) || session.peerConnection.getTransceivers().find(t => {
       return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
     });
 
     let sender: RTCRtpSender;
 
-    if (transceiver) {
+    if (transceiver && transceiver.sender.track) {
       await transceiver.sender.replaceTrack(track);
       sender = transceiver.sender;
     } else {
