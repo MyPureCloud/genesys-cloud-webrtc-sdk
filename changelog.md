@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...HEAD)
+### Fixed
+* [STREAM-987](https://inindca.atlassian.net/browse/STREAM-987) - Demo app: Memoize conversations so they don't change every render when nothing has changed
 
 # [v11.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.1...v11.3.2)
 ### Changed
