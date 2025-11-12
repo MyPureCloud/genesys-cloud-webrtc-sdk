@@ -660,7 +660,7 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   mediaStream?: MediaStream;
 
   /**
-   * metadata about screens and tracks. This is required for screen recording sessions
+   * metadata about screens and tracks. This is required for screen recording and live monitoring sessions
    */
   screenRecordingMetadatas?: ScreenRecordingMetadata[];
 
@@ -962,6 +962,10 @@ export interface ScreenRecordingMetadata {
   primary: boolean;
 }
 
+export interface LiveMonitoringMetadata extends ScreenRecordingMetadata {
+
+}
+
 export interface SubscriptionEvent {
   metadata: {
     correlationId: string;
@@ -1216,11 +1220,11 @@ export interface IStartSoftphoneSessionParams extends IStartSessionParams {
   uuiData?: string;
 }
 
-export interface IStartScreenConferenceSessionParams extends IStartSessionParams {
+export interface IStartLiveMonitoringSessionParams extends IStartSessionParams {
   /** Conference room JID to join */
   conferenceJid: string;
   /** Screen recording metadata to identify primary screen */
-  screenRecordingMetadatas: ScreenRecordingMetadata[];
+  liveMonitoringMetadata: LiveMonitoringMetadata[];
 }
 
 export interface ISdkSoftphoneDestination {

@@ -21,7 +21,7 @@ import {
   IConversationHeldRequest,
   IPendingSessionActionParams,
   VideoMediaSession,
-  IActiveConversationDescription, IStartScreenConferenceSessionParams,
+  IActiveConversationDescription, IStartLiveMonitoringSessionParams,
   SubscriptionEvent
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
@@ -187,7 +187,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams | IStartScreenConferenceSessionParams): Promise<any> {
+  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams | IStartLiveMonitoringSessionParams): Promise<any> {
     if (!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
     }

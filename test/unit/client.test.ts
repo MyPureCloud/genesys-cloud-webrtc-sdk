@@ -29,7 +29,9 @@ import {
   IStation,
   IPersonDetails,
   ISessionIdAndConversationId,
-  VideoSessionHandler, ScreenRecordingMetadata, IStartScreenConferenceSessionParams
+  VideoSessionHandler,
+  LiveMonitoringMetadata,
+  IStartLiveMonitoringSessionParams
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
@@ -335,17 +337,17 @@ describe('Client', () => {
     it('should call session manager to start a live monitoring session', async () => {
       sdk = constructSdk();
       const conferenceJid = 'livemonitor@example.com';
-      const screenRecordingMetadatas = [{ screenId: 'screen1', primary: true } as ScreenRecordingMetadata];
+      const liveMonitoringMetadata = [{ screenId: 'screen1', primary: true } as LiveMonitoringMetadata];
 
       sessionManagerMock.startSession = jest.fn().mockResolvedValue({ conversationId: 'conv123' });
 
-      const result = await sdk.startLiveMonitoringSession(conferenceJid, screenRecordingMetadatas);
+      const result = await sdk.startLiveMonitoringSession(conferenceJid, liveMonitoringMetadata);
 
       expect(sessionManagerMock.startSession).toBeCalledWith({
         conferenceJid,
-        screenRecordingMetadatas,
+        liveMonitoringMetadata,
         sessionType: SessionTypes.collaborateVideo
-      } as IStartScreenConferenceSessionParams);
+      } as IStartLiveMonitoringSessionParams);
       expect(result).toEqual({ conversationId: 'conv123' });
     });
   });

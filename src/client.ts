@@ -29,7 +29,7 @@ import {
   VideoMediaSession,
   IVideoResolution,
   JWTDetails,
-  ISdkFullConfig
+  ISdkFullConfig, LiveMonitoringMetadata
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -410,14 +410,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * `initialize()` must be called first.
    *
    * @param conferenceJid JID of the conference to join
-   * @param screenRecordingMetadatas Array of screen metadata to identify primary screen
+   * @param liveMonitoringMetadata Array of screen metadata to identify primary screen
    *
    * @returns a promise with an object with the newly created 'conversationId'
    */
-  async startLiveMonitoringSession (conferenceJid: string, screenRecordingMetadatas: ScreenRecordingMetadata[]): Promise<{ conversationId: string }> {
+  async startLiveMonitoringSession (conferenceJid: string, liveMonitoringMetadata: LiveMonitoringMetadata[]): Promise<{ conversationId: string }> {
     return this.sessionManager.startSession({
       conferenceJid,
-      screenRecordingMetadatas,
+      liveMonitoringMetadata,
       sessionType: SessionTypes.collaborateVideo
     });
   }

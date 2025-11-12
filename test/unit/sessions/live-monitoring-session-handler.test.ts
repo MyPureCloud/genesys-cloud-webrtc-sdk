@@ -124,7 +124,7 @@ describe('startSession', () => {
   it('should throw error if no primary screen found', async () => {
     const params = {
       conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: [{ screenId: 'screen1', primary: false }]
+      liveMonitoringMetadata: [{ screenId: 'screen1', primary: false }]
     };
 
     await expect(handler.startSession(params as any))
@@ -140,7 +140,7 @@ describe('startSession', () => {
 
     const params = {
       conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: mockMetadatas
+      liveMonitoringMetadata: mockMetadatas
     };
 
     const result = await handler.startSession(params as any);
@@ -165,7 +165,7 @@ describe('startSession', () => {
 
     const params = {
       conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: mockMetadatas
+      liveMonitoringMetadata: mockMetadatas
     };
 
     await expect(handler.startSession(params as any))
@@ -183,7 +183,7 @@ describe('startSession', () => {
 
     const params = {
       conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: mockMetadatas
+      liveMonitoringMetadata: mockMetadatas
     };
 
     await expect(handler.startSession(params as any))

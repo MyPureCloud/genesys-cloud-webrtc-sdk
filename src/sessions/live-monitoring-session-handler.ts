@@ -2,8 +2,9 @@ import {
   IPendingSession,
   IExtendedMediaSession,
   IAcceptSessionRequest,
-  ScreenRecordingMetadata,
-  IUpdateOutgoingMedia, IStartScreenConferenceSessionParams,
+  LiveMonitoringMetadata,
+  IUpdateOutgoingMedia,
+  IStartLiveMonitoringSessionParams
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
@@ -26,23 +27,20 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     return this.proceedWithSession(pendingSession);
   }
 
-  async startSession(params: IStartScreenConferenceSessionParams): Promise<{ conversationId: string }> {
-    const primaryScreen = this.identifyPrimaryScreen(params.screenRecordingMetadatas);
-
+  async startSession(params: IStartLiveMonitoringSessionParams): Promise<{ conversationId: string }> {
+    const primaryScreen = this.identifyPrimaryScreen(params.liveMonitoringMetadata);
     if (!primaryScreen) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'No primary screen found in metadata');
     }
-
     const screenStream = await this.getScreenMediaForPrimary(primaryScreen);
-
     return this.joinConferenceWithScreen(params.conferenceJid, screenStream);
   }
 
-  private identifyPrimaryScreen(metadatas: ScreenRecordingMetadata[]): ScreenRecordingMetadata | null {
-    return metadatas.find(metadata => metadata.primary) || null;
+  private identifyPrimaryScreen(metadata: LiveMonitoringMetadata[]): LiveMonitoringMetadata | null {
+    return metadata.find(metadata => metadata.primary) || null;
   }
 
-  private async getScreenMediaForPrimary(primaryScreen: ScreenRecordingMetadata): Promise<MediaStream> {
+  private async getScreenMediaForPrimary(primaryScreen: LiveMonitoringMetadata): Promise<MediaStream> {
     try {
       const constraints = {
         video: {
