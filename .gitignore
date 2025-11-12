@@ -14,15 +14,12 @@ test/test-pages/*/index.html
 
 *.tgz
 .ignore
-.DS_Store
 
 ## vscode specific files
 /.vscode
 
-## webstorm specific files
-/.idea
-
 ## jetbrains specific files
+/.idea
 genesys-cloud-webrtc-sdk.iml
 
 # tap specific files
@@ -32,3 +29,5 @@ genesys-cloud-webrtc-sdk.iml
 /.npmrc
 
 /test-results
+
+.DS_Store

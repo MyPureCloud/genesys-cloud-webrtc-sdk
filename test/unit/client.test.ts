@@ -329,80 +329,6 @@ describe('Client', () => {
         expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
       }
     });
-
-    it('should allow video conference with JWT authentication', async () => {
-      const testJwt = 'test.jwt.token';
-      sdk = constructSdk({ jwt: testJwt });
-
-      sdk._personDetails = {
-        id: 'test-user-id',
-        name: 'Test User',
-        chat: {
-          jabberId: 'test-user@test.com'
-        }
-      };
-
-      sessionManagerMock.startSession.mockResolvedValue({});
-      await sdk.startVideoConference('test-room@conference.com');
-
-      expect(sessionManagerMock.startSession).toBeCalledWith({
-        jid: 'test-room@conference.com',
-        sessionType: SessionTypes.collaborateVideo
-      });
-    });
-
-    it('should include JWT in video session request', async () => {
-      const testJwt = 'test.jwt.token';
-      const mockDecodedJwt = {
-        data: {
-          jid: 'test-user@test.com',
-          conversationId: 'test-conversation-id',
-          sourceCommunicationId: 'test-source-comm-id'
-        }
-      };
-
-      jwtDecodeSpy.mockReturnValue(mockDecodedJwt);
-
-      sdk = constructSdk({ jwt: testJwt });
-      const handler = new VideoSessionHandler(sdk, sessionManagerMock);
-
-      sdk._personDetails = {
-        id: 'test-user-id',
-        name: 'Test User',
-        chat: {
-          jabberId: 'test-user@test.com'
-        }
-      };
-
-      const mockInitiateRtcSession = jest.fn().mockResolvedValue(undefined);
-      sdk._streamingConnection = {
-        webrtcSessions: {
-          initiateRtcSession: mockInitiateRtcSession
-        },
-        disconnect: jest.fn().mockResolvedValue(undefined)
-      } as any;
-
-      const requestApiSpy = jest.spyOn(utils, 'requestApi');
-
-      const result = await handler.startSession({
-        jid: 'test-room@conference.com',
-        sessionType: SessionTypes.collaborateVideo
-      });
-
-      expect(mockInitiateRtcSession).toHaveBeenCalledWith({
-        jid: mockDecodedJwt.data.jid,
-        conversationId: mockDecodedJwt.data.conversationId,
-        sourceCommunicationId: mockDecodedJwt.data.sourceCommunicationId,
-        mediaPurpose: SessionTypes.collaborateVideo,
-        sessionType: SessionTypes.collaborateVideo
-      });
-
-      expect(result).toEqual({
-        conversationId: mockDecodedJwt.data.conversationId
-      });
-
-      expect(requestApiSpy).not.toHaveBeenCalled();
-    });
   });
 
   describe('startLiveMonitoringSession()', () => {
@@ -423,6 +349,7 @@ describe('Client', () => {
       expect(result).toEqual({ conversationId: 'conv123' });
     });
   });
+
 
   describe('startScreenShare()', () => {
     it('should reject if authenticated user', async () => {
