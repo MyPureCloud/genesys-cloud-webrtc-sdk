@@ -29,11 +29,7 @@ import {
   IStation,
   IPersonDetails,
   ISessionIdAndConversationId,
-<<<<<<< HEAD
   VideoSessionHandler, ScreenRecordingMetadata, IStartScreenConferenceSessionParams
-=======
-  VideoSessionHandler
->>>>>>> 3d567e61595d3f56241eb475ca863cd3f2204ec0
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
