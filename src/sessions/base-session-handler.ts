@@ -504,18 +504,14 @@ export default abstract class BaseSessionHandler {
       await this.waitForSessionConnected(session);
     }
 
-    // find a transceiver with the same kind of track that doesn't already have a track
-    // or find the first available transceiver for replacement
+    // find a transceiver with the same kind of track
     const transceiver = session.peerConnection.getTransceivers().find(t => {
-      return (t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind) && 
-             (!t.sender.track || t.sender.track.readyState === 'ended');
-    }) || session.peerConnection.getTransceivers().find(t => {
       return t.receiver.track?.kind === track.kind || t.sender.track?.kind === track.kind;
     });
 
     let sender: RTCRtpSender;
 
-    if (transceiver && transceiver.sender.track) {
+    if (transceiver) {
       await transceiver.sender.replaceTrack(track);
       sender = transceiver.sender;
     } else {

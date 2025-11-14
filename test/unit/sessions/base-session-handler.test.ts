@@ -910,6 +910,48 @@ describe('addReplaceTrackToSession', () => {
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
   });
+
+  // it('should use sameTrackTransceiver when available', async () => {
+  //   const session = new MockSession();
+  //   const track = new MockTrack('video');
+  //   track.getSettings = jest.fn().mockReturnValue({ height: 100, width: 100, frameRate: 30 });
+  //
+  //   const sameTrackTransceiver = {
+  //     sender: { track: null, replaceTrack: jest.fn().mockResolvedValue(undefined) },
+  //     receiver: { track: { kind: 'video' } }
+  //   };
+  //   const otherTransceiver = {
+  //     sender: { track: { kind: 'video', readyState: 'live' }, replaceTrack: jest.fn().mockResolvedValue(undefined) },
+  //     receiver: { track: { kind: 'video' } }
+  //   };
+  //   session.peerConnection.getTransceivers = jest.fn().mockReturnValue([otherTransceiver, sameTrackTransceiver]);
+  //
+  //   await handler.addReplaceTrackToSession(session as any, track as any);
+  //
+  //   expect(sameTrackTransceiver.sender.replaceTrack).toHaveBeenCalledWith(track);
+  //   expect(otherTransceiver.sender.replaceTrack).not.toHaveBeenCalled();
+  // });
+  //
+  // it('should use first the first when no sameTrackTransceiver available', async () => {
+  //   const session = new MockSession();
+  //   const track = new MockTrack('video');
+  //   track.getSettings = jest.fn().mockReturnValue({ height: 100, width: 100, frameRate: 30 });
+  //
+  //   const firstTransceiver = {
+  //     sender: { track: { kind: 'video', readyState: 'live', getSettings: jest.fn().mockReturnValue({ height: 100, width: 100, frameRate: 30 }), applyConstraints: jest.fn().mockResolvedValue(undefined) }, replaceTrack: jest.fn().mockResolvedValue(undefined) },
+  //     receiver: { track: { kind: 'video' } }
+  //   };
+  //   const secondTransceiver = {
+  //     sender: { track: { kind: 'video', readyState: 'live', getSettings: jest.fn().mockReturnValue({ height: 100, width: 100, frameRate: 30 }), applyConstraints: jest.fn().mockResolvedValue(undefined) }, replaceTrack: jest.fn().mockResolvedValue(undefined) },
+  //     receiver: { track: { kind: 'video' } }
+  //   };
+  //   session.peerConnection.getTransceivers = jest.fn().mockReturnValue([firstTransceiver, secondTransceiver]);
+  //
+  //   await handler.addReplaceTrackToSession(session as any, track as any);
+  //
+  //   expect(firstTransceiver.sender.replaceTrack).toHaveBeenCalledWith(track);
+  //   expect(secondTransceiver.sender.replaceTrack).not.toHaveBeenCalled();
+  // });
 });
 
 describe('endTracks', () => {

@@ -551,6 +551,13 @@ export class VideoSessionHandler extends BaseSessionHandler {
     session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 
+  getCameraTrackForSession (session: IExtendedMediaSession): MediaStreamTrack {
+    return session._outboundStream.getVideoTracks().find(track => {
+      // Screen share tracks are in the _screenShareStream, so any video track in _outboundStream should be camera
+      return !session._screenShareStream || !session._screenShareStream.getVideoTracks().find(screenTrack => screenTrack.id === track.id);
+    })
+  }
+
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean): Promise<void> {
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
@@ -566,10 +573,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     // if we are going to mute, we need to remove/end the existing camera track (but not screen share)
     if (params.mute) {
       // get camera tracks from outbound stream (exclude screen share tracks)
-      const cameraTrack = session._outboundStream.getVideoTracks().find(track => {
-        // Screen share tracks are in the _screenShareStream, so any video track in _outboundStream should be camera
-        return !session._screenShareStream || !session._screenShareStream.getVideoTracks().find(screenTrack => screenTrack.id === track.id);
-      });
+      const cameraTrack = this.getCameraTrackForSession(session);
 
       if (!cameraTrack) {
         this.log('warn', 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
@@ -592,9 +596,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
       // Check if we already have a camera track (exclude screen share tracks)
-      const existingCameraTrack = session._outboundStream.getVideoTracks().find(track => {
-        return !session._screenShareStream || !session._screenShareStream.getVideoTracks().find(screenTrack => screenTrack.id === track.id);
-      });
+      const existingCameraTrack = this.getCameraTrackForSession(session);
 
       if (existingCameraTrack) {
         this.log('debug', 'Cannot unmute, a camera video track already exists', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
