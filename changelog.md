@@ -5,6 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...HEAD)
 
+#### Changed
+* [STREAM-981](https://inindca.atlassian.net/browse/STREAM-981) - Remove appid from IncomingStreamStatus interface
+
 # [v11.3.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.3...v11.3.4)
 ### Fixed
 * [STREAM-978](https://inindca.atlassian.net/browse/STREAM-978) - When the RTCPeerConnection is in a 'failed' state, clean up the session. Filter out voicemail participants from conversation update events. Fix potential TypeError when fetching conversations.
