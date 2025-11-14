@@ -529,7 +529,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    // Ensure we have at least one video transceiver for camera
     const videoTransceiver = session.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'video');
     if (!videoTransceiver) {
       session.pc.addTransceiver('video', { direction: 'sendrecv' });
@@ -570,9 +569,8 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     const userId = this.sdk._personDetails.id;
 
-    // if we are going to mute, we need to remove/end the existing camera track (but not screen share)
+    // if we are going to mute, we need to remove the existing camera video track but not any screen share video tracks
     if (params.mute) {
-      // get camera tracks from outbound stream (exclude screen share tracks)
       const cameraTrack = this.getCameraTrackForSession(session);
 
       if (!cameraTrack) {
