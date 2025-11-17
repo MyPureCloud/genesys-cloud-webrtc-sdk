@@ -464,6 +464,7 @@ export default abstract class BaseSessionHandler {
    */
   async addMediaToSession (session: IExtendedMediaSession, stream: MediaStream): Promise<void> {
     const promises: any[] = [];
+    console.log('mMoo: inside addMediaToSession of BaseSessionHandler', { session, stream, hasTranceiverFunc: checkHasTransceiverFunctionality() });
     if (checkHasTransceiverFunctionality()) {
       this.log('info', 'Using track based actions', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       const senders = session.peerConnection.getSenders();
@@ -471,6 +472,7 @@ export default abstract class BaseSessionHandler {
       stream.getTracks().forEach(t => {
         // if the track is already on the session we shouldn't add it again
         const trackAlreadyOnSession = senders.length && senders.find(sender => sender.track === t);
+        console.log('mMoo: inside addMediaToSession of BaseSessionHandler - checking trackAlreadyOnSession', { track: t, trackAlreadyOnSession });
 
         if (trackAlreadyOnSession) {
           return this.log('info', 'Attempted to add track to the session which was already there, skipping', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });

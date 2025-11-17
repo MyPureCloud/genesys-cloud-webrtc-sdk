@@ -253,10 +253,12 @@ export class VideoSessionHandler extends BaseSessionHandler {
   // triggers a propose from the backend
   async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
     if ("jid" in startParams) {
+      console.log('mMoo: inside startSession of VideoSessionHandler - starting video session', startParams);
       // TypeScript will know that all references to `startParams` in this block are of type `IStartVideoSessionParams`
       // See https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-in-operator-narrowing
       return this.startVideoSession(startParams);
     } else {
+      console.log('mMoo: inside startSession of VideoSessionHandler - starting video meeting session', startParams);
       return this.startVideoMeetingSession(startParams);
     }
   }
@@ -389,11 +391,13 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
+    console.log('mMoo: inside acceptSession of VideoSessionHandler', { videoElement, params, sdkDefaults: this.sdk._config.defaults });
     if (!videoElement) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', sessionInfo);
     }
 
     let stream = params.mediaStream;
+    console.log('mMoo: inside acceptSession of VideoSessionHandler - before starting media', { stream, params });
     if (!stream) {
       const { hasCamera, hasMic } = this.sdk.media.getState();
       const mediaParams: IMediaRequestOptions = {
@@ -414,6 +418,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session._outboundStream = stream;
+    console.log('mMoo: inside acceptSession of VideoSessionHandler - after starting media', { stream, params });
     // If using a JWT, we can't subscribe to the media change events.
     if (!this.sdk._config.jwt) {
     await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
@@ -437,6 +442,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
           sessionType: session.sessionType
         });
 
+        console.log('mMoo: attaching incoming track to element');
         const el = this.attachIncomingTrackToElement(track, attachParams);
 
         /* if the track was attatched to an audio element, we have an audio track */
@@ -451,11 +457,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
     const tracks = session.pc.getReceivers()
       .filter(receiver => receiver.track)
       .map(receiver => receiver.track);
+    console.log('mMoo: inside acceptSession of VideoSessionHandler - checking incoming tracks', { tracks });
 
     if (tracks.length) {
+      console.log('mMoo: inside acceptSession of VideoSessionHandler - handling incoming tracks', { tracks });
       handleIncomingTracks(session, tracks);
     } else {
       session.on('peerTrackAdded', (track: MediaStreamTrack) => {
+        console.log('mMoo: inside acceptSession of VideoSessionHandler - peerTrackAdded event received', { track });
         handleIncomingTracks(session, track);
       });
     }
@@ -827,11 +836,13 @@ export class VideoSessionHandler extends BaseSessionHandler {
     if (track.kind === 'video') {
       element = videoElement;
       element.muted = true;
+      console.log('mMoo: attaching video track to video element', { element });
     }
 
     element.autoplay = true;
     element.volume = volume / 100;
     element.srcObject = createNewStreamWithTrack(track);
+    console.log('mMoo: element srcObject set', { element });
     return element;
   }
 

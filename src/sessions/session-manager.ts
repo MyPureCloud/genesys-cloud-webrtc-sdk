@@ -186,6 +186,7 @@ export class SessionManager {
   }
 
   async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams): Promise<any> {
+    console.log('mMoo: inside startSession of SessionManager', startSessionParams);
     if (!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
     }
@@ -364,6 +365,7 @@ export class SessionManager {
 
   async proceedWithSession (params: IPendingSessionActionParams): Promise<void> {
     const pendingSession = this.getPendingSession(params);
+    console.log('mMoo: inside proceedWithSession of SessionManager', params, pendingSession);
 
     if (!pendingSession) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Could not find a pendingSession matching accept params', { params });
@@ -398,11 +400,13 @@ export class SessionManager {
   }
 
   async acceptSession (params: IAcceptSessionRequest): Promise<any> {
+    console.log('mMoo: inside acceptSession of SessionManager', params);
     if (!params || !params.conversationId) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A conversationId is required for acceptSession');
     }
 
     const session = this.getSession({ conversationId: params.conversationId, sessionType: params.sessionType, searchScreenRecordingSessions: true });
+    console.log('mMoo: found session to accept in acceptSession of SessionManager', session);
 
     if (session._alreadyAccepted) {
       this.log('info', 'acceptSession called for session that was already accepted, not accepting again.', { sessionId: session.id, conversationId: session.conversationId });
@@ -410,7 +414,8 @@ export class SessionManager {
     }
 
     session._alreadyAccepted = true;
-    
+    console.log('mMoo: proceeding to accept session in acceptSession of SessionManager', session);
+
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }

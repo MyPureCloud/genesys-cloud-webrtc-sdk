@@ -379,6 +379,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     if (!this._config.jwt && !this._config.accessToken) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Video conferencing requires authentication via JWT or access token.');
     }
+    console.log('mMoo: inside startVideoConference of SDK', roomJid, inviteeJid);
 
     return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
   }
@@ -852,6 +853,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptPendingSession (params: IPendingSessionActionParams): Promise<void> {
+    console.log('mMoo: inside acceptPendingSession of SDK', params);
     await this.sessionManager.proceedWithSession(params);
   }
 
@@ -872,6 +874,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the session accept goes out
    */
   async acceptSession (acceptOptions: IAcceptSessionRequest): Promise<void> {
+    console.log('mMoo: inside acceptSession of SDK', acceptOptions);
     await this.sessionManager.acceptSession(acceptOptions);
   }
 
