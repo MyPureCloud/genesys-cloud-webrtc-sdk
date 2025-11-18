@@ -87,7 +87,7 @@ export default function useSdk() {
   }
 
   function handlePendingSession(pendingSession: IPendingSession): void {
-    dispatch(updatePendingSessions(pendingSession));
+    dispatch(updatePendingSessions({ ...pendingSession }));
   }
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(sessionInfo: ISessionIdAndConversationId): void {

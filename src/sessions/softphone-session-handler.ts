@@ -185,7 +185,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   getActiveConversations (): IActiveConversationDescription[] {
     const currentConversations = this.lastEmittedSdkConversationEvent?.current || [];
 
-    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
+    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session?.id, sessionType: this.sessionType }));
   }
 
   handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
@@ -500,7 +500,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id).reverse();
+    // Filter out voicemail participants - user ID can appear multiple times with different purposes.
+    const participantsForUser = update.participants.filter((p) => p.userId === this.sdk._personDetails.id && p.purpose !== 'voicemail').reverse();
     let participant: IConversationParticipantFromEvent;
 
     if (!participantsForUser.length) {
