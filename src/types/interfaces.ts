@@ -1299,8 +1299,6 @@ export interface IncomingStreamStatus {
   sourcePinId: string;
   /** Track ID from the SDP of the viewed member's client */
   sourceTrackId?: string;
-  //TODO: Remove this when the camelcase version is deployed for media service
-  appid?: IDataChannelAppId;
   appId?: IDataChannelAppId;
   contentType?: 'camera' | 'screenshare' | 'playback';
 }
