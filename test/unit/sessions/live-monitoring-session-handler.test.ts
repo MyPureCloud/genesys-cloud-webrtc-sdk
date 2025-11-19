@@ -2,7 +2,7 @@ import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import LiveMonitoringSessionHandler from '../../../src/sessions/live-monitoring-session-handler';
-import { SessionTypes, SdkErrorTypes } from '../../../src/types/enums';
+import { SessionTypes } from '../../../src/types/enums';
 import * as utils from '../../../src/utils';
 
 declare var window: {
@@ -51,7 +51,7 @@ describe('handleConversationUpdate', () => {
 
 describe('handlePropose', () => {
   it('should proceed with session', async () => {
-    const pendingSession = createPendingSession(SessionTypes.collaborateVideo);
+    const pendingSession = createPendingSession(SessionTypes.liveScreenMonitoring);
     const proceedSpy = jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(null);
 
     await handler.handlePropose(pendingSession);

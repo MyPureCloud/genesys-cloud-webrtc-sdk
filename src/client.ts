@@ -418,7 +418,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return this.sessionManager.startSession({
       conferenceJid,
       liveMonitoringMetadata,
-      sessionType: SessionTypes.collaborateVideo
+      sessionType: SessionTypes.liveScreenMonitoring
     });
   }
 

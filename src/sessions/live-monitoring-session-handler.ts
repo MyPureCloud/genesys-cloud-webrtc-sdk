@@ -11,7 +11,7 @@ import { SessionTypes, SdkErrorTypes } from '../types/enums';
 import {createAndEmitSdkError, isMonitorJid, requestApi} from '../utils';
 
 export class LiveMonitoringSessionHandler extends BaseSessionHandler {
-  sessionType = SessionTypes.collaborateVideo;
+  sessionType = SessionTypes.liveScreenMonitoring;
   private primaryScreenMediaStream?: MediaStream;
 
   shouldHandleSessionByJid(jid: string): boolean {
