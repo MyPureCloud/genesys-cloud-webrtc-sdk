@@ -1888,6 +1888,39 @@ describe('getUserParticipantFromConversationEvent()', () => {
   it('should return the most recent participant if there are no calls on any of them', () => {
     expect(handler.getUserParticipantFromConversationEvent(converversationUpdate)).toEqual(participant2);
   });
+
+  it('should filter out voicemail participants and only return non-voicemail participants', () => {
+    const userParticipant: IConversationParticipantFromEvent = {
+      id: '3a843139-760b-41d8-8ac1-723ac2381280',
+      purpose: 'user',
+      userId,
+      videos: [],
+      calls: [{ ...call, state: CommunicationStates.connected }]
+    };
+
+    const voicemailParticipant: IConversationParticipantFromEvent = {
+      id: '3a843140-760b-41d8-8ac1-723ac2381290',
+      purpose: 'voicemail',
+      userId,
+      videos: [],
+      calls: []
+    };
+
+    const externalParticipant: IConversationParticipantFromEvent = {
+      id: 'dcec146d-52f2-4593-874d-d13f1bc3183d',
+      purpose: 'external',
+      userId: '1234',
+      videos: [],
+      calls: [{ ...call, state: CommunicationStates.connected }]
+    };
+
+    converversationUpdate.participants = [externalParticipant, userParticipant, voicemailParticipant];
+
+    const result = handler.getUserParticipantFromConversationEvent(converversationUpdate);
+    expect(result).toEqual(userParticipant);
+    expect(result?.purpose).toBe('user');
+    expect(result?.id).toBe('3a843139-760b-41d8-8ac1-723ac2381280');
+  });
 });
 
 describe('getCallStateFromParticipant()', () => {

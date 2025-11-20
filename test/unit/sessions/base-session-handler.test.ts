@@ -466,6 +466,9 @@ describe('handleConversationUpdate', () => {
   it('nothing to test', () => {
     handler.handleConversationUpdate({} as any, {} as any);
   });
+  it('nothing to test', () => {
+    handler.handleConversationUpdateRaw({} as any);
+  });
 });
 
 describe('handlePropose', () => {
@@ -537,6 +540,27 @@ describe('handleSessionInit', () => {
     session.emit('connectionState', 'interrupted');
 
     expect(eventSpy).toHaveBeenCalled();
+  });
+
+  it('should terminate session when connectionState becomes failed', async () => {
+    const session: any = new MockSession();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession');
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    session.id = '123abc';
+    session.conversationId = 'convoabc';
+    session.state = 'active';
+
+    await handler.handleSessionInit(session);
+    session.emit('connectionState', 'failed');
+
+    expect(logSpy).toHaveBeenCalledWith('warn', 'RTCPeerConnection failed. Cleaning up session.', {
+      state: 'failed',
+      conversationId: session.conversationId,
+      sid: session.id,
+      sessionType: session.sessionType
+    });
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'failed-transport');
   });
 
   it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {

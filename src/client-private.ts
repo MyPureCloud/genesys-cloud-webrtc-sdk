@@ -113,6 +113,7 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
 export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
   const update = new ConversationUpdate(updateEvent.eventBody);
   this.sessionManager.handleConversationUpdate(update);
+  this.sessionManager.handleConversationUpdateRaw(updateEvent);
 };
 
 export const handleDisconnectedEvent = function (this: GenesysCloudWebrtcSdk, eventData: { reconnecting: boolean }) {

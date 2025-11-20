@@ -3,8 +3,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...HEAD)
+### Added
+* [STREAM-992](https://inindca.atlassian.net/browse/STREAM-992) - Added pull request template checklist.
 * [STREAM-825](https://inindca.atlassian.net/browse/STREAM-825) - Add ability to send multiple tracks when screensharing
+### Fixed
+* [STREAM-990](https://inindca.atlassian.net/browse/STREAM-990) - Demo app: Store a copy of pendingSessions so freezing them doesn't affect the SDK's usage of those objects
+
+#### Changed
+* [STREAM-981](https://inindca.atlassian.net/browse/STREAM-981) - Remove appid from IncomingStreamStatus interface
+
+# [v11.3.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.3...v11.3.4)
+### Fixed
+* [STREAM-978](https://inindca.atlassian.net/browse/STREAM-978) - When the RTCPeerConnection is in a 'failed' state, clean up the session. Filter out voicemail participants from conversation update events. Fix potential TypeError when fetching conversations.
+* [STREAM-987](https://inindca.atlassian.net/browse/STREAM-987) - Demo app: Memoize conversations so they don't change every render when nothing has changed
+
+# [v11.3.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...v11.3.3)
+#### Changed
+* [#937] - Exposes raw webmessage data from conversation topic
 
 # [v11.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.1...v11.3.2)
 ### Changed

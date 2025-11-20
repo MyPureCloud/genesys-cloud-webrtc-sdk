@@ -17,6 +17,7 @@ import {
   IUpdateOutgoingMedia,
   IConversationHeldRequest,
   IActiveConversationDescription,
+  SubscriptionEvent,
 } from '../types/interfaces';
 
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
@@ -45,6 +46,10 @@ export default abstract class BaseSessionHandler {
   abstract shouldHandleSessionByJid (jid: string): boolean;
 
   abstract handleConversationUpdate (update: ConversationUpdate, sessions: IExtendedMediaSession[]): void;
+
+  handleConversationUpdateRaw (update: SubscriptionEvent): void {
+    this.sdk.emit('conversationUpdateRaw', update);
+  }
 
   protected log (level: LogLevels, message: any, details?: any, logOptions?: ILogMessageOptions): void {
     this.sdk.logger[level].call(this.sdk.logger, message, details, logOptions);
@@ -108,6 +113,12 @@ export default abstract class BaseSessionHandler {
       /* Emit sessionInterrupted when the connection is interrupted so that consuming apps can inform users (e.g. Volt). */
       if (state === 'interrupted') {
         this.sdk.emit('sessionInterrupted', { sessionId: session.id, sessionType: session.sessionType, conversationId: session.conversationId });
+      }
+
+      /* If the RTCPeerConnection is in a 'failed' state, it is a state of finality and we need to clean up the session. */
+      if (state === 'failed') {
+        this.log('warn', 'RTCPeerConnection failed. Cleaning up session.', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
+        this.forceEndSession(session, Constants.JingleReasonCondition.FailedTransport);
       }
     });
 
