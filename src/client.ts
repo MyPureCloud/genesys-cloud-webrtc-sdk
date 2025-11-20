@@ -25,11 +25,11 @@ import {
   IPendingSessionActionParams,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
-  ScreenRecordingMetadata,
+  LiveMonitoringMetadata,
   VideoMediaSession,
   IVideoResolution,
   JWTDetails,
-  ISdkFullConfig, LiveMonitoringMetadata
+  ISdkFullConfig
 } from './types/interfaces';
 import {
   setupStreamingClient,
