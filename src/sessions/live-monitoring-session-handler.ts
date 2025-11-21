@@ -6,7 +6,7 @@ import {
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
-import {createAndEmitSdkError, isLiveScreenMonitorJid, requestApi} from '../utils';
+import {createAndEmitSdkError, isLiveScreenMonitorJid} from '../utils';
 import {Constants} from "stanza";
 
 export class LiveMonitoringSessionHandler extends BaseSessionHandler {

@@ -668,7 +668,7 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   mediaStream?: MediaStream;
 
   /**
-   * metadata about screens and tracks. This is required for screen recording and live monitoring sessions
+   * metadata about screens and tracks. This is required for screen recording sessions
    */
   screenRecordingMetadatas?: ScreenRecordingMetadata[];
 
@@ -976,7 +976,6 @@ export interface LiveScreenMonitoringMetadata extends ScreenRecordingMetadata {
 
 export interface LiveScreenMonitoringSession extends IExtendedMediaSession {
   sessionType: SessionTypes.liveScreenMonitoring;
-  screenRecordingMetadatas: LiveScreenMonitoringMetadata[];
 }
 
 export interface SubscriptionEvent {
@@ -1231,13 +1230,6 @@ export interface IStartSoftphoneSessionParams extends IStartSessionParams {
   participants?: ISdkSoftphoneDestination[];
   /** user to user information managed by SIP session app */
   uuiData?: string;
-}
-
-export interface IStartLiveMonitoringSessionParams extends IStartSessionParams {
-  /** Conference room JID to join */
-  conferenceJid: string;
-  /** Screen recording metadata to identify primary screen */
-  screenRecordingMetadatas: LiveScreenMonitoringMetadata[];
 }
 
 export interface ISdkSoftphoneDestination {

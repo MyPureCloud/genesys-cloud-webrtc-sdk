@@ -29,8 +29,7 @@ import {
   IVideoResolution,
   JWTDetails,
   ISdkFullConfig,
-  LiveScreenMonitoringSession,
-  LiveScreenMonitoringMetadata
+  LiveScreenMonitoringSession
 } from './types/interfaces';
 import {
   setupStreamingClient,

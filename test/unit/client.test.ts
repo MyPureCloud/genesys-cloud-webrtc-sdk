@@ -29,9 +29,7 @@ import {
   IStation,
   IPersonDetails,
   ISessionIdAndConversationId,
-  VideoSessionHandler,
-  LiveScreenMonitoringMetadata,
-  IStartLiveMonitoringSessionParams
+  VideoSessionHandler
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';

@@ -101,8 +101,7 @@ describe('acceptSession', () => {
     (session.peerConnection as any).addTrack = addSpy.mockResolvedValue(null);
 
     const params = {
-      mediaStream: mockStream,
-      screenRecordingMetadatas: [{ screenId: 'screen1', primary: true }]
+      mediaStream: mockStream
     };
 
     await handler.acceptSession(session as any, params as any);
