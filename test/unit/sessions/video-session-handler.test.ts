@@ -1,4 +1,3 @@
-import nock from 'nock';
 import { v4 as uuidv4 } from 'uuid';
 
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
@@ -25,7 +24,6 @@ let userId: string;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  nock.cleanAll();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
@@ -1006,7 +1004,7 @@ describe('setInitialMuteStates', () => {
   beforeEach(() => {
     session = new MockSession() as any;
     audioSender = { track: { kind: 'audio', enabled: true } };
-    videoSender = { track: { kind: 'video', enabled: true } };
+    videoSender = { track: { kind: 'video', enabled: true, id: 'camera-track-1' } };
   });
 
   it('should mute video', async () => {
@@ -1219,7 +1217,7 @@ describe('setVideoMute', () => {
 
     await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false });
 
-    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('Cannot unmute, a video track already exists'), expect.any(Object), undefined);
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('Cannot unmute, a camera video track already exists'), expect.any(Object), undefined);
   });
 
   it('mute: should mute video track when there is no screen track and remove track from outboundStream', async () => {
@@ -1306,7 +1304,7 @@ describe('setVideoMute', () => {
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
     jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession ]);
-    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
+    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
 
     session._outboundStream = {
       addTrack: jest.fn(),
@@ -1327,7 +1325,7 @@ describe('setVideoMute', () => {
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
     jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession ]);
-    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
+    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
 
     session._outboundStream = {
       addTrack: jest.fn(),
@@ -1347,7 +1345,7 @@ describe('setVideoMute', () => {
     const unmuteDeviceId = 'device-id';
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
-    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
+    jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
 
     session._outboundStream = {
       addTrack: jest.fn(),
@@ -1360,6 +1358,51 @@ describe('setVideoMute', () => {
     expect(session._outboundStream!.addTrack).not.toHaveBeenCalled();
     expect(session.unmute).not.toHaveBeenCalled();
     expect(stream.getVideoTracks()[0].stop).toHaveBeenCalled();
+  });
+
+  it('mute: should find camera track when screen share exists', async () => {
+    const screenTrack = new MockTrack('video');
+    screenTrack.id = 'screen-track-id';
+    const cameraTrack = new MockTrack('video');
+    cameraTrack.id = 'camera-track-id';
+
+    session._screenShareStream = {
+      getVideoTracks: jest.fn().mockReturnValue([screenTrack])
+    } as any;
+
+    session._outboundStream = {
+      removeTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([cameraTrack])
+    } as any;
+
+    jest.spyOn(handler, 'getSendersByTrackType').mockReturnValue([
+      { track: cameraTrack }
+    ] as any);
+
+    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: true });
+
+    expect(cameraTrack.stop).toHaveBeenCalled();
+    expect(session.mute).toHaveBeenCalledWith(userId, 'video');
+  });
+
+  it('unmute: should check for existing camera track when screen share exists', async () => {
+    const screenTrack = new MockTrack('video');
+    screenTrack.id = 'screen-track-id';
+    const cameraTrack = new MockTrack('video');
+    cameraTrack.id = 'camera-track-id';
+
+    session._screenShareStream = {
+      getVideoTracks: jest.fn().mockReturnValue([screenTrack])
+    } as any;
+
+    session._outboundStream = {
+      addTrack: jest.fn(),
+      getVideoTracks: jest.fn().mockReturnValue([cameraTrack])
+    } as any;
+
+    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false });
+
+    expect(mockSdk.logger.debug).toHaveBeenCalledWith(expect.stringContaining('Cannot unmute, a camera video track already exists'), expect.any(Object), undefined);
   });
 });
 
@@ -1483,33 +1526,29 @@ describe('getSendersByTrackType', () => {
 
 describe('startScreenShare', () => {
   let displayMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
-  let videoMuteSpy: jest.SpyInstance<Promise<void>>;
-  let addReplaceTrackToSession: jest.SpyInstance<Promise<any>>;
+  let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
   let session: VideoMediaSession;
 
   beforeEach(() => {
     displayMediaSpy = jest.spyOn(mockSdk.media, 'startDisplayMedia').mockResolvedValue(new MockStream({ video: true }) as any);
-    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockResolvedValue();
-    addReplaceTrackToSession = jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
+    addMediaToSessionSpy = jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
     session = new MockSession() as any;
   });
 
-  it('should start media and mute video if it is not already muted', async () => {
+  it('should start media and add screen share track without replacing existing video', async () => {
     await handler.startScreenShare(session);
 
     expect(displayMediaSpy).toHaveBeenCalled();
-    expect(videoMuteSpy).toHaveBeenCalled();
-    expect(addReplaceTrackToSession).toHaveBeenCalled();
+    expect(addMediaToSessionSpy).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStart).toHaveBeenCalled();
   });
 
-  it('should not mute video if already muted', async () => {
+  it('should add screen share track regardless of video mute state', async () => {
     session.videoMuted = true;
     await handler.startScreenShare(session);
 
     expect(displayMediaSpy).toHaveBeenCalled();
-    expect(videoMuteSpy).not.toHaveBeenCalled();
-    expect(addReplaceTrackToSession).toHaveBeenCalled();
+    expect(addMediaToSessionSpy).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStart).toHaveBeenCalled();
   });
 
@@ -1534,12 +1573,10 @@ describe('startScreenShare', () => {
 });
 
 describe('stopScreenShare', () => {
-  let videoMuteSpy;
   let removeMediaSpy;
   let session;
 
   beforeEach(() => {
-    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockResolvedValue();
     removeMediaSpy = jest.spyOn(handler, 'removeMediaFromSession').mockResolvedValue();
     session = new MockSession();
   });
@@ -1549,49 +1586,34 @@ describe('stopScreenShare', () => {
 
     await handler.stopScreenShare(session);
 
-    expect(videoMuteSpy).not.toHaveBeenCalled();
     expect(removeMediaSpy).not.toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).not.toHaveBeenCalled();
   });
 
-  it('should stop screen share tracks and unmute video if resurrectVideoOnScreenShareEnd', async () => {
-    session._resurrectVideoOnScreenShareEnd = true;
+  it('should remove screen share track and stop it', async () => {
     session._screenShareStream = new MockStream({ video: true });
+    const screenTrack = session._screenShareStream._tracks[0];
+
+    jest.spyOn(session.pc, 'getSenders').mockReturnValue([{ track: screenTrack }]);
 
     await handler.stopScreenShare(session);
 
-    expect(videoMuteSpy).toHaveBeenCalled();
-    expect(session._screenShareStream._tracks[0].stop).toHaveBeenCalled();
+    expect(removeMediaSpy).toHaveBeenCalled();
+    expect(screenTrack.stop).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).toHaveBeenCalled();
   });
 
-  it('should not unmute video if not resurrect', async () => {
-    session.resurrectVideoOnScreenShareEnd = false;
+  it('should stop screen share track even if no sender found', async () => {
     session._screenShareStream = new MockStream({ video: true });
+    const screenTrack = session._screenShareStream._tracks[0];
 
-    const replaceSpy = jest.fn();
-    jest.spyOn(session.pc, 'getSenders').mockReturnValue([{ track: session._screenShareStream._tracks[0], replaceTrack: replaceSpy }]);
+    jest.spyOn(session.pc, 'getSenders').mockReturnValue([]);
 
     await handler.stopScreenShare(session);
 
-    expect(videoMuteSpy).not.toHaveBeenCalled();
-    expect(session._screenShareStream._tracks[0].stop).toHaveBeenCalled();
-    expect(replaceSpy).toHaveBeenCalled();
+    expect(removeMediaSpy).not.toHaveBeenCalled();
+    expect(screenTrack.stop).toHaveBeenCalled();
     expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).toHaveBeenCalled();
-  });
-
-  it('should toggle off of screen share AND keep video unmuted if something goes wrong when fetching device media', async () => {
-    videoMuteSpy = jest.spyOn(handler, 'setVideoMute').mockRejectedValueOnce({ message: 'Could not start video source' }).mockResolvedValueOnce();
-    session._resurrectVideoOnScreenShareEnd = true;
-    session._screenShareStream = new MockStream({ video: true });
-
-    await handler.stopScreenShare(session);
-
-    expect(videoMuteSpy).toHaveBeenNthCalledWith(1, session, { conversationId: session.conversationId, mute: false }, true);
-    expect(videoMuteSpy).toHaveBeenNthCalledWith(2, session, { conversationId: session.conversationId, mute: true }, false);
-    expect(session._screenShareStream._tracks[0].stop).toHaveBeenCalled();
-    expect(mockSessionManager.webrtcSessions.notifyScreenShareStop).toHaveBeenCalled();
-    jest.resetAllMocks();
   });
 });
 
