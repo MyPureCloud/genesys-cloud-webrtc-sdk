@@ -970,8 +970,13 @@ export interface ScreenRecordingMetadata {
   primary: boolean;
 }
 
-export interface LiveMonitoringMetadata extends ScreenRecordingMetadata {
+export interface LiveScreenMonitoringMetadata extends ScreenRecordingMetadata {
 
+}
+
+export interface LiveScreenMonitoringSession extends IExtendedMediaSession {
+  sessionType: SessionTypes.liveScreenMonitoring;
+  screenRecordingMetadatas: LiveScreenMonitoringMetadata[];
 }
 
 export interface SubscriptionEvent {
@@ -1232,7 +1237,7 @@ export interface IStartLiveMonitoringSessionParams extends IStartSessionParams {
   /** Conference room JID to join */
   conferenceJid: string;
   /** Screen recording metadata to identify primary screen */
-  liveMonitoringMetadata: LiveMonitoringMetadata[];
+  liveMonitoringMetadata: LiveScreenMonitoringMetadata[];
 }
 
 export interface ISdkSoftphoneDestination {

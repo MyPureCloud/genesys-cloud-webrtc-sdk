@@ -30,7 +30,7 @@ import {
   IPersonDetails,
   ISessionIdAndConversationId,
   VideoSessionHandler,
-  LiveMonitoringMetadata,
+  LiveScreenMonitoringMetadata,
   IStartLiveMonitoringSessionParams
 } from '../../src';
 import * as utils from '../../src/utils';
@@ -333,11 +333,27 @@ describe('Client', () => {
     });
   });
 
+  describe('isLiveScreenMonitoringSession', () => {
+    beforeEach(() => {
+      sdk = constructSdk();
+    });
+
+    it('should be true', () => {
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.liveScreenMonitoring } as any)).toBeTruthy();
+    });
+
+    it('should be false', () => {
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.acdScreenShare } as any)).toBeFalsy();
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.softphone } as any)).toBeFalsy();
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.screenRecording } as any)).toBeFalsy();
+    });
+  });
+
   describe('startLiveMonitoringSession()', () => {
     it('should call session manager to start a live monitoring session', async () => {
       sdk = constructSdk();
       const conferenceJid = 'livemonitor@example.com';
-      const liveMonitoringMetadata = [{ screenId: 'screen1', primary: true } as LiveMonitoringMetadata];
+      const liveMonitoringMetadata = [{ screenId: 'screen1', primary: true } as LiveScreenMonitoringMetadata];
 
       sessionManagerMock.startSession = jest.fn().mockResolvedValue({ conversationId: 'conv123' });
 

@@ -25,7 +25,8 @@ import {
   IPendingSessionActionParams,
   IExtendedMediaSession,
   ScreenRecordingMediaSession,
-  LiveMonitoringMetadata,
+  LiveScreenMonitoringMetadata,
+  LiveScreenMonitoringSession,
   VideoMediaSession,
   IVideoResolution,
   JWTDetails,
@@ -345,6 +346,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return session.sessionType === SessionTypes.collaborateVideo;
   }
 
+  isLiveScreenMonitoringSession (session: IExtendedMediaSession): session is LiveScreenMonitoringSession {
+    return session.sessionType === SessionTypes.liveScreenMonitoring;
+  }
+
   /**
    * Start a screen share. Currently, screen share is only supported
    *  for guest users.
@@ -415,7 +420,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *
    * @returns a promise with an object with the newly created 'conversationId'
    */
-  async startLiveMonitoringSession (conferenceJid: string, liveMonitoringMetadata: LiveMonitoringMetadata[]): Promise<{ conversationId: string }> {
+  async startLiveMonitoringSession (conferenceJid: string, liveMonitoringMetadata: LiveScreenMonitoringMetadata[]): Promise<{ conversationId: string }> {
     return this.sessionManager.startSession({
       conferenceJid,
       liveMonitoringMetadata,

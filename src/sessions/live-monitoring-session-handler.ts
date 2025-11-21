@@ -2,7 +2,7 @@ import {
   IPendingSession,
   IExtendedMediaSession,
   IAcceptSessionRequest,
-  LiveMonitoringMetadata,
+  LiveScreenMonitoringMetadata,
   IUpdateOutgoingMedia,
   IStartLiveMonitoringSessionParams
 } from '../types/interfaces';
@@ -36,11 +36,11 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     return this.joinConferenceWithScreen(params.conferenceJid, screenStream);
   }
 
-  private identifyPrimaryScreen(metadata: LiveMonitoringMetadata[]): LiveMonitoringMetadata | null {
+  private identifyPrimaryScreen(metadata: LiveScreenMonitoringMetadata[]): LiveScreenMonitoringMetadata | null {
     return metadata.find(metadata => metadata.primary) || null;
   }
 
-  private async getScreenMediaForPrimary(primaryScreen: LiveMonitoringMetadata): Promise<MediaStream> {
+  private async getScreenMediaForPrimary(primaryScreen: LiveScreenMonitoringMetadata): Promise<MediaStream> {
     try {
       const constraints = {
         video: {
