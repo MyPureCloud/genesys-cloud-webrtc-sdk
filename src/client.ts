@@ -1,51 +1,50 @@
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
-import StreamingClient, {
-  HttpClient,
-  StreamingClientError,
-  StreamingClientErrorTypes
-} from 'genesys-cloud-streaming-client';
+import StreamingClient, { HttpClient, StreamingClientError, StreamingClientErrorTypes } from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 import {
-  IAcceptSessionRequest,
-  IConversationHeldRequest,
+  ISdkConfig,
   ICustomerData,
   IEndSessionRequest,
-  IExtendedMediaSession,
-  IMediaDeviceIds,
-  IMediaSettings,
-  IOrgDetails,
-  IPendingSessionActionParams,
-  IPersonDetails,
-  isCustomerData,
-  ISdkConfig,
-  ISdkFullConfig,
-  ISessionIdAndConversationId,
+  IAcceptSessionRequest,
   ISessionMuteRequest,
-  isSecurityCode,
-  IStartSoftphoneSessionParams,
-  IStation,
+  IPersonDetails,
+  IMediaDeviceIds,
   IUpdateOutgoingMedia,
+  SdkEvents,
+  IMediaSettings,
+  isSecurityCode,
+  isCustomerData,
+  IStartSoftphoneSessionParams,
+  IOrgDetails,
+  IStation,
+  ISessionIdAndConversationId,
+  IConversationHeldRequest,
+  IPendingSessionActionParams,
+  IExtendedMediaSession,
+  ScreenRecordingMediaSession,
+  VideoMediaSession,
   IVideoResolution,
   JWTDetails,
-  LiveScreenMonitoringMetadata,
+  ISdkFullConfig,
   LiveScreenMonitoringSession,
-  ScreenRecordingMediaSession,
-  SdkEvents,
-  VideoMediaSession
+  LiveScreenMonitoringMetadata
 } from './types/interfaces';
-import {proxyStreamingClientEvents, setupStreamingClient} from './client-private';
-import {createAndEmitSdkError, defaultConfigOption, requestApi, requestApiWithRetry} from './utils';
-import {setupLogging} from './logging';
-import {SdkErrorTypes, SessionTypes} from './types/enums';
-import {SessionManager} from './sessions/session-manager';
-import {SdkMedia} from './media/media';
-import {HeadsetProxyService} from './headsets/headset';
-import {Constants} from 'stanza';
-import {setupWebrtcForWindows11} from './windows11-first-session-hack';
-import {ISdkHeadsetService} from './headsets/headset-types';
+import {
+  setupStreamingClient,
+  proxyStreamingClientEvents
+} from './client-private';
+import { requestApi, createAndEmitSdkError, defaultConfigOption, requestApiWithRetry } from './utils';
+import { setupLogging } from './logging';
+import { SdkErrorTypes, SessionTypes } from './types/enums';
+import { SessionManager } from './sessions/session-manager';
+import { SdkMedia } from './media/media';
+import { HeadsetProxyService } from './headsets/headset';
+import { Constants } from 'stanza';
+import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
+import { ISdkHeadsetService } from './headsets/headset-types';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
