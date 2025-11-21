@@ -1,10 +1,8 @@
-import { SimpleMockSdk, MockSession, createPendingSession, MockStream, MockTrack } from '../../test-utils';
+import { SimpleMockSdk, MockSession, MockStream } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import LiveMonitoringSessionHandler from '../../../src/sessions/live-monitoring-session-handler';
-import { SessionTypes } from '../../../src/types/enums';
 import * as utils from '../../../src/utils';
-import {IStartLiveMonitoringSessionParams, LiveScreenMonitoringSession} from "../../../src";
 import BaseSessionHandler from "../../../src/sessions/base-session-handler";
 
 declare var window: {
@@ -124,9 +122,6 @@ describe('acceptSession', () => {
       screenRecordingMetadatas: [{ screenId: 'screen1', primary: true }]
     };
 
-    // mock response from joinConferenceWithScreen
-    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: { conversationId: 'XXXXXXX' } });
-
     await handler.acceptSession(session as any, params as any);
 
     expect(session._outboundStream).toBe(mockStream);
@@ -154,39 +149,5 @@ describe('updateOutgoingMedia', () => {
       'Cannot update outgoing media for live monitoring sessions',
       { sessionId: session.id, sessionType: session.sessionType }
     );
-  });
-});
-
-describe('joinConferenceWithScreen', () => {
-  it('should make API request and store screen stream', async () => {
-    const mockScreenStream = new MockStream({ video: true });
-    const mockResponse = { data: { conversationId: 'conv456' } };
-
-    jest.spyOn(utils, 'requestApi').mockResolvedValue(mockResponse);
-
-    const result = await handler['joinConferenceWithScreen']('conf@example.com', mockScreenStream as any);
-
-    expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', {
-      method: 'post',
-      data: JSON.stringify({
-        roomId: 'conf@example.com',
-        participant: { address: 'user@example.com' }
-      })
-    });
-    expect(result).toEqual({ conversationId: 'conv456' });
-  });
-
-  it('should stop screen tracks and throw error on API failure', async () => {
-    const mockScreenStream = new MockStream({ video: true });
-    const mockTrack = mockScreenStream.getTracks()[0];
-    const error = new Error('Network error');
-
-    jest.spyOn(utils, 'requestApi').mockRejectedValue(error);
-    jest.spyOn(mockTrack, 'stop');
-
-    await expect(handler['joinConferenceWithScreen']('conf@example.com', mockScreenStream as any))
-      .rejects.toThrow('Failed to join conference');
-
-    expect(mockTrack.stop).toHaveBeenCalled();
   });
 });

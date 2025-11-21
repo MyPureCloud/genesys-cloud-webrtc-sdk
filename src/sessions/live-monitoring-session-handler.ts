@@ -30,25 +30,6 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     await super.handlePropose(pendingSession);
   }
 
-  private async joinConferenceWithScreen(conferenceJid: string, screenStream: MediaStream): Promise<{ conversationId: string }> {
-    const data = JSON.stringify({
-      roomId: conferenceJid,
-      participant: { address: this.sdk._personDetails.chat.jabberId }
-    });
-
-    try {
-      const response = await requestApi.call(this.sdk, '/conversations/videos', {
-        method: 'post',
-        data
-      });
-
-      return { conversationId: response.data.conversationId };
-    } catch (error) {
-      screenStream.getTracks().forEach(track => track.stop());
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to join conference', { error });
-    }
-  }
-
   async acceptSession(session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     if (!params.mediaStream) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept screen recording session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
@@ -57,7 +38,6 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     if (!params.screenRecordingMetadatas?.length) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
     }
-    await this.joinConferenceWithScreen(session.originalRoomJid, params.mediaStream);
 
     // Set outbound stream to primary video media stream
     session._outboundStream = params.mediaStream;
