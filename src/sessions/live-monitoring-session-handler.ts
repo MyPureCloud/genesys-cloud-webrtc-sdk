@@ -32,11 +32,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
 
   async acceptSession(session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
     if (!params.mediaStream) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept screen recording session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
-    }
-
-    if (!params.screenRecordingMetadatas?.length) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept live screen monitoring session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
     }
 
     // Set outbound stream to primary video media stream

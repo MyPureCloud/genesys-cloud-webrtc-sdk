@@ -410,25 +410,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
-   * Start a screen conference session that identifies the primary screen
-   * from the provided metadata and joins a conference using that screen as video.
-   *
-   * `initialize()` must be called first.
-   *
-   * @param conferenceJid JID of the conference to join
-   * @param liveMonitoringMetadata Array of screen metadata to identify primary screen
-   *
-   * @returns a promise with an object with the newly created 'conversationId'
-   */
-  async startLiveMonitoringSession (conferenceJid: string, liveMonitoringMetadata: LiveScreenMonitoringMetadata[]): Promise<{ conversationId: string }> {
-    return this.sessionManager.startSession({
-      conferenceJid,
-      screenRecordingMetadatas: liveMonitoringMetadata,
-      sessionType: SessionTypes.liveScreenMonitoring
-    });
-  }
-
-  /**
    * Start a softphone session with the given peer or peers.
    *  `initialize()` must be called first.
    *

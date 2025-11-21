@@ -349,25 +349,6 @@ describe('Client', () => {
     });
   });
 
-  describe('startLiveMonitoringSession()', () => {
-    it('should call session manager to start a live monitoring session', async () => {
-      sdk = constructSdk();
-      const conferenceJid = 'livemonitor@example.com';
-      const liveMonitoringMetadata = [{ screenId: 'screen1', primary: true } as LiveScreenMonitoringMetadata];
-
-      sessionManagerMock.startSession = jest.fn().mockResolvedValue({ conversationId: 'conv123' });
-
-      const result = await sdk.startLiveMonitoringSession(conferenceJid, liveMonitoringMetadata);
-
-      expect(sessionManagerMock.startSession).toBeCalledWith({
-        conferenceJid,
-        screenRecordingMetadatas: liveMonitoringMetadata,
-        sessionType: SessionTypes.liveScreenMonitoring
-      } as IStartLiveMonitoringSessionParams);
-      expect(result).toEqual({ conversationId: 'conv123' });
-    });
-  });
-
 
   describe('startScreenShare()', () => {
     it('should reject if authenticated user', async () => {

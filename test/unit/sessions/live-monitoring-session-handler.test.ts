@@ -83,32 +83,15 @@ describe('acceptSession', () => {
     mockStream = new MockStream({ video: true });
   });
 
-  it('should throw error if no screenRecordingMetadatas provided', async () => {
-    const params = { mediaStream: new MockStream() };
-
-    await expect(handler.acceptSession(session as any, params as any))
-      .rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
-  });
-
-  it('should throw error if empty screenRecordingMetadatas provided', async () => {
-    const params = {
-      mediaStream: new MockStream(),
-      screenRecordingMetadatas: []
-    };
-
-    await expect(handler.acceptSession(session as any, params as any))
-      .rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
-  });
-
   it('should throw error if no mediaStream is provided', async () => {
     const session = {
       addTrack: jest.fn()
     };
 
-    await expect(handler.acceptSession(session as any, {} as any)).rejects.toThrow('Cannot accept screen recording');
+    await expect(handler.acceptSession(session as any, {} as any)).rejects.toThrow('Cannot accept live screen monitoring session without providing a media stream');
   });
 
-  it('should set _outboundStream and add tracks to session and join the conference', async () => {
+  it('should set _outboundStream and add tracks to session', async () => {
     const superSpy = jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(handler)), 'acceptSession').mockResolvedValue(null);
     const addSpy = jest.fn();
 
