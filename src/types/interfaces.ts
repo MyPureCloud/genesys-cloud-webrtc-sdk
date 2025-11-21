@@ -970,10 +970,6 @@ export interface ScreenRecordingMetadata {
   primary: boolean;
 }
 
-export interface LiveScreenMonitoringMetadata extends ScreenRecordingMetadata {
-
-}
-
 export interface LiveScreenMonitoringSession extends IExtendedMediaSession {
   sessionType: SessionTypes.liveScreenMonitoring;
 }
