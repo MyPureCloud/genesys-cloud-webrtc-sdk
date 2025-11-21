@@ -124,7 +124,7 @@ export const isAgentVideoJid = function (jid: string) {
   return isVideoJid(jid) && jid.startsWith('agent-');
 };
 
-export const isMonitorJid = function (jid: string) {
+export const isLiveScreenMonitorJid = function (jid: string) {
   return isVideoJid(jid) && jid.startsWith('livemonitor-');
 };
 

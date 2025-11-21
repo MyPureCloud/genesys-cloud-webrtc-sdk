@@ -2,20 +2,18 @@ import {
   IPendingSession,
   IExtendedMediaSession,
   IAcceptSessionRequest,
-  LiveScreenMonitoringMetadata,
   IUpdateOutgoingMedia,
-  IStartLiveMonitoringSessionParams
 } from '../types/interfaces';
 import BaseSessionHandler from './base-session-handler';
 import { SessionTypes, SdkErrorTypes } from '../types/enums';
-import {createAndEmitSdkError, isMonitorJid, requestApi} from '../utils';
+import {createAndEmitSdkError, isLiveScreenMonitorJid, requestApi} from '../utils';
+import {Constants} from "stanza";
 
 export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.liveScreenMonitoring;
-  private primaryScreenMediaStream?: MediaStream;
 
   shouldHandleSessionByJid(jid: string): boolean {
-    return isMonitorJid(jid);
+    return isLiveScreenMonitorJid(jid);
   }
 
   handleConversationUpdate(): void {
@@ -24,34 +22,12 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   }
 
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
-    return this.proceedWithSession(pendingSession);
-  }
-
-  async startSession(params: IStartLiveMonitoringSessionParams): Promise<{ conversationId: string }> {
-    const primaryScreen = this.identifyPrimaryScreen(params.screenRecordingMetadatas);
-    if (!primaryScreen) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'No primary screen found in metadata');
+    if (this.sdk._config.autoAcceptPendingLiveScreenMonitoringRequests) {
+      return this.proceedWithSession(pendingSession);
     }
-    const screenStream = await this.getScreenMediaForPrimary(primaryScreen);
-    return this.joinConferenceWithScreen(params.conferenceJid, screenStream);
-  }
 
-  private identifyPrimaryScreen(metadata: LiveScreenMonitoringMetadata[]): LiveScreenMonitoringMetadata | null {
-    return metadata.find(metadata => metadata.primary) || null;
-  }
-
-  private async getScreenMediaForPrimary(primaryScreen: LiveScreenMonitoringMetadata): Promise<MediaStream> {
-    try {
-      const constraints = {
-        video: {
-          deviceId: primaryScreen.screenId
-        }
-      } as DisplayMediaStreamOptions;
-
-      return await window.navigator.mediaDevices.getDisplayMedia(constraints);
-    } catch (error) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Failed to get screen media', { error });
-    }
+    // if not auto accepting sessions, emit this event for the consumer to accept
+    await super.handlePropose(pendingSession);
   }
 
   private async joinConferenceWithScreen(conferenceJid: string, screenStream: MediaStream): Promise<{ conversationId: string }> {
@@ -66,9 +42,6 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
         data
       });
 
-      // Store screen stream for later use in acceptSession
-      this.primaryScreenMediaStream = screenStream;
-
       return { conversationId: response.data.conversationId };
     } catch (error) {
       screenStream.getTracks().forEach(track => track.stop());
@@ -77,21 +50,32 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSession(session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    if (!params.screenRecordingMetadatas?.length) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'acceptSession must be called with a `screenRecordingMetadatas` property for live monitoring sessions');
+    if (!params.mediaStream) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, `Cannot accept screen recording session without providing a media stream`, { conversationId: session.conversationId, sessionType: this.sessionType });
     }
+
+    if (!params.screenRecordingMetadatas?.length) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
+    }
+    await this.joinConferenceWithScreen(session.originalRoomJid, params.mediaStream);
 
     // Set outbound stream to primary video media stream
-    session._outboundStream = this.primaryScreenMediaStream;
+    session._outboundStream = params.mediaStream;
 
-    // Add primary screen tracks to session
-    for (const track of this.primaryScreenMediaStream.getTracks()) {
-      session.pc.addTrack(track);
-    }
-
-    this.primaryScreenMediaStream = undefined;
+    let addMediaPromise: Promise<any> = Promise.resolve();
+    params.mediaStream.getTracks().forEach((track) => {
+      addMediaPromise = addMediaPromise.then(() => {
+        this.sdk.logger.info('Adding screen track to session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
+        return session.pc.addTrack(track);
+      });
+    });
+    await addMediaPromise;
 
     return super.acceptSession(session, params);
+  }
+
+  async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
+    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${this.sessionType} must be ended remotely`, { conversationId });
   }
 
   updateOutgoingMedia(session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {

@@ -5,6 +5,7 @@ import LiveMonitoringSessionHandler from '../../../src/sessions/live-monitoring-
 import { SessionTypes } from '../../../src/types/enums';
 import * as utils from '../../../src/utils';
 import {IStartLiveMonitoringSessionParams, LiveScreenMonitoringSession} from "../../../src";
+import BaseSessionHandler from "../../../src/sessions/base-session-handler";
 
 declare var window: {
   navigator: {
@@ -34,12 +35,12 @@ beforeEach(() => {
 
 describe('shouldHandleSessionByJid', () => {
   it('should return true for monitor jids', () => {
-    jest.spyOn(utils, 'isMonitorJid').mockReturnValue(true);
+    jest.spyOn(utils, 'isLiveScreenMonitorJid').mockReturnValue(true);
     expect(handler.shouldHandleSessionByJid('livemonitor-123@conference.example.com')).toBeTruthy();
   });
 
   it('should return false for non-monitor jids', () => {
-    jest.spyOn(utils, 'isMonitorJid').mockReturnValue(false);
+    jest.spyOn(utils, 'isLiveScreenMonitorJid').mockReturnValue(false);
     expect(handler.shouldHandleSessionByJid('regular-session@example.com')).toBeFalsy();
   });
 });
@@ -51,13 +52,26 @@ describe('handleConversationUpdate', () => {
 });
 
 describe('handlePropose', () => {
-  it('should proceed with session', async () => {
-    const pendingSession = createPendingSession(SessionTypes.liveScreenMonitoring);
+  it('should immediately accept session if autoAcceptPendingLiveScreenMonitoringRequests', async () => {
     const proceedSpy = jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(null);
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose').mockResolvedValue(null);
 
-    await handler.handlePropose(pendingSession);
+    mockSdk._config.autoAcceptPendingLiveScreenMonitoringRequests = true;
+    await handler.handlePropose({} as any);
 
-    expect(proceedSpy).toHaveBeenCalledWith(pendingSession);
+    expect(proceedSpy).toHaveBeenCalled();
+    expect(superSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not accept session if not autoAcceptPendingLiveScreenMonitoringRequests', async () => {
+    const proceedSpy = jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(null);
+    const superSpy = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose').mockResolvedValue(null);
+
+    mockSdk._config.autoAcceptPendingLiveScreenMonitoringRequests = false;
+    await handler.handlePropose({} as any);
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(superSpy).toHaveBeenCalled();
   });
 });
 
@@ -69,14 +83,13 @@ describe('acceptSession', () => {
     session = new MockSession();
     session.addTrack = jest.fn();
     mockStream = new MockStream({ video: true });
-    handler['primaryScreenMediaStream'] = mockStream as any;
   });
 
   it('should throw error if no screenRecordingMetadatas provided', async () => {
     const params = { mediaStream: new MockStream() };
 
     await expect(handler.acceptSession(session as any, params as any))
-      .rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas` property for live monitoring sessions');
+      .rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
   });
 
   it('should throw error if empty screenRecordingMetadatas provided', async () => {
@@ -86,111 +99,45 @@ describe('acceptSession', () => {
     };
 
     await expect(handler.acceptSession(session as any, params as any))
-      .rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas` property for live monitoring sessions');
+      .rejects.toThrow('acceptSession must be called with a `screenRecordingMetadatas` property for live screen monitoring sessions');
   });
 
-  it('should set outbound stream and add tracks to session', async () => {
+  it('should throw error if no mediaStream is provided', async () => {
+    const session = {
+      addTrack: jest.fn()
+    };
+
+    await expect(handler.acceptSession(session as any, {} as any)).rejects.toThrow('Cannot accept screen recording');
+  });
+
+  it('should set _outboundStream and add tracks to session and join the conference', async () => {
+    const superSpy = jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(handler)), 'acceptSession').mockResolvedValue(null);
+    const addSpy = jest.fn();
+
+    const session = new MockSession();
+    (session as any).peerConnection = session.pc;
+    session.peerConnection._transceivers = [];
+    (session.peerConnection as any).addTrack = addSpy.mockResolvedValue(null);
+
     const params = {
-      mediaStream: new MockStream(),
+      mediaStream: mockStream,
       screenRecordingMetadatas: [{ screenId: 'screen1', primary: true }]
     };
-    const superSpy = jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(handler)), 'acceptSession').mockResolvedValue(null);
+
+    // mock response from joinConferenceWithScreen
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: { conversationId: 'XXXXXXX' } });
 
     await handler.acceptSession(session as any, params as any);
 
     expect(session._outboundStream).toBe(mockStream);
-    expect(session.pc._senders).toHaveLength(mockStream.getTracks().length);
-    expect(handler['primaryScreenMediaStream']).toBeUndefined();
+    expect(addSpy).toHaveBeenCalledTimes(mockStream.getTracks().length);
     expect(superSpy).toHaveBeenCalledWith(session, params);
   });
 });
 
-describe('startSession', () => {
-  const mockMetadatas = [
-    { screenId: 'screen1', primary: false },
-    { screenId: 'screen2', primary: true }
-  ];
-
-  beforeEach(() => {
-    Object.defineProperty(window, 'navigator', {
-      value: {
-        mediaDevices: {
-          getDisplayMedia: jest.fn()
-        }
-      },
-      writable: true
-    });
-  });
-
-  it('should throw error if no primary screen found', async () => {
-    const params = {
-      conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: [{ screenId: 'screen1', primary: false }]
-    } as IStartLiveMonitoringSessionParams;
-
-    await expect(handler.startSession(params as any))
-      .rejects.toThrow('No primary screen found in metadata');
-  });
-
-  it('should get screen media and join conference', async () => {
-    const mockScreenStream = new MockStream({ video: true });
-    const mockResponse = { data: { conversationId: 'conv123' } };
-
-    (window.navigator.mediaDevices.getDisplayMedia as jest.Mock).mockResolvedValue(mockScreenStream);
-    jest.spyOn(utils, 'requestApi').mockResolvedValue(mockResponse);
-
-    const params = {
-      conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: mockMetadatas
-    } as IStartLiveMonitoringSessionParams;
-
-    const result = await handler.startSession(params as any);
-
-    expect(window.navigator.mediaDevices.getDisplayMedia).toHaveBeenCalledWith({
-      video: { deviceId: 'screen2' }
-    });
-    expect(utils.requestApi).toHaveBeenCalledWith('/conversations/videos', {
-      method: 'post',
-      data: JSON.stringify({
-        roomId: 'conf@example.com',
-        participant: { address: 'user@example.com' }
-      })
-    });
-    expect(result).toEqual({ conversationId: 'conv123' });
-    expect(handler['primaryScreenMediaStream']).toBe(mockScreenStream);
-  });
-
-  it('should handle getDisplayMedia error', async () => {
-    const error = new Error('Screen capture failed');
-    (window.navigator.mediaDevices.getDisplayMedia as jest.Mock).mockRejectedValue(error);
-
-    const params = {
-      conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: mockMetadatas
-    } as IStartLiveMonitoringSessionParams;
-
-    await expect(handler.startSession(params as any))
-      .rejects.toThrow('Failed to get screen media');
-  });
-
-  it('should handle API request error and stop screen tracks', async () => {
-    const mockScreenStream = new MockStream({ video: true });
-    const mockTrack = mockScreenStream.getTracks()[0];
-    const error = new Error('API failed');
-
-    (window.navigator.mediaDevices.getDisplayMedia as jest.Mock).mockResolvedValue(mockScreenStream);
-    jest.spyOn(utils, 'requestApi').mockRejectedValue(error);
-    jest.spyOn(mockTrack, 'stop');
-
-    const params = {
-      conferenceJid: 'conf@example.com',
-      screenRecordingMetadatas: mockMetadatas
-    } as IStartLiveMonitoringSessionParams;
-
-    await expect(handler.startSession(params as any))
-      .rejects.toThrow('Failed to join conference');
-
-    expect(mockTrack.stop).toHaveBeenCalled();
+describe('endSession', () => {
+  it('should throw and error', async () => {
+    await expect(handler.endSession('123', {} as any)).rejects.toThrow('must be ended remotely');
   });
 });
 
@@ -207,77 +154,6 @@ describe('updateOutgoingMedia', () => {
       'Cannot update outgoing media for live monitoring sessions',
       { sessionId: session.id, sessionType: session.sessionType }
     );
-  });
-});
-
-describe('identifyPrimaryScreen', () => {
-  it('should return primary screen metadata', () => {
-    const metadatas = [
-      { screenId: 'screen1', primary: false },
-      { screenId: 'screen2', primary: true },
-      { screenId: 'screen3', primary: false }
-    ];
-
-    const result = handler['identifyPrimaryScreen'](metadatas as any);
-    expect(result).toEqual({ screenId: 'screen2', primary: true });
-  });
-
-  it('should return null if no primary screen found', () => {
-    const metadatas = [
-      { screenId: 'screen1', primary: false },
-      { screenId: 'screen2', primary: false }
-    ];
-
-    const result = handler['identifyPrimaryScreen'](metadatas as any);
-    expect(result).toBeNull();
-  });
-
-  it('should return first primary screen if multiple exist', () => {
-    const metadatas = [
-      { screenId: 'screen1', primary: false },
-      { screenId: 'screen2', primary: true },
-      { screenId: 'screen3', primary: true }
-    ];
-
-    const result = handler['identifyPrimaryScreen'](metadatas as any);
-    expect(result).toEqual({ screenId: 'screen2', primary: true });
-  });
-});
-
-describe('getScreenMediaForPrimary', () => {
-  beforeEach(() => {
-    Object.defineProperty(window, 'navigator', {
-      value: {
-        mediaDevices: {
-          getDisplayMedia: jest.fn()
-        }
-      },
-      writable: true
-    });
-  });
-
-  it('should get display media with correct constraints', async () => {
-    const mockStream = new MockStream({ video: true });
-    const primaryScreen = { screenId: 'screen123', primary: true };
-
-    (window.navigator.mediaDevices.getDisplayMedia as jest.Mock).mockResolvedValue(mockStream);
-
-    const result = await handler['getScreenMediaForPrimary'](primaryScreen as any);
-
-    expect(window.navigator.mediaDevices.getDisplayMedia).toHaveBeenCalledWith({
-      video: { deviceId: 'screen123' }
-    });
-    expect(result).toBe(mockStream);
-  });
-
-  it('should throw SDK error on failure', async () => {
-    const error = new Error('Permission denied');
-    const primaryScreen = { screenId: 'screen123', primary: true };
-
-    (window.navigator.mediaDevices.getDisplayMedia as jest.Mock).mockRejectedValue(error);
-
-    await expect(handler['getScreenMediaForPrimary'](primaryScreen as any))
-      .rejects.toThrow('Failed to get screen media');
   });
 });
 
@@ -298,7 +174,6 @@ describe('joinConferenceWithScreen', () => {
       })
     });
     expect(result).toEqual({ conversationId: 'conv456' });
-    expect(handler['primaryScreenMediaStream']).toBe(mockScreenStream);
   });
 
   it('should stop screen tracks and throw error on API failure', async () => {

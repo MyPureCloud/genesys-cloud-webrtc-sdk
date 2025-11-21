@@ -336,10 +336,10 @@ describe('jid utils', () => {
   });
 
   it('isMonitorJid', () => {
-    expect(utils.isMonitorJid('livemonitor-agent-@conference.test.com')).toBeTruthy();
-    expect(utils.isMonitorJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
-    expect(utils.isMonitorJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
-    expect(utils.isMonitorJid('sdkfjk@test.com')).toBeFalsy();
+    expect(utils.isLiveScreenMonitorJid('livemonitor-agent-@conference.test.com')).toBeTruthy();
+    expect(utils.isLiveScreenMonitorJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isLiveScreenMonitorJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isLiveScreenMonitorJid('sdkfjk@test.com')).toBeFalsy();
   });
 });
 
