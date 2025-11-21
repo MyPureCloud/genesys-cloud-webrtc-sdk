@@ -4,6 +4,7 @@ import { SessionManager } from '../../../src/sessions/session-manager';
 import LiveMonitoringSessionHandler from '../../../src/sessions/live-monitoring-session-handler';
 import { SessionTypes } from '../../../src/types/enums';
 import * as utils from '../../../src/utils';
+import {IStartLiveMonitoringSessionParams, LiveScreenMonitoringSession} from "../../../src";
 
 declare var window: {
   navigator: {
@@ -124,8 +125,8 @@ describe('startSession', () => {
   it('should throw error if no primary screen found', async () => {
     const params = {
       conferenceJid: 'conf@example.com',
-      liveMonitoringMetadata: [{ screenId: 'screen1', primary: false }]
-    };
+      screenRecordingMetadatas: [{ screenId: 'screen1', primary: false }]
+    } as IStartLiveMonitoringSessionParams;
 
     await expect(handler.startSession(params as any))
       .rejects.toThrow('No primary screen found in metadata');
@@ -140,8 +141,8 @@ describe('startSession', () => {
 
     const params = {
       conferenceJid: 'conf@example.com',
-      liveMonitoringMetadata: mockMetadatas
-    };
+      screenRecordingMetadatas: mockMetadatas
+    } as IStartLiveMonitoringSessionParams;
 
     const result = await handler.startSession(params as any);
 
@@ -165,8 +166,8 @@ describe('startSession', () => {
 
     const params = {
       conferenceJid: 'conf@example.com',
-      liveMonitoringMetadata: mockMetadatas
-    };
+      screenRecordingMetadatas: mockMetadatas
+    } as IStartLiveMonitoringSessionParams;
 
     await expect(handler.startSession(params as any))
       .rejects.toThrow('Failed to get screen media');
@@ -183,8 +184,8 @@ describe('startSession', () => {
 
     const params = {
       conferenceJid: 'conf@example.com',
-      liveMonitoringMetadata: mockMetadatas
-    };
+      screenRecordingMetadatas: mockMetadatas
+    } as IStartLiveMonitoringSessionParams;
 
     await expect(handler.startSession(params as any))
       .rejects.toThrow('Failed to join conference');
