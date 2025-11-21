@@ -28,7 +28,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   }
 
   async startSession(params: IStartLiveMonitoringSessionParams): Promise<{ conversationId: string }> {
-    const primaryScreen = this.identifyPrimaryScreen(params.liveMonitoringMetadata);
+    const primaryScreen = this.identifyPrimaryScreen(params.screenRecordingMetadatas);
     if (!primaryScreen) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'No primary screen found in metadata');
     }

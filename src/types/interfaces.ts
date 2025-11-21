@@ -1237,7 +1237,7 @@ export interface IStartLiveMonitoringSessionParams extends IStartSessionParams {
   /** Conference room JID to join */
   conferenceJid: string;
   /** Screen recording metadata to identify primary screen */
-  liveMonitoringMetadata: LiveScreenMonitoringMetadata[];
+  screenRecordingMetadatas: LiveScreenMonitoringMetadata[];
 }
 
 export interface ISdkSoftphoneDestination {

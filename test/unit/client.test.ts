@@ -361,7 +361,7 @@ describe('Client', () => {
 
       expect(sessionManagerMock.startSession).toBeCalledWith({
         conferenceJid,
-        liveMonitoringMetadata,
+        screenRecordingMetadatas: liveMonitoringMetadata,
         sessionType: SessionTypes.liveScreenMonitoring
       } as IStartLiveMonitoringSessionParams);
       expect(result).toEqual({ conversationId: 'conv123' });

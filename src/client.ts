@@ -1,50 +1,52 @@
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
-import StreamingClient, { HttpClient, StreamingClientError, StreamingClientErrorTypes } from 'genesys-cloud-streaming-client';
+import StreamingClient, {
+  HttpClient,
+  SessionTypes,
+  StreamingClientError,
+  StreamingClientErrorTypes
+} from 'genesys-cloud-streaming-client';
 import Logger from 'genesys-cloud-client-logger';
-import { jwtDecode } from "jwt-decode";
+import {jwtDecode} from "jwt-decode";
 
 import {
-  ISdkConfig,
+  IAcceptSessionRequest,
+  IConversationHeldRequest,
   ICustomerData,
   IEndSessionRequest,
-  IAcceptSessionRequest,
-  ISessionMuteRequest,
-  IPersonDetails,
-  IMediaDeviceIds,
-  IUpdateOutgoingMedia,
-  SdkEvents,
-  IMediaSettings,
-  isSecurityCode,
-  isCustomerData,
-  IStartSoftphoneSessionParams,
-  IOrgDetails,
-  IStation,
-  ISessionIdAndConversationId,
-  IConversationHeldRequest,
-  IPendingSessionActionParams,
   IExtendedMediaSession,
-  ScreenRecordingMediaSession,
-  LiveScreenMonitoringMetadata,
-  LiveScreenMonitoringSession,
-  VideoMediaSession,
+  IMediaDeviceIds,
+  IMediaSettings,
+  IOrgDetails,
+  IPendingSessionActionParams,
+  IPersonDetails,
+  isCustomerData,
+  ISdkConfig,
+  ISdkFullConfig,
+  ISessionIdAndConversationId,
+  ISessionMuteRequest,
+  isSecurityCode,
+  IStartSoftphoneSessionParams,
+  IStation,
+  IUpdateOutgoingMedia,
   IVideoResolution,
   JWTDetails,
-  ISdkFullConfig
+  LiveScreenMonitoringMetadata,
+  LiveScreenMonitoringSession,
+  ScreenRecordingMediaSession,
+  SdkEvents,
+  VideoMediaSession
 } from './types/interfaces';
-import {
-  setupStreamingClient,
-  proxyStreamingClientEvents
-} from './client-private';
-import { requestApi, createAndEmitSdkError, defaultConfigOption, requestApiWithRetry } from './utils';
-import { setupLogging } from './logging';
-import { SdkErrorTypes, SessionTypes } from './types/enums';
-import { SessionManager } from './sessions/session-manager';
-import { SdkMedia } from './media/media';
-import { HeadsetProxyService } from './headsets/headset';
-import { Constants } from 'stanza';
-import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
-import { ISdkHeadsetService } from './headsets/headset-types';
+import {proxyStreamingClientEvents, setupStreamingClient} from './client-private';
+import {createAndEmitSdkError, defaultConfigOption, requestApi, requestApiWithRetry} from './utils';
+import {setupLogging} from './logging';
+import {SdkErrorTypes, SessionTypes} from './types/enums';
+import {SessionManager} from './sessions/session-manager';
+import {SdkMedia} from './media/media';
+import {HeadsetProxyService} from './headsets/headset';
+import {Constants} from 'stanza';
+import {setupWebrtcForWindows11} from './windows11-first-session-hack';
+import {ISdkHeadsetService} from './headsets/headset-types';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -144,7 +146,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     /* grab copies or valid objects */
     const defaultsOptions = options.defaults || {};
 
-    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare];
+    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare, SessionTypes.liveScreenMonitoring];
 
     // If using JWT auth, we only support screen recording and video conferencing.
     if (options.jwt) {
@@ -423,7 +425,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   async startLiveMonitoringSession (conferenceJid: string, liveMonitoringMetadata: LiveScreenMonitoringMetadata[]): Promise<{ conversationId: string }> {
     return this.sessionManager.startSession({
       conferenceJid,
-      liveMonitoringMetadata,
+      screenRecordingMetadatas: liveMonitoringMetadata,
       sessionType: SessionTypes.liveScreenMonitoring
     });
   }
