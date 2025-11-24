@@ -28,7 +28,8 @@ import {
   VideoMediaSession,
   IVideoResolution,
   JWTDetails,
-  ISdkFullConfig
+  ISdkFullConfig,
+  LiveScreenMonitoringSession
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -142,7 +143,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     /* grab copies or valid objects */
     const defaultsOptions = options.defaults || {};
 
-    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare];
+    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare, SessionTypes.liveScreenMonitoring];
 
     // If using JWT auth, we only support screen recording and video conferencing.
     if (options.jwt) {
@@ -156,6 +157,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       ...{
         autoConnectSessions: options.autoConnectSessions !== false, // default true
         autoAcceptPendingScreenRecordingRequests: !!options.autoAcceptPendingScreenRecordingRequests,
+        autoAcceptPendingLiveScreenMonitoringRequests: !!options.autoAcceptPendingLiveScreenMonitoringRequests,
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
@@ -341,6 +343,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   isVideoSession (session: IExtendedMediaSession): session is VideoMediaSession {
     return session.sessionType === SessionTypes.collaborateVideo;
+  }
+
+  isLiveScreenMonitoringSession (session: IExtendedMediaSession): session is LiveScreenMonitoringSession {
+    return session.sessionType === SessionTypes.liveScreenMonitoring;
   }
 
   /**

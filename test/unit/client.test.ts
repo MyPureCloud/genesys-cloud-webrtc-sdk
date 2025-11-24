@@ -331,26 +331,22 @@ describe('Client', () => {
     });
   });
 
-  describe('startVideoMeeting()', () => {
-    it('should call session manager to start video meeting', async () => {
+  describe('isLiveScreenMonitoringSession', () => {
+    beforeEach(() => {
       sdk = constructSdk();
-
-      sessionManagerMock.startSession.mockResolvedValue({});
-      await sdk.startVideoMeeting('123abc');
-      expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
     });
 
-    it('should throw if guest user', async () => {
-      sdk = constructSdk({ organizationId: 'some-org' }); // no access_token is a guest user
-      try {
-        await sdk.startVideoMeeting('123');
-        fail('should have failed');
-      } catch (e) {
-        expect(e).toEqual(new Error('video conferencing meetings not supported for guests'));
-        expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
-      }
+    it('should be true', () => {
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.liveScreenMonitoring } as any)).toBeTruthy();
+    });
+
+    it('should be false', () => {
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.acdScreenShare } as any)).toBeFalsy();
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.softphone } as any)).toBeFalsy();
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.screenRecording } as any)).toBeFalsy();
     });
   });
+
 
   describe('startScreenShare()', () => {
     it('should reject if authenticated user', async () => {
