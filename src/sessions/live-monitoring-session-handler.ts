@@ -41,7 +41,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     let addMediaPromise: Promise<any> = Promise.resolve();
     params.mediaStream.getTracks().forEach((track) => {
       addMediaPromise = addMediaPromise.then(() => {
-        this.sdk.logger.info('Adding screen track to session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
+        this.sdk.logger.info('Adding screen track to live screen monitoring session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
         return session.pc.addTrack(track);
       });
     });
