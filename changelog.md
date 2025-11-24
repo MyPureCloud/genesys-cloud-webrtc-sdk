@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.0...HEAD)
 
-# [v11.3.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...v11.4.0)
+# [v11.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...v11.4.0)
 ### Added
 * [STREAM-992](https://inindca.atlassian.net/browse/STREAM-992) - Added pull request template checklist.
 * [STREAM-825](https://inindca.atlassian.net/browse/STREAM-825) - Add ability to send multiple tracks when screensharing
