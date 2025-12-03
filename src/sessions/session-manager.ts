@@ -28,13 +28,15 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { SessionTypesAsStrings } from 'genesys-cloud-streaming-client';
 import { Constants } from 'stanza';
 import ScreenRecordingSessionHandler from './screen-recording-session-handler';
+import LiveMonitoringSessionHandler from './live-monitoring-session-handler';
 import { WebrtcExtensionAPI } from 'genesys-cloud-streaming-client/dist/es/webrtc';
 
 const sessionHandlersToConfigure: any[] = [
   SoftphoneSessionHandler,
   VideoSessionHandler,
   ScreenShareSessionHandler,
-  ScreenRecordingSessionHandler
+  ScreenRecordingSessionHandler,
+  LiveMonitoringSessionHandler
 ];
 
 export class SessionManager {
@@ -166,8 +168,8 @@ export class SessionManager {
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
-    if (params.sessionType) {
-      handler = this.sessionHandlers.find((handler) => handler.sessionType == params.sessionType);
+    if (params.sessionType || params.sessionInfo?.sessionType) {
+      handler = this.sessionHandlers.find((handler) => handler.sessionType == (params.sessionType || params.sessionInfo?.sessionType));
     } else {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
 
@@ -410,7 +412,7 @@ export class SessionManager {
     }
 
     session._alreadyAccepted = true;
-    
+
     const sessionHandler = this.getSessionHandler({ jingleSession: session });
     return sessionHandler.acceptSession(session, params);
   }

@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import { SimpleMockSdk, createPendingSession, MockSession, MockStream, MockTrack } from '../../test-utils';
 import { SessionTypes } from '../../../src/types/enums';
-import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState, VideoMediaSession } from '../../../src/types/interfaces';
+import { IUpdateOutgoingMedia, IExtendedMediaSession, ISdkMediaState, VideoMediaSession, ISessionInfo } from '../../../src/types/interfaces';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
 import VideoSessionHandler from '../../../src/sessions/video-session-handler';
@@ -158,7 +158,7 @@ describe('handleConversationUpdateRaw', () => {
   });
 
   it('should not pass update to handler if the handler is disabled', async () => {
-    const conversationId = 'convoid123'; 
+    const conversationId = 'convoid123';
 
     const spy = jest.fn();
     const fakeHandler = { handleConversationUpdateRaw: spy, disabled: true };
@@ -321,6 +321,21 @@ describe('getSessionHandler', () => {
   it('should get by sessionType', () => {
     mockHandler.sessionType = SessionTypes.softphone;
     const handler = sessionManager.getSessionHandler({ sessionType: SessionTypes.softphone });
+    expect(handler).toBe(mockHandler);
+  });
+
+  it('should get by sessionInfo.sessionType', () => {
+    mockHandler.sessionType = SessionTypes.collaborateVideo;
+    const sessionInfo: ISessionInfo = {
+      sessionType: SessionTypes.collaborateVideo,
+      sessionId: '',
+      id: '',
+      autoAnswer: false,
+      toJid: '',
+      fromJid: '',
+      conversationId: ''
+    };
+    const handler = sessionManager.getSessionHandler({ sessionInfo });
     expect(handler).toBe(mockHandler);
   });
 

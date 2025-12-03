@@ -18,8 +18,9 @@ test/test-pages/*/index.html
 ## vscode specific files
 /.vscode
 
-## webstorm specific files
+## jetbrains specific files
 /.idea
+genesys-cloud-webrtc-sdk.iml
 
 # tap specific files
 /.nyc_output
@@ -28,3 +29,5 @@ test/test-pages/*/index.html
 /.npmrc
 
 /test-results
+
+.DS_Store
