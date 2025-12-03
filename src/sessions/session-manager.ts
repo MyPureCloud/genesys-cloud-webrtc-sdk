@@ -168,8 +168,8 @@ export class SessionManager {
 
   getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: any }): BaseSessionHandler {
     let handler: BaseSessionHandler;
-    if (params.sessionType) {
-      handler = this.sessionHandlers.find((handler) => handler.sessionType == params.sessionType);
+    if (params.sessionType || params.sessionInfo?.sessionType) {
+      handler = this.sessionHandlers.find((handler) => handler.sessionType == (params.sessionType || params.sessionInfo?.sessionType));
     } else {
       const fromJid = (params.sessionInfo && params.sessionInfo.fromJid) || (params.jingleSession && params.jingleSession.peerID);
 
