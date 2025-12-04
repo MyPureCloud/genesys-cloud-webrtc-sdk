@@ -317,6 +317,7 @@ describe('jid utils', () => {
   it('isVideoJid', () => {
     expect(utils.isVideoJid('sdkfjk@conference.test.com')).toBeTruthy();
     expect(utils.isVideoJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isVideoJid('livemonitor-sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isVideoJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isVideoJid('sdkfjk@test.com')).toBeFalsy();
   });
