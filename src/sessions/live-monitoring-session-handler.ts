@@ -51,7 +51,12 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
-    throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${this.sessionType} must be ended remotely`, { conversationId });
+    // Prevent the live monitor target (session initiator) from ending the session
+    if (session.fromUserId === this.sdk._personDetails.id) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Live monitoring target cannot end the session`, { conversationId });
+    }
+    // Allow observers to end their participation
+    return super.endSession(conversationId, session, reason);
   }
 
   updateOutgoingMedia(session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {

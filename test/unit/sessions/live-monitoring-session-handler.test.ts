@@ -113,8 +113,18 @@ describe('acceptSession', () => {
 });
 
 describe('endSession', () => {
-  it('should throw and error', async () => {
-    await expect(handler.endSession('123', {} as any)).rejects.toThrow('must be ended remotely');
+  it('should throw an error when monitoring target tries to end the session', async () => {
+    const session = { fromUserId: 'user123' }; // Same as mockSdk._personDetails.id
+    await expect(handler.endSession('conversation123', session as any)).rejects.toThrow('Live monitoring target cannot end the session');
+  });
+
+  it('should allow monitoring observers to end the session', async () => {
+    const superSpy = jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(handler)), 'endSession').mockResolvedValue(null);
+    const session = { fromUserId: 'observer456' }; // Different from mockSdk._personDetails.id
+
+    await handler.endSession('conversation123', session as any);
+
+    expect(superSpy).toHaveBeenCalledWith('conversation123', session, undefined);
   });
 });
 
