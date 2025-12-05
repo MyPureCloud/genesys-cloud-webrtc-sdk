@@ -352,7 +352,9 @@ export class VideoSessionHandler extends BaseSessionHandler {
         conversationId: pendingSession.conversationId,
         sessionType: pendingSession.sessionType
       });
-      await super.handlePropose(pendingSession);
+      // await super.handlePropose(pendingSession);
+      await this.proceedWithSession(pendingSession);
+      return;
     }
 
     if (isPeerVideoJid(pendingSession.fromJid)) {

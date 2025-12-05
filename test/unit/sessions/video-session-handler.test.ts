@@ -800,8 +800,8 @@ describe('handlePropose', () => {
       originalRoomJid: jid
     });
 
-    expect(handler.proceedWithSession).not.toHaveBeenCalled();
-    expect(emitSpy).toHaveBeenCalled();
+    expect(handler.proceedWithSession).toHaveBeenCalled();
+    expect(emitSpy).not.toHaveBeenCalled();
   });
 });
 
