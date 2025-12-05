@@ -43,7 +43,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
       await this.acceptSessionForTarget(session, params)
     }
 
-    return super.acceptSession(session, params);
+    await super.acceptSession(session, params);
   }
 
   async acceptSessionForTarget(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest) {
