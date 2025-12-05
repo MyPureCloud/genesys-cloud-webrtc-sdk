@@ -342,7 +342,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         if (this.isPendingState(previousCallState) && !isOutbound) {
           this.sdk.headset.rejectIncomingCall(conversationId);
         } else {
-          this.sdk.headset.endCurrentCall(conversationId);
+          this.sdk.headset.endCurrentCall(conversationId, Object.keys(this.conversations).length > 1);
         }
 
         HeadsetChangesQueue.clearQueue();
