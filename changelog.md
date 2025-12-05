@@ -3,11 +3,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.0...HEAD)
+### Fixed
+* [STREAM-1027](https://inindca.atlassian.net/browse/STREAM-992) - Fix jid to session type evaluation for live monitor jids
+
+# [v11.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...v11.4.0)
 ### Added
 * [STREAM-992](https://inindca.atlassian.net/browse/STREAM-992) - Added pull request template checklist.
+* [STREAM-825](https://inindca.atlassian.net/browse/STREAM-825) - Add ability to send multiple tracks when screensharing
+* [STREAM-777](https://inindca.atlassian.net/browse/STREAM-777) - Support live screen-monitoring
+
 ### Fixed
 * [STREAM-990](https://inindca.atlassian.net/browse/STREAM-990) - Demo app: Store a copy of pendingSessions so freezing them doesn't affect the SDK's usage of those objects
+* [STREAM-1025](https://inindca.atlassian.net/browse/STREAM-1025) - Fix issue causing wrong session handler to be used for `liveScreenMonitoring` sessions.
 
 #### Changed
 * [STREAM-981](https://inindca.atlassian.net/browse/STREAM-981) - Remove appid from IncomingStreamStatus interface

@@ -90,6 +90,14 @@ export interface ISdkFullConfig {
   autoAcceptPendingScreenRecordingRequests?: boolean;
 
   /**
+   * If a propose for a live screen monitoring is received *and* this client is configured to handle screen monitoring
+   *   sessions, automatically call `acceptPendingSession()` for this request.
+   *
+   * Optional: default `false`.
+   */
+  autoAcceptPendingLiveScreenMonitoringRequests?: boolean
+
+  /**
    * The identifier that will go into the full jid. The jid will be constructed as {usersBareJid}/{jidResource}
    * This is helpful for identifying specific clients and considered advanced usage.
    */
@@ -960,6 +968,10 @@ export interface ScreenRecordingMetadata {
    * This monitor is the system default/primary monitor where the start bar and/or dock lives.
    */
   primary: boolean;
+}
+
+export interface LiveScreenMonitoringSession extends IExtendedMediaSession {
+  sessionType: SessionTypes.liveScreenMonitoring;
 }
 
 export interface SubscriptionEvent {
