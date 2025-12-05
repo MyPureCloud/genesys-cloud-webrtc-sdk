@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-1027](https://inindca.atlassian.net/browse/STREAM-992) - Fix jid to session type evaluation for live monitor jids
 
+### Added
+* [STREAM-878](https://inindca.atlassian.net/browse/STREAM-992) - Added in check to properly pass in a boolean to the headset library to determine if we have other active calls
+
 # [v11.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...v11.4.0)
 ### Added
 * [STREAM-992](https://inindca.atlassian.net/browse/STREAM-992) - Added pull request template checklist.
