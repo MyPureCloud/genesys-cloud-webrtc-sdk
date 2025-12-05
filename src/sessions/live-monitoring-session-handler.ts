@@ -65,40 +65,35 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSessionForObserver(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest) {
+    const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
-    const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
-    if (!audioElement) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires an audioElement to be provided or in the default config', sessionInfo);
+
+    if (!videoElement) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options,
+        'acceptSession for live monitoring observer requires a videoElement to be provided or in the default config',
+        sessionInfo);
     }
 
-    const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
-    if (!videoElement) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'acceptSession for video requires a videoElement to be provided or in the default config', sessionInfo);
-    }
-    const attachParams = { audioElement, videoElement, volume: this.sdk._config.defaults.audioVolume };
+    const attachParams = { videoElement };
 
     const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
       if (!Array.isArray(tracks)) tracks = [tracks];
 
       for (const track of tracks) {
-        this.log('info', 'Incoming track', {
+        this.log('info', 'Incoming track from live monitoring session', {
           track,
           conversationId: session.conversationId,
           sessionId: session.id,
           sessionType: session.sessionType
         });
 
-        const el = this.attachIncomingTrackToElement(track, attachParams);
-
-        /* if the track was attatched to an audio element, we have an audio track */
-        if (el instanceof HTMLAudioElement) {
-          session._outputAudioElement = el;
-        }
+        this.attachIncomingTrackToElement(track, attachParams);
       }
 
       session.emit('incomingMedia');
     };
 
+    // Get existing tracks
     const tracks = session.pc.getReceivers()
       .filter(receiver => receiver.track)
       .map(receiver => receiver.track);
@@ -106,12 +101,11 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     if (tracks.length) {
       handleIncomingTracks(session, tracks);
     } else {
+      // Listen for tracks that arrive later
       session.on('peerTrackAdded', (track: MediaStreamTrack) => {
         handleIncomingTracks(session, track);
       });
     }
-
-    await super.acceptSession(session, params);
   }
 
   isLiveMonitoringObserver(): boolean {
@@ -139,12 +133,11 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
    */
   attachIncomingTrackToElement(
     track: MediaStreamTrack,
-    { audioElement, videoElement, volume }: { audioElement?: HTMLAudioElement, videoElement?: HTMLVideoElement, volume: number }
+    { videoElement }: { videoElement: HTMLVideoElement }
   ): HTMLAudioElement | HTMLVideoElement {
-    let element = audioElement;
+    const element = videoElement;
 
     if (track.kind === 'video') {
-      element = videoElement;
       if (element) {
         element.muted = true;
       }
@@ -152,7 +145,6 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
 
     if (element) {
       element.autoplay = true;
-      element.volume = volume / 100;
       element.srcObject = createNewStreamWithTrack(track);
     }
 

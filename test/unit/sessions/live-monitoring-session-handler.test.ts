@@ -153,38 +153,31 @@ describe('acceptSessionForObserver', () => {
     session = new MockSession() as any;
   });
 
-  it('should throw if no audio element provided', async () => {
-    await expect(handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true })).rejects.toThrowError(/requires an audioElement/);
-  });
-
   it('should throw if no video element is provided', async () => {
     await expect(handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, audioElement: document.createElement('audio') })).rejects.toThrowError(/requires a videoElement/);
   });
 
   it('should use default elements', async () => {
-    const audio = mockSdk._config.defaults!.audioElement = document.createElement('audio');
     const video = mockSdk._config.defaults!.videoElement = document.createElement('video');
 
     const incomingTrack = {} as any;
     jest.spyOn(session.pc, 'getReceivers').mockReturnValue([{ track: incomingTrack }] as any);
 
-    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+    attachIncomingTrackToElementSpy.mockReturnValue(video);
 
     await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true });
 
     expect(parentHandlerSpy).toHaveBeenCalled();
-    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
-    expect(session._outputAudioElement).toBe(audio);
+    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video });
   });
 
 
   it('should attach tracks later if not available', async () => {
-    const audio = document.createElement('audio');
     const video = document.createElement('video');
 
-    attachIncomingTrackToElementSpy.mockReturnValue(audio);
+    attachIncomingTrackToElementSpy.mockReturnValue(video);
 
-    await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, audioElement: audio, videoElement: video });
+    await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, videoElement: video });
     expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
     expect(parentHandlerSpy).toHaveBeenCalled();
 
@@ -192,8 +185,7 @@ describe('acceptSessionForObserver', () => {
 
     session.emit('peerTrackAdded', incomingTrack);
 
-    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
-    expect(session._outputAudioElement).toBe(audio);
+    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video });
   });
 });
 
@@ -250,25 +242,7 @@ describe('updateOutgoingMedia', () => {
 });
 
 describe('attachIncomingTrackToElement', () => {
-  it('should attach to audio element', () => {
-    const audio = document.createElement('audio');
-    const video = document.createElement('video');
-
-    const track = new MockTrack();
-    track.kind = 'audio';
-    const fakeStream = {};
-    jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockReturnValue(fakeStream as any);
-
-    handler.attachIncomingTrackToElement(track as any, { audioElement: audio, volume: 45, videoElement: video });
-
-    expect(audio.srcObject).toBe(fakeStream);
-    expect(video.srcObject).toBeUndefined();
-    expect(audio.autoplay).toBeTruthy();
-    expect(audio.muted).toBeFalsy();
-  });
-
   it('should attach to video element', () => {
-    const audio = document.createElement('audio');
     const video = document.createElement('video');
 
     const track = new MockTrack();
@@ -276,10 +250,9 @@ describe('attachIncomingTrackToElement', () => {
     const fakeStream = {};
     jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockReturnValue(fakeStream as any);
 
-    handler.attachIncomingTrackToElement(track as any, { audioElement: audio, volume: 44, videoElement: video });
+    handler.attachIncomingTrackToElement(track as any, { videoElement: video });
 
     expect(video.srcObject).toBe(fakeStream);
-    expect(audio.srcObject).toBeUndefined();
     expect(video.autoplay).toBeTruthy();
     expect(video.muted).toBeTruthy();
   });
