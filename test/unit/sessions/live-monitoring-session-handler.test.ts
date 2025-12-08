@@ -189,23 +189,6 @@ describe('acceptSessionForObserver', () => {
   });
 });
 
-describe('isLiveMonitoringObserver', () => {
-  it('should return true when session has _liveMonitoringObserver set to true', () => {
-    handler._liveMonitoringObserver = true;
-    expect(handler.isLiveMonitoringObserver()).toBe(true);
-  });
-
-  it('should return false when session has _liveMonitoringObserver set to false', () => {
-    handler._liveMonitoringObserver = false;
-    expect(handler.isLiveMonitoringObserver()).toBe(false);
-  });
-
-  it('should return false when session has no _liveMonitoringObserver property', () => {
-    handler._liveMonitoringObserver = undefined;
-    expect(handler.isLiveMonitoringObserver()).toBe(false);
-  });
-});
-
 describe('endSession', () => {
   it('should throw an error when monitoring target tries to end the session', async () => {
     const session = { _liveMonitoringObserver: false } as any;

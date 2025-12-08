@@ -13,7 +13,7 @@ import {createNewStreamWithTrack} from '../media/media-utils';
 
 export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.liveScreenMonitoring;
-  _liveMonitoringObserver: boolean = undefined;
+  _liveMonitoringObserver: boolean = false;
 
   shouldHandleSessionByJid(jid: string): boolean {
     return isLiveScreenMonitorJid(jid);
@@ -37,7 +37,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     // Store the liveMonitoringObserver flag
     this._liveMonitoringObserver = params.liveMonitoringObserver || false;
 
-    if (this.isLiveMonitoringObserver()) {
+    if (this._liveMonitoringObserver) {
       await this.acceptSessionForObserver(session, params)
     } else {
       await this.acceptSessionForTarget(session, params)
@@ -108,13 +108,9 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     }
   }
 
-  isLiveMonitoringObserver(): boolean {
-    return this._liveMonitoringObserver || false;
-  }
-
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     // Prevent the live monitor target from ending the session
-    if (!this.isLiveMonitoringObserver()) {
+    if (!this._liveMonitoringObserver) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Live monitoring target cannot end the session`, { conversationId });
     }
 
