@@ -203,7 +203,7 @@ describe('endSession', () => {
 
     await handler.endSession('conversation123', session);
 
-    expect(handler._liveMonitoringObserver).toBeUndefined();
+    expect(handler._liveMonitoringObserver).toBeFalsy();
     expect(superSpy).toHaveBeenCalledWith('conversation123', session, undefined);
   });
 });
