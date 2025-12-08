@@ -33,7 +33,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     await super.handlePropose(pendingSession);
   }
 
-  async acceptSession(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest): Promise<void> {
     // Store the liveMonitoringObserver flag
     this._liveMonitoringObserver = params.liveMonitoringObserver || false;
 
@@ -115,7 +115,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     }
 
     // Allow observers to end their participation
-    this._liveMonitoringObserver = undefined
+    this._liveMonitoringObserver = false
     return super.endSession(conversationId, session, reason);
   }
 
