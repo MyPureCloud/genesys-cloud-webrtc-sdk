@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.1...HEAD)
 
-# [v11.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.0...v11.4.1)
+# [v11.4.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.0...v11.4.1)
 ### Fixed
 * [STREAM-1027](https://inindca.atlassian.net/browse/STREAM-992) - Fix jid to session type evaluation for live monitor jids
 
