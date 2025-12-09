@@ -677,6 +677,9 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 
   /** video element to attach incoming video to. default is sdk `defaults.videoElement` */
   videoElement?: HTMLVideoElement;
+
+  /** Flag set to true when the participant is a monitoring observer. default is `false` */
+  liveMonitoringObserver?: boolean
 }
 
 export interface IEndSessionRequest {
