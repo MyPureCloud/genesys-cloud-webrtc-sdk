@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './AudioDevices.css';
 import { GuxDropdown, GuxListbox, GuxOption } from 'genesys-spark-components-react';
 import useSdk from '../hooks/useSdk';
@@ -7,16 +7,28 @@ import Card from './Card';
 import { RootState } from '../types/store';
 
 export default function AudioDevices() {
-  const { updateDefaultDevices, updateAudioVolume } = useSdk();
+  const { updateDefaultDevices } = useSdk();
   const deviceState = useSelector((state: RootState) => state.devices.currentState);
-  const sdk = useSelector((state: RootState) => state.sdk.sdk);
-  const [audioVolume, setAudioVolume] = useState(
-    sdk?._config?.defaults?.audioVolume || 50
-  );
+  const [deviceId, setDeviceId] = useState('');
 
-  function updateVolume(volume: string) {
-    updateAudioVolume(volume);
-    setAudioVolume(parseInt(volume));
+  useEffect(() => {
+    const id = localStorage.getItem('inputDeviceId');
+    if (id) {
+      setDeviceId(id);
+      updateDefaultDevices({ audioDeviceId: id });
+    } else {
+      const audioDeviceId =
+        deviceState.audioDevices.find(d => d.label.toLowerCase().includes('default'))?.deviceId || deviceState.audioDevices[0].deviceId;
+      setDeviceId(audioDeviceId);
+      updateDefaultDevices({ audioDeviceId });
+      localStorage.setItem('inputDeviceId', audioDeviceId);
+    }
+  }, []);
+
+  function updateDevice(id: string) {
+    setDeviceId(id);
+    updateDefaultDevices({ audioDeviceId: id });
+    localStorage.setItem('inputDeviceId', id);
   }
 
   function displayAudioDevices() {
@@ -24,31 +36,19 @@ export default function AudioDevices() {
       return <>
         <div className="audio-device-list">
           <GuxDropdown
-            value={deviceState.audioDevices[0].deviceId}
+            value={deviceId}
             onInput={(e) =>
-              updateDefaultDevices({ audioDeviceId: (e.target as HTMLSelectElement).value })
+              updateDevice(e.currentTarget.value)
             }
           >
             <GuxListbox>
               {deviceState.audioDevices.map((device: MediaDeviceInfo) => (
-                <GuxOption key={device.deviceId} value={device.deviceId}>
+                <GuxOption key={`${device.deviceId}${device.label}`} value={device.deviceId}>
                   {device.label}
                 </GuxOption>
               ))}
             </GuxListbox>
           </GuxDropdown>
-        </div>
-        <div className="audio-device-volume">
-          <label htmlFor="audio-volume">Audio Volume</label>
-          <input
-            name="audio-volume"
-            type="range"
-            min="0"
-            max="100"
-            value={audioVolume}
-            onChange={(e) => updateVolume(e.target.value)}
-          />
-          <span className="audio-volume-tooltip">{audioVolume}%</span>
         </div>
       </>
     } else {

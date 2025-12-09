@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Changed
 * [#937] - Exposes raw webmessage data from conversation topic
 
+### Added
+* [STREAM-600](https://inindca.atlassian.net/browse/STREAM-600) - Add Video to SDK demo app
+
 # [v11.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.1...v11.3.2)
 ### Changed
 * [STREAM-926](https://inindca.atlassian.net/browse/STREAM-926) - Updated screen recording metadata request to use `requestApiWithRetry` to retry failed requests with exponential backoff.

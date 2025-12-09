@@ -1,0 +1,51 @@
+.video-container {
+  align-items: start;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.video-container > * {
+  margin: 0.5rem;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+}
+
+.video-call-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.error-message {
+  margin-top: 0;
+}
+
+.first-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.video-call-card > .card-content > div > form {
+  margin: 0.1rem 0 0.5rem 0;
+  padding: 0;
+  width: 100%;
+}
+
+.video-call-card > .card-content > div > form > input {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.video-call-card > .card-content {
+  justify-content: start;
+}
+
+.join-video-inputs {
+  display: flex;
+  flex-direction: column;
+}

@@ -1,0 +1,18 @@
+.active-convo-table {
+  /*width: 100%;*/
+  border-collapse: collapse;
+}
+
+.td-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.first-row > div > div > gux-table {
+  max-width: 1050px;
+}
+
+.first-row > div > div > gux-table > table {
+  inline-size: 100%;
+  table-layout: fixed;
+}
