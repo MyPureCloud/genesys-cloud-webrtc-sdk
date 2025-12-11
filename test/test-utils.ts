@@ -118,12 +118,17 @@ class MockTransceiver {
   }
 }
 
+class MockRemoteDescription {
+  sdp: string;
+}
+
 class MockPC extends EventTarget {
   _mockSession: MockSession;
   _transceivers: MockTransceiver[] = [];
   _senders: MockSender[] = [];
   _receivers: MockReceiver[] = [];
   connectionState = 'connected';
+  remoteDescription: MockRemoteDescription;
 
   constructor (session: MockSession) {
     super();
