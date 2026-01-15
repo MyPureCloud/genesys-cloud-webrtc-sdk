@@ -74,7 +74,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
         sessionInfo);
     }
 
-    const attachParams = { videoElement };
+    const combinedStream = new MediaStream();
 
     const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
       if (!Array.isArray(tracks)) tracks = [tracks];
@@ -87,9 +87,12 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
           sessionType: session.sessionType
         });
 
-        this.attachIncomingTrackToElement(track, attachParams);
+        combinedStream.addTrack(track);
       }
 
+      videoElement.muted = true;
+      videoElement.autoplay = true;
+      videoElement.srcObject = combinedStream;
       session.emit('incomingMedia');
     };
 

@@ -7,6 +7,9 @@ import BaseSessionHandler from "../../../src/sessions/base-session-handler";
 import * as mediaUtils from "../../../src/media/media-utils";
 import {IExtendedMediaSession, LiveScreenMonitoringSession, VideoMediaSession} from "../../../src";
 
+// Mock MediaStream for tests
+(window as any).MediaStream = MockStream;
+
 let handler: LiveMonitoringSessionHandler;
 let mockSdk: GenesysCloudWebrtcSdk;
 let mockSessionManager: SessionManager;
@@ -157,35 +160,46 @@ describe('acceptSessionForObserver', () => {
     await expect(handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, audioElement: document.createElement('audio') })).rejects.toThrowError(/requires a videoElement/);
   });
 
-  it('should use default elements', async () => {
+  it('should use default elements and combine multiple tracks', async () => {
     const video = mockSdk._config.defaults!.videoElement = document.createElement('video');
+    const emitSpy = jest.spyOn(session, 'emit');
 
-    const incomingTrack = {} as any;
-    jest.spyOn(session.pc, 'getReceivers').mockReturnValue([{ track: incomingTrack }] as any);
-
-    attachIncomingTrackToElementSpy.mockReturnValue(video);
+    const track1 = { id: 'track1', kind: 'video' } as any;
+    const track2 = { id: 'track2', kind: 'video' } as any;
+    jest.spyOn(session.pc, 'getReceivers').mockReturnValue([
+      { track: track1 },
+      { track: track2 }
+    ] as any);
 
     await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true });
 
     expect(parentHandlerSpy).toHaveBeenCalled();
-    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video });
+    expect(video.srcObject).toBeInstanceOf(MediaStream);
+    expect((video.srcObject as MediaStream).getTracks()).toHaveLength(2);
+    expect(video.muted).toBe(true);
+    expect(video.autoplay).toBe(true);
+    expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
   });
 
 
-  it('should attach tracks later if not available', async () => {
+  it('should handle tracks that arrive later and combine them', async () => {
     const video = document.createElement('video');
 
-    attachIncomingTrackToElementSpy.mockReturnValue(video);
+    jest.spyOn(session.pc, 'getReceivers').mockReturnValue([]);
 
     await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, videoElement: video });
-    expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
     expect(parentHandlerSpy).toHaveBeenCalled();
+    expect(video.srcObject).toBeFalsy();
 
-    const incomingTrack = {} as any;
+    const track1 = { id: 'track1', kind: 'video' } as any;
+    const track2 = { id: 'track2', kind: 'video' } as any;
 
-    session.emit('peerTrackAdded', incomingTrack);
+    session.emit('peerTrackAdded', track1);
+    expect(video.srcObject).toBeInstanceOf(MockStream);
+    expect((video.srcObject as any).getTracks()).toHaveLength(1);
 
-    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video });
+    session.emit('peerTrackAdded', track2);
+    expect((video.srcObject as any).getTracks()).toHaveLength(2);
   });
 });
 
@@ -238,5 +252,38 @@ describe('attachIncomingTrackToElement', () => {
     expect(video.srcObject).toBe(fakeStream);
     expect(video.autoplay).toBeTruthy();
     expect(video.muted).toBeTruthy();
+  });
+});
+
+describe('acceptSessionForObserver - multiple tracks', () => {
+  it('should combine multiple video tracks into single stream', async () => {
+    const video = document.createElement('video');
+    const session = new MockSession() as any;
+    const emitSpy = jest.spyOn(session, 'emit');
+
+    const track1 = { id: 'track1', kind: 'video' } as any;
+    const track2 = { id: 'track2', kind: 'video' } as any;
+    const track3 = { id: 'track3', kind: 'audio' } as any;
+
+    jest.spyOn(session.pc, 'getReceivers').mockReturnValue([
+      { track: track1 },
+      { track: track2 },
+      { track: track3 }
+    ] as any);
+
+    await handler.acceptSessionForObserver(session, {
+      conversationId: session.conversationId,
+      videoElement: video
+    } as any);
+
+    const stream = video.srcObject as MediaStream;
+    expect(stream).toBeInstanceOf(MediaStream);
+    expect(stream.getTracks()).toHaveLength(3);
+    expect(stream.getTracks()).toContain(track1);
+    expect(stream.getTracks()).toContain(track2);
+    expect(stream.getTracks()).toContain(track3);
+    expect(video.muted).toBe(true);
+    expect(video.autoplay).toBe(true);
+    expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
   });
 });
