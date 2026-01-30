@@ -867,12 +867,16 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._mediaHandling = mediaHandling;
 
     if (mediaHandling === MediaHandling.noMedia) {
+      this.setUseHeadsets(false);
+
       // Disconnect any persistent connections we might have
       this.sessionManager.getAllActiveSessions()
         .filter(session => session.sessionType === SessionTypes.softphone)
         .forEach(softphoneSession => {
           this.sessionManager.forceTerminateSession(softphoneSession.id);
         });
+    } else {
+      this.setUseHeadsets(true);
     }
   }
 

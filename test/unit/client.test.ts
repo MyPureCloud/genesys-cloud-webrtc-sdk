@@ -1161,8 +1161,10 @@ describe('Client', () => {
   });
 
   describe('setMediaHandling()', () => {
-    it('should disconnect any active sessions when set to "noMedia"', () => {
+    it('should stop using headsets and disconnect any active sessions when set to "noMedia"', () => {
       sdk = constructSdk();
+      const useHeadsetsSpy = jest.fn();
+      sdk.setUseHeadsets = useHeadsetsSpy;
       const mockSession = new MockSession(SessionTypes.softphone);
       const sessionId = mockSession.id;
       const sessions = [mockSession] as unknown as IExtendedMediaSession[];
@@ -1172,7 +1174,20 @@ describe('Client', () => {
 
       sdk.setMediaHandling(MediaHandling.noMedia);
 
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(false);
       expect(forceTerminateSpy).toHaveBeenCalledWith(sessionId);
+    });
+
+    it('should use headsets when handling any media', () => {
+      sdk = constructSdk();
+      const useHeadsetsSpy = jest.fn();
+      sdk.setUseHeadsets = useHeadsetsSpy;
+
+      sdk.setMediaHandling(MediaHandling.media);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+
+      sdk.setMediaHandling(MediaHandling.alertingLeaderMedia);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
     });
   });
 
