@@ -62,7 +62,7 @@ describe('handlePropose', () => {
 
     mockSdk._config.autoAcceptPendingLiveScreenMonitoringRequests = false;
     const pendingSession = { fromUserId: 'user123' } as any;
-    
+
     await handler.handlePropose(pendingSession);
 
     expect(handler._liveMonitoringObserver).toBe(false);
@@ -76,7 +76,7 @@ describe('handlePropose', () => {
 
     mockSdk._config.autoAcceptPendingLiveScreenMonitoringRequests = false;
     const pendingSession = { fromUserId: 'different-user' } as any;
-    
+
     await handler.handlePropose(pendingSession);
 
     expect(handler._liveMonitoringObserver).toBe(false);
@@ -157,55 +157,113 @@ describe('acceptSessionForTarget', () => {
 });
 
 describe('acceptSessionForObserver', () => {
-  let parentHandlerSpy: jest.SpyInstance<Promise<any>>;
-  let addMediaToSessionSpy: jest.SpyInstance<Promise<void>>;
-  let attachIncomingTrackToElementSpy: jest.SpyInstance<HTMLAudioElement>;
-  let startMediaSpy: jest.SpyInstance<Promise<MediaStream>>;
-  let initialMutesSpy: jest.SpyInstance<Promise<any>>; /* keep this spy */
   let session: LiveScreenMonitoringSession;
-  let media: MediaStream;
 
   beforeEach(() => {
-    media = new MockStream() as any;
-    parentHandlerSpy = jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
-    attachIncomingTrackToElementSpy = jest.spyOn(handler, 'attachIncomingTrackToElement').mockReturnValue({} as HTMLMediaElement);
-    startMediaSpy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(media);
     session = new MockSession() as any;
   });
 
   it('should throw if no video element is provided', async () => {
-    await expect(handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, audioElement: document.createElement('audio') })).rejects.toThrowError(/requires a videoElement/);
+    await expect(handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, audioElement: document.createElement('audio') })).rejects.toThrowError(/requires videoElements array or videoElement/);
   });
 
-  it('should use default elements', async () => {
-    const video = mockSdk._config.defaults!.videoElement = document.createElement('video');
+  it('should attach mediaStreams to video elements when provided', async () => {
+    const video1 = document.createElement('video');
+    const video2 = document.createElement('video');
+    const videoElements = [video1, video2];
 
-    const incomingTrack = {} as any;
-    jest.spyOn(session.pc, 'getReceivers').mockReturnValue([{ track: incomingTrack }] as any);
+    const stream1 = new MockStream({ video: true }) as any;
+    const stream2 = new MockStream({ video: true }) as any;
+    const metadata1 = { screenId: 'screen1', trackId: 'track1', originX: 0, originY: 0, resolutionX: 1920, resolutionY: 1080, primary: true };
+    const metadata2 = { screenId: 'screen2', trackId: 'track2', originX: 1920, originY: 0, resolutionX: 1920, resolutionY: 1080, primary: false };
 
-    attachIncomingTrackToElementSpy.mockReturnValue(video);
+    const mediaStreams = [
+      { stream: stream1, metadata: metadata1 },
+      { stream: stream2, metadata: metadata2 }
+    ];
 
-    await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true });
+    const emitSpy = jest.spyOn(session, 'emit');
 
-    expect(parentHandlerSpy).toHaveBeenCalled();
-    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video });
+    await handler.acceptSession(session, {
+      conversationId: session.conversationId,
+      liveMonitoringObserver: true,
+      videoElements,
+      mediaStreams
+    });
+
+    expect(video1.srcObject).toBe(stream1);
+    expect(video1.muted).toBe(true);
+    expect(video1.autoplay).toBe(true);
+
+    expect(video2.srcObject).toBe(stream2);
+    expect(video2.muted).toBe(true);
+    expect(video2.autoplay).toBe(true);
+
+    expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
   });
 
+  it('should only attach streams up to the number of available video elements', async () => {
+    const video1 = document.createElement('video');
+    const videoElements = [video1]; // Only one video element
 
-  it('should attach tracks later if not available', async () => {
-    const video = document.createElement('video');
+    const stream1 = new MockStream({ video: true }) as any;
+    const stream2 = new MockStream({ video: true }) as any;
+    const metadata = { screenId: 'screen1', trackId: 'track1', originX: 0, originY: 0, resolutionX: 1920, resolutionY: 1080, primary: true };
 
-    attachIncomingTrackToElementSpy.mockReturnValue(video);
+    const mediaStreams = [
+      { stream: stream1, metadata },
+      { stream: stream2, metadata } // This won't be attached
+    ];
 
-    await handler.acceptSession(session, { conversationId: session.conversationId, liveMonitoringObserver: true, videoElement: video });
-    expect(attachIncomingTrackToElementSpy).not.toHaveBeenCalled();
-    expect(parentHandlerSpy).toHaveBeenCalled();
+    await handler.acceptSession(session, {
+      conversationId: session.conversationId,
+      liveMonitoringObserver: true,
+      videoElements,
+      mediaStreams
+    });
 
-    const incomingTrack = {} as any;
+    expect(video1.srcObject).toBe(stream1);
+    // stream2 should not be attached anywhere
+  });
 
-    session.emit('peerTrackAdded', incomingTrack);
+  it('should use videoElement field when no videoElements provided ', async () => {
+    const videoElement = document.createElement('video');
 
-    expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video });
+    const stream1 = new MockStream({ video: true }) as any;
+    const stream2 = new MockStream({ video: true }) as any;
+    const metadata = { screenId: 'screen1', trackId: 'track1', originX: 0, originY: 0, resolutionX: 1920, resolutionY: 1080, primary: true };
+
+    const mediaStreams = [
+      { stream: stream1, metadata },
+      { stream: stream2, metadata } // This won't be attached
+    ];
+
+    await handler.acceptSession(session, {
+      conversationId: session.conversationId,
+      liveMonitoringObserver: true,
+      videoElement,
+      mediaStreams
+    });
+
+    expect(videoElement.srcObject).toBe(stream1);
+    // stream2 should not be attached anywhere
+  });
+
+  it('should use default video element when no videoElements or videoElement provided', async () => {
+    const defaultVideo = document.createElement('video');
+    mockSdk._config.defaults!.videoElement = defaultVideo;
+
+    const stream = new MockStream({ video: true }) as any;
+    const metadata = { screenId: 'screen1', trackId: 'track1', originX: 0, originY: 0, resolutionX: 1920, resolutionY: 1080, primary: true };
+    const mediaStreams = [{ stream, metadata }];
+
+    await handler.acceptSession(session, {
+      conversationId: session.conversationId,
+      liveMonitoringObserver: true,
+      mediaStreams
+    });
+
+    expect(defaultVideo.srcObject).toBe(stream);
   });
 });
 
@@ -241,22 +299,5 @@ describe('updateOutgoingMedia', () => {
       'Cannot update outgoing media for live monitoring sessions',
       { sessionId: session.id, sessionType: session.sessionType }
     );
-  });
-});
-
-describe('attachIncomingTrackToElement', () => {
-  it('should attach to video element', () => {
-    const video = document.createElement('video');
-
-    const track = new MockTrack();
-    track.kind = 'video';
-    const fakeStream = {};
-    jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockReturnValue(fakeStream as any);
-
-    handler.attachIncomingTrackToElement(track as any, { videoElement: video });
-
-    expect(video.srcObject).toBe(fakeStream);
-    expect(video.autoplay).toBeTruthy();
-    expect(video.muted).toBeTruthy();
   });
 });

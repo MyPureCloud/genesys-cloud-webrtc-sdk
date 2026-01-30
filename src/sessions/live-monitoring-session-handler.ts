@@ -71,46 +71,34 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   }
 
   async acceptSessionForObserver(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest) {
-    const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
+    const videoElements = params.videoElements || (params.videoElement ? [params.videoElement] : [this.sdk._config.defaults.videoElement].filter(Boolean));
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
 
-    if (!videoElement) {
+    if (!videoElements.length) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options,
-        'acceptSession for live monitoring observer requires a videoElement to be provided or in the default config',
+        'acceptSession for live monitoring observer requires videoElements array or videoElement to be provided or in the default config',
         sessionInfo);
     }
 
-    const attachParams = { videoElement };
+    // Use mediaStreams if provided
+    if (params.mediaStreams && params.mediaStreams.length > 0) {
+      this.log('info', `Attaching ${params.mediaStreams.length} media streams to ${videoElements.length} video elements`, sessionInfo);
 
-    const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
-      if (!Array.isArray(tracks)) tracks = [tracks];
-
-      for (const track of tracks) {
-        this.log('info', 'Incoming track from live monitoring session', {
-          track,
-          conversationId: session.conversationId,
-          sessionId: session.id,
-          sessionType: session.sessionType
-        });
-
-        this.attachIncomingTrackToElement(track, attachParams);
-      }
+      params.mediaStreams.forEach((mediaStreamItem, index) => {
+        if (index < videoElements.length) {
+          const videoElement = videoElements[index];
+          videoElement.muted = true;
+          videoElement.autoplay = true;
+          videoElement.srcObject = mediaStreamItem.stream;
+          this.log('info', `Attached media stream to video element at index ${index}`, {
+            streamId: mediaStreamItem.stream.id,
+            metadata: mediaStreamItem.metadata,
+            ...sessionInfo
+          });
+        }
+      });
 
       session.emit('incomingMedia');
-    };
-
-    // Get existing tracks
-    const tracks = session.pc.getReceivers()
-      .filter(receiver => receiver.track)
-      .map(receiver => receiver.track);
-
-    if (tracks.length) {
-      handleIncomingTracks(session, tracks);
-    } else {
-      // Listen for tracks that arrive later
-      session.on('peerTrackAdded', (track: MediaStreamTrack) => {
-        handleIncomingTracks(session, track);
-      });
     }
   }
 
@@ -128,29 +116,6 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   updateOutgoingMedia(session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for live monitoring sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for live monitoring sessions');
-  }
-
-  /**
-   * Attach incoming track to HTML element
-   */
-  attachIncomingTrackToElement(
-    track: MediaStreamTrack,
-    { videoElement }: { videoElement: HTMLVideoElement }
-  ): HTMLAudioElement | HTMLVideoElement {
-    const element = videoElement;
-
-    if (track.kind === 'video') {
-      if (element) {
-        element.muted = true;
-      }
-    }
-
-    if (element) {
-      element.autoplay = true;
-      element.srcObject = createNewStreamWithTrack(track);
-    }
-
-    return element;
   }
 }
 
