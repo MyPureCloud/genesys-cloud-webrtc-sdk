@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import GenesysCloudWebrtSdk, { JingleReason, JingleReasonCondition, MediaHandling } from "../../../src";
+import GenesysCloudWebrtSdk, { MediaHandling } from "../../../src";
 import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
 import { SimpleMockSdk, flushPromises } from '../../test-utils';
 import { SdkHeadsetService } from '../../../src/headsets/sdk-headset-service';
@@ -356,6 +356,21 @@ describe('HeadsetProxyService', () => {
       const vendor = {} as any;
       Object.defineProperty(currentHeadsetService, 'currentSelectedImplementation', { get: () => vendor });
       expect(proxyService.currentSelectedImplementation).toBe(vendor);
+    });
+  });
+
+  describe('startHeadsetOrchestration', () => {
+    it('should use "prioritized" requestType if handling alerting leader media', async () => {
+      const broadcastSpy = jest.fn();
+      proxyService['sdk']._streamingConnection.messenger.broadcastMessage = broadcastSpy;
+      proxyService['sdk']._mediaHandling = MediaHandling.alertingLeaderMedia;
+      const device = { deviceId: 'device1Id', groupId: 'device1GroupId', label: 'device1Label', kind: 'audioinput' } as any;
+
+      await proxyService['startHeadsetOrchestration'](device);
+
+      const expectedRequestSubset = { mediaMessage: { params: { requestType: 'prioritized' } } };
+      expect(broadcastSpy).toHaveBeenCalled();
+      expect(broadcastSpy.mock.lastCall[0]).toMatchObject(expectedRequestSubset);
     });
   });
 

@@ -142,11 +142,18 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
     this.sdk.logger.info('Starting headsetCallControls orchestration');
 
+    let requestType: HeadsetControlsRequestType;
+    if (this.sdk._mediaHandling === MediaHandling.alertingLeaderMedia) {
+      requestType = 'prioritized';
+    } else {
+      requestType = this.sdk._config.headsetRequestType || 'standard';
+    }
+
     const headsetControlsRequest: HeadsetControlsRequest = {
       jsonrpc: '2.0',
       method: 'headsetControlsRequest',
       params: {
-        requestType: this.sdk._config.headsetRequestType || 'standard'
+        requestType
       }
     };
     
