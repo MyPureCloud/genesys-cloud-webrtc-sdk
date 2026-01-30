@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import GenesysCloudWebrtSdk, { JingleReason, JingleReasonCondition } from "../../../src";
+import GenesysCloudWebrtSdk, { JingleReason, JingleReasonCondition, MediaHandling } from "../../../src";
 import HeadsetService, { ConsumedHeadsetEvents } from 'softphone-vendor-headsets';
 import { SimpleMockSdk, flushPromises } from '../../test-utils';
 import { SdkHeadsetService } from '../../../src/headsets/sdk-headset-service';
@@ -590,6 +590,36 @@ describe('HeadsetProxyService', () => {
       expect(proxyService['orchestrationState']).toBe('alternativeClient');
     });
 
+    it('should not take controls if a media-helper request is received during orchestration even if handling alerting leader media', async () => {
+      proxyService['sdk']._mediaHandling = MediaHandling.alertingLeaderMedia;
+
+      expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
+      const promise = proxyService['startHeadsetOrchestration'](device);
+      await flushPromises();
+
+      broadcastSpy.mockReset();
+
+      expect(proxyService['orchestrationWaitTimer']).toBeTruthy();
+
+      // request is received 1 second after starting
+      jest.advanceTimersByTime(1000);
+      const request: HeadsetControlsRequest = {
+        jsonrpc: '2.0',
+        method: 'headsetControlsRequest',
+        params: {
+          requestType: 'mediaHelper',
+        }
+      };
+      triggerMediaMessageEvent({ to: 'to', from: 'from', mediaMessage: request, fromMyClient: false, fromMyUser: true });
+
+      expect(proxyService['orchestrationState']).toBe('alternativeClient');
+      jest.advanceTimersByTime(1500);
+
+      expect(updateAudioSpy).not.toHaveBeenCalled();
+      expect(broadcastSpy).not.toHaveBeenCalled()
+      expect(proxyService['orchestrationState']).toBe('alternativeClient');
+    });
+
     it('should send a rejection if a request is received during orchestration and is lower priority', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 
@@ -711,6 +741,54 @@ describe('HeadsetProxyService', () => {
         }
       };
       expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ mediaMessage: rejection }));
+    });
+
+    it('should send a rejection if a request is received while handling alerting leader media and is lower priority', async () => {
+      expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
+
+      proxyService['sdk']._config.headsetRequestType = 'standard';
+      proxyService['sdk']._mediaHandling = MediaHandling.alertingLeaderMedia;
+
+      const promise = proxyService['startHeadsetOrchestration'](device);
+      await flushPromises();
+
+      broadcastSpy.mockReset();
+
+      expect(proxyService['orchestrationWaitTimer']).toBeTruthy();
+
+      // request is received 1 second after starting
+      jest.advanceTimersByTime(1000);
+      const request: HeadsetControlsRequest = {
+        jsonrpc: '2.0',
+        method: 'headsetControlsRequest',
+        params: {
+          requestType: 'standard',
+        }
+      };
+      triggerMediaMessageEvent({ id:'req1', to: 'to', from: 'from', mediaMessage: request, fromMyClient: false, fromMyUser: true });
+
+      jest.advanceTimersByTime(1500);
+
+      const rejection: HeadsetControlsRejection = {
+        jsonrpc: '2.0',
+        method: 'headsetControlsRejection',
+        params: {
+          reason: 'priority',
+          requestId: 'req1'
+        }
+      };
+      expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ mediaMessage: rejection }));
+
+      expect(updateAudioSpy).toHaveBeenCalled();
+      const expectedMediaMessage: HeadsetControlsChanged = {
+        jsonrpc: '2.0',
+        method: 'headsetControlsChanged',
+        params: {
+          hasControls: true
+        }
+      };
+      expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ mediaMessage: expectedMediaMessage }));
+      expect(proxyService['orchestrationState']).toBe('hasControls');
     });
 
     it('should do nothing if persistent connection but no active session', async () => {

@@ -9,6 +9,7 @@ import { SdkHeadsetService } from './sdk-headset-service';
 import { HeadsetRequestType } from '../types/interfaces';
 import { ExpandedConsumedHeadsetEvents, ISdkHeadsetService, OrchestrationState } from './headset-types';
 import { HeadsetChangesQueue } from './headset-utils';
+import { MediaHandling } from '../types/enums';
 
 const REQUEST_PRIORITY: {[key in HeadsetControlsRequestType]: number} = {
   'mediaHelper': 30,
@@ -216,6 +217,18 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   private handleHeadsetControlsRequest (msg: MediaMessageEvent) {
     const mediaMessage = msg.mediaMessage as HeadsetControlsRequest;
     this.sdk.logger.debug('Received headsetControlsRequest message', { requestType: mediaMessage.params.requestType });
+
+    if (this.sdk._mediaHandling === MediaHandling.alertingLeaderMedia) {
+      // we still yield to media-helper
+      if (this.getRequestPriority(mediaMessage.params.requestType) === this.getRequestPriority('mediaHelper')) {
+        this.sdk.logger.info('Handling alerting leader media, but yielding headset controls to media-helper', { requestType: mediaMessage.params.requestType });
+        this.setOrchestrationState('alternativeClient');
+      } else {
+        this.sendControlsRejectionMessage(msg, 'priority');
+      }
+
+      return;
+    }
 
     // if incoming request is lower priority, reject
     if (this.getRequestPriority(mediaMessage.params.requestType) < this.getRequestPriority(this.sdk._config.headsetRequestType)) {
