@@ -49,10 +49,15 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     // TODO: PCM-2060 - remove this
     this.useHeadsetOrchestration = !this.sdk._config.disableHeadsetControlsOrchestration;
 
+    if (this.sdk._mediaHandling === MediaHandling.noMedia) {
+      this.sdk.logger.warn('setUseHeadsets was called with `true` but headsets are not supported in this configuration - not handling media. Not activating headsets.');
+      useHeadsets = false;
+    }
+
     // currently only softphone is supported
     const headsetsIsSupported = this.sdk._config.allowedSessionTypes.includes(SessionTypes.softphone);
     if (useHeadsets && !headsetsIsSupported) {
-      this.sdk.logger.warn('setUseHeadsets was called with `true` but headsets are not supported in this configuration. Not activating headsets.');
+      this.sdk.logger.warn('setUseHeadsets was called with `true` but headsets are not supported in this configuration - headset is not supported. Not activating headsets.');
       useHeadsets = false;
     }
 

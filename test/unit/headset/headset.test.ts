@@ -301,6 +301,16 @@ describe('HeadsetProxyService', () => {
       expect(proxyService['currentHeadsetService']).toBeInstanceOf(SdkHeadsetServiceFake);
     });
 
+    it('should use fake service if useHeadsets and not handling media', () => {
+      proxyService['sdk']._mediaHandling = MediaHandling.noMedia;
+      const spy = jest.spyOn(proxyService, 'updateAudioInputDevice');
+
+      proxyService.setUseHeadsets(true);
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(proxyService['currentHeadsetService']).toBeInstanceOf(SdkHeadsetServiceFake);
+    });
+
     it('should unsubscribe if currentEventSubscription', () => {
       const spy = jest.fn();
       proxyService['currentEventSubscription'] = { unsubscribe: spy } as any;
