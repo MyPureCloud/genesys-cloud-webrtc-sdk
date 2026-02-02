@@ -668,11 +668,6 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
   mediaStream?: MediaStream;
 
   /**
-   * array of media streams with associated metadata
-   */
-  mediaStreams?: { stream: MediaStream; metadata: ScreenRecordingMetadata }[];
-
-  /**
    * metadata about screens and tracks. This is required for screen recording sessions
    */
   screenRecordingMetadatas?: ScreenRecordingMetadata[];

@@ -64,7 +64,8 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     params.mediaStream.getTracks().forEach((track) => {
       addMediaPromise = addMediaPromise.then(() => {
         this.sdk.logger.info('Adding screen track to live screen monitoring session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
-        return session.pc.addTrack(track);
+        const trackStream = createNewStreamWithTrack(track);
+        return session.pc.addTrack(track, trackStream);
       });
     });
     await addMediaPromise;
@@ -80,26 +81,22 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
         sessionInfo);
     }
 
-    // Use mediaStreams if provided
-    if (params.mediaStreams && params.mediaStreams.length > 0) {
-      this.log('info', `Attaching ${params.mediaStreams.length} media streams to ${videoElements.length} video elements`, sessionInfo);
-
-      params.mediaStreams.forEach((mediaStreamItem, index) => {
-        if (index < videoElements.length) {
-          const videoElement = videoElements[index];
-          videoElement.muted = true;
-          videoElement.autoplay = true;
-          videoElement.srcObject = mediaStreamItem.stream;
-          this.log('info', `Attached media stream to video element at index ${index}`, {
-            streamId: mediaStreamItem.stream.id,
-            metadata: mediaStreamItem.metadata,
-            ...sessionInfo
-          });
-        }
-      });
-
+    // Listen for incoming tracks via peer connection
+    let streamIndex = 0;
+    session.pc.ontrack = (event) => {
+      if (streamIndex < videoElements.length) {
+        const videoElement = videoElements[streamIndex];
+        videoElement.muted = true;
+        videoElement.autoplay = true;
+        videoElement.srcObject = event.streams[0];
+        this.log('info', `Attached remote stream to video element at index ${streamIndex}`, {
+          streamId: event.streams[0].id,
+          ...sessionInfo
+        });
+        streamIndex++;
+      }
       session.emit('incomingMedia');
-    }
+    };
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
