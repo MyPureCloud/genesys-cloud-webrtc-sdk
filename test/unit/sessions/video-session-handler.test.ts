@@ -1122,27 +1122,37 @@ describe('setupTransceivers', () => {
     expect(getTransceiversSpy).not.toHaveBeenCalled();
   });
 
-  it('should do nothing if video and audio transceivers already exist', () => {
+  it('should only add screen share transceiver if video and audio transceivers already exist', () => {
     getTransceiversSpy.mockReturnValue([videoTransceiver, audioTransceiver]);
     handler.setupTransceivers(session);
 
-    expect(addTransceiverSpy).not.toHaveBeenCalled();
+    expect(addTransceiverSpy).toHaveBeenCalledTimes(1);
+    expect(addTransceiverSpy).toHaveBeenCalledWith('video', { direction: 'sendonly' });
   });
 
-  it('should add video transceiver', () => {
+  it('should add video transceiver and screen share transceiver', () => {
     getTransceiversSpy.mockReturnValue([audioTransceiver]);
     handler.setupTransceivers(session);
 
     expect(addTransceiverSpy).toHaveBeenCalledWith('video', { direction: 'sendrecv' });
-    expect(addTransceiverSpy).toHaveReturnedTimes(1);
+    expect(addTransceiverSpy).toHaveBeenCalledWith('video', { direction: 'sendonly' });
+    expect(addTransceiverSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('should add audio transceiver', () => {
+  it('should add audio transceiver and screen share transceiver', () => {
     getTransceiversSpy.mockReturnValue([videoTransceiver]);
     handler.setupTransceivers(session);
 
     expect(addTransceiverSpy).toHaveBeenCalledWith('audio', { direction: 'sendrecv' });
-    expect(addTransceiverSpy).toHaveReturnedTimes(1);
+    expect(addTransceiverSpy).toHaveBeenCalledWith('video', { direction: 'sendonly' });
+    expect(addTransceiverSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should add screen share transceiver for multi-track screen share support', () => {
+    getTransceiversSpy.mockReturnValue([videoTransceiver, audioTransceiver]);
+    handler.setupTransceivers(session);
+
+    expect(addTransceiverSpy).toHaveBeenCalledWith('video', { direction: 'sendonly' });
   });
 });
 

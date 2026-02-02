@@ -529,12 +529,16 @@ export class VideoSessionHandler extends BaseSessionHandler {
       return;
     }
 
+    // This is the primary video transceiver for the camera
     const videoTransceiver = session.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'video');
     if (!videoTransceiver) {
       session.pc.addTransceiver('video', { direction: 'sendrecv' });
     } else {
       videoTransceiver.direction = 'sendrecv';
     }
+
+    // Pre-negotiate a second video transceiver for screen share to avoid renegotiation later
+    session.pc.addTransceiver('video', { direction: 'sendonly' });
 
     const audioTransceiver = session.pc.getTransceivers().find(transceiver => transceiver.receiver.track && transceiver.receiver.track.kind === 'audio');
     if (!audioTransceiver) {
