@@ -63,8 +63,8 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     let addMediaPromise: Promise<any> = Promise.resolve();
     params.mediaStream.getTracks().forEach((track) => {
       addMediaPromise = addMediaPromise.then(() => {
-        this.sdk.logger.info('Adding screen track to live screen monitoring session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
         const trackStream = createNewStreamWithTrack(track);
+        this.sdk.logger.info('Adding screen track to live screen monitoring session', { streamId: trackStream.id, trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
         return session.pc.addTrack(track, trackStream);
       });
     });
@@ -81,22 +81,29 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
         sessionInfo);
     }
 
-    // Listen for incoming tracks via peer connection
+    const tracks = session.pc.getReceivers()
+      .filter(receiver => receiver.track)
+      .map(receiver => receiver.track)
+      .filter(track => track.kind === 'video');
+
+    this.log('info', `Accepting live screen monitoring session as observer with ${videoElements.length} available video elements for ${session.pc.getReceivers().length} receivers with ${tracks.length} video tracks`);
+
     let streamIndex = 0;
-    session.pc.ontrack = (event) => {
+    for (const track of tracks) {
       if (streamIndex < videoElements.length) {
         const videoElement = videoElements[streamIndex];
         videoElement.muted = true;
         videoElement.autoplay = true;
-        videoElement.srcObject = event.streams[0];
-        this.log('info', `Attached remote stream to video element at index ${streamIndex}`, {
-          streamId: event.streams[0].id,
-          ...sessionInfo
+        videoElement.srcObject = createNewStreamWithTrack(track);
+        this.log('info', `Attached remote stream to video element`, {
+          streamId: videoElement.srcObject?.id,
+          track: track,
+          ...sessionInfo,
         });
         streamIndex++;
       }
       session.emit('incomingMedia');
-    };
+    }
   }
 
   async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
