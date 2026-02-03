@@ -88,19 +88,45 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
 
     this.log('info', `Accepting live screen monitoring session as observer with ${videoElements.length} available video elements for ${session.pc.getReceivers().length} receivers with ${tracks.length} video tracks`);
 
-    let streamIndex = 0;
+    let videoElementIndex = 0;
     for (const track of tracks) {
-      if (streamIndex < videoElements.length) {
-        const videoElement = videoElements[streamIndex];
-        videoElement.muted = true;
-        videoElement.autoplay = true;
-        videoElement.srcObject = createNewStreamWithTrack(track);
-        this.log('info', `Attached remote stream to video element`, {
-          streamId: videoElement.srcObject?.id,
-          track: track,
-          ...sessionInfo,
-        });
-        streamIndex++;
+      if (videoElementIndex < videoElements.length) {
+        const stream = createNewStreamWithTrack(track);
+        if (videoElementIndex < 2) {
+          const mainVideoElement = videoElements[videoElementIndex];
+          mainVideoElement.muted = true;
+          mainVideoElement.autoplay = true;
+          mainVideoElement.srcObject = stream;
+          this.log('info', `Attached stream to main video element`, {
+            streamId: mainVideoElement.srcObject?.id,
+            track: track,
+            ...sessionInfo,
+          });
+          videoElementIndex++;
+
+          const firstVideoPreviewElement = videoElements[videoElementIndex];
+          firstVideoPreviewElement.muted = true
+          firstVideoPreviewElement.autoplay = true;
+          firstVideoPreviewElement.srcObject = stream;
+          this.log('info', `Attached stream to first video preview element ${videoElementIndex}`, {
+            streamId: mainVideoElement.srcObject?.id,
+            track: track,
+            ...sessionInfo,
+          });
+
+        } else {
+          const videoElement = videoElements[videoElementIndex];
+          videoElement.muted = true;
+          videoElement.autoplay = true;
+          videoElement.srcObject = stream;
+          this.log('info', `Attached stream to video preview element ${videoElementIndex}`, {
+            streamId: videoElement.srcObject?.id,
+            track: track,
+            ...sessionInfo,
+          });
+        }
+
+        videoElementIndex++;
       }
       session.emit('incomingMedia');
     }
