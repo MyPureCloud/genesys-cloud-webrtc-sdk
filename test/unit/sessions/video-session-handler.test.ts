@@ -1,4 +1,3 @@
-import nock from 'nock';
 import { v4 as uuidv4 } from 'uuid';
 
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
@@ -25,7 +24,6 @@ let userId: string;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  nock.cleanAll();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
