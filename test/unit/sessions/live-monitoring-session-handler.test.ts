@@ -206,34 +206,42 @@ describe('acceptSessionForObserver', () => {
     expect(createNewStreamSpy).toHaveBeenCalledWith(mockVideoTrack1);
     expect(createNewStreamSpy).toHaveBeenCalledWith(mockVideoTrack2);
 
-    // First track should attach to both main and first preview element
+    // Each video track should attach to one video element sequentially
     expect(video1.srcObject).toBeDefined();
     expect(video1.muted).toBe(true);
     expect(video1.autoplay).toBe(true);
     expect(video2.srcObject).toBeDefined();
     expect(video2.muted).toBe(true);
     expect(video2.autoplay).toBe(true);
-
-    // Second track should attach to third element
-    expect(video3.srcObject).toBeDefined();
-    expect(video3.muted).toBe(true);
-    expect(video3.autoplay).toBe(true);
+    expect(video3.srcObject).toBeUndefined(); // Third element unused
 
     expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
     expect(emitSpy).toHaveBeenCalledTimes(2); // Once per video track
     expect(logSpy).toHaveBeenCalledWith('info', expect.stringContaining('Accepting live screen monitoring session as observer'));
   });
 
-  it('should handle insufficient video elements gracefully', async () => {
+  it('should handle less than maximum video elements gracefully', async () => {
     const video1 = document.createElement('video');
-    const videoElements = [video1]; // Only one video element, but code tries to access two for first track
+    const videoElements = [video1]; // Only one video element for two tracks
 
-    const mockReceivers = [{ track: mockVideoTrack1 }];
+    const mockReceivers = [
+      { track: mockVideoTrack1 },
+      { track: mockVideoTrack2 }
+    ];
     session.pc.getReceivers = jest.fn().mockReturnValue(mockReceivers);
 
-    // This test exposes the bug in the current implementation
-    await expect(handler.acceptSessionForObserver(session, { videoElements } as any))
-      .rejects.toThrow('Cannot set properties of undefined');
+    const emitSpy = jest.spyOn(session, 'emit');
+
+    await handler.acceptSessionForObserver(session, { videoElements } as any);
+
+    // Only first track should be attached since we only have one video element
+    expect(video1.srcObject).toBeDefined();
+    expect(video1.muted).toBe(true);
+    expect(video1.autoplay).toBe(true);
+
+    // Both tracks should still emit incomingMedia events
+    expect(emitSpy).toHaveBeenCalledTimes(2);
+    expect(createNewStreamSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should use videoElement field when no videoElements provided', async () => {
@@ -242,9 +250,15 @@ describe('acceptSessionForObserver', () => {
     const mockReceivers = [{ track: mockVideoTrack1 }];
     session.pc.getReceivers = jest.fn().mockReturnValue(mockReceivers);
 
-    // This will also fail due to the bug - it needs at least 2 elements for the first track
-    await expect(handler.acceptSessionForObserver(session, { videoElement } as any))
-      .rejects.toThrow('Cannot set properties of undefined');
+    const emitSpy = jest.spyOn(session, 'emit');
+
+    await handler.acceptSessionForObserver(session, { videoElement } as any);
+
+    expect(videoElement.srcObject).toBeDefined();
+    expect(videoElement.muted).toBe(true);
+    expect(videoElement.autoplay).toBe(true);
+    expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
+    expect(createNewStreamSpy).toHaveBeenCalledWith(mockVideoTrack1);
   });
 
   it('should use default video element when no videoElements or videoElement provided', async () => {
@@ -254,9 +268,15 @@ describe('acceptSessionForObserver', () => {
     const mockReceivers = [{ track: mockVideoTrack1 }];
     session.pc.getReceivers = jest.fn().mockReturnValue(mockReceivers);
 
-    // This will also fail due to the bug - it needs at least 2 elements for the first track
-    await expect(handler.acceptSessionForObserver(session, { videoElement: defaultVideo } as any))
-      .rejects.toThrow('Cannot set properties of undefined');
+    const emitSpy = jest.spyOn(session, 'emit');
+
+    await handler.acceptSessionForObserver(session, {} as any);
+
+    expect(defaultVideo.srcObject).toBeDefined();
+    expect(defaultVideo.muted).toBe(true);
+    expect(defaultVideo.autoplay).toBe(true);
+    expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
+    expect(createNewStreamSpy).toHaveBeenCalledWith(mockVideoTrack1);
   });
 
   it('should handle case with no video tracks', async () => {
@@ -275,7 +295,7 @@ describe('acceptSessionForObserver', () => {
     await handler.acceptSessionForObserver(session, { videoElements } as any);
 
     expect(createNewStreamSpy).not.toHaveBeenCalled();
-    expect(video1.srcObject).toBeUndefined(); // Changed from toBeNull to toBeUndefined
+    expect(video1.srcObject).toBeUndefined();
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
@@ -296,7 +316,7 @@ describe('acceptSessionForObserver', () => {
       expect.stringContaining('Accepting live screen monitoring session as observer with 3 available video elements for 1 receivers with 1 video tracks')
     );
     expect(logSpy).toHaveBeenCalledWith('info',
-      expect.stringContaining('Attached stream to main video element'),
+      expect.stringContaining('Attached stream to video element at index 0'),
       expect.objectContaining({ streamId: expect.any(String) })
     );
   });
@@ -306,7 +326,7 @@ describe('acceptSessionForObserver', () => {
     const video2 = document.createElement('video');
     const video3 = document.createElement('video');
     const video4 = document.createElement('video');
-    const videoElements = [video1, video2, video3, video4]; // Need 6 elements for 2 tracks
+    const videoElements = [video1, video2, video3, video4];
 
     const mockReceivers = [
       { track: mockVideoTrack1 },
@@ -315,22 +335,15 @@ describe('acceptSessionForObserver', () => {
     session.pc.getReceivers = jest.fn().mockReturnValue(mockReceivers);
 
     const emitSpy = jest.spyOn(session, 'emit');
+    const logSpy = jest.spyOn(handler, 'log' as any);
 
     await handler.acceptSessionForObserver(session, { videoElements } as any);
 
-    // Let's trace through the logic:
-    // Track 1 (videoElementIndex starts at 0):
-    //   - videoElementIndex < 2, so uses main + preview logic
-    //   - Sets video1 (index 0), then videoElementIndex++, now index = 1
-    //   - Sets video2 (index 1), then videoElementIndex++ at end, now index = 2
-    // Track 2 (videoElementIndex is now 2):
-    //   - videoElementIndex >= 2, so uses else logic
-    //   - Sets video3 (index 2), then videoElementIndex++ at end, now index = 3
-
-    expect(video1.srcObject).toBeDefined(); // Track 1 main
-    expect(video2.srcObject).toBeDefined(); // Track 1 preview
-    expect(video3.srcObject).toBeDefined(); // Track 2
-    expect(video4.srcObject).toBeUndefined(); // Should be unused
+    // Each track should attach to one video element sequentially
+    expect(video1.srcObject).toBeDefined(); // Track 1
+    expect(video2.srcObject).toBeDefined(); // Track 2
+    expect(video3.srcObject).toBeUndefined(); // Unused
+    expect(video4.srcObject).toBeUndefined(); // Unused
 
     expect(emitSpy).toHaveBeenCalledTimes(2);
   });
