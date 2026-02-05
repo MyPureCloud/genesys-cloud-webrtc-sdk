@@ -1,3 +1,5 @@
+import nock from 'nock';
+
 import {
   SimpleMockSdk,
   MockSession,
@@ -50,6 +52,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  nock.cleanAll();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;

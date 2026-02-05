@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...HEAD)
+### Changed
+* [STREAM-1178](https://inindca.atlassian.net/browse/STREAM-1178) - REVERT STREAM-825, removed ability to send multiple tracks when screensharing.
 
 # [v11.5.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.0...v11.5.1)
 ### Added
