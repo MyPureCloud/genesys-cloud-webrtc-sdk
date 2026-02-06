@@ -477,8 +477,7 @@ export default abstract class BaseSessionHandler {
         }
 
         this.log('debug', 'Adding track to session', { track: t, conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-        // Use addTrack with the stream to ensure proper track handling for multiple tracks of the same kind
-        promises.push(session.peerConnection.addTrack(t, stream));
+        promises.push(session.peerConnection.addTrack(t));
       });
     } else {
       const errMsg = 'Track based actions are required for this session but the client is not capable';
