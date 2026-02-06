@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-1178](https://inindca.atlassian.net/browse/STREAM-1178) - REVERT STREAM-825, removed ability to send multiple tracks when screensharing.
 
+### Added
+* [STREAM-1153](https://inindca.atlassian.net/browse/STREAM-1153) - Add support for monitoring multiple screens during live monitoring sessions
+
 # [v11.5.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.0...v11.5.1)
 ### Added
 * [STREAM-1034](https://inindca.atlassian.net/browse/STREAM-1034) - Added JWT support for live monitoring sessions
