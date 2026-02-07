@@ -44,3 +44,9 @@ export enum JingleReasons {
   connectivityError = 'connectivity-error',
   alternativeSession = 'alternative-session'
 }
+
+export enum MediaHandling {
+  media = 'media',
+  alertingLeaderMedia = 'alerting-leader-media',
+  noMedia = 'no-media'
+}

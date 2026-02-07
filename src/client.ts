@@ -37,7 +37,7 @@ import {
 } from './client-private';
 import { requestApi, createAndEmitSdkError, defaultConfigOption, requestApiWithRetry } from './utils';
 import { setupLogging } from './logging';
-import { SdkErrorTypes, SessionTypes } from './types/enums';
+import { MediaHandling, SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
 import { HeadsetProxyService } from './headsets/headset';
@@ -111,6 +111,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _customerData: ICustomerData;
   _hasConnected: boolean;
   _config: ISdkFullConfig;
+  _mediaHandling = MediaHandling.media;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -860,6 +861,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   setDefaultAudioStream (stream?: MediaStream): void {
     this.media.setDefaultAudioStream(stream);
+  }
+
+  setMediaHandling (mediaHandling: MediaHandling): void {
+    this._mediaHandling = mediaHandling;
   }
 
   /**
