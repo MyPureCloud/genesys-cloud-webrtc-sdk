@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "outDir": "./ts-build/",
-    "module": "ES6",
-    "moduleResolution": "node",
-    "baseUrl": "src",
-    "target": "ES6"
-  }
-}
