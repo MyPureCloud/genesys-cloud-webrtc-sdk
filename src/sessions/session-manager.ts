@@ -229,7 +229,8 @@ export class SessionManager {
     const promises = sessions.map(session => {
       return this.updateOutgoingMedia({
         session,
-        ...opts
+        videoDeviceId: opts.videoDeviceId,
+        audioDeviceId: opts.audioDeviceId
       });
     });
     return Promise.all(promises);
