@@ -19,7 +19,7 @@ import {
   PersistentConnectionEvent,
   HawkNotification
 } from '../types/interfaces';
-import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
+import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates, MediaHandling } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError, isPeerConnectionDisconnected } from '../utils';
 import { HeadsetChangesQueue } from '../headsets/headset-utils';
@@ -150,6 +150,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
+
+    if (this.sdk._mediaHandling === MediaHandling.noMedia) {
+      this.log('info', 'media handling is set to "no-media" so propose will be ignored', logInfo);
+      return;
+    }
 
     if (isPrivAnswerAuto) {
       this.log('info', 'received a propose with privAnswerMode=Auto', logInfo);

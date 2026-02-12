@@ -28,7 +28,8 @@ import {
   SdkErrorTypes,
   IPendingSession,
   JingleReasons,
-  ISessionMuteRequest
+  ISessionMuteRequest,
+  MediaHandling
 } from '../../../src';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import BaseSessionHandler from '../../../src/sessions/base-session-handler';
@@ -85,6 +86,21 @@ describe('handlePropose()', () => {
     expect(spy).toHaveBeenCalled();
     expect(superSpyHandlePropose).toHaveBeenCalled();
     expect(superSpyProceed).toHaveBeenCalled();
+  });
+
+  it('should ignore the propose if mediaHandling is set to "noMedia"', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    mockSdk._mediaHandling = MediaHandling.noMedia;
+
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(superSpyHandlePropose).not.toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
   });
 
   it('should not auto answer if pending session is not autoAnswer', async () => {
