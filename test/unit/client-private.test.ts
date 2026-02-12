@@ -1,10 +1,11 @@
 import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk } from '../test-utils';
 import { CommunicationStates } from '../../src/types/enums';
-import { SubscriptionEvent } from '../../src/types/interfaces';
-import { handleConversationUpdate, setupStreamingClient, handleDisconnectedEvent } from '../../src/client-private';
+import { ICustomerData, IPersonDetails, SubscriptionEvent } from '../../src/types/interfaces';
+import { handleConversationUpdate, setupStreamingClient, handleDisconnectedEvent, proxyStreamingClientEvents } from '../../src/client-private';
 import { ConversationUpdate } from '../../src/';
 import StreamingClient from 'genesys-cloud-streaming-client';
+import { NotificationsApi } from "purecloud-platform-client-v2";
 
 jest.mock('genesys-cloud-streaming-client');
 
@@ -90,7 +91,7 @@ describe('setupStreamingClient', () => {
 describe('handleConversationUpdate', () => {
   it('should call sessionManager.handleConversationUpdate with the transformed event', () => {
     mockSdk.sessionManager = { handleConversationUpdateRaw: jest.fn(), handleConversationUpdate: jest.fn() } as any;
-    
+
     const userId = '444kjskdk';
     const participant1 = {
       id: '7b809e10-fb79-4420-9d5f-69d232ddf490',
@@ -218,4 +219,100 @@ describe('handleDisconnectedEvent', () => {
       eventData
     );
   });
+});
+
+describe('proxyStreamingClientEvents', () => {
+  it('should handle JWT auth path', async () => {
+    const { handleConversationUpdateSpy, mockConversationUpdate } = await createEventDataAndCallProxyFunction();
+
+    expect(handleConversationUpdateSpy).toHaveBeenCalledWith(new ConversationUpdate(mockConversationUpdate.eventBody));
+  });
+
+  it('should handle JWT auth path with no conversation id', async () => {
+    const { handleConversationUpdateSpy, conversationUpdateHandler } = await createEventDataAndCallProxyFunction({ conversationId: undefined });
+
+    expect(conversationUpdateHandler).toBe(undefined);
+    expect(handleConversationUpdateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle JWT auth path with non-agent conference', async () => {
+    const { handleConversationUpdateSpy, conversationUpdateHandler } = await createEventDataAndCallProxyFunction({ jabberId: 'adhoc-123@conference.com' });
+
+    expect(conversationUpdateHandler).toBe(undefined);
+    expect(handleConversationUpdateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle JWT auth path with missing conference jid', async () => {
+    const { handleConversationUpdateSpy, conversationUpdateHandler } = await createEventDataAndCallProxyFunction({ jabberId: undefined });
+
+    expect(conversationUpdateHandler).toBe(undefined);
+    expect(handleConversationUpdateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle JWT auth path with guest with userId', async () => {
+    const { handleConversationUpdateSpy, conversationUpdateHandler } = await createEventDataAndCallProxyFunction({ userId: 'user123'});
+
+    expect(conversationUpdateHandler).toBe(undefined);
+    expect(handleConversationUpdateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should still handle non-JWT auth path', async () => {
+    const { handleConversationUpdateSpy, mockConversationUpdate } = await createEventDataAndCallProxyFunction({
+      userId: 'user123',
+      isJwtAuth: false
+    });
+
+    expect(handleConversationUpdateSpy).toHaveBeenCalledWith(new ConversationUpdate(mockConversationUpdate.eventBody));
+    expect(mockSdk._customerData).toBe(undefined);
+  });
+
+  async function createEventDataAndCallProxyFunction(options = {} as { userId?: string, jabberId?: string, conversationId?: string, isJwtAuth?: boolean }) {
+    const userId = 'userId' in options ? options.userId : undefined;
+    const jabberId = 'jabberId' in options ? options.jabberId : 'agent-123@conference.com';
+    const conversationId = 'conversationId' in options ? options.conversationId : 'conv123';
+    const isJwtAuth = options.isJwtAuth ?? true;
+
+    mockSdk._personDetails = {
+      id: userId,
+      chat: { jabberId: jabberId }
+    } as IPersonDetails;
+
+    if (isJwtAuth) { // we only assign this on jwt path
+      mockSdk._customerData = {
+        conversation: { id: conversationId }
+      } as ICustomerData;
+    }
+
+    Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => isJwtAuth });
+
+    let conversationUpdateHandler;
+
+    mockSdk._streamingConnection = {
+      on: jest.fn((event, handler) => {
+        if (event === `notify:v2.guest.conversations.${conversationId}`) {
+          if (conversationUpdateHandler) throw new Error('handler already assigned');
+          conversationUpdateHandler = handler;
+        }
+      }),
+      webrtcSessions: { on: jest.fn() },
+      notifications: {
+        subscribe: jest.fn((topic, handler) => {
+          if (topic === `v2.users.${userId}.conversations`) {
+            if (conversationUpdateHandler) throw new Error('handler already assigned');
+            conversationUpdateHandler = handler;
+          }
+        })
+      }
+    } as unknown as StreamingClient;
+
+    await proxyStreamingClientEvents.call(mockSdk);
+
+    mockSdk.sessionManager = { handleConversationUpdate: jest.fn(), handleConversationUpdateRaw: jest.fn() } as never;
+    const mockConversationUpdate = { eventBody: {}, metadata: { correlationId: '' }, topicName: '' };
+    if (conversationUpdateHandler) conversationUpdateHandler(mockConversationUpdate);
+
+    const handleConversationUpdateSpy = mockSdk.sessionManager.handleConversationUpdate;
+
+    return { handleConversationUpdateSpy, conversationUpdateHandler, mockConversationUpdate};
+  }
 });

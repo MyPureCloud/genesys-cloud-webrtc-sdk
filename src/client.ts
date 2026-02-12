@@ -694,6 +694,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         }
       };
 
+      this._customerData = {
+        conversation: {
+          id: decoded.data.conversationId,
+        },
+        sourceCommunicationId: decoded.data.sourceCommunicationId,
+        jwt: this._config.jwt
+      }
+
       this._orgDetails = {
         id: decoded.org,
         name: null

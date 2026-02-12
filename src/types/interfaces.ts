@@ -714,6 +714,8 @@ export interface JWTDetails {
     uid: string; // userId
     jid: string;
     gcbaid: string; // genesys cloud background assistant id
+    conversationId?: string;
+    sourceCommunicationId?: string;
   };
   exp: number; // exp in seconds
   iat: number; // issued at time in seconds,

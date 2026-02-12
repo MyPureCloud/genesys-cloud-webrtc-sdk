@@ -550,13 +550,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
     session.pc.getSenders().forEach(sender => sender.track && sender.track.stop());
   }
 
-  getCameraTrackForSession (session: IExtendedMediaSession): MediaStreamTrack {
-    return session._outboundStream.getVideoTracks().find(track => {
-      // Screen share tracks are in the _screenShareStream, so any video track in _outboundStream should be camera
-      return !session._screenShareStream || !session._screenShareStream.getVideoTracks().find(screenTrack => screenTrack.id === track.id);
-    })
-  }
-
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean): Promise<void> {
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
@@ -569,22 +562,25 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     const userId = this.sdk._personDetails.id;
 
-    // if we are going to mute, we need to remove the existing camera video track but not any screen share video tracks
+    // if we are going to mute, we need to remove/end the existing camera track
     if (params.mute) {
-      const cameraTrack = this.getCameraTrackForSession(session);
+      // get the first video track
+      const track = session._outboundStream.getVideoTracks().find(t => t);
 
-      if (!cameraTrack) {
+      if (!track) {
         this.log('warn', 'Unable to find outbound camera track', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       } else {
+
         const sender = this.getSendersByTrackType(session, 'video')
-          .find((sender) => sender.track && sender.track.id === cameraTrack.id);
+          .find((sender) => sender.track && sender.track.id === track.id);
 
         if (sender) {
           await this.removeMediaFromSession(session, sender);
         }
 
-        cameraTrack.stop();
-        session._outboundStream.removeTrack(cameraTrack);
+        track.stop();
+        session._outboundStream.removeTrack(track);
+
       }
 
       if (!skipServerUpdate) {
@@ -593,11 +589,9 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       // if we are unmuting, we need to get a new camera track and add that to the session
     } else {
-      // Check if we already have a camera track (exclude screen share tracks)
-      const existingCameraTrack = this.getCameraTrackForSession(session);
-
-      if (existingCameraTrack) {
-        this.log('debug', 'Cannot unmute, a camera video track already exists', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+      // Make sure we don't have any tracks before we decide to spin up another.
+      if (session._outboundStream.getVideoTracks().length > 0) {
+        this.log('debug', 'Cannot unmute, a video track already exists', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
         return;
       }
 
@@ -720,8 +714,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       this.log('info', 'Screen media created', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
 
-      // Add screen share track without replacing existing video track
-      await this.addMediaToSession(session, stream);
+      await this.addReplaceTrackToSession(session, stream.getVideoTracks()[0]);
+
+      if (!session.videoMuted) {
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, true);
+      }
 
       stream.getTracks().forEach((track: MediaStreamTrack) => {
         track.addEventListener('ended', this.stopScreenShare.bind(this, session));
@@ -750,9 +747,21 @@ export class VideoSessionHandler extends BaseSessionHandler {
     const track = session._screenShareStream.getVideoTracks()[0];
     const sender = session.pc.getSenders().find(sender => sender.track && sender.track.id === track.id);
 
-    if (sender) {
-      // Remove the screen share track without affecting other video tracks
-      await this.removeMediaFromSession(session, sender);
+    if (session._resurrectVideoOnScreenShareEnd) {
+      this.log('info', 'Restarting video track', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
+      try {
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: false }, true);
+      } catch (err) {
+        /* This is to ensure that if something goes wrong while
+         * fetching the preferred device's media, we still stop screensharing
+         * but return the user to a muted state
+        */
+        await this.setVideoMute(session, { conversationId: session.conversationId, mute: true }, false);
+        track.stop();
+        this.sessionManager.webrtcSessions.notifyScreenShareStop(session);
+      }
+    } else {
+      await sender.replaceTrack(null);
     }
 
     track.stop();

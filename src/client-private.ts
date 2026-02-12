@@ -4,6 +4,7 @@ import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
 import { SubscriptionEvent } from './types/interfaces';
 import { ConversationUpdate } from './conversations/conversation-update';
+import { isAgentVideoJid } from "./utils";
 
 /**
  * Establish the connection with the streaming client.
@@ -91,8 +92,19 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
 export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): Promise<void> {
   this.sessionManager = new SessionManager(this);
 
-  if (this._personDetails && !this.isJwtAuth) {
-    await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, handleConversationUpdate.bind(this), true);
+  if (this._personDetails) {
+    if (this.isJwtAuth) {
+      const convId = this._customerData.conversation?.id;
+      const isGuest = !this._personDetails?.id;
+      const roomJid = this._personDetails.chat?.jabberId;
+      if (convId && isGuest && isAgentVideoJid(roomJid)) {
+        this._streamingConnection.on(`notify:v2.guest.conversations.${convId}`, (conversationEvent) => {
+          handleConversationUpdate.call(this, conversationEvent);
+        });
+      }
+    } else {
+      await this._streamingConnection.notifications.subscribe(`v2.users.${this._personDetails.id}.conversations`, handleConversationUpdate.bind(this), true);
+    }
   }
 
   // webrtc events
