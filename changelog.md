@@ -3,13 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...HEAD)
+* [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
+
+# [v12.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...v12.0.0)
 ### Added
 * [STREAM-1099](https://inindca.atlassian.net/browse/STREAM-1099) - Emit `participantsUpdate` for JWT Video Guests
-### Changed
+
+### Breaking Changes
 * [STREAM-1178](https://inindca.atlassian.net/browse/STREAM-1178) - REVERT STREAM-825, removed ability to send multiple tracks when screensharing.
 * [STREAM-1130](https://inindca.atlassian.net/browse/STREAM-1130) - Updated TypeScript to v5.9.3 and Webpack to v5.105.0, removed legacy Spigot testing, added `.nvmrc`, demo app dependency updates, updated Node versions in testing matrices.
-* [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
 
 # [v11.5.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.0...v11.5.1)
 ### Added
