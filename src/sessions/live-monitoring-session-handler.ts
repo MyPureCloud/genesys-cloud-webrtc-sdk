@@ -69,6 +69,14 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
       });
     });
     await addMediaPromise;
+
+    // Set unused video transceivers direction: inactive to not get sent to the observer clients
+    const unusedTransceivers = session.pc.getTransceivers()
+      .filter(transceiver => transceiver.receiver.track?.kind === 'video' && !transceiver.sender.track)
+    this.sdk.logger.info(`Setting ${unusedTransceivers.length} unused video transceivers to inactive`, { conversationId: session.conversationId, sessionId: session.id });
+    unusedTransceivers.forEach(transceiver => {
+      transceiver.direction = "inactive";
+    });
   }
 
   async acceptSessionForObserver(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest) {
@@ -87,6 +95,24 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
       .filter(track => track.kind === 'video');
 
     this.log('info', `Accepting live screen monitoring session as observer with ${videoElements.length} available video elements for ${session.pc.getReceivers().length} receivers with ${tracks.length} video tracks`);
+
+    try {
+      let addEmptyMediaPromise: Promise<any> = Promise.resolve();
+      tracks.forEach((targetTrack) => {
+        addEmptyMediaPromise = addEmptyMediaPromise.then(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          const emptyStream = canvas.captureStream(0);
+          const emptyVideoTrack = emptyStream.getVideoTracks()[0];
+          this.sdk.logger.info('Adding empty screen track to live screen monitoring session', { streamId: emptyStream.id, trackId: emptyVideoTrack.id, label: emptyVideoTrack.label, conversationId: session.conversationId, sessionType: this.sessionType });
+          return session.pc.addTrack(emptyVideoTrack, emptyStream);
+        });
+      });
+      await addEmptyMediaPromise;
+    } catch (error: any) {
+      this.sdk.logger.error('Error when adding empty video streams', error);
+    }
 
     let videoElementIndex = 0;
     for (const track of tracks) {

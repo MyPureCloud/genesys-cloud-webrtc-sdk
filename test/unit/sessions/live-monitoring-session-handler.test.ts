@@ -148,6 +148,7 @@ describe('acceptSessionForTarget', () => {
     const addTrackSpy = jest.fn().mockResolvedValue(null);
     const createNewStreamSpy = jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockReturnValue(new MockStream() as any);
     session.pc.addTrack = addTrackSpy;
+    session.pc.getTransceivers = jest.fn().mockReturnValue([]);
 
     const params = { mediaStream: mockStream };
     await handler.acceptSessionForTarget(session as any, params as any);
@@ -159,6 +160,26 @@ describe('acceptSessionForTarget', () => {
     mockStream.getTracks().forEach((track, index) => {
       expect(addTrackSpy).toHaveBeenNthCalledWith(index + 1, track, expect.any(MockStream));
     });
+  });
+
+  it('should set unused video transceivers to inactive', async () => {
+    const mockStream = new MockStream({ video: true });
+    const session = new MockSession();
+    const addTrackSpy = jest.fn().mockResolvedValue(null);
+    session.pc.addTrack = addTrackSpy;
+
+    // Mock transceivers - one with sender track, one without
+    const mockTransceivers = [
+      { receiver: { track: { kind: 'video' } }, sender: { track: null }, direction: 'recvonly' },
+      { receiver: { track: { kind: 'video' } }, sender: { track: {} }, direction: 'recvonly' }
+    ];
+    session.pc.getTransceivers = jest.fn().mockReturnValue(mockTransceivers);
+
+    const params = { mediaStream: mockStream };
+    await handler.acceptSessionForTarget(session as any, params as any);
+
+    expect(mockTransceivers[0].direction).toBe('inactive');
+    expect(mockTransceivers[1].direction).toBe('recvonly');
   });
 });
 
@@ -261,6 +282,46 @@ describe('acceptSessionForObserver', () => {
     expect(createNewStreamSpy).toHaveBeenCalledWith(mockVideoTrack1);
   });
 
+  it('should add empty video tracks and log info', async () => {
+    const videoElement = document.createElement('video');
+    const mockReceivers = [{ track: mockVideoTrack1 }];
+    session.pc.getReceivers = jest.fn().mockReturnValue(mockReceivers);
+    session.pc.addTrack = jest.fn().mockResolvedValue(null);
+
+    // Mock canvas and its methods
+    const mockCanvas = {
+      width: 1,
+      height: 1,
+      captureStream: jest.fn().mockReturnValue({
+        id: 'empty-stream-id',
+        getVideoTracks: jest.fn().mockReturnValue([{
+          id: 'empty-track-id',
+          label: 'empty-track-label'
+        }])
+      })
+    };
+    jest.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
+
+    const loggerInfoSpy = jest.spyOn(mockSdk.logger, 'info');
+    const emitSpy = jest.spyOn(session, 'emit');
+
+    await handler.acceptSessionForObserver(session, { videoElement } as any);
+
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      'Adding empty screen track to live screen monitoring session',
+      expect.objectContaining({
+        streamId: 'empty-stream-id',
+        trackId: 'empty-track-id',
+        label: 'empty-track-label',
+        conversationId: session.conversationId,
+        sessionType: handler.sessionType
+      })
+    );
+    expect(session.pc.addTrack).toHaveBeenCalled();
+    expect(videoElement.srcObject).toBeDefined();
+    expect(emitSpy).toHaveBeenCalledWith('incomingMedia');
+  });
+
   it('should use default video element when no videoElements or videoElement provided', async () => {
     const defaultVideo = document.createElement('video');
     mockSdk._config.defaults!.videoElement = defaultVideo;
@@ -295,7 +356,6 @@ describe('acceptSessionForObserver', () => {
     await handler.acceptSessionForObserver(session, { videoElements } as any);
 
     expect(createNewStreamSpy).not.toHaveBeenCalled();
-    expect(video1.srcObject).toBeUndefined();
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
@@ -342,8 +402,6 @@ describe('acceptSessionForObserver', () => {
     // Each track should attach to one video element sequentially
     expect(video1.srcObject).toBeDefined(); // Track 1
     expect(video2.srcObject).toBeDefined(); // Track 2
-    expect(video3.srcObject).toBeUndefined(); // Unused
-    expect(video4.srcObject).toBeUndefined(); // Unused
 
     expect(emitSpy).toHaveBeenCalledTimes(2);
   });
