@@ -29,7 +29,8 @@ import {
   IStation,
   IPersonDetails,
   ISessionIdAndConversationId,
-  VideoSessionHandler
+  VideoSessionHandler,
+  MediaHandling
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
@@ -1156,6 +1157,22 @@ describe('Client', () => {
 
       sdk.setDefaultAudioStream(media);
       expect(spy).toHaveBeenCalledWith(media);
+    });
+  });
+
+  describe('setMediaHandling()', () => {
+    it('should disconnect any active sessions when set to "noMedia"', () => {
+      sdk = constructSdk();
+      const mockSession = new MockSession(SessionTypes.softphone);
+      const sessionId = mockSession.id;
+      const sessions = [mockSession] as unknown as IExtendedMediaSession[];
+      sessionManagerMock.getAllActiveSessions.mockReturnValue(sessions);
+      const forceTerminateSpy = jest.fn();
+      sessionManagerMock.forceTerminateSession = forceTerminateSpy;
+
+      sdk.setMediaHandling(MediaHandling.noMedia);
+
+      expect(forceTerminateSpy).toHaveBeenCalledWith(sessionId);
     });
   });
 
