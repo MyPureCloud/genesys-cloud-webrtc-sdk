@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...HEAD)
 * [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
 
+### Changed
+* [STREAM-1211](https://inindca.atlassian.net/browse/STREAM-1178) - Update `axios` to `v1.13.5`.
+
 # [v12.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...v12.0.0)
 ### Added
 * [STREAM-1099](https://inindca.atlassian.net/browse/STREAM-1099) - Emit `participantsUpdate` for JWT Video Guests
