@@ -63,54 +63,73 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     let addMediaPromise: Promise<any> = Promise.resolve();
     params.mediaStream.getTracks().forEach((track) => {
       addMediaPromise = addMediaPromise.then(() => {
-        this.sdk.logger.info('Adding screen track to live screen monitoring session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
-        return session.pc.addTrack(track);
+        const trackStream = createNewStreamWithTrack(track);
+        this.sdk.logger.info('Adding screen track to live screen monitoring session', { streamId: trackStream.id, trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
+        return session.pc.addTrack(track, trackStream);
       });
     });
     await addMediaPromise;
+
+    // Set unused video transceivers direction: inactive to not get sent to the observer clients
+    const unusedTransceivers = session.pc.getTransceivers()
+      .filter(transceiver => transceiver.receiver.track?.kind === 'video' && !transceiver.sender.track)
+    this.sdk.logger.info(`Setting ${unusedTransceivers.length} unused video transceivers to inactive`, { conversationId: session.conversationId, sessionId: session.id });
+    unusedTransceivers.forEach(transceiver => {
+      transceiver.direction = "inactive";
+    });
   }
 
   async acceptSessionForObserver(session: LiveScreenMonitoringSession, params: IAcceptSessionRequest) {
-    const videoElement = params.videoElement || this.sdk._config.defaults.videoElement;
+    const videoElements = params.videoElements || (params.videoElement ? [params.videoElement] : [this.sdk._config.defaults.videoElement].filter(Boolean));
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
 
-    if (!videoElement) {
+    if (!videoElements.length) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options,
-        'acceptSession for live monitoring observer requires a videoElement to be provided or in the default config',
+        'acceptSession for live monitoring observer requires videoElements array or videoElement to be provided or in the default config',
         sessionInfo);
     }
 
-    const attachParams = { videoElement };
-
-    const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
-      if (!Array.isArray(tracks)) tracks = [tracks];
-
-      for (const track of tracks) {
-        this.log('info', 'Incoming track from live monitoring session', {
-          track,
-          conversationId: session.conversationId,
-          sessionId: session.id,
-          sessionType: session.sessionType
-        });
-
-        this.attachIncomingTrackToElement(track, attachParams);
-      }
-
-      session.emit('incomingMedia');
-    };
-
-    // Get existing tracks
     const tracks = session.pc.getReceivers()
       .filter(receiver => receiver.track)
-      .map(receiver => receiver.track);
+      .map(receiver => receiver.track)
+      .filter(track => track.kind === 'video');
 
-    if (tracks.length) {
-      handleIncomingTracks(session, tracks);
-    } else {
-      // Listen for tracks that arrive later
-      session.on('peerTrackAdded', (track: MediaStreamTrack) => {
-        handleIncomingTracks(session, track);
+    this.log('info', `Accepting live screen monitoring session as observer with ${videoElements.length} available video elements for ${session.pc.getReceivers().length} receivers with ${tracks.length} video tracks`);
+
+    try {
+      let addEmptyMediaPromise: Promise<any> = Promise.resolve();
+      tracks.forEach((targetTrack) => {
+        addEmptyMediaPromise = addEmptyMediaPromise.then(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          const emptyStream = canvas.captureStream(0);
+          const emptyVideoTrack = emptyStream.getVideoTracks()[0];
+          this.sdk.logger.info('Adding empty screen track to live screen monitoring session', { streamId: emptyStream.id, trackId: emptyVideoTrack.id, label: emptyVideoTrack.label, conversationId: session.conversationId, sessionType: this.sessionType });
+          return session.pc.addTrack(emptyVideoTrack, emptyStream);
+        });
       });
+      await addEmptyMediaPromise;
+    } catch (error: any) {
+      this.sdk.logger.error('Error when adding empty video streams', error);
+    }
+
+    let videoElementIndex = 0;
+    for (const track of tracks) {
+      if (videoElementIndex < videoElements.length) {
+        const stream = createNewStreamWithTrack(track);
+        const videoElement = videoElements[videoElementIndex];
+        videoElement.muted = true;
+        videoElement.autoplay = true;
+        videoElement.srcObject = stream;
+        this.log('info', `Attached stream to video element at index ${videoElementIndex}`, {
+          streamId: videoElement.srcObject?.id,
+          track: track,
+          ...sessionInfo,
+        });
+        videoElementIndex++;
+      }
+      session.emit('incomingMedia');
     }
   }
 
@@ -128,29 +147,6 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
   updateOutgoingMedia(session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for live monitoring sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for live monitoring sessions');
-  }
-
-  /**
-   * Attach incoming track to HTML element
-   */
-  attachIncomingTrackToElement(
-    track: MediaStreamTrack,
-    { videoElement }: { videoElement: HTMLVideoElement }
-  ): HTMLAudioElement | HTMLVideoElement {
-    const element = videoElement;
-
-    if (track.kind === 'video') {
-      if (element) {
-        element.muted = true;
-      }
-    }
-
-    if (element) {
-      element.autoplay = true;
-      element.srcObject = createNewStreamWithTrack(track);
-    }
-
-    return element;
   }
 }
 
