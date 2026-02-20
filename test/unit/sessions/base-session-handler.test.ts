@@ -583,6 +583,24 @@ describe('handleSessionInit', () => {
     expect(eventSpy).toHaveBeenCalled();
   });
 
+  it('should initialize _emittedSessionStarteds but not emit sessionStarted for reinvite sessions', async () => {
+    const session: any = new MockSession();
+    session.conversationId = 'convo123';
+    session.reinvite = true;
+
+    const pendingSession = createPendingSession();
+    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
+
+    const eventSpy = jest.fn();
+    mockSdk.on('sessionStarted', eventSpy);
+
+    await handler.handleSessionInit(session);
+
+    expect(mockSdk._streamingConnection.webrtcSessions.rtcSessionAccepted).toHaveBeenCalled();
+    expect(session._emittedSessionStarteds).toEqual({ 'convo123': true });
+    expect(eventSpy).not.toHaveBeenCalled();
+  });
+
   it('should set up terminated listener', async () => {
     const session: any = new MockSession();
     const pendingSession = createPendingSession();
