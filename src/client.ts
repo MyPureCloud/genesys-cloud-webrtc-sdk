@@ -524,8 +524,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       });
 
       if ((updateVideo || updateAudio) && this.sessionManager) {
+        const updateOptions: any = {};
+        if (updateVideo) updateOptions.videoDeviceId = options.videoDeviceId;
+        if (updateAudio) updateOptions.audioDeviceId = options.audioDeviceId;
         promises.push(
-          this.sessionManager.updateOutgoingMediaForAllSessions()
+          this.sessionManager.updateOutgoingMediaForAllSessions(updateOptions)
         );
       }
 

@@ -825,7 +825,7 @@ describe('Client', () => {
       await sdk.updateDefaultDevices(options);
 
       expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
-      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith();
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith({"audioDeviceId": "new-audio-device-id"});
       expect(sessionManagerMock.updateOutputDeviceForAllSessions).not.toHaveBeenCalled();
 
       sessionManagerMock.updateOutgoingMediaForAllSessions.mockReset();
