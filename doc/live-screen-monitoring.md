@@ -126,5 +126,4 @@ sdk.on('sessionStarted', async (session) => {
 });
 ```
 
-[sdk.startLiveScreenMonitoring()]: index.md#startlivescreenmonitoring
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
