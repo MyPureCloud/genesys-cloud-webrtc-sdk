@@ -8,7 +8,7 @@ When the server determines that live screen monitoring should be initiated, it w
 
 ## WebRTC SDK Live Screen Monitoring Index
 This documentation expands upon the [GenesysCloudWebrtcSdk] documentation but is specific to
-live screen monitoring. See the full list of the [APIs], [methods], and [events].
+live screen monitoring.
 
 * [Example usage](#example-usage)
 
@@ -127,7 +127,4 @@ sdk.on('sessionStarted', async (session) => {
 ```
 
 [sdk.startLiveScreenMonitoring()]: index.md#startlivescreenmonitoring
-[APIs]: index.md#genesyscloudwebrtcsdk
-[methods]: index.md#methods
-[events]: index.md#events
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
