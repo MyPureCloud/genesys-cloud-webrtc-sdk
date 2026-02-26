@@ -2,7 +2,7 @@
 
 This SDK supports live screen monitoring functionality that allows real-time viewing of user screens. Live screen monitoring sessions are initiated by the server and provide the ability to observe user activity in real-time for support, training, or compliance purposes.
 
-When the server determines that live screen monitoring should be initiated, it will send a pendingSession similar to how other session types work (ie. softphone and video conversations). The consuming client must accept the pending session, gather screen media, and add the media to that session.
+When the server determines that live screen monitoring should be initiated, it will send a `pendingSession` similar to how other session types work (ie. softphone and video conversations). The consuming client must accept the `pendingSession`, gather screen media, and add the media to that session.
 
 > *Note: live screen monitoring does not support guest users.*
 
@@ -11,6 +11,7 @@ This documentation expands upon the [GenesysCloudWebrtcSdk] documentation but is
 live screen monitoring.
 
 * [Example usage](#example-usage)
+* [Observer vs Target Roles](#observer-vs-target-roles)
 
 ## Prerequisites
 
@@ -101,7 +102,7 @@ sdk.on('sessionStarted', async (session) => {
 ```
 
 ### Multiple Screens
-Live screen monitoring supports monitoring up to *4* screens simultaneously. All screen tracks need to be on the same media stream provided in `sdk.acceptSession(...)`.
+Live screen monitoring supports monitoring up to **four** screens simultaneously. All screen tracks need to be on the same media stream provided in `sdk.acceptSession(...)`.
 
 ``` ts
 sdk.on('sessionStarted', async (session) => {
@@ -125,5 +126,50 @@ sdk.on('sessionStarted', async (session) => {
   }
 });
 ```
+
+## Observer vs Target Roles
+
+Live screen monitoring sessions involve two distinct roles with different behaviors:
+
+### Target Role
+The **target** is the user whose screen is being monitored. When accepting a session as a target:
+- Must provide a `mediaStream` containing screen capture tracks
+- The session automatically accepts if the `fromUserId` matches the current user
+- Cannot end the monitoring session (only observers can end it)
+- Sends their screen content to observers
+
+``` ts
+// Target accepts with screen media
+sdk.acceptSession({
+  conversationId: session.conversationId,
+  sessionType: session.sessionType,
+  mediaStream: screenStream, // Required for targets
+  liveScreenMonitoringMetadata
+});
+```
+
+### Observer Role
+The **observer** is the user monitoring the target's screen. When accepting a session as an observer:
+- Must provide `videoElements` array or `videoElement` to display incoming video
+- Set `liveMonitoringObserver: true` in the accept parameters
+- Receives video streams from the target and displays them in provided video elements
+- Can end the monitoring session
+- Sends empty video tracks to maintain WebRTC connection
+
+``` ts
+// Observer accepts with video elements
+sdk.acceptSession({
+  conversationId: session.conversationId,
+  sessionType: session.sessionType,
+  liveMonitoringObserver: true, // Identifies this as observer role
+  videoElements: [videoElement1, videoElement2], // Required for observers
+});
+```
+
+### Role Determination
+The SDK automatically determines the role based on:
+1. If `liveMonitoringObserver: true` is set in accept parameters → Observer
+2. If `fromUserId` matches current user ID → Target (auto-accepted)
+3. Otherwise → Target (manual acceptance required unless specified)
 
 [GenesysCloudWebrtcSdk]: index.md#genesyscloudwebrtcsdk
