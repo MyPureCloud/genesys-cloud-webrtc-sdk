@@ -161,7 +161,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
         requestType
       }
     };
-    
+
     this.sdk._streamingConnection.messenger.broadcastMessage({
       mediaMessage: headsetControlsRequest
     });
@@ -176,7 +176,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     if (state === this.orchestrationState && !forceUpdate) {
       return;
     }
-    
+
     this.sdk.logger.debug('Headset Orchestration state change', { oldState: this.orchestrationState, newState: state });
 
     if (state === 'alternativeClient') {
@@ -201,7 +201,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     if (msg.fromMyClient) {
       return;
     }
-    
+
     switch(msg.mediaMessage.method) {
       case 'headsetControlsRequest':
         this.handleHeadsetControlsRequest(msg);
@@ -234,6 +234,9 @@ export class HeadsetProxyService implements ISdkHeadsetService {
       // we still yield to media-helper
       if (this.getRequestPriority(mediaMessage.params.requestType) === this.getRequestPriority('mediaHelper')) {
         this.sdk.logger.info('Handling alerting leader media, but yielding headset controls to media-helper', { requestType: mediaMessage.params.requestType });
+        this.setOrchestrationState('alternativeClient');
+      } else if (this.getRequestPriority(mediaMessage.params.requestType) === this.getRequestPriority('prioritized')) {
+        this.sdk.logger.info('Currently handling alerting leader media, but yielding headset controls to new alerting leader', { requestType: mediaMessage.params.requestType });
         this.setOrchestrationState('alternativeClient');
       } else {
         this.sendControlsRejectionMessage(msg, 'priority');
@@ -336,7 +339,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   endAllCalls (): Promise<void> {
     return this.currentHeadsetService.endAllCalls();
   }
-  
+
   answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void> {
     return this.currentHeadsetService.answerIncomingCall(conversationId, autoAnswer);
   }

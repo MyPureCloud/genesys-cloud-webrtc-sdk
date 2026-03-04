@@ -816,6 +816,27 @@ describe('HeadsetProxyService', () => {
       expect(proxyService['orchestrationState']).toBe('hasControls');
     });
 
+    it('should not take controls if a prioritized request is received during orchestration even if handling alerting leader media', async () => {
+      proxyService['sdk']._mediaHandling = MediaHandling.alertingLeaderMedia;
+      proxyService['orchestrationState'] = 'hasControls';
+
+      const request: HeadsetControlsRequest = {
+        jsonrpc: '2.0',
+        method: 'headsetControlsRequest',
+        params: {
+          requestType: 'prioritized',
+        }
+      };
+      triggerMediaMessageEvent({ to: 'to', from: 'from', mediaMessage: request, fromMyClient: false, fromMyUser: true });
+
+      expect(proxyService['orchestrationState']).toBe('alternativeClient');
+      jest.advanceTimersByTime(1500);
+
+      expect(updateAudioSpy).not.toHaveBeenCalled();
+      expect(broadcastSpy).not.toHaveBeenCalled()
+      expect(proxyService['orchestrationState']).toBe('alternativeClient');
+    });
+
     it('should do nothing if persistent connection but no active session', async () => {
       expect(proxyService['orchestrationWaitTimer']).toBeFalsy();
 
