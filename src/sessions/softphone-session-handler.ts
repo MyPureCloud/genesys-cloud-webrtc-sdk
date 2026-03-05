@@ -153,31 +153,29 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     if (isPrivAnswerAuto) {
       this.log('info', 'received a propose with privAnswerMode=true', logInfo);
-    }
 
-    // if eagerPersistentConnectionEstablishment==='none' then we want to completely swallow the propose
-    const shouldIgnorePrivAnswerPropose = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'none';
-    if (shouldIgnorePrivAnswerPropose) {
-      this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=true will be ignored', logInfo);
-      return;
-    }
-
-    const shouldAutoAnswerPrivately = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'auto';
-
-    // we want to emit the pendingSession event in all cases except when eagerConnectionEstablishmentMode === auto and this is a privAnswerMode call
-    if (!shouldAutoAnswerPrivately) {
-      await super.handlePropose(pendingSession);
-    } else {
-      return await this.proceedWithSession(pendingSession);
-    }
-
-    // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
-    if (pendingSession.autoAnswer) {
-      if (this.sdk._config.disableAutoAnswer) {
-        // It is possible that the consuming client has its own logic for auto-answering calls (eg. web-dir).
-        this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+      if (eagerConnectionEstablishmentMode === 'none') {
+        // we want to completely swallow the propose
+        this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=true will be ignored', logInfo);
+        return;
+      } else if (eagerConnectionEstablishmentMode === 'auto') {
+        // we don't need to emit a pendingSession event when we auto-answer
+        // eager persistent connections
+        return await this.proceedWithSession(pendingSession);
       } else {
-        await this.proceedWithSession(pendingSession);
+        await super.handlePropose(pendingSession);
+      }
+    } else {
+      await super.handlePropose(pendingSession);
+
+      // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
+      if (pendingSession.autoAnswer) {
+        if (this.sdk._config.disableAutoAnswer) {
+          // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
+          this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+        } else {
+          await this.proceedWithSession(pendingSession);
+        }
       }
     }
   }
