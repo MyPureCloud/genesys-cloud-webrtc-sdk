@@ -46,7 +46,11 @@ export enum JingleReasons {
 }
 
 export enum MediaHandling {
+  /** Handle all media; headset controls use traditional orchestration */
   media = 'media',
+  /** Handle all media; headset controls follow alerting leader */
   alertingLeaderMedia = 'alerting-leader-media',
-  noMedia = 'no-media'
+  /** Only handle autoAnswer calls; headset controls are not used */
+  // Ideally we would only allow outbound calls, but currently we can't distinguish between an outbound call and an inbound autoanswer ACD call
+  autoAnswerOnly = 'auto-answer-only'
 }

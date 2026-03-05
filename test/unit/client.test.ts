@@ -1161,7 +1161,7 @@ describe('Client', () => {
   });
 
   describe('setMediaHandling()', () => {
-    it('should stop using headsets and disconnect any active sessions when set to "noMedia"', () => {
+    it('should stop using headsets and disconnect any active sessions when set to "autoAnswerOnly"', () => {
       sdk = constructSdk();
       const useHeadsetsSpy = jest.fn();
       sdk.setUseHeadsets = useHeadsetsSpy;
@@ -1172,7 +1172,7 @@ describe('Client', () => {
       const forceTerminateSpy = jest.fn();
       sessionManagerMock.forceTerminateSession = forceTerminateSpy;
 
-      sdk.setMediaHandling(MediaHandling.noMedia);
+      sdk.setMediaHandling(MediaHandling.autoAnswerOnly);
 
       expect(useHeadsetsSpy).toHaveBeenCalledWith(false);
       expect(forceTerminateSpy).toHaveBeenCalledWith(sessionId);

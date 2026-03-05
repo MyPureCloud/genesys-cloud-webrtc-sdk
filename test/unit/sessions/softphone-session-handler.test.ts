@@ -70,6 +70,56 @@ describe('shouldHandleSessionByJid()', () => {
 });
 
 describe('handlePropose()', () => {
+  it('should ignore the propose if mediaHandling is "autoAnswerOnly" and autoAnswer is false', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.autoAnswer = false;
+    mockSdk._mediaHandling = MediaHandling.autoAnswerOnly;
+
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(superSpyHandlePropose).not.toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
+  });
+
+  it('should not autoAnswer if mediaHandling is "autoAnswerOnly", autoAnswer is true, but disableAutoAnswer is configured', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+    mockSdk._config.disableAutoAnswer = true;
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.autoAnswer = true;
+    mockSdk._mediaHandling = MediaHandling.autoAnswerOnly;
+
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).toHaveBeenCalled();
+    expect(superSpyHandlePropose).toHaveBeenCalled();
+    expect(superSpyProceed).not.toHaveBeenCalled();
+  });
+
+  it('should emit pending session and proceed immediately if mediaHandling is "autoAnswerOnly", autoAnswer is true, and disableAutoAnswer is not configured', async () => {
+    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
+    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
+    const spy = jest.fn();
+    mockSdk.on('pendingSession', spy);
+    mockSdk._config.disableAutoAnswer = false;
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.autoAnswer = true;
+    mockSdk._mediaHandling = MediaHandling.autoAnswerOnly;
+
+    await handler.handlePropose(pendingSession);
+
+    expect(spy).toHaveBeenCalled();
+    expect(superSpyHandlePropose).toHaveBeenCalled();
+    expect(superSpyProceed).toHaveBeenCalled();
+  });
+
   it('should emit pending session and proceed immediately if autoAnswer', async () => {
     const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
     const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
@@ -86,21 +136,6 @@ describe('handlePropose()', () => {
     expect(spy).toHaveBeenCalled();
     expect(superSpyHandlePropose).toHaveBeenCalled();
     expect(superSpyProceed).toHaveBeenCalled();
-  });
-
-  it('should ignore the propose if mediaHandling is set to "noMedia"', async () => {
-    const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
-    const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
-    const spy = jest.fn();
-    mockSdk.on('pendingSession', spy);
-    const pendingSession = createPendingSession(SessionTypes.softphone);
-    mockSdk._mediaHandling = MediaHandling.noMedia;
-
-    await handler.handlePropose(pendingSession);
-
-    expect(spy).not.toHaveBeenCalled();
-    expect(superSpyHandlePropose).not.toHaveBeenCalled();
-    expect(superSpyProceed).not.toHaveBeenCalled();
   });
 
   it('should not auto answer if pending session is not autoAnswer', async () => {

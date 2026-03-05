@@ -149,36 +149,49 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
+    const autoAnswerOnly = this.sdk._mediaHandling === MediaHandling.autoAnswerOnly;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
 
-    if (this.sdk._mediaHandling === MediaHandling.noMedia) {
-      this.log('info', 'media handling is set to "no-media" so propose will be ignored', logInfo);
-      return;
-    }
-
-    if (isPrivAnswerAuto) {
-      this.log('info', 'received a propose with privAnswerMode=Auto', logInfo);
-
-      if (eagerConnectionEstablishmentMode === 'none') {
-        this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=Auto will be ignored', logInfo);
-        return;
-      } else if (eagerConnectionEstablishmentMode === 'auto') {
-        // we don't need to emit a pendingSession event when we auto-answer eager persistent connections
-        return await this.proceedWithSession(pendingSession);
-      } else {
-        await super.handlePropose(pendingSession);
-      }
-    } else {
-      // we want to emit the pendingSession event in all other cases
-      await super.handlePropose(pendingSession);
-
-      // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
+    if (autoAnswerOnly) {
       if (pendingSession.autoAnswer) {
+        // emit the pendingSession event
+        await super.handlePropose(pendingSession);
+
         if (this.sdk._config.disableAutoAnswer) {
           // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
           this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
         } else {
           await this.proceedWithSession(pendingSession);
+        }
+      } else {
+        this.log('info', 'media handling is set to "auto-answer-only", but this propose is not marked as autoAnswer and will be ignored', logInfo);
+        return;
+      }
+    } else {
+      if (isPrivAnswerAuto) {
+        this.log('info', 'received a propose with privAnswerMode=Auto', logInfo);
+
+        if (eagerConnectionEstablishmentMode === 'none') {
+          this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=Auto will be ignored', logInfo);
+          return;
+        } else if (eagerConnectionEstablishmentMode === 'auto') {
+          // we don't need to emit a pendingSession event when we auto-answer eager persistent connections
+          return await this.proceedWithSession(pendingSession);
+        } else {
+          await super.handlePropose(pendingSession);
+        }
+      } else {
+        // we want to emit the pendingSession event in all other cases
+        await super.handlePropose(pendingSession);
+
+        // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
+        if (pendingSession.autoAnswer) {
+          if (this.sdk._config.disableAutoAnswer) {
+            // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
+            this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+          } else {
+            await this.proceedWithSession(pendingSession);
+          }
         }
       }
     }

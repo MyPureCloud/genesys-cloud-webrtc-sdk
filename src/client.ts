@@ -866,7 +866,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   setMediaHandling (mediaHandling: MediaHandling): void {
     this._mediaHandling = mediaHandling;
 
-    if (mediaHandling === MediaHandling.noMedia) {
+    // The intent behind this comes from requirements for alerting leader
+    // where a client shouldn't handle media (mostly) if it isn't the alerting
+    // leader. Ideally this would only handle outbound calls, but we can't
+    // distinguish between outbound calls and inbound autoanswer ACD calls when
+    // we receive the `propose`.
+    if (mediaHandling === MediaHandling.autoAnswerOnly) {
       this.setUseHeadsets(false);
 
       // Disconnect any persistent connections we might have
