@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * [STREAM-1211](https://inindca.atlassian.net/browse/STREAM-1178) - Update `axios` to `v1.13.5`.
+* [STREAM-1285](https://inindca.atlassian.net/browse/STREAM-1285) - Refactor `handlePropose` in SoftphoneSessionHandler for clarity and future changes. Update associated comments to better reflect implementation.
 
 # [v12.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...v12.0.0)
 ### Added
