@@ -901,9 +901,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     * connection that will attempt to hold the previous ended call
     */
     const otherSessions = sessions.filter(session => {
+      const convo = this.conversations[session.conversationId];
       return session.sessionType === SessionTypes.softphone &&
-        this.conversations[session.conversationId] &&
+        convo &&
         !this.isConversationHeld(session.conversationId) &&
+        !this.isEndedState(convo.mostRecentCallState) &&
         session !== currentSession;
     });
 
@@ -911,6 +913,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     otherSessions.forEach(session => {
       this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
+        .catch(err => {
+          this.log('warn', 'Failed to hold other session during holdOtherSessions', {
+            sessionId: session.id,
+            conversationId: session.conversationId,
+            error: err
+          });
+        });
     });
   }
 
