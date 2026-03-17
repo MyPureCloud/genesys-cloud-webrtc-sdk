@@ -149,10 +149,12 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handlePropose (pendingSession: IPendingSession): Promise<void> {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
-    const autoAnswerOnly = this.sdk._mediaHandling === MediaHandling.autoAnswerOnly;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
+    const reducedMediaHandling = this.sdk._mediaHandling === MediaHandling.reducedMediaHeadsets || this.sdk._mediaHandling === MediaHandling.reducedMediaNoHeadsets;
 
-    if (autoAnswerOnly) {
+    if (reducedMediaHandling) {
+      this.log('info', 'received a propose while the SDK is configured for reduced media handling', logInfo);
+
       if (pendingSession.autoAnswer) {
         // emit the pendingSession event
         await super.handlePropose(pendingSession);
@@ -164,7 +166,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           await this.proceedWithSession(pendingSession);
         }
       } else {
-        this.log('info', 'media handling is set to "auto-answer-only", but this propose is not marked as autoAnswer and will be ignored', logInfo);
+        this.log('info', 'media handling is reduced, but this propose is not marked as autoAnswer and will be ignored', logInfo);
         return;
       }
     } else {

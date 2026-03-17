@@ -301,8 +301,8 @@ describe('HeadsetProxyService', () => {
       expect(proxyService['currentHeadsetService']).toBeInstanceOf(SdkHeadsetServiceFake);
     });
 
-    it('should use fake service if useHeadsets and only handling autoAnswer calls', () => {
-      proxyService['sdk']._mediaHandling = MediaHandling.autoAnswerOnly;
+    it('should use fake service if useHeadsets and media is set to reducedMediaNoHeadsets', () => {
+      proxyService['sdk']._mediaHandling = MediaHandling.reducedMediaNoHeadsets;
       const spy = jest.spyOn(proxyService, 'updateAudioInputDevice');
 
       proxyService.setUseHeadsets(true);

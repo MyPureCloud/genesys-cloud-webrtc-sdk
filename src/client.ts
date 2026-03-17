@@ -44,6 +44,7 @@ import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
 import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
 import { ISdkHeadsetService } from './headsets/headset-types';
+import { SoftphoneSessionHandler } from '.';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -111,7 +112,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _customerData: ICustomerData;
   _hasConnected: boolean;
   _config: ISdkFullConfig;
-  _mediaHandling = MediaHandling.media;
+  _mediaHandling = MediaHandling.standardMedia;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -863,25 +864,41 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this.media.setDefaultAudioStream(stream);
   }
 
+  /**
+   * **Genesys internal use only** - non-Genesys apps may experience unexpected behavior.
+   *
+   * Change the media handling for softphone sessions, which should be
+   * be chosen based on the alerting leader status of the consuming client.
+   *
+   * If media handling is reduced, idle persistent connections will be
+   * disconnected.
+   *
+   * @param mediaHandling how softphone media should be handled
+   */
   setMediaHandling (mediaHandling: MediaHandling): void {
+    const activeConversations = this.sessionManager.getAllActiveConversations();
+    console.log('Hjon: mediaHandling:', mediaHandling);
+    const useHeadsets = !(mediaHandling === MediaHandling.reducedMediaNoHeadsets);
+    console.log('Hjon: useHeadsets:', useHeadsets);
+
+    if (activeConversations.length !== 0 && !useHeadsets) {
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Cannot downgrade media handling to stop using headsets during an active call');
+    }
+
     this._mediaHandling = mediaHandling;
+    this.setUseHeadsets(useHeadsets);
 
-    // The intent behind this comes from requirements for alerting leader
-    // where a client shouldn't handle media (mostly) if it isn't the alerting
-    // leader. Ideally this would only handle outbound calls, but we can't
-    // distinguish between outbound calls and inbound autoanswer ACD calls when
-    // we receive the `propose`.
-    if (mediaHandling === MediaHandling.autoAnswerOnly) {
-      this.setUseHeadsets(false);
-
-      // Disconnect any persistent connections we might have
-      this.sessionManager.getAllActiveSessions()
-        .filter(session => session.sessionType === SessionTypes.softphone)
-        .forEach(softphoneSession => {
-          this.sessionManager.forceTerminateSession(softphoneSession.id);
-        });
-    } else {
-      this.setUseHeadsets(true);
+    const reduceMediaHandling = mediaHandling === MediaHandling.reducedMediaHeadsets || mediaHandling === MediaHandling.reducedMediaNoHeadsets;
+    if (reduceMediaHandling) {
+      const conversationSessionIds = activeConversations.map(conversation => conversation.sessionId);
+      // Disconnect connections that aren't associated with an active conversation.
+      // When a client is no longer the alerting leader, it needs to give up any
+      // persistent connections. Active calls should be maintained.
+      this.sessionManager.getAllSessions().forEach(session => {
+        if (session.sessionType === SessionTypes.softphone && !conversationSessionIds.includes(session.id)) {
+          this.sessionManager.forceTerminateSession(session.id);
+        }
+      });
     }
   }
 

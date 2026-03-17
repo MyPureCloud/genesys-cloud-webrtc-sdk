@@ -45,12 +45,26 @@ export enum JingleReasons {
   alternativeSession = 'alternative-session'
 }
 
+/** These currently only affect softphone media */
 export enum MediaHandling {
   /** Handle all media; headset controls use traditional orchestration */
-  media = 'media',
+  standardMedia = 'standard-media',
   /** Handle all media; headset controls follow alerting leader */
   alertingLeaderMedia = 'alerting-leader-media',
-  /** Only handle autoAnswer calls; headset controls are not used */
-  // Ideally we would only allow outbound calls, but currently we can't distinguish between an outbound call and an inbound autoanswer ACD call
-  autoAnswerOnly = 'auto-answer-only'
+  /**
+   * Handle some media (see below); headset controls use traditional orchestration
+   *
+   * - New eager persistent connections will be ignored.
+   * - Auto-answer calls will be handled, which could result in a
+   * persistent connection being established.
+   */
+  reducedMediaHeadsets = 'reduced-media-headsets',
+  /**
+   * Handle some media (see below); headset controls are not used
+   *
+   * - New eager persistent connections will be ignored.
+   * - Auto-answer calls will be handled, which could result in a
+   * persistent connection being established.
+   */
+  reducedMediaNoHeadsets = 'reduced-media-no-headsets',
 }

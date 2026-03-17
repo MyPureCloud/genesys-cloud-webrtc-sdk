@@ -30,7 +30,8 @@ import {
   IPersonDetails,
   ISessionIdAndConversationId,
   VideoSessionHandler,
-  MediaHandling
+  MediaHandling,
+  IActiveConversationDescription
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
@@ -1161,32 +1162,49 @@ describe('Client', () => {
   });
 
   describe('setMediaHandling()', () => {
-    it('should stop using headsets and disconnect any active sessions when set to "autoAnswerOnly"', () => {
+    it('should throw if media handling will not use headsets but there is an active conversation', () => {
       sdk = constructSdk();
-      const useHeadsetsSpy = jest.fn();
-      sdk.setUseHeadsets = useHeadsetsSpy;
+      const conversations = [{ conversationId: 'test-conversation-id' }] as IActiveConversationDescription[];
+      sessionManagerMock.getAllActiveConversations.mockReturnValue(conversations);
+
+      expect(() => {
+        sdk.setMediaHandling(MediaHandling.reducedMediaNoHeadsets);
+      }).toThrow();
+    });
+
+    it('should disconnect any sessions not connected to an active conversation when set to a reduced handling of media', () => {
+      sdk = constructSdk();
+      sdk.setUseHeadsets = jest.fn();
+
       const mockSession = new MockSession(SessionTypes.softphone);
-      const sessionId = mockSession.id;
-      const sessions = [mockSession] as unknown as IExtendedMediaSession[];
-      sessionManagerMock.getAllActiveSessions.mockReturnValue(sessions);
+      const conversations = [{ sessionId: mockSession.id }] as IActiveConversationDescription[];
+      sessionManagerMock.getAllActiveConversations.mockReturnValue(conversations);
+      const idleSession = new MockSession(SessionTypes.softphone);
+      const idleSessionId = idleSession.id;
+      const sessions = [mockSession, idleSession] as unknown as IExtendedMediaSession[];
+      sessionManagerMock.getAllSessions.mockReturnValue(sessions);
       const forceTerminateSpy = jest.fn();
       sessionManagerMock.forceTerminateSession = forceTerminateSpy;
 
-      sdk.setMediaHandling(MediaHandling.autoAnswerOnly);
+      sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
 
-      expect(useHeadsetsSpy).toHaveBeenCalledWith(false);
-      expect(forceTerminateSpy).toHaveBeenCalledWith(sessionId);
+      expect(forceTerminateSpy).toHaveBeenCalledTimes(1);
+      expect(forceTerminateSpy).toHaveBeenCalledWith(idleSessionId);
     });
 
     it('should use headsets when handling any media', () => {
       sdk = constructSdk();
+      sessionManagerMock.getAllActiveConversations.mockReturnValue([]);
       const useHeadsetsSpy = jest.fn();
       sdk.setUseHeadsets = useHeadsetsSpy;
 
-      sdk.setMediaHandling(MediaHandling.media);
+      sdk.setMediaHandling(MediaHandling.standardMedia);
       expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
 
       sdk.setMediaHandling(MediaHandling.alertingLeaderMedia);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+
+      sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
       expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
     });
   });
