@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * [STREAM-905](https://inindca.atlassian.net/browse/STREAM-905) - Fix issue where `sessionStarted` was not emitted for calls that re-use persistent connections after a media recovery has occurred. Now initializing `_emittedSessionStarteds` for reinvites but only emitting if not a reinvite.
-
 * [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
+* [STREAM-781](https://inindca.atlassian.net/browse/STREAM-781) - Fix issue where hold caused `Unhandled promise rejection from setConversationHeld` for inactive conversations.
 
 ### Changed
 * [STREAM-1211](https://inindca.atlassian.net/browse/STREAM-1178) - Update `axios` to `v1.13.5`.
