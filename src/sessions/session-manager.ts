@@ -303,9 +303,17 @@ export class SessionManager {
           this.log('info', `updated existingSession was already accepted, "proceeding" again`, { sessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId });
           return handler.proceedWithSession(existingSession);
         }
+
+        // If the existing pending session was never accepted (e.g. screen recording timed out
+        // on media-controller and is being re-initialized), remove the stale pending session
+        // and fall through to handle this propose as a fresh session request.
+        this.log('info', 'existing pending session was not accepted, removing stale session and treating new propose as fresh',
+          { existingSessionId: existingSession.sessionId, newSessionId: sessionInfo.sessionId, conversationId: sessionInfo.conversationId });
+        this.removePendingSession(existingSession);
+      } else {
+        logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
+        return;
       }
-      logPendingSession(this.sdk.logger, 'duplicate session invitation, ignoring', sessionInfo);
-      return;
     }
 
     const pendingSession: IPendingSession = {

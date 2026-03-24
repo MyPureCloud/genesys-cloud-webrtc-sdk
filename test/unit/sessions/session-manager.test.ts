@@ -434,22 +434,21 @@ describe('onPropose', () => {
     expect(sessionManager.pendingSessions.find(s => s.conversationId === sessionInfo.conversationId)).toBeTruthy();
   });
 
-  it('should ignore if pendingSession already exists', async () => {
-    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue({} as any);
+  it('should ignore if pendingSession already exists with same sessionId', async () => {
+    const sessionInfo = createPendingSession();
+    jest.spyOn(sessionManager, 'getPendingSession').mockReturnValue({ ...sessionInfo } as any);
 
     const mockHandler: any = {
       handlePropose: jest.fn()
     };
     jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
 
-    const sessionInfo = createPendingSession();
-
     await sessionManager.onPropose(sessionInfo);
 
     expect(mockHandler.handlePropose).not.toHaveBeenCalled();
   });
 
-  it('should update session info and ignore propose if pending session already exists and sessionIds do not match', async () => {
+  it('should remove stale pending session and treat new propose as fresh when sessionIds do not match and session was not accepted', async () => {
     const mockHandler: any = {
       handlePropose: jest.fn()
     };
@@ -462,11 +461,33 @@ describe('onPropose', () => {
 
     await sessionManager.onPropose(sessionInfo);
 
-    expect(sessionManager.pendingSessions[0].sessionId). toEqual(sessionInfo.sessionId);
-    expect(mockHandler.handlePropose).not.toHaveBeenCalled();
+    // The stale pending session should be removed and replaced with a new one
+    expect(sessionManager.pendingSessions.length).toBe(1);
+    expect(sessionManager.pendingSessions[0].sessionId).toEqual(sessionInfo.sessionId);
+    expect(mockHandler.handlePropose).toHaveBeenCalled();
     expect(mockSdk.logger.info).toHaveBeenCalledWith(
-      expect.stringContaining(`found an existingSession matching propose's conversationId, updating existingSession.sessionId to match`),
+      expect.stringContaining('existing pending session was not accepted, removing stale session and treating new propose as fresh'),
       expect.any(Object));
+    });
+
+    it('should re-proceed when sessionIds do not match and existing session was already accepted', async () => {
+      const mockHandler: any = {
+        handlePropose: jest.fn(),
+        proceedWithSession: jest.fn()
+      };
+      jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockHandler);
+
+      const sessionInfo = createPendingSession();
+      const existingSession = createPendingSession();
+      existingSession.conversationId = sessionInfo.conversationId;
+      existingSession.accepted = true;
+      sessionManager.pendingSessions = [existingSession];
+
+      await sessionManager.onPropose(sessionInfo);
+
+      expect(existingSession.sessionId).toEqual(sessionInfo.sessionId);
+      expect(mockHandler.proceedWithSession).toHaveBeenCalledWith(existingSession);
+      expect(mockHandler.handlePropose).not.toHaveBeenCalled();
     });
 
     it('should ignore if pendingSession already exists and sessionIds DO match', async () => {
