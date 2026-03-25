@@ -1162,6 +1162,18 @@ describe('Client', () => {
   });
 
   describe('setMediaHandling()', () => {
+    it('should just set media handling and headsets if there is no sessionManager yet', () => {
+      const mockSdk = constructSdk();
+      (sdk as any).sessionManager = null;
+      const useHeadsetsSpy = jest.fn();
+      mockSdk.setUseHeadsets = useHeadsetsSpy;
+
+      sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
+
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+    });
+
     it('should throw if media handling will not use headsets but there is an active conversation', () => {
       sdk = constructSdk();
       const conversations = [{ conversationId: 'test-conversation-id' }] as IActiveConversationDescription[];
@@ -1170,6 +1182,7 @@ describe('Client', () => {
       expect(() => {
         sdk.setMediaHandling(MediaHandling.reducedMediaNoHeadsets);
       }).toThrow();
+      expect(sdk._mediaHandling).toBe(MediaHandling.standardMedia);
     });
 
     it('should disconnect any sessions not connected to an active conversation when set to a reduced handling of media', () => {
@@ -1188,6 +1201,7 @@ describe('Client', () => {
 
       sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
 
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
       expect(forceTerminateSpy).toHaveBeenCalledTimes(1);
       expect(forceTerminateSpy).toHaveBeenCalledWith(idleSessionId);
     });
@@ -1199,12 +1213,15 @@ describe('Client', () => {
       sdk.setUseHeadsets = useHeadsetsSpy;
 
       sdk.setMediaHandling(MediaHandling.standardMedia);
+      expect(sdk._mediaHandling).toBe(MediaHandling.standardMedia);
       expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
 
       sdk.setMediaHandling(MediaHandling.alertingLeaderMedia);
+      expect(sdk._mediaHandling).toBe(MediaHandling.alertingLeaderMedia);
       expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
 
       sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
       expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
     });
   });

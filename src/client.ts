@@ -876,10 +876,15 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param mediaHandling how softphone media should be handled
    */
   setMediaHandling (mediaHandling: MediaHandling): void {
-    const activeConversations = this.sessionManager.getAllActiveConversations();
-    console.log('Hjon: mediaHandling:', mediaHandling);
     const useHeadsets = !(mediaHandling === MediaHandling.reducedMediaNoHeadsets);
-    console.log('Hjon: useHeadsets:', useHeadsets);
+
+    if (!this.sessionManager) {
+      this._mediaHandling = mediaHandling;
+      this.setUseHeadsets(useHeadsets);
+      return;
+    }
+
+    const activeConversations = this.sessionManager.getAllActiveConversations();
 
     if (activeConversations.length !== 0 && !useHeadsets) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Cannot downgrade media handling to stop using headsets during an active call');
