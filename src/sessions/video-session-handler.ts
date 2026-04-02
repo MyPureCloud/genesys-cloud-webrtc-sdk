@@ -1,4 +1,4 @@
-import { differenceBy, intersection } from 'lodash';
+import { differenceBy } from 'lodash';
 import { Constants } from 'stanza';
 
 import {
@@ -8,8 +8,6 @@ import {
   IExtendedMediaSession,
   IParticipantUpdate,
   IParticipantsUpdate,
-  IOnScreenParticipantsUpdate,
-  ISpeakersUpdate,
   IConversationParticipant,
   IMediaRequestOptions,
   IStartVideoSessionParams,
@@ -25,35 +23,6 @@ import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendi
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { jwtDecode } from "jwt-decode";
-
-/**
- * speakers is an array of audio track ids sending audio
- */
-export interface IMediaChangeEvent {
-  eventBody: {
-    id: string,
-    participants: IMediaChangeEventParticipant[],
-    speakers: string[]
-  };
-  metadata: {
-    CorrelationId: string
-  };
-}
-
-/**
- * sinks represents outgoing paths for this track. For example, if we have a track that looks like { id: "1", mediaType: "audio", sinks: ["a", "b"] }
- * then we know that the audio of track "1" can be heard on tracks "a" and "b". Another way to say this is whichever participants are receiving
- * tracks "a" or "b" are hearing this participant
- */
-export interface IMediaChangeEventParticipant {
-  communicationId: string;
-  userId: string;
-  tracks: {
-    id: string,
-    mediaType: 'audio' | 'video',
-    sinks?: string[]
-  }[];
-}
 
 export class VideoSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
@@ -163,91 +132,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     session._lastParticipantsUpdate = update;
     session.emit('participantsUpdate', update);
-  }
-
-  updateParticipantsOnScreen (session: VideoMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
-    const incomingVideoTrackIds = session.pc.getReceivers()
-      .filter((receiver) => receiver.track && receiver.track.kind === 'video')
-      .map((receiver) => receiver.track.id);
-
-    /**
-     * Firefox messes the trackIds up from what is actually in the sdp offer.
-     * Need to pull it from the offer to accurately match the track.sinks
-     */
-    const incomingVideoMsidTrackId = this.getTrackIdFromSdp(session.pc.remoteDescription.sdp, 'video');
-
-    if (incomingVideoMsidTrackId) {
-      incomingVideoTrackIds.push(incomingVideoMsidTrackId);
-    }
-
-    const onScreenParticipants: Array<{ userId: string }> = [];
-    mediaUpdateEvent.eventBody.participants.forEach((updateParticipant: IMediaChangeEventParticipant) => {
-      const matchingVideoTracks = updateParticipant.tracks
-        .filter((track) => track.mediaType === 'video')
-        .filter((track) => {
-          const intersectingTracks = intersection(track.sinks, incomingVideoTrackIds);
-          return intersectingTracks.length;
-        });
-
-      if (matchingVideoTracks.length) {
-        onScreenParticipants.push({ userId: updateParticipant.userId });
-      }
-    });
-
-    const lastUpdate: IOnScreenParticipantsUpdate = session._lastOnScreenUpdate || { participants: [] } as any;
-
-    // send out an update if the onScreenParticipants count or items changed
-    if (lastUpdate.participants.length === onScreenParticipants.length) {
-      const changed = differenceBy(lastUpdate.participants, onScreenParticipants, 'userId').length ||
-        differenceBy(lastUpdate.participants, onScreenParticipants, 'userId').length;
-
-      if (!changed) {
-        return;
-      }
-    }
-
-    const update: IOnScreenParticipantsUpdate = {
-      participants: onScreenParticipants
-    };
-
-    session._lastOnScreenUpdate = update;
-    session.emit('activeVideoParticipantsUpdate', update);
-  }
-
-  updateSpeakers (session: IExtendedMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
-    const incomingAudioTrackIds = session.pc.getReceivers()
-      .filter((receiver) => receiver.track && receiver.track.kind === 'audio')
-      .map((receiver) => receiver.track.id);
-
-    /**
-     * Firefox messes the trackIds up from what is actually in the sdp offer.
-     * Need to pull it from the offer to accurately match the track.sinks
-     */
-    const incomingAudioMsidTrackId = this.getTrackIdFromSdp(session.pc.remoteDescription.sdp, 'audio');
-
-    if (incomingAudioMsidTrackId) {
-      incomingAudioTrackIds.push(incomingAudioMsidTrackId);
-    }
-
-    const speakingParticipants: Array<{ userId: string }> = [];
-    mediaUpdateEvent.eventBody.participants.forEach((updateParticipant: IMediaChangeEventParticipant) => {
-      const matchingAudioTracks = updateParticipant.tracks
-        .filter((track) => track.mediaType === 'audio')
-        .filter((track) => {
-          const intersectingTracks = intersection(track.sinks, incomingAudioTrackIds);
-          return intersectingTracks.length;
-        });
-
-      if (matchingAudioTracks.length) {
-        speakingParticipants.push({ userId: updateParticipant.userId });
-      }
-    });
-
-    const update: ISpeakersUpdate = {
-      speakers: speakingParticipants
-    };
-
-    session.emit('speakersUpdate', update);
   }
 
   // triggers a propose from the backend
@@ -414,10 +298,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session._outboundStream = stream;
-    // If using a JWT, we can't subscribe to the media change events.
-    if (!this.sdk._config.jwt) {
-    await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
-    }
 
     await this.addMediaToSession(session, stream);
 
@@ -697,11 +577,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       await this.sdk.updateOutgoingMedia({ audioDeviceId: params.unmuteDeviceId });
     }
-  }
-
-  handleMediaChangeEvent (session: VideoMediaSession, event: IMediaChangeEvent): void {
-    this.updateParticipantsOnScreen(session, event);
-    this.updateSpeakers(session, event);
   }
 
   async startScreenShare (session: VideoMediaSession): Promise<void> {

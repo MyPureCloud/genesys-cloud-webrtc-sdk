@@ -13,7 +13,6 @@ export { ISessionInfo, IPendingSession };
 declare module 'genesys-cloud-streaming-client' {
   export interface SessionEvents {
     participantsUpdate: IParticipantsUpdate;
-    activeVideoParticipantsUpdate: IOnScreenParticipantsUpdate;
     speakersUpdate: ISpeakersUpdate;
     incomingMedia: void;
     pinnedParticipant: { participantId: string | null };
@@ -928,7 +927,6 @@ export interface VideoMediaSession extends IExtendedMediaSession {
   pinParticipantVideo?: (participantId: string) => Promise<void>;
   _resurrectVideoOnScreenShareEnd?: boolean;
   _lastParticipantsUpdate?: IParticipantsUpdate;
-  _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
 }
 
 export interface ScreenRecordingMediaSession extends IExtendedMediaSession {
@@ -1002,15 +1000,6 @@ export interface IParticipantUpdate {
   videoMuted: boolean;
   audioMuted: boolean;
 }
-
-export interface IOnScreenParticipantsUpdate {
-  participants: Array<
-    {
-      userId: string;
-    }
-  >;
-}
-
 export interface ISpeakersUpdate {
   speakers: Array<
     {

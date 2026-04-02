@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...HEAD)
+### Breaking Changes
+* [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
+
 ### Added
 * Added documentation for live screen monitoring functionality
 
