@@ -876,7 +876,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @param mediaHandling how softphone media should be handled
    */
   setMediaHandling (mediaHandling: MediaHandling): void {
-    const useHeadsets = !(mediaHandling === MediaHandling.reducedMediaNoHeadsets);
+    const useHeadsets = !(mediaHandling === MediaHandling.reducedMedia);
 
     if (!this.sessionManager) {
       this._mediaHandling = mediaHandling;
@@ -887,13 +887,15 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     const activeConversations = this.sessionManager.getAllActiveConversations();
 
     if (activeConversations.length !== 0 && !useHeadsets) {
+      this._mediaHandling = MediaHandling.reducedMediaHeadsets;
+      this.setUseHeadsets(true);
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Cannot downgrade media handling to stop using headsets during an active call');
     }
 
     this._mediaHandling = mediaHandling;
     this.setUseHeadsets(useHeadsets);
 
-    const reduceMediaHandling = mediaHandling === MediaHandling.reducedMediaHeadsets || mediaHandling === MediaHandling.reducedMediaNoHeadsets;
+    const reduceMediaHandling = mediaHandling === MediaHandling.reducedMediaHeadsets || mediaHandling === MediaHandling.reducedMedia;
     if (reduceMediaHandling) {
       const conversationSessionIds = activeConversations.map(conversation => conversation.sessionId);
       // Disconnect connections that aren't associated with an active conversation.

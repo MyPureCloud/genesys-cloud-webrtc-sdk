@@ -1174,15 +1174,15 @@ describe('Client', () => {
       expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
     });
 
-    it('should throw if media handling will not use headsets but there is an active conversation', () => {
+    it('should throw and reduce media handling if new media handling will not use headsets but there is an active conversation', () => {
       sdk = constructSdk();
       const conversations = [{ conversationId: 'test-conversation-id' }] as IActiveConversationDescription[];
       sessionManagerMock.getAllActiveConversations.mockReturnValue(conversations);
 
       expect(() => {
-        sdk.setMediaHandling(MediaHandling.reducedMediaNoHeadsets);
+        sdk.setMediaHandling(MediaHandling.reducedMedia);
       }).toThrow();
-      expect(sdk._mediaHandling).toBe(MediaHandling.standardMedia);
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
     });
 
     it('should disconnect any sessions not connected to an active conversation when set to a reduced handling of media', () => {

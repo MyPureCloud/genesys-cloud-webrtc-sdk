@@ -84,7 +84,7 @@ describe('handlePropose()', () => {
     expect(superSpyHandlePropose).not.toHaveBeenCalled();
     expect(superSpyProceed).not.toHaveBeenCalled();
 
-    mockSdk._mediaHandling = MediaHandling.reducedMediaNoHeadsets;
+    mockSdk._mediaHandling = MediaHandling.reducedMedia;
     await handler.handlePropose(pendingSession);
     expect(spy).not.toHaveBeenCalled();
     expect(superSpyHandlePropose).not.toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe('handlePropose()', () => {
     mockSdk._config.disableAutoAnswer = false;
     const pendingSession = createPendingSession(SessionTypes.softphone);
     pendingSession.autoAnswer = true;
-    mockSdk._mediaHandling = MediaHandling.reducedMediaNoHeadsets;
+    mockSdk._mediaHandling = MediaHandling.reducedMedia;
 
     await handler.handlePropose(pendingSession);
 

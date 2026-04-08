@@ -150,7 +150,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
-    const reducedMediaHandling = this.sdk._mediaHandling === MediaHandling.reducedMediaHeadsets || this.sdk._mediaHandling === MediaHandling.reducedMediaNoHeadsets;
+    const reducedMediaHandling = this.sdk._mediaHandling === MediaHandling.reducedMediaHeadsets || this.sdk._mediaHandling === MediaHandling.reducedMedia;
 
     if (reducedMediaHandling) {
       this.log('info', 'received a propose while the SDK is configured for reduced media handling', logInfo);
