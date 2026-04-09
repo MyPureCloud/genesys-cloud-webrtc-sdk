@@ -1521,6 +1521,194 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
     expect(handler.conversations[update.id]).toBeTruthy();
   });
+
+  describe('notifyClientAddress', () => {
+    let requestApiSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
+    });
+
+    afterEach(() => {
+      requestApiSpy.mockRestore();
+    });
+
+    it('should notify client address when call transitions from alerting to connected (inbound)', () => {
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.alerting }
+      });
+
+      callState.direction = 'inbound';
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        { method: 'post' }
+      );
+    });
+
+    it('should notify client address when call transitions from contacting to connected (outbound)', () => {
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.contacting }
+      });
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        { method: 'post' }
+      );
+    });
+
+    it('should notify client address when call transitions from dialing to connected (outbound)', () => {
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.dialing }
+      });
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        { method: 'post' }
+      );
+    });
+
+    it('should notify client address for persistent connection (new conversation on existing session)', () => {
+      const session = new MockSession() as any as IExtendedMediaSession;
+      session.conversationId = 'old-conversation-id';
+      (session as any)._emittedSessionStarteds = {};
+
+      const callState = {
+        id: 'call-id',
+        state: CommunicationStates.connected,
+        muted: false,
+        confined: false,
+        held: false,
+        direction: 'inbound' as const,
+        provider: 'provider'
+      } as ICallStateFromParticipant;
+
+      const newConversationId = 'new-conversation-id';
+      const participant = {
+        id: 'participants-1',
+        purpose: 'agent',
+        userId,
+        calls: [callState],
+        videos: []
+      } as IConversationParticipantFromEvent;
+
+      const update = new ConversationUpdate({
+        id: newConversationId,
+        participants: [participant]
+      });
+
+      // Set up as if we had a previous alerting state for this conversation
+      const previousCallState = { ...callState, state: CommunicationStates.alerting };
+      const previousParticipant = { ...participant, calls: [previousCallState] };
+      const previousUpdate = new ConversationUpdate({
+        id: newConversationId,
+        participants: [previousParticipant]
+      });
+
+      handler.conversations[newConversationId] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/${newConversationId}/calls/${callState.id}/clientaddress`,
+        { method: 'post' }
+      );
+    });
+
+    it('should NOT notify client address when call transitions to dialing (not yet connected)', () => {
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.dialing,
+        previousCallState: { state: CommunicationStates.contacting }
+      });
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('clientaddress'),
+        expect.anything()
+      );
+    });
+
+    it('should NOT notify client address when no session exists (another client handled it)', () => {
+      const { update, participant, callState, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.contacting }
+      });
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
+
+      expect(requestApiSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('clientaddress'),
+        expect.anything()
+      );
+    });
+
+    it('should NOT notify client address when state is already connected (duplicate update)', () => {
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.connected }
+      });
+
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('clientaddress'),
+        expect.anything()
+      );
+    });
+
+    it('should not block call handling if notifyClientAddress fails', async () => {
+      requestApiSpy.mockRejectedValue(new Error('network error'));
+
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.alerting }
+      });
+
+      callState.direction = 'inbound';
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+
+      // should not throw
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      await flushPromises();
+
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        { method: 'post' }
+      );
+      // The error should be logged but not propagated
+      expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+        'failed to notify client address',
+        expect.objectContaining({ conversationId: update.id, communicationId: callState.id }),
+        undefined
+      );
+    });
+  });
 });
 
 describe('diffConversationCallStates()', () => {
