@@ -1061,12 +1061,15 @@ describe('handleSoftphoneConversationUpdate()', () => {
   const userJid = 'martians-like-to-talk-too@mars.com';
   let emitConversationEventSpy: jest.SpyInstance;
   let sdkEmitSpy: jest.SpyInstance;
+  let notifyClientAddressSpy: jest.SpyInstance;
 
   beforeEach(() => {
     mockSdk._personDetails = { id: userId, chat: { jabberId: userJid } } as IPersonDetails;
     emitConversationEventSpy = jest.spyOn(handler, 'emitConversationEvent')
       .mockImplementation();
     sdkEmitSpy = jest.spyOn(mockSdk, 'emit').mockImplementation();
+    notifyClientAddressSpy = jest.spyOn(handler as any, 'notifyClientAddress')
+      .mockImplementation();
   });
 
   describe('headset functionality', () => {
@@ -1526,6 +1529,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     let requestApiSpy: jest.SpyInstance;
 
     beforeEach(() => {
+      notifyClientAddressSpy.mockRestore();
       requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     });
 
