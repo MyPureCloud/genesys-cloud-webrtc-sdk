@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * [STREAM-1056](https://inindca.atlassian.net/browse/STREAM-1056) Added documentation for live screen monitoring functionality
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
 
 ### Fixed
 * [STREAM-905](https://inindca.atlassian.net/browse/STREAM-905) - Fix issue where `sessionStarted` was not emitted for calls that re-use persistent connections after a media recovery has occurred. Now initializing `_emittedSessionStarteds` for reinvites but only emitting if not a reinvite.
