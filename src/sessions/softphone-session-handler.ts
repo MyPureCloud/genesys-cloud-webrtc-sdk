@@ -29,6 +29,7 @@ import { SessionManager } from './session-manager';
 import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
 import { HeadsetProxyService } from '../headsets/headset';
 import { removeAddressFieldFromConversationUpdate } from '../utils';
+import { StatsAggregator } from '../stats-aggregator';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -584,6 +585,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
 
+    console.warn('Hjon: softphoneSessionHander:handleSessionInit: ', session);
+    if (this.sdk._config.reportStatistics) {
+      session.statsAggregator = new StatsAggregator(session, this.sdk);
+    }
+
     const acceptParams: IAcceptSessionRequest = { conversationId: session.conversationId };
 
     // if this is a reinvite, we want to silently replace the old session and mark the old session as replaced
@@ -597,6 +603,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
       if (oldSession) {
         oldSession.sessionReplacedByReinvite = true;
+        session.reconnectCount = (oldSession.reconnectCount ?? 0) + 1
         const oldSessionInfo = { conversationId: oldSession.conversationId, sessionId: oldSession.id, sessionType: this.sessionType };
         this.log('info', 'force terminating session that was replaced by reinvite', oldSessionInfo);
 
