@@ -11,6 +11,99 @@ describe('StatsAggregator', () => {
       expect(statsAggregator).toBeTruthy();
     });
   });
+  describe('shouldGatherImmediately / eager persistent connection', () => {
+    it('should not start gathering stats immediately for eager persistent connections (privAnswerMode === Auto)', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      (mockSession as any).privAnswerMode = 'Auto';
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      // statsGatherer should NOT be created yet for eager persistent connections
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+    });
+
+    it('should start gathering stats immediately for non-eager sessions', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      (mockSession as any).privAnswerMode = 'Manual';
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+    });
+  });
+
+  describe('onSessionStarted', () => {
+    it('should start gathering stats and set baseline when the matching session starts', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      (mockSession as any).privAnswerMode = 'Auto';
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+
+      // Emit sessionStarted with the same session
+      (sdk as any).emit('sessionStarted', mockSession);
+
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+      expect(statsAggregator['setBaseline']).toBe(true);
+    });
+
+    it('should not start gathering stats for a different session', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      (mockSession as any).privAnswerMode = 'Auto';
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      const otherSession = new MockSession() as unknown as IExtendedMediaSession;
+      (sdk as any).emit('sessionStarted', otherSession);
+
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+    });
+  });
+
+  describe('onSessionEnded', () => {
+    it('should stop gathering stats when the matching session ends', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+
+      (sdk as any).emit('sessionEnded', mockSession);
+
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+    });
+
+    it('should not stop gathering stats for a different session', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      const otherSession = new MockSession() as unknown as IExtendedMediaSession;
+      (sdk as any).emit('sessionEnded', otherSession);
+
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+    });
+  });
+
+  describe('session terminated event', () => {
+    it('should stop gathering stats and remove SDK listeners on session terminated', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+
+      const listenerCountBefore = (sdk as any).listenerCount('sessionStarted');
+
+      (mockSession as any).emit('terminated');
+
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+      // SDK listeners for sessionStarted/sessionEnded should be removed
+      expect((sdk as any).listenerCount('sessionStarted')).toBe(listenerCountBefore - 1);
+    });
+  });
+
   describe('handleStatsUpdate', () => {
     it('should only handle a GetStatsEvent', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
@@ -106,6 +199,60 @@ describe('StatsAggregator', () => {
         }),
         expect.anything()
       );
+    });
+
+    it('should not send stats when jitter is undefined', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      statsAggregator['sendStats'] = jest.fn();
+
+      // Trigger baseline
+      statsAggregator['setBaseline'] = true;
+      const baselineEvent = {
+        name: 'getStats',
+        tracks: [{ totalRoundTripTime: 0, roundTripTimeMeasurements: 0 }],
+        remoteTracks: [{ packetsReceived: 0, packetsLost: 0, jitter: 0.001, timestamp: Date.now() }]
+      };
+      statsAggregator['handleStatsUpdate'](baselineEvent);
+
+      // Event with all fields present except jitter
+      const event = {
+        name: 'getStats',
+        tracks: [{ totalRoundTripTime: 0.1, roundTripTimeMeasurements: 1 }],
+        remoteTracks: [{ packetsReceived: 10, packetsLost: 0, timestamp: Date.now() }]
+      };
+
+      statsAggregator['handleStatsUpdate'](event);
+
+      expect(statsAggregator['sendStats']).not.toHaveBeenCalled();
+    });
+
+    it('should handle packetLoss calculation when packetsReceived is 0', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      statsAggregator['sendStats'] = jest.fn();
+
+      // Trigger baseline with same values so packetsReceived delta is 0
+      statsAggregator['setBaseline'] = true;
+      const baselineEvent = {
+        name: 'getStats',
+        tracks: [{ totalRoundTripTime: 0, roundTripTimeMeasurements: 0 }],
+        remoteTracks: [{ packetsReceived: 10, packetsLost: 0, jitter: 0.001, timestamp: Date.now() }]
+      };
+      statsAggregator['handleStatsUpdate'](baselineEvent);
+
+      // Same packetsReceived as baseline → delta is 0
+      const event = {
+        name: 'getStats',
+        tracks: [{ totalRoundTripTime: 0.1, roundTripTimeMeasurements: 1 }],
+        remoteTracks: [{ packetsReceived: 10, packetsLost: 0, jitter: 0.002, timestamp: Date.now() }]
+      };
+
+      statsAggregator['handleStatsUpdate'](event);
+
+      expect(statsAggregator['sendStats']).toHaveBeenCalled();
     });
 
     it('should send stats when we have everything we want', () => {
