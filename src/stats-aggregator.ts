@@ -229,6 +229,6 @@ export class StatsAggregator {
 
     this.sdk.logger.debug('Sending stats over XMPP');
     this.sdk._streamingConnection._webrtcSessions.sendIq(iq)
-      .catch((err: any) => this.sdk.logger.warn('Failed to send stats via XMPP', err));
+      .catch((err: unknown) => this.sdk.logger.warn('Failed to send stats via XMPP', err));
   }
 }

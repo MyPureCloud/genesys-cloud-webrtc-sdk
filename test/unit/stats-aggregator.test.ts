@@ -14,7 +14,7 @@ describe('StatsAggregator', () => {
   describe('shouldGatherImmediately / eager persistent connection', () => {
     it('should not start gathering stats immediately for eager persistent connections (privAnswerMode === Auto)', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      (mockSession as any).privAnswerMode = 'Auto';
+      (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Auto';
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
 
@@ -24,7 +24,7 @@ describe('StatsAggregator', () => {
 
     it('should start gathering stats immediately for non-eager sessions', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      (mockSession as any).privAnswerMode = 'Manual';
+      (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Manual';
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
 
@@ -35,14 +35,14 @@ describe('StatsAggregator', () => {
   describe('onSessionStarted', () => {
     it('should start gathering stats and set baseline when the matching session starts', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      (mockSession as any).privAnswerMode = 'Auto';
+      (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Auto';
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
 
       expect(statsAggregator['statsGatherer']).toBeFalsy();
 
       // Emit sessionStarted with the same session
-      (sdk as any).emit('sessionStarted', mockSession);
+      (sdk as unknown as SimpleMockSdk).emit('sessionStarted', mockSession);
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
       expect(statsAggregator['setBaseline']).toBe(true);
@@ -50,12 +50,12 @@ describe('StatsAggregator', () => {
 
     it('should not start gathering stats for a different session', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      (mockSession as any).privAnswerMode = 'Auto';
+      (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Auto';
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
 
       const otherSession = new MockSession() as unknown as IExtendedMediaSession;
-      (sdk as any).emit('sessionStarted', otherSession);
+      (sdk as unknown as SimpleMockSdk).emit('sessionStarted', otherSession);
 
       expect(statsAggregator['statsGatherer']).toBeFalsy();
     });
@@ -69,7 +69,7 @@ describe('StatsAggregator', () => {
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
 
-      (sdk as any).emit('sessionEnded', mockSession);
+      (sdk as unknown as SimpleMockSdk).emit('sessionEnded', mockSession);
 
       expect(statsAggregator['statsGatherer']).toBeFalsy();
     });
@@ -80,7 +80,7 @@ describe('StatsAggregator', () => {
       const statsAggregator = new StatsAggregator(mockSession, sdk);
 
       const otherSession = new MockSession() as unknown as IExtendedMediaSession;
-      (sdk as any).emit('sessionEnded', otherSession);
+      (sdk as unknown as SimpleMockSdk).emit('sessionEnded', otherSession);
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
     });
@@ -94,13 +94,13 @@ describe('StatsAggregator', () => {
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
 
-      const listenerCountBefore = (sdk as any).listenerCount('sessionStarted');
+      const listenerCountBefore = (sdk as unknown as SimpleMockSdk).listenerCount('sessionStarted');
 
-      (mockSession as any).emit('terminated');
+      (mockSession as unknown as MockSession).emit('terminated');
 
       expect(statsAggregator['statsGatherer']).toBeFalsy();
       // SDK listeners for sessionStarted/sessionEnded should be removed
-      expect((sdk as any).listenerCount('sessionStarted')).toBe(listenerCountBefore - 1);
+      expect((sdk as unknown as SimpleMockSdk).listenerCount('sessionStarted')).toBe(listenerCountBefore - 1);
     });
   });
 
@@ -331,7 +331,7 @@ describe('StatsAggregator', () => {
     it('should call sendIq with correct IQ stanza', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      const sendIqMock = (sdk as any)._streamingConnection._webrtcSessions.sendIq;
+      const sendIqMock = (sdk as unknown as SimpleMockSdk)._streamingConnection._webrtcSessions.sendIq;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
       const rtpStats = {
         packetsReceived: 5,
@@ -341,7 +341,7 @@ describe('StatsAggregator', () => {
       const participant = {
         calls: [{ id: 'testCall' }]
       };
-      mockSession.pcParticipant = participant as any;
+      (mockSession as unknown as MockSession).pcParticipant = participant;
 
       statsAggregator['sendStats'](rtpStats, new Date());
 
@@ -362,7 +362,7 @@ describe('StatsAggregator', () => {
     it('should not call sendIq if there is no participant', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      const sendIqMock = (sdk as any)._streamingConnection._webrtcSessions.sendIq;
+      const sendIqMock = (sdk as unknown as SimpleMockSdk)._streamingConnection._webrtcSessions.sendIq;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
       const rtpStats = {
         packetsReceived: 5,
@@ -378,7 +378,7 @@ describe('StatsAggregator', () => {
     it('should not call sendIq if there are no calls for the participant', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      const sendIqMock = (sdk as any)._streamingConnection._webrtcSessions.sendIq;
+      const sendIqMock = (sdk as unknown as SimpleMockSdk)._streamingConnection._webrtcSessions.sendIq;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
       const rtpStats = {
         packetsReceived: 5,
@@ -387,28 +387,28 @@ describe('StatsAggregator', () => {
       };
 
       const participantA = { calls: [] };
-      mockSession.pcParticipant = participantA as any;
+      (mockSession as unknown as MockSession).pcParticipant = participantA;
       statsAggregator['sendStats'](rtpStats, new Date());
       expect(sendIqMock).not.toHaveBeenCalled();
 
       const participantB = {};
-      mockSession.pcParticipant = participantB as any;
+      (mockSession as unknown as MockSession).pcParticipant = participantB;
       statsAggregator['sendStats'](rtpStats, new Date());
       expect(sendIqMock).not.toHaveBeenCalled();
     });
 
     it('should not call sendIq if session.peerID is falsy', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      (mockSession as any).peerID = '';
+      (mockSession as unknown as MockSession).peerID = '';
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      const sendIqMock = (sdk as any)._streamingConnection._webrtcSessions.sendIq;
+      const sendIqMock = (sdk as unknown as SimpleMockSdk)._streamingConnection._webrtcSessions.sendIq;
       const statsAggregator = new StatsAggregator(mockSession, sdk);
       const rtpStats = {
         packetsReceived: 5,
         averageJitter: 0.1,
         estimatedAverageMos: 5
       };
-      mockSession.pcParticipant = { calls: [{ id: 'testCall' }] } as any;
+      (mockSession as unknown as MockSession).pcParticipant = { calls: [{ id: 'testCall' }] };
 
       statsAggregator['sendStats'](rtpStats, new Date());
 
@@ -418,14 +418,14 @@ describe('StatsAggregator', () => {
     it('should not throw when streaming connection webrtcSessions is unavailable', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      (sdk as any)._streamingConnection._webrtcSessions = null;
+      (sdk as unknown as SimpleMockSdk)._streamingConnection._webrtcSessions = null as unknown as SimpleMockSdk['_streamingConnection']['_webrtcSessions'];
       const statsAggregator = new StatsAggregator(mockSession, sdk);
       const rtpStats = {
         packetsReceived: 5,
         averageJitter: 0.1,
         estimatedAverageMos: 5
       };
-      mockSession.pcParticipant = { calls: [{ id: 'testCall' }] } as any;
+      (mockSession as unknown as MockSession).pcParticipant = { calls: [{ id: 'testCall' }] };
 
       expect(() => {
         statsAggregator['sendStats'](rtpStats, new Date());
@@ -435,14 +435,14 @@ describe('StatsAggregator', () => {
     it('should catch sendIq rejection and log a warning', async () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      (sdk as any)._streamingConnection._webrtcSessions.sendIq = jest.fn().mockRejectedValue(new Error('XMPP error'));
+      (sdk as unknown as SimpleMockSdk)._streamingConnection._webrtcSessions.sendIq = jest.fn().mockRejectedValue(new Error('XMPP error'));
       const statsAggregator = new StatsAggregator(mockSession, sdk);
       const rtpStats = {
         packetsReceived: 5,
         averageJitter: 0.1,
         estimatedAverageMos: 5
       };
-      mockSession.pcParticipant = { calls: [{ id: 'testCall' }] } as any;
+      (mockSession as unknown as MockSession).pcParticipant = { calls: [{ id: 'testCall' }] };
 
       statsAggregator['sendStats'](rtpStats, new Date());
 
