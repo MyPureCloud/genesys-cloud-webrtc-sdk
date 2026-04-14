@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
 
 ### Added
-* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server per conversation. Aggregates stats, calculates a MOS score and pushes at regular intervals.
 * Added documentation for live screen monitoring functionality
 
 ### Fixed

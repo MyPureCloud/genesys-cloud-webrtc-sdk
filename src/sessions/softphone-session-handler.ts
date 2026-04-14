@@ -585,7 +585,6 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
 
-    console.warn('Hjon: softphoneSessionHander:handleSessionInit: ', session);
     if (this.sdk._config.reportStatistics) {
       session.statsAggregator = new StatsAggregator(session, this.sdk);
     }

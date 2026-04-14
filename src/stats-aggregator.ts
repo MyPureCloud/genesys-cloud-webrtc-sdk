@@ -82,7 +82,6 @@ export class StatsAggregator {
   }
 
   private handleStatsUpdate(stats: StatsEvent) {
-    this.sdk.logger.warn('Begin handleStatsUpdate');
     if (!this.isGetStatsEvent(stats)) {
       return;
     }
@@ -156,7 +155,6 @@ export class StatsAggregator {
     const maxMosRFactor = 93.2;
     let rFactor: number;
 
-    console.log('Hjon: MOS params: ', { averageLatency, averageJitter, packetLoss });
     const effectiveLatency = (averageLatency * 1000) + (averageJitter * 1000 * 2) + 10;
     if (effectiveLatency < 160) {
       rFactor = maxMosRFactor - (effectiveLatency / 40);
