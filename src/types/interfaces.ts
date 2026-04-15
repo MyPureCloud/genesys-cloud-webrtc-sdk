@@ -7,6 +7,7 @@ import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
 import { SdkError } from '../utils';
 import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { StatsAggregator } from '../stats-aggregator';
 
 export { ISessionInfo, IPendingSession };
 // extend the emittable events
@@ -263,6 +264,13 @@ export interface ISdkFullConfig {
    * Optional: default `false`
    */
   useServerSidePings?: boolean;
+
+  /**
+   * Controls whether to report statistics, such as estimated MOS (Mean Opinion Score).
+   *
+   * Optional: default `false`
+   */
+  reportStatistics?: boolean;
 
   /** defaults for various SDK functionality */
   defaults?: {
@@ -903,6 +911,8 @@ export interface IExtendedMediaSession extends IMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   pcParticipant?: IConversationParticipant;
+  statsAggregator?: StatsAggregator;
+  reconnectCount?: number;
   _alreadyAccepted?: boolean;
   _emittedSessionStarteds?: { [conversationId: string]: true };
   _screenShareStream?: MediaStream;

@@ -22,6 +22,10 @@ test/test-pages/*/index.html
 /.idea
 genesys-cloud-webrtc-sdk.iml
 
+# Kiro - ignore everything except steering files
+.kiro/*
+!.kiro/steering/
+
 # tap specific files
 /.nyc_output
 /coverage
