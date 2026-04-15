@@ -4,14 +4,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.1.0...HEAD)
+### Breaking Changes
+* [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
+
+### Added
+* Added documentation for live screen monitoring functionality
+
+### Fixed
+* [STREAM-905](https://inindca.atlassian.net/browse/STREAM-905) - Fix issue where `sessionStarted` was not emitted for calls that re-use persistent connections after a media recovery has occurred. Now initializing `_emittedSessionStarteds` for reinvites but only emitting if not a reinvite.
 
 # [v12.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...v12.1.0)
 ### Added
 * [STREAM-1153](https://inindca.atlassian.net/browse/STREAM-1153) - Add support for monitoring multiple screens during live monitoring sessions
 * [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
+* [STREAM-781](https://inindca.atlassian.net/browse/STREAM-781) - Fix issue where hold caused `Unhandled promise rejection from setConversationHeld` for inactive conversations.
 
 ### Changed
-* [STREAM-1211](https://inindca.atlassian.net/browse/STREAM-1178) - Update `axios` to `v1.13.5`.
+* [STREAM-1211](https://inindca.atlassian.net/browse/STREAM-1211) - Update `axios` to `v1.13.5`.
+* [STREAM-1285](https://inindca.atlassian.net/browse/STREAM-1285) - Refactor `handlePropose` in SoftphoneSessionHandler for clarity and future changes. Update associated comments to better reflect implementation.
+* [STREAM-1403](https://inindca.atlassian.net/browse/STREAM-1403) - Update `lodash` to `v4.18.1` to address Snyk vulnerability.
+* [STREAM-1423](https://inindca.atlassian.net/browse/STREAM-1423) - Update `axios` to `v1.15.0`.
 
 # [v12.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...v12.0.0)
 ### Added
