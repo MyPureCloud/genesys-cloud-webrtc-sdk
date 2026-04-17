@@ -621,7 +621,7 @@ describe('acceptSession()', () => {
   });
 
   it('should hold other sessions if LA>1', () => {
-    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockResolvedValue(undefined);
     const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
     const mockAudioElement = {} as HTMLAudioElement;
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
@@ -650,7 +650,7 @@ describe('acceptSession()', () => {
   });
 
   it('should NOT hold other sessions if LA>1 and we are establishing an eager persistent connection', () => {
-    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockImplementation();
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockResolvedValue(undefined);
     const getActiveSessionsSpy = jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessionsArray);
     const mockAudioElement = {} as HTMLAudioElement;
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
@@ -2448,6 +2448,105 @@ describe('setConversationHeld()', () => {
     await handler.setConversationHeld(session, params);
 
     expect(holdOtherSessionsSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('holdOtherSessions()', () => {
+  let currentSession: IExtendedMediaSession;
+  let otherSession: IExtendedMediaSession;
+
+  beforeEach(() => {
+    currentSession = new MockSession(SessionTypes.softphone) as any;
+    otherSession = new MockSession(SessionTypes.softphone) as any;
+    otherSession.sessionType = SessionTypes.softphone;
+  });
+
+  it('should call setConversationHeld for other active softphone sessions', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([currentSession, otherSession]);
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockResolvedValue(undefined);
+
+    handler.conversations = {
+      [currentSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+      [otherSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+    };
+
+    handler.holdOtherSessions(currentSession);
+
+    expect(setHoldSpy).toHaveBeenCalledWith(otherSession, { conversationId: otherSession.conversationId, held: true });
+    expect(setHoldSpy).not.toHaveBeenCalledWith(currentSession, expect.anything());
+  });
+
+  it('should not attempt to hold sessions with ended conversation states', () => {
+    const endedSession = new MockSession(SessionTypes.softphone) as any;
+    endedSession.sessionType = SessionTypes.softphone;
+
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([currentSession, otherSession, endedSession]);
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockResolvedValue(undefined);
+
+    handler.conversations = {
+      [currentSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+      [otherSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+      [endedSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.disconnected, held: false } } as any,
+    };
+
+    handler.holdOtherSessions(currentSession);
+
+    expect(setHoldSpy).toHaveBeenCalledWith(otherSession, { conversationId: otherSession.conversationId, held: true });
+    expect(setHoldSpy).not.toHaveBeenCalledWith(endedSession, expect.anything());
+  });
+
+  it('should not attempt to hold sessions with terminated conversation states', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([currentSession, otherSession]);
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockResolvedValue(undefined);
+
+    handler.conversations = {
+      [currentSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+      [otherSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.terminated, held: false } } as any,
+    };
+
+    handler.holdOtherSessions(currentSession);
+
+    expect(setHoldSpy).not.toHaveBeenCalled();
+  });
+
+  it('should log a warning and not throw if setConversationHeld rejects', async () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([currentSession, otherSession]);
+    const error = new Error('Bad Request');
+    jest.spyOn(handler, 'setConversationHeld').mockRejectedValue(error);
+
+    handler.conversations = {
+      [currentSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+      [otherSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+    };
+
+    // should not throw
+    handler.holdOtherSessions(currentSession);
+
+    // flush the microtask queue so the .catch() handler runs
+    await flushPromises();
+
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to hold other session during holdOtherSessions'),
+      expect.objectContaining({
+        sessionId: otherSession.id,
+        conversationId: otherSession.conversationId,
+      }),
+      undefined
+    );
+  });
+
+  it('should not attempt to hold sessions that are already held', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([currentSession, otherSession]);
+    const setHoldSpy = jest.spyOn(handler, 'setConversationHeld').mockResolvedValue(undefined);
+
+    handler.conversations = {
+      [currentSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any,
+      [otherSession.conversationId]: { mostRecentCallState: { state: CommunicationStates.connected, held: true } } as any,
+    };
+
+    handler.holdOtherSessions(currentSession);
+
+    expect(setHoldSpy).not.toHaveBeenCalled();
   });
 });
 
