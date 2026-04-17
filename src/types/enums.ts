@@ -60,7 +60,7 @@ export enum MediaHandling {
    */
   reducedMedia = 'reduced-media',
   /**
-   * Internal use only. Handle some media (see below); headset controls use traditional orchestration.
+   * SDK internal use only. Handle some media (see below); headset controls use traditional orchestration.
    *
    * - New eager persistent connections will be ignored.
    * - Auto-answer calls will be handled, which could result in a

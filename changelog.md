@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Added documentation for live screen monitoring functionality
+* [STREAM-1180](https://inindca.atlassian.net/browse/STREAM-1180) - Allow for different media handling strategies. This supports alerting leader functionality, where one instance of the SDK needs to handle media, but other instances should not automatically handle media.
 
 ### Fixed
 * [STREAM-905](https://inindca.atlassian.net/browse/STREAM-905) - Fix issue where `sessionStarted` was not emitted for calls that re-use persistent connections after a media recovery has occurred. Now initializing `_emittedSessionStarteds` for reinvites but only emitting if not a reinvite.
