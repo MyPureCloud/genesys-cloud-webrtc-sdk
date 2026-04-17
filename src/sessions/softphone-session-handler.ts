@@ -19,7 +19,7 @@ import {
   PersistentConnectionEvent,
   HawkNotification
 } from '../types/interfaces';
-import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
+import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates, MediaHandling } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError, isPeerConnectionDisconnected } from '../utils';
 import { HeadsetChangesQueue } from '../headsets/headset-utils';
@@ -150,30 +150,50 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
+    const reducedMediaHandling = this.sdk._mediaHandling === MediaHandling.reducedMediaHeadsets || this.sdk._mediaHandling === MediaHandling.reducedMedia;
 
-    if (isPrivAnswerAuto) {
-      this.log('info', 'received a propose with privAnswerMode=Auto', logInfo);
+    if (reducedMediaHandling) {
+      this.log('info', 'received a propose while the SDK is configured for reduced media handling', logInfo);
 
-      if (eagerConnectionEstablishmentMode === 'none') {
-        this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=Auto will be ignored', logInfo);
-        return;
-      } else if (eagerConnectionEstablishmentMode === 'auto') {
-        // we don't need to emit a pendingSession event when we auto-answer eager persistent connections
-        return await this.proceedWithSession(pendingSession);
-      } else {
-        await super.handlePropose(pendingSession);
-      }
-    } else {
-      // we want to emit the pendingSession event in all other cases
-      await super.handlePropose(pendingSession);
-
-      // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
       if (pendingSession.autoAnswer) {
+        // emit the pendingSession event
+        await super.handlePropose(pendingSession);
+
         if (this.sdk._config.disableAutoAnswer) {
           // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
           this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
         } else {
           await this.proceedWithSession(pendingSession);
+        }
+      } else {
+        this.log('info', 'media handling is reduced, but this propose is not marked as autoAnswer and will be ignored', logInfo);
+        return;
+      }
+    } else {
+      if (isPrivAnswerAuto) {
+        this.log('info', 'received a propose with privAnswerMode=Auto', logInfo);
+
+        if (eagerConnectionEstablishmentMode === 'none') {
+          this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=Auto will be ignored', logInfo);
+          return;
+        } else if (eagerConnectionEstablishmentMode === 'auto') {
+          // we don't need to emit a pendingSession event when we auto-answer eager persistent connections
+          return await this.proceedWithSession(pendingSession);
+        } else {
+          await super.handlePropose(pendingSession);
+        }
+      } else {
+        // we want to emit the pendingSession event in all other cases
+        await super.handlePropose(pendingSession);
+
+        // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
+        if (pendingSession.autoAnswer) {
+          if (this.sdk._config.disableAutoAnswer) {
+            // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
+            this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+          } else {
+            await this.proceedWithSession(pendingSession);
+          }
         }
       }
     }

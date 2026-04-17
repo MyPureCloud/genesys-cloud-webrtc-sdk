@@ -9,6 +9,7 @@ import { SdkHeadsetService } from './sdk-headset-service';
 import { HeadsetRequestType } from '../types/interfaces';
 import { ExpandedConsumedHeadsetEvents, ISdkHeadsetService, OrchestrationState } from './headset-types';
 import { HeadsetChangesQueue } from './headset-utils';
+import { MediaHandling } from '../types/enums';
 
 const REQUEST_PRIORITY: {[key in HeadsetControlsRequestType]: number} = {
   'mediaHelper': 30,
@@ -48,10 +49,15 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     // TODO: PCM-2060 - remove this
     this.useHeadsetOrchestration = !this.sdk._config.disableHeadsetControlsOrchestration;
 
+    if (this.sdk._mediaHandling === MediaHandling.reducedMedia) {
+      this.sdk.logger.warn('setUseHeadsets was called with `true` but media handling is set to `reducedMedia`; headsets are not supported in this configuration - not handling media. Not activating headsets.');
+      useHeadsets = false;
+    }
+
     // currently only softphone is supported
     const headsetsIsSupported = this.sdk._config.allowedSessionTypes.includes(SessionTypes.softphone);
     if (useHeadsets && !headsetsIsSupported) {
-      this.sdk.logger.warn('setUseHeadsets was called with `true` but headsets are not supported in this configuration. Not activating headsets.');
+      this.sdk.logger.warn('setUseHeadsets was called with `true` but headsets are not supported in this configuration - headset is not supported. Not activating headsets.');
       useHeadsets = false;
     }
 
@@ -141,14 +147,21 @@ export class HeadsetProxyService implements ISdkHeadsetService {
 
     this.sdk.logger.info('Starting headsetCallControls orchestration');
 
+    let requestType: HeadsetControlsRequestType;
+    if (this.sdk._mediaHandling === MediaHandling.alertingLeaderMedia) {
+      requestType = 'prioritized';
+    } else {
+      requestType = this.sdk._config.headsetRequestType || 'standard';
+    }
+
     const headsetControlsRequest: HeadsetControlsRequest = {
       jsonrpc: '2.0',
       method: 'headsetControlsRequest',
       params: {
-        requestType: this.sdk._config.headsetRequestType || 'standard'
+        requestType
       }
     };
-    
+
     this.sdk._streamingConnection.messenger.broadcastMessage({
       mediaMessage: headsetControlsRequest
     });
@@ -163,7 +176,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     if (state === this.orchestrationState && !forceUpdate) {
       return;
     }
-    
+
     this.sdk.logger.debug('Headset Orchestration state change', { oldState: this.orchestrationState, newState: state });
 
     if (state === 'alternativeClient') {
@@ -188,7 +201,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     if (msg.fromMyClient) {
       return;
     }
-    
+
     switch(msg.mediaMessage.method) {
       case 'headsetControlsRequest':
         this.handleHeadsetControlsRequest(msg);
@@ -216,6 +229,21 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   private handleHeadsetControlsRequest (msg: MediaMessageEvent) {
     const mediaMessage = msg.mediaMessage as HeadsetControlsRequest;
     this.sdk.logger.debug('Received headsetControlsRequest message', { requestType: mediaMessage.params.requestType });
+
+    if (this.sdk._mediaHandling === MediaHandling.alertingLeaderMedia) {
+      // we still yield to media-helper
+      if (this.getRequestPriority(mediaMessage.params.requestType) === this.getRequestPriority('mediaHelper')) {
+        this.sdk.logger.info('Handling alerting leader media, but yielding headset controls to media-helper', { requestType: mediaMessage.params.requestType });
+        this.setOrchestrationState('alternativeClient');
+      } else if (this.getRequestPriority(mediaMessage.params.requestType) === this.getRequestPriority('prioritized')) {
+        this.sdk.logger.info('Currently handling alerting leader media, but yielding headset controls to new alerting leader', { requestType: mediaMessage.params.requestType });
+        this.setOrchestrationState('alternativeClient');
+      } else {
+        this.sendControlsRejectionMessage(msg, 'priority');
+      }
+
+      return;
+    }
 
     // if incoming request is lower priority, reject
     if (this.getRequestPriority(mediaMessage.params.requestType) < this.getRequestPriority(this.sdk._config.headsetRequestType)) {
@@ -311,7 +339,7 @@ export class HeadsetProxyService implements ISdkHeadsetService {
   endAllCalls (): Promise<void> {
     return this.currentHeadsetService.endAllCalls();
   }
-  
+
   answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void> {
     return this.currentHeadsetService.answerIncomingCall(conversationId, autoAnswer);
   }
