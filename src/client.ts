@@ -37,13 +37,14 @@ import {
 } from './client-private';
 import { requestApi, createAndEmitSdkError, defaultConfigOption, requestApiWithRetry } from './utils';
 import { setupLogging } from './logging';
-import { SdkErrorTypes, SessionTypes } from './types/enums';
+import { MediaHandling, SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
 import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
 import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
 import { ISdkHeadsetService } from './headsets/headset-types';
+import { SoftphoneSessionHandler } from '.';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -111,6 +112,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _customerData: ICustomerData;
   _hasConnected: boolean;
   _config: ISdkFullConfig;
+  _mediaHandling = MediaHandling.standardMedia;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -860,6 +862,51 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   setDefaultAudioStream (stream?: MediaStream): void {
     this.media.setDefaultAudioStream(stream);
+  }
+
+  /**
+   * **Genesys internal use only** - non-Genesys apps may experience unexpected behavior.
+   *
+   * Change the media handling for softphone sessions, which should be
+   * be chosen based on the alerting leader status of the consuming client.
+   *
+   * If media handling is reduced, idle persistent connections will be
+   * disconnected.
+   *
+   * @param mediaHandling how softphone media should be handled
+   */
+  setMediaHandling (mediaHandling: MediaHandling): void {
+    const useHeadsets = !(mediaHandling === MediaHandling.reducedMedia);
+
+    if (!this.sessionManager) {
+      this._mediaHandling = mediaHandling;
+      this.setUseHeadsets(useHeadsets);
+      return;
+    }
+
+    const activeConversations = this.sessionManager.getAllActiveConversations();
+
+    if (activeConversations.length !== 0 && !useHeadsets) {
+      this._mediaHandling = MediaHandling.reducedMediaHeadsets;
+      this.setUseHeadsets(true);
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Cannot downgrade media handling to stop using headsets during an active call');
+    }
+
+    this._mediaHandling = mediaHandling;
+    this.setUseHeadsets(useHeadsets);
+
+    const reduceMediaHandling = mediaHandling === MediaHandling.reducedMediaHeadsets || mediaHandling === MediaHandling.reducedMedia;
+    if (reduceMediaHandling) {
+      const conversationSessionIds = activeConversations.map(conversation => conversation.sessionId);
+      // Disconnect connections that aren't associated with an active conversation.
+      // When a client is no longer the alerting leader, it needs to give up any
+      // persistent connections. Active calls should be maintained.
+      this.sessionManager.getAllSessions().forEach(session => {
+        if (session.sessionType === SessionTypes.softphone && !conversationSessionIds.includes(session.id)) {
+          this.sessionManager.forceTerminateSession(session.id);
+        }
+      });
+    }
   }
 
   /**
