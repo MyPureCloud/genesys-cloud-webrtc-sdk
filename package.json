@@ -116,5 +116,8 @@
     "webpack": "^5.105.0",
     "webpack-cli": "^5.1.4",
     "ws": "^8.17.1"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.9.5"
   }
 }
