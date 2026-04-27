@@ -3,16 +3,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.0.0...HEAD)
+### Added
+* [STREAM-1180](https://inindca.atlassian.net/browse/STREAM-1180) - Allow for different media handling strategies. This supports alerting leader functionality, where one instance of the SDK needs to handle media, but other instances should not automatically handle media.
+
+# [v13.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.1.0...HEAD)
 ### Breaking Changes
 * [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
 
 ### Added
-* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server per conversation. Aggregates stats, calculates a MOS score and pushes at regular intervals.
-* Added documentation for live screen monitoring functionality
+* [STREAM-1056](https://inindca.atlassian.net/browse/STREAM-1056) Added documentation for live screen monitoring functionality
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
 
 ### Fixed
 * [STREAM-905](https://inindca.atlassian.net/browse/STREAM-905) - Fix issue where `sessionStarted` was not emitted for calls that re-use persistent connections after a media recovery has occurred. Now initializing `_emittedSessionStarteds` for reinvites but only emitting if not a reinvite.
+
+# [v12.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...v12.1.0)
+### Added
+* [STREAM-1153](https://inindca.atlassian.net/browse/STREAM-1153) - Add support for monitoring multiple screens during live monitoring sessions
 * [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
 * [STREAM-781](https://inindca.atlassian.net/browse/STREAM-781) - Fix issue where hold caused `Unhandled promise rejection from setConversationHeld` for inactive conversations.
 
@@ -29,9 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Breaking Changes
 * [STREAM-1178](https://inindca.atlassian.net/browse/STREAM-1178) - REVERT STREAM-825, removed ability to send multiple tracks when screensharing.
 * [STREAM-1130](https://inindca.atlassian.net/browse/STREAM-1130) - Updated TypeScript to v5.9.3 and Webpack to v5.105.0, removed legacy Spigot testing, added `.nvmrc`, demo app dependency updates, updated Node versions in testing matrices.
-
-### Added
-* [STREAM-1153](https://inindca.atlassian.net/browse/STREAM-1153) - Add support for monitoring multiple screens during live monitoring sessions
 
 # [v11.5.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.0...v11.5.1)
 ### Added
