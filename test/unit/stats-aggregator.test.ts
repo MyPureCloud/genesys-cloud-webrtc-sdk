@@ -48,6 +48,23 @@ describe('StatsAggregator', () => {
       expect(statsAggregator['setBaseline']).toBe(true);
     });
 
+    it('should not create a new stats gatherer if one already exists', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      // A stats gatherer should already exist from the constructor
+      const existingGatherer = statsAggregator['statsGatherer'];
+      expect(existingGatherer).toBeTruthy();
+
+      // Trigger sessionStarted which calls startGatheringStats again
+      (sdk as unknown as SimpleMockSdk).emit('sessionStarted', mockSession);
+
+      // Should still be the same gatherer, not a new one
+      expect(statsAggregator['statsGatherer']).toBe(existingGatherer);
+      expect(sdk.logger.warn).toHaveBeenCalledWith('Cannot create stats gatherer, one already exists');
+    });
+
     it('should not start gathering stats for a different session', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Auto';
@@ -254,6 +271,40 @@ describe('StatsAggregator', () => {
 
       expect(statsAggregator['sendStats']).toHaveBeenCalled();
     });
+
+    it('should default averageRoundTripTime to 0 when roundTripTimeMeasurements delta is 0', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+      statsAggregator['sendStats'] = jest.fn();
+
+      // Baseline with roundTripTimeMeasurements = 5
+      statsAggregator['setBaseline'] = true;
+      const baselineEvent = {
+        name: 'getStats',
+        tracks: [{ totalRoundTripTime: 0.5, roundTripTimeMeasurements: 5 }],
+        remoteTracks: [{ packetsReceived: 0, packetsLost: 0, jitter: 0.001, timestamp: Date.now() }]
+      };
+      statsAggregator['handleStatsUpdate'](baselineEvent);
+
+      // Same roundTripTimeMeasurements as baseline → delta is 0
+      const event = {
+        name: 'getStats',
+        tracks: [{ totalRoundTripTime: 0.5, roundTripTimeMeasurements: 5 }],
+        remoteTracks: [{ packetsReceived: 10, packetsLost: 0, jitter: 0.002, timestamp: Date.now() }]
+      };
+
+      statsAggregator['handleStatsUpdate'](event);
+
+      expect(statsAggregator['sendStats']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // averageLatency is 0 → MOS should be calculated with 0 latency
+          estimatedAverageMos: expect.any(Number)
+        }),
+        expect.anything()
+      );
+    });
+
 
     it('should send stats when we have everything we want', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;

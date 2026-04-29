@@ -51,6 +51,11 @@ export class StatsAggregator {
   }
 
   private startGatheringStats() {
+    if (this.statsGatherer) {
+      this.sdk.logger.warn('Cannot create stats gatherer, one already exists');
+      return;
+    }
+
     this.statsGatherer = new StatsGatherer(this.session.peerConnection)
     this.boundStatsHandler = this.handleStatsUpdate.bind(this);
 
@@ -60,12 +65,12 @@ export class StatsAggregator {
   private stopGatheringStats() {
     if (this.statsGatherer) {
       this.statsGatherer.off('stats', this.boundStatsHandler);
-      this.statsGatherer = null;
+      this.statsGatherer = undefined;
     }
   }
 
   private onSessionStarted(session: IExtendedMediaSession) {
-    if (session == this.session) {
+    if (session === this.session) {
       this.setBaseline = true;
       this.startGatheringStats();
     }
@@ -122,7 +127,7 @@ export class StatsAggregator {
 
     const roundTripTimeSum = totalRtt - this.baselineRtt;
     const roundTripTimeMeasurements = totalRttMeasurements - this.baselineRttMeasurements;
-    const averageRoundTripTime = roundTripTimeSum / roundTripTimeMeasurements;
+    const averageRoundTripTime = roundTripTimeMeasurements > 0 ? roundTripTimeSum / roundTripTimeMeasurements : 0;
     const averageLatency = averageRoundTripTime / 2; // Approximate the one-way latency
     this.totalJitter += jitterInSeconds;
     this.jitterMeasurements += 1;

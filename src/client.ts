@@ -44,7 +44,6 @@ import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
 import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
 import { ISdkHeadsetService } from './headsets/headset-types';
-import { SoftphoneSessionHandler } from '.';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
