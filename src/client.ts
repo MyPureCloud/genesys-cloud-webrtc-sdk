@@ -44,7 +44,6 @@ import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
 import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
 import { ISdkHeadsetService } from './headsets/headset-types';
-import { SoftphoneSessionHandler } from '.';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -167,6 +166,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useHeadsets: options.useHeadsets || false, // default false
         customHeaders: options.customHeaders,
         useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
+        reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
         /* sdk defaults */
         defaults: {
@@ -227,7 +227,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  and other necessary async tasks are complete.
    */
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
-    const httpRequests: Promise<any>[] = [];
+    const httpRequests: Promise<unknown>[] = [];
     if (this.isGuest) {
       let guestPromise: Promise<void>;
 
@@ -496,7 +496,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the default
    *  device values have been updated
    */
-  async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
+  async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<void> {
     const updateVideo = options.videoDeviceId !== undefined;
     const updateAudio = options.audioDeviceId !== undefined;
     const updateOutput = options.outputDeviceId !== undefined;
@@ -526,7 +526,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       });
 
       if ((updateVideo || updateAudio) && this.sessionManager) {
-        const updateOptions: any = {};
+        const updateOptions: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'> = {};
         if (updateVideo) updateOptions.videoDeviceId = options.videoDeviceId;
         if (updateAudio) updateOptions.audioDeviceId = options.audioDeviceId;
         promises.push(
@@ -540,7 +540,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         );
       }
 
-      return Promise.all(promises);
+      return Promise.all(promises).then(() => undefined);
     }
   }
 
@@ -570,7 +570,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the event has been emitted
    * signaling that the resolution has updated
    */
-  async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any> {
+  async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<void> {
     this._config.defaults.videoResolution = resolution;
     if (!updateActiveSessions) {
       return;
@@ -631,7 +631,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the default
    *  settings and sessions are updated (if specified)
    */
-  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<any> {
+  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<void> {
     const allowedSettings: Array<keyof IMediaSettings> = [
       'micAutoGainControl',
       'micEchoCancellation',
@@ -639,13 +639,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       'monitorMicVolume'
     ];
 
-    const entries = (Object.entries(settings) as Array<[keyof IMediaSettings, any]>)
+    const entries = (Object.entries(settings) as Array<[keyof IMediaSettings, IMediaSettings[keyof IMediaSettings]]>)
       .filter(([setting]) => allowedSettings.includes(setting));
 
     this.logger.info('updating media settings', entries);
 
     entries.forEach(([key, value]) => {
-      this._config.defaults[key] = value;
+      (this._config.defaults as Record<string, unknown>)[key] = value;
     });
 
     if (settings.updateActiveSessions) {
@@ -962,7 +962,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Disconnect the streaming connection
    * @returns a promise that fullfils once the web socket has disconnected
    */
-  disconnect (): Promise<any> {
+  disconnect (): Promise<void> {
     this._http.stopAllRetries();
     return this._streamingConnection?.disconnect();
   }
@@ -979,7 +979,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once all the cleanup
    *  tasks have completed
    */
-  async destroy (): Promise<any> {
+  async destroy (): Promise<void> {
     if (!this.sessionManager) {
       return;
     }
