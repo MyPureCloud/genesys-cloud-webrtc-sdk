@@ -540,7 +540,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         );
       }
 
-      await Promise.all(promises);
+      return Promise.all(promises).then(() => undefined);
     }
   }
 

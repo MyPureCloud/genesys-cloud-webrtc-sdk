@@ -63,23 +63,27 @@ export class StatsAggregator {
   }
 
   private stopGatheringStats() {
-    if (this.statsGatherer) {
+      if (!this.statsGatherer) {
+        this.sdk.logger.debug('No stats gatherer to remove');
+        return;
+      }
       this.statsGatherer.off('stats', this.boundStatsHandler);
       this.statsGatherer = undefined;
-    }
   }
 
   private onSessionStarted(session: IExtendedMediaSession) {
-    if (session === this.session) {
+      if (session !== this.session) {
+        return;
+      }
       this.setBaseline = true;
       this.startGatheringStats();
-    }
   }
 
   private onSessionEnded(session: IExtendedMediaSession) {
-    if (session === this.session) {
-      this.stopGatheringStats();
+    if (session !== this.session) {
+      return;
     }
+    this.stopGatheringStats();
   }
 
   private isGetStatsEvent(stats: StatsEvent): stats is GetStatsEvent {

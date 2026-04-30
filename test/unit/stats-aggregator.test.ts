@@ -101,6 +101,21 @@ describe('StatsAggregator', () => {
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
     });
+
+    it('should log debug and return when no stats gatherer exists', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Auto';
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      // No stats gatherer was created because of eager persistent connection
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+
+      // Trigger sessionEnded which calls stopGatheringStats with no gatherer
+      (sdk as unknown as SimpleMockSdk).emit('sessionEnded', mockSession);
+
+      expect(sdk.logger.debug).toHaveBeenCalledWith('No stats gatherer to remove');
+    });
   });
 
   describe('session terminated event', () => {
