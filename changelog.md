@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.0.0...HEAD)
 ### Added
 * [STREAM-1180](https://inindca.atlassian.net/browse/STREAM-1180) - Allow for different media handling strategies. This supports alerting leader functionality, where one instance of the SDK needs to handle media, but other instances should not automatically handle media.
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
 
 ### Changed
 * [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
