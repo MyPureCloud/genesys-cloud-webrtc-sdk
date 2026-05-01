@@ -251,6 +251,13 @@ export interface ISdkFullConfig {
   disableHeadsetControlsOrchestration?: boolean;
 
   /**
+   * Enables the new Poly HP implementation which uses WebHID instead of Plantronics Hub
+   *
+   * Optional: defaults to `false`
+   */
+  useNewPolyImplementation?: boolean;
+
+  /**
    * Genesys internal use only - non-Genesys apps that pass in custom headers will be ignored.
    * Used for telemetry purposes only.
   */

@@ -12,7 +12,7 @@ export class SdkHeadsetService extends SdkHeadsetBase {
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super(sdk);
-    this.headsetLibrary = HeadsetService.getInstance({ logger: this.createDecoratedLogger(), appName: sdk._config.originAppName });
+    this.headsetLibrary = HeadsetService.getInstance({ logger: this.createDecoratedLogger(), appName: sdk._config.originAppName, useNewPoly: sdk._config.useNewPolyImplementation });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
   }
 
