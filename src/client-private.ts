@@ -32,6 +32,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     host: wsHost || `wss://streaming.${environment}`,
     apiHost: environment,
     logger: this.logger['secondaryLogger'],
+    logLevel: this._config.logLevel,
     appName: originAppName || 'webrtc-sdk',
     appVersion: originAppVersion || this.VERSION,
     appId: originAppId || this.logger.clientId,
