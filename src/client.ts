@@ -101,6 +101,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   station: IStation | null;
   headset: ISdkHeadsetService;
   _pauseDisconnectedMessages: boolean;
+  _preDisconnectSessionIds: string[];
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -209,6 +210,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     });
 
     this._connected = false;
+    this._preDisconnectSessionIds = [];
     this._streamingConnection = null;
     this._http = new HttpClient();
   }
