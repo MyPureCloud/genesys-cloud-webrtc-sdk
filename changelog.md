@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
 
+### Fixed
+* [STREAM-1322](https://inindca.atlassian.net/browse/STREAM-1322) - Fix `logLevel` not being passed to the internal streaming-client, causing it to always default to `'info'` regardless of the SDK's configured log level.
+
 # [v13.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.1.0...HEAD)
 ### Breaking Changes
 * [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
