@@ -5,6 +5,7 @@ import { SessionManager } from './sessions/session-manager';
 import { SubscriptionEvent } from './types/interfaces';
 import { ConversationUpdate } from './conversations/conversation-update';
 import { isAgentVideoJid, isPeerConnectionDisconnected } from "./utils";
+import {Constants} from "stanza";
 
 /**
  * Establish the connection with the streaming client.
@@ -169,7 +170,7 @@ export const cleanupOrphanedSessions = function (this: GenesysCloudWebrtcSdk) {
     }
 
     const pcState = session.peerConnection?.connectionState;
-    if (isPeerConnectionDisconnected(pcState)) {
+    if (!pcState || isPeerConnectionDisconnected(pcState)) {
       this.logger.warn('Cleaning up orphaned session after reconnect', {
         sessionId: session.id,
         conversationId: session.conversationId,
@@ -179,7 +180,7 @@ export const cleanupOrphanedSessions = function (this: GenesysCloudWebrtcSdk) {
 
       try {
         const handler = this.sessionManager.getSessionHandler({ jingleSession: session });
-        handler.onSessionTerminated(session, { condition: 'gone' });
+        handler.onSessionTerminated(session, { condition: Constants.JingleReasonCondition.Gone });
       } catch (e) {
         this.logger.error('Failed to clean up orphaned session', { sessionId, error: e.message });
       }

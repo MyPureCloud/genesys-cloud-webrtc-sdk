@@ -426,6 +426,26 @@ describe('cleanupOrphanedSessions', () => {
 
     expect(onSessionTerminated).toHaveBeenCalledWith(interruptedSession, { condition: 'gone' });
   });
+
+  it('should clean up sessions with no peerConnection', () => {
+    const onSessionTerminated = jest.fn();
+    const mockHandler = { onSessionTerminated };
+
+    const noPcSession = {
+      id: 'session-1',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: undefined
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-1'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([noPcSession]);
+    (mockSdk.sessionManager as any).getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(onSessionTerminated).toHaveBeenCalledWith(noPcSession, { condition: 'gone' });
+  });
 });
 
 describe('proxyStreamingClientEvents', () => {
