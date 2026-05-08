@@ -377,6 +377,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
             if there is a previous state, that means we are ending this call – otherwise it means we have
             already ended it (we get `disconnected` and `terminated` events back-to-back for ending calls. We only want to process one of them.)
           */
+          // STREAM-1591: Unify these events without causing other problems.
+          this.sdk.emit('_sessionEnded', session, { condition: JingleReasons.success });
           if (session && session === this.activeSession) {
             session.conversationId = conversationId;
             this.sdk.emit('sessionEnded', session, { condition: JingleReasons.success });

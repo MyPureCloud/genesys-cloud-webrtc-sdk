@@ -1033,6 +1033,7 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
+  _sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
   sessionInterrupted: (event) => { sessionId: string, sessionType: string, conversationId: string };
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;
