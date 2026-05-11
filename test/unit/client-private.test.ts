@@ -404,7 +404,7 @@ describe('cleanupOrphanedSessions', () => {
     // should not throw
     cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
 
-    expect(mockSdk.logger.error).toHaveBeenCalledWith('Failed to clean up orphaned session', { sessionId: 'session-1', error: 'cleanup boom' });
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith('Failed to clean up orphaned session', { sessionId: 'session-1', error: 'cleanup boom' });
   });
 
   it('should clean up sessions in interrupted state', () => {
