@@ -182,7 +182,7 @@ export const cleanupOrphanedSessions = function (this: GenesysCloudWebrtcSdk) {
         const handler = this.sessionManager.getSessionHandler({ jingleSession: session });
         handler.onSessionTerminated(session, { condition: Constants.JingleReasonCondition.Gone });
       } catch (e) {
-        this.logger.error('Failed to clean up orphaned session', { sessionId, error: e.message });
+        this.logger.warn('Failed to clean up orphaned session', { sessionId, error: e.message });
       }
     } else {
       this.logger.info('Pre-disconnect session still has live peer connection after reconnect, keeping it', {
