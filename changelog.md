@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...HEAD)
 ### Added
 * [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
+* [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
 * [STREAM-1590](https://inindca.atlassian.net/browse/STREAM-1590) - Emit private `_sessionEnded` event to stop gathering media stats in certain concurrent call scenarios.
 
 ### Changed

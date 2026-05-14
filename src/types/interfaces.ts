@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage, AlertableInteractionTypes } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -271,6 +271,11 @@ export interface ISdkFullConfig {
    * Optional: default `false`
    */
   reportStatistics?: boolean;
+
+  /**
+   * Genesys internal use only - non-Genesys apps that pass in `alertableInteractionTypes` may experience unexpected behavior
+   */
+  alertableInteractionTypes?: AlertableInteractionTypes[];
 
   /** defaults for various SDK functionality */
   defaults?: {
