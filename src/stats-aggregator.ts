@@ -31,14 +31,15 @@ export class StatsAggregator {
     }
 
     const boundSessionStartedHandler = this.onSessionStarted.bind(this);
-    const boundSessionEndedHandler = this.onSessionEnded.bind(this);
+    const boundPrivateSessionEndedHandler = this.onPrivateSessionEnded.bind(this);
     sdk.on('sessionStarted', boundSessionStartedHandler);
-    sdk.on('sessionEnded', boundSessionEndedHandler);
+    // STREAM-1590: Use a private event to stop gathering in certain concurrent call scenarios
+    sdk.on('_sessionEnded', boundPrivateSessionEndedHandler);
 
     session.once('terminated', () => {
       this.stopGatheringStats();
       sdk.off('sessionStarted', boundSessionStartedHandler);
-      sdk.off('sessionEnded', boundSessionEndedHandler);
+      sdk.off('_sessionEnded', boundPrivateSessionEndedHandler);
     });
   }
 
@@ -79,7 +80,7 @@ export class StatsAggregator {
       this.startGatheringStats();
   }
 
-  private onSessionEnded(session: IExtendedMediaSession) {
+  private onPrivateSessionEnded(session: IExtendedMediaSession) {
     if (session !== this.session) {
       return;
     }

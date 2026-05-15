@@ -78,7 +78,7 @@ describe('StatsAggregator', () => {
     });
   });
 
-  describe('onSessionEnded', () => {
+  describe('_onSessionEnded', () => {
     it('should stop gathering stats when the matching session ends', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
       const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
@@ -86,7 +86,7 @@ describe('StatsAggregator', () => {
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
 
-      (sdk as unknown as SimpleMockSdk).emit('sessionEnded', mockSession);
+      (sdk as unknown as SimpleMockSdk).emit('_sessionEnded', mockSession);
 
       expect(statsAggregator['statsGatherer']).toBeFalsy();
     });
@@ -97,7 +97,7 @@ describe('StatsAggregator', () => {
       const statsAggregator = new StatsAggregator(mockSession, sdk);
 
       const otherSession = new MockSession() as unknown as IExtendedMediaSession;
-      (sdk as unknown as SimpleMockSdk).emit('sessionEnded', otherSession);
+      (sdk as unknown as SimpleMockSdk).emit('_sessionEnded', otherSession);
 
       expect(statsAggregator['statsGatherer']).toBeTruthy();
     });
@@ -111,8 +111,8 @@ describe('StatsAggregator', () => {
       // No stats gatherer was created because of eager persistent connection
       expect(statsAggregator['statsGatherer']).toBeFalsy();
 
-      // Trigger sessionEnded which calls stopGatheringStats with no gatherer
-      (sdk as unknown as SimpleMockSdk).emit('sessionEnded', mockSession);
+      // Trigger _sessionEnded which calls stopGatheringStats with no gatherer
+      (sdk as unknown as SimpleMockSdk).emit('_sessionEnded', mockSession);
 
       expect(sdk.logger.debug).toHaveBeenCalledWith('No stats gatherer to remove');
     });
@@ -131,7 +131,7 @@ describe('StatsAggregator', () => {
       (mockSession as unknown as MockSession).emit('terminated');
 
       expect(statsAggregator['statsGatherer']).toBeFalsy();
-      // SDK listeners for sessionStarted/sessionEnded should be removed
+      // SDK listeners for sessionStarted/_sessionEnded should be removed
       expect((sdk as unknown as SimpleMockSdk).listenerCount('sessionStarted')).toBe(listenerCountBefore - 1);
     });
   });

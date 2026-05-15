@@ -156,6 +156,7 @@ export default abstract class BaseSessionHandler {
     if (session._visibilityHandler) {
       document.removeEventListener('visibilitychange', session._visibilityHandler);
     }
+    this.sdk.emit('_sessionEnded', session, reason);
     this.sdk.emit('sessionEnded', session, reason);
   }
 
