@@ -4,12 +4,27 @@ import { IAudioProcessor } from "./interface";
 export class SdkAudioProcessor {
   private audioProcessor?: IAudioProcessor | undefined;
 
-  constructor(protected sdk: GenesysCloudWebrtcSdk) {}
+  constructor(protected sdk: GenesysCloudWebrtcSdk, audioProcessor?: IAudioProcessor) {
+    // If an audio processor is provided in the SDK's config, set it here.
+    if (audioProcessor) {
+      this.sdk.logger.info('Audio processor provided in SDK config.');
+      this.setAudioProcessor(audioProcessor);
+    }
+  }
+
+  public setAudioProcessor(audioProcessor: IAudioProcessor): void {
+    if (!audioProcessor) {
+      this.sdk.logger.error('Audio processor is required to set audio processor for enhanced noise suppression.');
+      return;
+    }
+    this.sdk.logger.info('Setting audio processor for enhanced noise suppression.', audioProcessor.name);
+    this.audioProcessor = audioProcessor
+    this.init();
+  }
 
   public async init(): Promise<void> {
-    this.audioProcessor = this.sdk._config.defaults.audioProcessor;
     if (!this.audioProcessor) {
-      console.error('Audio processor is required to initialize audio contexts.');
+      this.sdk.logger.error('Audio processor is required to initialize audio contexts.');
       return;
     }
 
@@ -24,7 +39,7 @@ export class SdkAudioProcessor {
 
   public async process(audioStream: MediaStream): Promise<MediaStream> {
     if (!this.audioProcessor) {
-      console.error('Audio processor is required for enhanced noise suppression. Returning unprocessed audio stream.');
+      this.sdk.logger.error('Audio processor is required for enhanced noise suppression. Returning unprocessed audio stream.');
       return audioStream;
     }
 

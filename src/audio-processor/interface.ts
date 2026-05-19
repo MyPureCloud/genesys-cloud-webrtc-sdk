@@ -4,5 +4,4 @@ export interface IAudioProcessor {
   init: () => Promise<void>;
   process: (audioStream: MediaStream) => Promise<MediaStream>;
   destroy: () => Promise<void>;
-  setAudioProcessor: (audioProcessor: IAudioProcessor) => Promise<void>;
 }
