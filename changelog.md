@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...HEAD)
+
+# [v13.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...v13.2.0)
 ### Added
 * [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
 * [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
