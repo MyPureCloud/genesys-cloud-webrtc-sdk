@@ -485,7 +485,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       });
 
       const tracks = (
-        await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
+        await this.sdk.media.startMedia({ video: videoDeviceConstraint, videoFrameRate: false, session })
       ).getVideoTracks();
       const track = tracks[0];
 
@@ -500,8 +500,8 @@ export class VideoSessionHandler extends BaseSessionHandler {
         requestedVideoDeviceId: videoDeviceConstraint
       });
 
-      // add track to session
-      await this.addReplaceTrackToSession(session, track);
+      // add track to session. applies constraints from setttings.
+      // await this.addReplaceTrackToSession(session, track);
 
       logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
 
