@@ -348,6 +348,11 @@ export default abstract class BaseSessionHandler {
     if (!stream && (updateAudio || updateVideo)) {
       try {
         stream = await this.sdk.media.startMedia(newStartMediaContraints);
+
+        if (this.sdk.audioProcessor) {
+          stream = await this.sdk.audioProcessor.process(stream);
+          this.log('info', 'updateOutgoingMedia - processing updated media with audio processor.');
+        }
       } catch (e) {
         /*
           In FF, if the user does not grant us permissions for the new media,
