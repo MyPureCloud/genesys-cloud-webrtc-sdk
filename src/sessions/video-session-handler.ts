@@ -431,6 +431,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean): Promise<void> {
+    this.log('info', 'LOGGIN ***');
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
     if (replayMuteRequest) {
