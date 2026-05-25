@@ -5,6 +5,9 @@ import {
   SessionTypes,
   ISessionIdAndConversationId,
   SdkMediaStateWithType,
+  MemberStatusMessage,
+  VideoMediaSession,
+  IParticipantsUpdate,
   ISdkGumRequest,
   IExtendedMediaSession
 } from 'genesys-cloud-webrtc-sdk';
@@ -22,6 +25,13 @@ import { useSelector } from 'react-redux';
 import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
+import {
+  addParticipantUpdateToVideoConversation,
+  addVideoConversationToActive, removeVideoConversationFromActive,
+  setActiveParticipants, setUsersTalking,
+  updateConversationMediaStreams
+} from "../features/videoConversationsSlice.ts";
+import { AppDispatch } from "../types/store.ts";
 
 interface IAuthData {
   token: string;
@@ -33,7 +43,7 @@ interface IAuthData {
 
 export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
   async function initWebrtcSDK(authData: IAuthData) {
@@ -99,7 +109,109 @@ export default function useSdk() {
     dispatch(storeHandledPendingSession(sessionInfo))
   }
 
-  function handleSessionStarted() {}
+  async function handleSessionStarted(session: IExtendedMediaSession) {
+    if (session.sessionType === 'collaborateVideo') {
+
+      session.on('participantsUpdate', (e: IParticipantsUpdate) => console.log('participantsUpdate', e));
+
+      const localMediaStream = await webrtcSdk.media.startMedia({ video: true, audio: true });
+
+      const audioElement = document.getElementById('audio1') as HTMLAudioElement;
+      const videoElement = document.getElementById('video1') as HTMLVideoElement;
+      webrtcSdk.acceptSession({
+        conversationId: session.conversationId,
+        audioElement: audioElement ?? undefined,
+        videoElement: videoElement ?? undefined,
+        mediaStream: localMediaStream
+      });
+
+      dispatch(addVideoConversationToActive({
+        session: session,
+        conversationId: session.conversationId,
+      }));
+
+      if (session?._outboundStream) {
+        dispatch(updateConversationMediaStreams({
+          conversationId: session.conversationId,
+          outboundStream: session._outboundStream,
+        }));
+      }
+
+      setupSessionListeners(session);
+    }
+  }
+
+  const updateMemberStatus = (memberStatusMessage: MemberStatusMessage, convId: string) => {
+    // Detect which remote user is shown
+    if (memberStatusMessage?.params?.incomingStreams) {
+      const userId = memberStatusMessage.params.incomingStreams[0].appId?.sourceUserId;
+      dispatch(setActiveParticipants({
+        conversationId: convId,
+        activeParticipant: userId
+      }));
+    }
+    // Detect if the user that is shown is 'speaking'
+    if (memberStatusMessage?.params?.speakers) {
+      const usersTalking = memberStatusMessage.params.speakers.reduce((acc, speaker) =>
+          ({
+            ...acc,
+            [speaker.appId.sourceUserId]: speaker.activity === 'speaking'
+          }),
+        {});
+
+      dispatch(setUsersTalking({
+        conversationId: convId,
+        usersTalking
+      }));
+    }
+  }
+
+  const setupSessionListeners = (session: IExtendedMediaSession) => {
+    // Save the incoming media stream to allow switching between conversations
+    session.on('incomingMedia', () => {
+      if (session.pc.getReceivers) {
+        const receivers = session.pc.getReceivers();
+        const inboundTracks = receivers
+          .map(receiver => receiver.track)
+          .filter(track => track);
+        if (inboundTracks.length > 0) {
+          const inboundStream = new MediaStream(inboundTracks);
+          dispatch(updateConversationMediaStreams({
+            conversationId: session.conversationId,
+            inboundStream: inboundStream,
+          }));
+        }
+      }
+    });
+
+    // Used for mute/unmute, screen share
+    session.on('participantsUpdate', (partsUpdate: IParticipantsUpdate) => {
+      dispatch(addParticipantUpdateToVideoConversation(partsUpdate));
+    });
+
+    // Remove conversation from store
+    session.on('terminated', reason => {
+      dispatch(removeVideoConversationFromActive({ conversationId: session.conversationId, reason: reason }));
+    });
+
+    // detect active participant and set green border when talking
+    session.on('memberStatusUpdate', (memberStatusMessage: MemberStatusMessage) => updateMemberStatus(memberStatusMessage, session.conversationId));
+  }
+
+  function startVideoConference(roomJid: string): Promise<{ conversationId: string; }> {
+    if (!sdk) {
+      return Promise.reject();
+    }
+    return sdk.startVideoConference(roomJid);
+  }
+
+
+  function startVideoMeeting(roomJid: string): Promise<{ conversationId: string; }> {
+    if (!sdk) {
+      return Promise.reject();
+    }
+    return sdk?.startVideoMeeting(roomJid);
+  }
 
   function handleSessionEnded() {}
 
@@ -119,6 +231,7 @@ export default function useSdk() {
     if (!sdk) return;
     await sdk.setAudioMute({ mute, conversationId });
   }
+
   async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
     if (!sdk) return;
     await sdk.setConversationHeld({ held, conversationId });
@@ -131,7 +244,11 @@ export default function useSdk() {
     dispatch(updateGumRequests());
   }
 
-  function updateDefaultDevices(options: { audioDeviceId?: string; videoDeviceId?: string; outputDeviceId?: string }): void {
+  function updateDefaultDevices(options: {
+    audioDeviceId?: string;
+    videoDeviceId?: string;
+    outputDeviceId?: string
+  }): void {
     if (!sdk) return;
     sdk.updateDefaultDevices({
       ...options,
@@ -188,6 +305,21 @@ export default function useSdk() {
     sessions.forEach((session: IExtendedMediaSession) => sdk.forceTerminateSession(session.id));
   }
 
+  function getSession(conversationId: string): VideoMediaSession {
+    if (!sdk) return { fromUserId: '', sessionType: 'collaborateVideo' } as VideoMediaSession;
+    return sdk.sessionManager.getSession({ conversationId });
+  }
+
+  function getDefaultDevices(): {
+    audioVolume?: number | undefined
+    audioDeviceId?: string | undefined
+    videoDeviceId?: string | undefined
+    outputDeviceId?: string | undefined
+  } | undefined {
+    if (!sdk) return
+    return sdk._config.defaults;
+  }
+
   return {
     initWebrtcSDK,
     startSoftphoneSession,
@@ -200,6 +332,10 @@ export default function useSdk() {
     updateAudioVolume,
     destroySdk,
     updateOnQueueStatus,
-    disconnectPersistentConnection
+    disconnectPersistentConnection,
+    startVideoConference,
+    startVideoMeeting,
+    getSession,
+    getDefaultDevices
   };
 }
