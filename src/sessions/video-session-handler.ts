@@ -502,7 +502,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       });
 
       // add track to session. applies constraints from setttings.
-      // await this.addReplaceTrackToSession(session, track);
+      await this.addReplaceTrackToSession(session, track);
 
       logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
 
