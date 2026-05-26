@@ -33,6 +33,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
     host: wsHost || `wss://streaming.${environment}`,
     apiHost: environment,
     logger: this.logger['secondaryLogger'],
+    logLevel: this._config.logLevel,
     appName: originAppName || 'webrtc-sdk',
     appVersion: originAppVersion || this.VERSION,
     appId: originAppId || this.logger.clientId,
@@ -59,6 +60,7 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
   }
 
   connectionOptions.useServerSidePings = !!this._config.useServerSidePings;
+  connectionOptions.alertableInteractionTypes = this._config.alertableInteractionTypes;
 
   connectionOptions.logFormatters = this._config.logFormatters;
   this.logger.debug('Streaming client WebSocket connection options', connectionOptions);

@@ -1544,7 +1544,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.conversations[update.id],
       session
     );
-    expect(sdkEmitSpy).not.toHaveBeenCalled();
+    // STREAM-1590 and STREAM-1591: We used to not want this to emit at all, but now we want a private event for StatsAggregator
+    expect(sdkEmitSpy).toHaveBeenCalledWith(
+      '_sessionEnded',
+      session,
+      { condition: JingleReasons.success }
+    );
   });
 
   it('should emit removed event and "sessionEnded" if we had an activeSession', async () => {
