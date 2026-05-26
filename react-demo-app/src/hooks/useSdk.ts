@@ -58,7 +58,9 @@ export default function useSdk() {
       optOutOfTelemetry: true,
       logLevel: 'info',
       useServerSidePings: true,
-
+      defaults: {
+        videoResolution: isMobile ? undefined : DEFAULT_HORIZONTAL_VIDEO_RESOLUTION
+      }
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
