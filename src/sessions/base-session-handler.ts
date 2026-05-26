@@ -508,7 +508,7 @@ export default abstract class BaseSessionHandler {
   /**
    * Will try and replace a track of the same kind if possible, otherwise it will add the track
    */
-  async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
+  async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack, skipConstraints: boolean = false): Promise<void> {
     // we need to wait for the session to be stable before we add/replace tracks or we could end up in a renego state
     // if tranceiver is recvonly and `starting` state, we need to wait until it transitions to `connected`
     if (session.connectionState === 'starting') {
@@ -535,11 +535,12 @@ export default abstract class BaseSessionHandler {
       return;
     }
 
-    /* we apply constraints if desktop but dont if mobile? */
-    if (!isAgentVideoJid(session.originalRoomJid)) {
+    /* It is useful to not apply constraints when dealing with devices that have their own hardware logic for video orientation, such as phones */
+    if (skipConstraints) {
+      return Promise.resolve();
+    } else {
       return this.applyTrackConstraints(sender);
     }
-    // return Promise.resolve();
   }
 
   // we want to apply track constraints but in safari specifically for screen share streams the settings don't immediately populate

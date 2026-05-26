@@ -501,8 +501,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         requestedVideoDeviceId: videoDeviceConstraint
       });
 
-      // add track to session. applies constraints from setttings.
-      await this.addReplaceTrackToSession(session, track);
+      await this.addReplaceTrackToSession(session, track, params.skipConstraints);
 
       logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
 

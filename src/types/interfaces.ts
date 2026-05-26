@@ -881,6 +881,8 @@ export interface ISessionMuteRequest {
   fromHeadset?: boolean;
   /** the desired deviceId to use when unmuting, `true` for sdk default, `null` for system default, `undefined` will attempt to use the sdk default device */
   unmuteDeviceId?: string | boolean | null;
+  /** if video constraints should be skipped. Useful when the SDK is used in mobile devices */
+  skipConstraints?: boolean;
 }
 
 export interface IConversationHeldRequest {
