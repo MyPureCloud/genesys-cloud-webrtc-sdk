@@ -29,6 +29,7 @@ import { SessionManager } from './session-manager';
 import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
 import { HeadsetProxyService } from '../headsets/headset';
 import { removeAddressFieldFromConversationUpdate } from '../utils';
+import { StatsAggregator } from '../stats-aggregator';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -383,6 +384,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
             if there is a previous state, that means we are ending this call – otherwise it means we have
             already ended it (we get `disconnected` and `terminated` events back-to-back for ending calls. We only want to process one of them.)
           */
+          // STREAM-1591: Unify these events without causing other problems.
+          this.sdk.emit('_sessionEnded', session, { condition: JingleReasons.success });
           if (session && session === this.activeSession) {
             session.conversationId = conversationId;
             this.sdk.emit('sessionEnded', session, { condition: JingleReasons.success });
@@ -611,6 +614,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
 
+    if (this.sdk._config.reportStatistics) {
+      session.statsAggregator = new StatsAggregator(session, this.sdk);
+    }
+
     const acceptParams: IAcceptSessionRequest = { conversationId: session.conversationId };
 
     // if this is a reinvite, we want to silently replace the old session and mark the old session as replaced
@@ -624,6 +631,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
       if (oldSession) {
         oldSession.sessionReplacedByReinvite = true;
+        session.reconnectCount = (oldSession.reconnectCount ?? 0) + 1
         const oldSessionInfo = { conversationId: oldSession.conversationId, sessionId: oldSession.id, sessionType: this.sessionType };
         this.log('info', 'force terminating session that was replaced by reinvite', oldSessionInfo);
 

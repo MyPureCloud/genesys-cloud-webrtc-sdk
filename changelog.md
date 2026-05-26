@@ -3,11 +3,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.0.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...HEAD)
+### Added
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
+* [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
+* [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
+* [STREAM-1590](https://inindca.atlassian.net/browse/STREAM-1590) - Emit private `_sessionEnded` event to stop gathering media stats in certain concurrent call scenarios.
+
+### Changed
+* [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
+
+### Fixed
+* [STREAM-1322](https://inindca.atlassian.net/browse/STREAM-1322) - Fix `logLevel` not being passed to the internal streaming-client, causing it to always default to `'info'` regardless of the SDK's configured log level.
+
+# [v13.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.0.0...v13.1.0)
 ### Added
 * [STREAM-1180](https://inindca.atlassian.net/browse/STREAM-1180) - Allow for different media handling strategies. This supports alerting leader functionality, where one instance of the SDK needs to handle media, but other instances should not automatically handle media.
 
-# [v13.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.1.0...HEAD)
+# [v13.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.1.0...v13.0.0)
 ### Breaking Changes
 * [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
 
