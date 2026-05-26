@@ -6,7 +6,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, delay, requestApi } from '../utils';
+import { createAndEmitSdkError, delay, isAgentVideoJid, requestApi } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
@@ -536,8 +536,9 @@ export default abstract class BaseSessionHandler {
     }
 
     /* we apply constraints if desktop but dont if mobile? */
-
-    return this.applyTrackConstraints(sender);
+    if (!isAgentVideoJid(session.originalRoomJid)) {
+      return this.applyTrackConstraints(sender);
+    }
     // return Promise.resolve();
   }
 
