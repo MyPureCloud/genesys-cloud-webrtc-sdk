@@ -4,7 +4,7 @@ import platformClient from 'purecloud-platform-client-v2';
 import useSdk from './useSdk';
 import { setAuthStatus, setAuthLoading, setAuthError } from '../features/authSlice';
 
-const clientId = '2e10c888-5261-45b9-ac32-860a1e67eff8';
+const clientId = '3c4c04ad-6dd7-49f9-8084-94c5b8724c04';
 
 // Your environment configuration remains the same
 export const environments: { [envKey: string]: { uri: string } } = {
@@ -241,8 +241,10 @@ export default function useAuth() {
   async function verifyToken(authData: SavedAuthData) {
     client.setEnvironment(environments[authData.envKey].uri);
     client.setAccessToken(authData.accessToken);
-    const tokensApi = new platformClient.TokensApi();
-    await tokensApi.getTokensMe();
+    if (window.location.hostname === 'localhost') {
+      const tokensApi = new platformClient.TokensApi();
+      await tokensApi.getTokensMe();
+    }
     return true;
   }
 

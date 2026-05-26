@@ -18,7 +18,7 @@ export default function OutputDevices() {
       updateDefaultDevices({ outputDeviceId: id });
     } else {
       const outputDeviceId =
-        deviceState.outputDevices.find(d => d.label.toLowerCase().includes('default'))?.deviceId || deviceState.outputDevices[0].deviceId;
+        deviceState.outputDevices.find(d => d.label.toLowerCase().includes('default'))?.deviceId || deviceState.outputDevices[0]?.deviceId || '';
       setDeviceId(outputDeviceId);
       updateDefaultDevices({ outputDeviceId });
       localStorage.setItem('outputDeviceId', outputDeviceId);

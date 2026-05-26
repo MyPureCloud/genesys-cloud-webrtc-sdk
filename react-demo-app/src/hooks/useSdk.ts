@@ -46,6 +46,9 @@ export default function useSdk() {
   const dispatch = useDispatch<AppDispatch>();
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const DEFAULT_HORIZONTAL_VIDEO_RESOLUTION = { width: 854, height: 480 };
+
   async function initWebrtcSDK(authData: IAuthData) {
     const options: ISdkConfig = {
       accessToken: authData.token,
@@ -54,7 +57,8 @@ export default function useSdk() {
       originAppName: 'webrtc-demo-app',
       optOutOfTelemetry: true,
       logLevel: 'info',
-      useServerSidePings: true
+      useServerSidePings: true,
+
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
