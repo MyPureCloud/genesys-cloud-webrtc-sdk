@@ -10,16 +10,8 @@ export default defineConfig({
     global: 'globalThis'
   },
   server: {
-    host: '172.20.10.3',
-    port: 8444,
-    proxy: {
-      '/proxy-api': {
-        target: 'https://api.inindca.com',
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/proxy-api/, '/api')
-      }
-    }
+    host: 'localhost',
+    port: 8443
   },
   build: {
     rollupOptions: {
