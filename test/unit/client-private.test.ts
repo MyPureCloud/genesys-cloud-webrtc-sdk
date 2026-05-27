@@ -2,7 +2,7 @@ import { GenesysCloudWebrtcSdk } from '../../src/client';
 import { SimpleMockSdk } from '../test-utils';
 import { CommunicationStates } from '../../src/types/enums';
 import { ICustomerData, IPersonDetails, SubscriptionEvent } from '../../src/types/interfaces';
-import { handleConversationUpdate, setupStreamingClient, handleDisconnectedEvent, proxyStreamingClientEvents } from '../../src/client-private';
+import { handleConversationUpdate, setupStreamingClient, handleDisconnectedEvent, proxyStreamingClientEvents, cleanupOrphanedSessions } from '../../src/client-private';
 import { ConversationUpdate } from '../../src/';
 import StreamingClient from 'genesys-cloud-streaming-client';
 import { NotificationsApi } from "purecloud-platform-client-v2";
@@ -85,6 +85,50 @@ describe('setupStreamingClient', () => {
       host: 'wss://streaming.downunder',
       jid: 'myJid'
     }));
+  });
+
+  it('should call cleanupOrphanedSessions on reconnect', async () => {
+    mockSdk._personDetails = {
+      id: 'abc123',
+      name: 'myUsername',
+      chat: {
+        jabberId: 'myJid'
+      }
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-dead'];
+    const deadSession = {
+      id: 'session-dead',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'closed' }
+    };
+    const onSessionTerminated = jest.fn();
+    mockSdk.sessionManager = {
+      getAllSessions: jest.fn().mockReturnValue([deadSession]),
+      getSessionHandler: jest.fn().mockReturnValue({ onSessionTerminated })
+    } as any;
+
+    let connectedCb: () => void;
+    const connectSpy = jest.fn().mockImplementation(() => {
+      connectedCb();
+    });
+    (StreamingClient as any).mockReturnValue({
+      on: (event, cb) => {
+        if (event === 'connected') {
+          connectedCb = cb;
+        }
+      },
+      connect: connectSpy
+    });
+
+    /* first connect sets _hasConnected = true */
+    await setupStreamingClient.call(mockSdk);
+
+    /* simulate reconnect by firing connected again */
+    connectedCb();
+
+    expect(onSessionTerminated).toHaveBeenCalledWith(deadSession, { condition: 'gone' });
   });
 });
 
@@ -218,6 +262,189 @@ describe('handleDisconnectedEvent', () => {
       'Streaming API connection disconnected',
       eventData
     );
+  });
+
+  it('should snapshot session IDs when sessionManager exists', () => {
+    const sessions = [
+      { id: 'session-1' },
+      { id: 'session-2' }
+    ];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue(sessions);
+    (mockSdk as any)._preDisconnectSessionIds = [];
+    mockSdk.emit = jest.fn();
+
+    handleDisconnectedEvent.call(mockSdk as GenesysCloudWebrtcSdk, { reconnecting: true });
+
+    expect((mockSdk as any)._preDisconnectSessionIds).toEqual(['session-1', 'session-2']);
+    expect(mockSdk.logger.info).toHaveBeenCalledWith('Snapshotted pre-disconnect sessions', { sessionIds: ['session-1', 'session-2'] });
+  });
+
+  it('should not snapshot if sessionManager does not exist', () => {
+    (mockSdk as any).sessionManager = undefined;
+    (mockSdk as any)._preDisconnectSessionIds = [];
+    mockSdk.emit = jest.fn();
+
+    handleDisconnectedEvent.call(mockSdk as GenesysCloudWebrtcSdk, { reconnecting: false });
+
+    expect((mockSdk as any)._preDisconnectSessionIds).toEqual([]);
+  });
+});
+
+describe('cleanupOrphanedSessions', () => {
+  it('should do nothing if there are no pre-disconnect session IDs', () => {
+    (mockSdk as any)._preDisconnectSessionIds = [];
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(mockSdk.sessionManager.getAllSessions).not.toHaveBeenCalled();
+  });
+
+  it('should clean up sessions with dead peer connections', () => {
+    const onSessionTerminated = jest.fn();
+    const mockHandler = { onSessionTerminated };
+
+    const deadSession = {
+      id: 'session-1',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'failed' }
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-1'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([deadSession]);
+    (mockSdk.sessionManager as any).getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(onSessionTerminated).toHaveBeenCalledWith(deadSession, { condition: 'gone' });
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith('Cleaning up orphaned session after reconnect', expect.objectContaining({
+      sessionId: 'session-1',
+      peerConnectionState: 'failed'
+    }));
+    expect((mockSdk as any)._preDisconnectSessionIds).toEqual([]);
+  });
+
+  it('should keep sessions with live peer connections', () => {
+    const liveSession = {
+      id: 'session-1',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'connected' }
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-1'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([liveSession]);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'Pre-disconnect session still has live peer connection after reconnect, keeping it',
+      expect.objectContaining({ sessionId: 'session-1', peerConnectionState: 'connected' })
+    );
+    expect((mockSdk as any)._preDisconnectSessionIds).toEqual([]);
+  });
+
+  it('should skip sessions that no longer exist after reconnect', () => {
+    (mockSdk as any)._preDisconnectSessionIds = ['session-gone'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([]);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(mockSdk.logger.warn).not.toHaveBeenCalled();
+    expect(mockSdk.logger.info).not.toHaveBeenCalledWith(
+      expect.stringContaining('Pre-disconnect session'),
+      expect.anything()
+    );
+    expect((mockSdk as any)._preDisconnectSessionIds).toEqual([]);
+  });
+
+  it('should handle mixed live and dead sessions', () => {
+    const onSessionTerminated = jest.fn();
+    const mockHandler = { onSessionTerminated };
+
+    const deadSession = {
+      id: 'session-dead',
+      conversationId: 'conv-dead',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'closed' }
+    };
+    const liveSession = {
+      id: 'session-live',
+      conversationId: 'conv-live',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'connected' }
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-dead', 'session-live'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([deadSession, liveSession]);
+    (mockSdk.sessionManager as any).getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(onSessionTerminated).toHaveBeenCalledTimes(1);
+    expect(onSessionTerminated).toHaveBeenCalledWith(deadSession, { condition: 'gone' });
+  });
+
+  it('should handle errors during cleanup gracefully', () => {
+    const mockHandler = {
+      onSessionTerminated: jest.fn().mockImplementation(() => { throw new Error('cleanup boom'); })
+    };
+
+    const deadSession = {
+      id: 'session-1',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'disconnected' }
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-1'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([deadSession]);
+    (mockSdk.sessionManager as any).getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+    // should not throw
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(mockSdk.logger.warn).toHaveBeenCalledWith('Failed to clean up orphaned session', { sessionId: 'session-1', error: 'cleanup boom' });
+  });
+
+  it('should clean up sessions in interrupted state', () => {
+    const onSessionTerminated = jest.fn();
+    const mockHandler = { onSessionTerminated };
+
+    const interruptedSession = {
+      id: 'session-1',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: { connectionState: 'interrupted' }
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-1'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([interruptedSession]);
+    (mockSdk.sessionManager as any).getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(onSessionTerminated).toHaveBeenCalledWith(interruptedSession, { condition: 'gone' });
+  });
+
+  it('should clean up sessions with no peerConnection', () => {
+    const onSessionTerminated = jest.fn();
+    const mockHandler = { onSessionTerminated };
+
+    const noPcSession = {
+      id: 'session-1',
+      conversationId: 'conv-1',
+      sessionType: 'softphone',
+      peerConnection: undefined
+    };
+
+    (mockSdk as any)._preDisconnectSessionIds = ['session-1'];
+    mockSdk.sessionManager.getAllSessions = jest.fn().mockReturnValue([noPcSession]);
+    (mockSdk.sessionManager as any).getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+    cleanupOrphanedSessions.call(mockSdk as GenesysCloudWebrtcSdk);
+
+    expect(onSessionTerminated).toHaveBeenCalledWith(noPcSession, { condition: 'gone' });
   });
 });
 
