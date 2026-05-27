@@ -3,7 +3,7 @@
 This SDK supports creating or joining video conferences. Much of the initialization and call controls
 are done using the public API, but are abstracted being api's in this sdk.
 
- ~~>*Note: video conferencing does not support guest users.*~~
+ >*Note: video conferencing does not support guest users.*
 
 ## WebRTC SDK Video Index
 This documentation expands upon the [GenesysCloudWebrtcSdk] documention but is specific to
