@@ -431,7 +431,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean): Promise<void> {
-    this.log('info', 'LOGGIN ***');
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
     if (replayMuteRequest) {
@@ -486,7 +485,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       });
 
       const tracks = (
-        await this.sdk.media.startMedia({ video: videoDeviceConstraint, videoFrameRate: false, session })
+        await this.sdk.media.startMedia({ video: videoDeviceConstraint, session })
       ).getVideoTracks();
       const track = tracks[0];
 
@@ -501,6 +500,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         requestedVideoDeviceId: videoDeviceConstraint
       });
 
+      // add track to session
       await this.addReplaceTrackToSession(session, track, params.skipConstraints);
 
       logDeviceChange(this.sdk, session, 'successfullyChangedDevices');

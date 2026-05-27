@@ -1102,7 +1102,6 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
     let sdkDefaultDeviceId = getCurrentSdkDefault();
 
-    // There are no constraints afaik for guest video. Not if theyre on a phone.
     const constraints: MediaStreamConstraints = this.getStandardConstraints(reqOptionsCopy);
 
     /* make sure we are only requesting one type of media */
