@@ -137,17 +137,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   constructor (options: ISdkConfig) {
     super();
 
-    // debugging
-    const debugDiv = document.createElement('div');
-    debugDiv.id = 'webrtc-debug-div';
-    debugDiv.innerHTML = `
-      <pre>
-        options: ${JSON.stringify(options)}
-      </pre>
-    `;
-    debugDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:8px;z-index:9999;font-size:11px;max-height:40vh;overflow:auto;word-break:break-all';
-    document.body.appendChild(debugDiv);
-
     const errorMsg = validateOptions(options);
     if (errorMsg) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.invalid_options, errorMsg, options);

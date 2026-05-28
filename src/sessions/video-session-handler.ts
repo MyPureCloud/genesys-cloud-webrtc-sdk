@@ -431,14 +431,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
   }
 
   async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest, skipServerUpdate?: boolean): Promise<void> {
-    const debugDiv = document.getElementById('webrtc-debug-div');
-    debugDiv.innerHTML = `
-      <pre>
-        params: ${JSON.stringify(params)}
-      </pre>
-    `;
-    debugDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:8px;z-index:9999;font-size:11px;max-height:40vh;overflow:auto;word-break:break-all';
-    document.body.appendChild(debugDiv);
     const replayMuteRequest = !!session.videoMuted === !!params.mute;
 
     if (replayMuteRequest) {
