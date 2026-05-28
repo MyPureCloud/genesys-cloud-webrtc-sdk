@@ -33,6 +33,9 @@ beforeEach(() => {
 
   userId = random();
   mockSdk._personDetails = { id: userId } as any;
+  const fakeDiv = document.createElement('div');
+  jest.spyOn(document, 'getElementById').mockReturnValue(fakeDiv);
+  jest.spyOn(document.body, 'appendChild').mockImplementation(jest.fn());
 });
 
 describe('shouldHandleSessionByJid', () => {
