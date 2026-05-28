@@ -1,7 +1,10 @@
 // Minimal SDK interface for type safety
-import { IExtendedMediaSession } from 'genesys-cloud-webrtc-sdk';
+import { IExtendedMediaSession, VideoMediaSession } from 'genesys-cloud-webrtc-sdk';
 export interface MinimalSdk {
   startSoftphoneSession: (params: { phoneNumber: string }) => void;
+  startVideoConference: (roomJid: string) => Promise<{ conversationId: string; }>;
+  startVideoMeeting: (roomJid: string) => Promise<{ conversationId: string; }>;
+  setVideoMute: (params: { mute: boolean; conversationId: string }) => Promise<void>;
   endSession: (params: { conversationId: string }) => void;
   setAudioMute: (params: { mute: boolean; conversationId: string }) => Promise<void>;
   setConversationHeld: (params: { held: boolean; conversationId: string }) => Promise<void>;
@@ -17,6 +20,7 @@ export interface MinimalSdk {
   };
   sessionManager: {
     getAllActiveSessions: () => IExtendedMediaSession[];
+    getSession: (param: { conversationId: string }) => VideoMediaSession;
   };
   station?: {
     webRtcPersistentEnabled?: boolean;
@@ -28,11 +32,14 @@ export interface MinimalSdk {
     webRtcForceTurn?: boolean;
     [key: string]: unknown;
   } | null;
-  _config?: {
+  _config: {
     environment?: string;
     accessToken?: string;
     defaults?: {
       audioVolume?: number;
+      audioDeviceId?: string;
+      videoDeviceId?: string;
+      outputDeviceId?: string;
     };
   };
   _http?: {

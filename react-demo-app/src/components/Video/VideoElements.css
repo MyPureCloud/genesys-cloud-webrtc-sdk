@@ -1,0 +1,34 @@
+.visibility-container {
+  height: 100%;
+}
+
+.video-elements-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.video-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.video-sections-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.video-call-btn {
+  display: flex;
+  justify-content: center;
+  margin: 0.25rem 0 0.25rem 0;
+}
+
+.gux-icon {
+  width: 85%;
+  height: 85%;
+  color: #FFFFFF
+}
