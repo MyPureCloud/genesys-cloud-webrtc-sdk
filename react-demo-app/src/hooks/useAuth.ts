@@ -241,8 +241,10 @@ export default function useAuth() {
   async function verifyToken(authData: SavedAuthData) {
     client.setEnvironment(environments[authData.envKey].uri);
     client.setAccessToken(authData.accessToken);
-    const tokensApi = new platformClient.TokensApi();
-    await tokensApi.getTokensMe();
+    if (window.location.hostname === 'localhost') {
+      const tokensApi = new platformClient.TokensApi();
+      await tokensApi.getTokensMe();
+    }
     return true;
   }
 
