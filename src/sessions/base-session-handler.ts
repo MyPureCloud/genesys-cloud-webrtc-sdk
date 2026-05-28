@@ -405,7 +405,7 @@ export default abstract class BaseSessionHandler {
       });
 
       const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
-        await this.addReplaceTrackToSession(session, track);
+        await this.addReplaceTrackToSession(session, track, this.sdk._config.skipConstraints);
         outboundStream.addTrack(track);
 
         /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
@@ -508,7 +508,7 @@ export default abstract class BaseSessionHandler {
   /**
    * Will try and replace a track of the same kind if possible, otherwise it will add the track
    */
-  async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack, skipConstraints: boolean = false): Promise<void> {
+  async addReplaceTrackToSession (session: IExtendedMediaSession, track: MediaStreamTrack): Promise<void> {
     // we need to wait for the session to be stable before we add/replace tracks or we could end up in a renego state
     // if tranceiver is recvonly and `starting` state, we need to wait until it transitions to `connected`
     if (session.connectionState === 'starting') {
@@ -536,7 +536,7 @@ export default abstract class BaseSessionHandler {
     }
 
     /* It is useful to not apply constraints when dealing with devices that have their own hardware logic for video orientation, such as phones */
-    if (skipConstraints) {
+    if (this.sdk._config.skipConstraints) {
       return Promise.resolve();
     } else {
       return this.applyTrackConstraints(sender);

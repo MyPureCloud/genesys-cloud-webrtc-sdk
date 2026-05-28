@@ -509,7 +509,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       });
 
       // add track to session
-      await this.addReplaceTrackToSession(session, track, params.skipConstraints);
+      await this.addReplaceTrackToSession(session, track);
 
       logDeviceChange(this.sdk, session, 'successfullyChangedDevices');
 
