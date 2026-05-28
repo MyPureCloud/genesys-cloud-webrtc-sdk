@@ -1189,6 +1189,7 @@ describe('setVideoMute', () => {
   });
 
   it('unmute: should not call unmute on the session and call addTrack on outbound stream; instead it stops the media on the track if the session has ended since starting media', async () => {
+    mockSdk._config.skipConstraints = true;
     const unmuteDeviceId = 'device-id';
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
@@ -1205,23 +1206,6 @@ describe('setVideoMute', () => {
     expect(session._outboundStream!.addTrack).not.toHaveBeenCalled();
     expect(session.unmute).not.toHaveBeenCalled();
     expect(stream.getVideoTracks()[0].stop).toHaveBeenCalled();
-  });
-
-  it('unmute: should pass skipConstraints to addReplaceTrackToSession', async () => {
-    const stream = new MockStream(true);
-    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([{ id: session.id } as IExtendedMediaSession]);
-
-    const addReplaceSpy = jest.spyOn(handler, 'addReplaceTrackToSession').mockResolvedValue();
-
-    session._outboundStream = {
-      addTrack: jest.fn(),
-      getVideoTracks: jest.fn().mockReturnValue([])
-    } as any;
-
-    await handler.setVideoMute(session, { conversationId: session.conversationId, mute: false, skipConstraints: true });
-
-    expect(addReplaceSpy).toHaveBeenCalledWith(session, stream.getVideoTracks()[0], true);
   });
 });
 

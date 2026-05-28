@@ -954,11 +954,12 @@ describe('addReplaceTrackToSession', () => {
   });
 
   it('should skip constraints for mobile devices', async () => {
+    mockSdk._config.skipConstraints = true;
     const session = new MockSession();
     session.peerConnection._senders = [new MockSender(new MockTrack('video'))];
 
     const track = new MockTrack('video');
-    await handler.addReplaceTrackToSession(session as any, track as any, true);
+    await handler.addReplaceTrackToSession(session as any, track as any);
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
   });

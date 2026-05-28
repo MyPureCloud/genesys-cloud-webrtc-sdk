@@ -405,7 +405,7 @@ export default abstract class BaseSessionHandler {
       });
 
       const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
-        await this.addReplaceTrackToSession(session, track, this.sdk._config.skipConstraints);
+        await this.addReplaceTrackToSession(session, track);
         outboundStream.addTrack(track);
 
         /* if we are switching audio devices, we need to check mute state (video is checked earlier) */
