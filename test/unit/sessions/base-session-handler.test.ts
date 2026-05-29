@@ -952,6 +952,27 @@ describe('addReplaceTrackToSession', () => {
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
   });
+
+  it('should skip constraints for mobile devices', async () => {
+    mockSdk._config.skipConstraints = true;
+    const session = new MockSession();
+    session.peerConnection._senders = [new MockSender(new MockTrack('video'))];
+
+    const track = new MockTrack('video');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+
+    expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('shoud not skip constraints for non-mobile devices', async () => {
+    const session = new MockSession();
+    session.peerConnection._senders = [new MockSender(new MockTrack('video'))];
+
+    const track = new MockTrack('video');
+    await handler.addReplaceTrackToSession(session as any, track as any /*, skipConstraints defaults to `false` */);
+
+    expect(track.applyConstraints).toHaveBeenCalled();
+  });
 });
 
 describe('endTracks', () => {

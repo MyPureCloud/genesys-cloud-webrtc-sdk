@@ -181,8 +181,9 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           audioVolume: defaultConfigOption(defaultsOptions.audioVolume, 100),
           outputDeviceId: defaultsOptions.outputDeviceId || null,
           monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
-        }
-      }
+        },
+        skipConstraints: options.skipConstraints
+      },
     };
 
     this._orgDetails = { id: options.organizationId } as IOrgDetails;

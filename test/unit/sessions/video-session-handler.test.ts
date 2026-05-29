@@ -33,6 +33,9 @@ beforeEach(() => {
 
   userId = random();
   mockSdk._personDetails = { id: userId } as any;
+  const fakeDiv = document.createElement('div');
+  jest.spyOn(document, 'getElementById').mockReturnValue(fakeDiv);
+  jest.spyOn(document.body, 'appendChild').mockImplementation(jest.fn());
 });
 
 describe('shouldHandleSessionByJid', () => {
@@ -1186,6 +1189,7 @@ describe('setVideoMute', () => {
   });
 
   it('unmute: should not call unmute on the session and call addTrack on outbound stream; instead it stops the media on the track if the session has ended since starting media', async () => {
+    mockSdk._config.skipConstraints = true;
     const unmuteDeviceId = 'device-id';
     const stream = new MockStream(true);
     const spy = jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(stream as any);
