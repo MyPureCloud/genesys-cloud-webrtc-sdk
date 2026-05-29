@@ -535,7 +535,12 @@ export default abstract class BaseSessionHandler {
       return;
     }
 
-    return this.applyTrackConstraints(sender);
+    /* It is useful to not apply constraints when dealing with devices that have their own hardware logic for video orientation, such as phones */
+    if (this.sdk._config.skipConstraints) {
+      return Promise.resolve();
+    } else {
+      return this.applyTrackConstraints(sender);
+    }
   }
 
   // we want to apply track constraints but in safari specifically for screen share streams the settings don't immediately populate

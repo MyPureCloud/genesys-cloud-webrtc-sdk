@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
 * [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
 * [STREAM-1590](https://inindca.atlassian.net/browse/STREAM-1590) - Emit private `_sessionEnded` event to stop gathering media stats in certain concurrent call scenarios.
+* [STREAM-1224](https://inindca.atlassian.net/browse/STREAM-1224) - Add `skipConstraints` to `ISdkFullConfig` to improve mobile devices support.
 
 ### Changed
 * [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2

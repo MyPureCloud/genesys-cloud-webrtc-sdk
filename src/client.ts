@@ -169,6 +169,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
         reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
+        skipConstraints: options.skipConstraints,
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
@@ -182,7 +183,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           outputDeviceId: defaultsOptions.outputDeviceId || null,
           monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
         }
-      }
+      },
     };
 
     this._orgDetails = { id: options.organizationId } as IOrgDetails;
