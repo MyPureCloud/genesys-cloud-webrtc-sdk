@@ -969,7 +969,7 @@ describe('addReplaceTrackToSession', () => {
     session.peerConnection._senders = [new MockSender(new MockTrack('video'))];
 
     const track = new MockTrack('video');
-    await handler.addReplaceTrackToSession(session as any, track as any /*, skipConstraints defaults to `false` */);
+    await handler.addReplaceTrackToSession(session as any, track as any);
 
     expect(track.applyConstraints).toHaveBeenCalled();
   });
