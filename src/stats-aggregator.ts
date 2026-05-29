@@ -1,5 +1,4 @@
 import StatsGatherer, { GetStatsEvent, StatsEvent } from "webrtc-stats-gatherer";
-import { v4 as uuidv4 } from "uuid";
 
 import GenesysCloudWebrtSdk, { IConversationParticipantFromEvent, IExtendedMediaSession } from ".";
 
@@ -24,7 +23,7 @@ export class StatsAggregator {
   private boundStatsHandler?: (stats: StatsEvent) => void;
 
   constructor(private session: IExtendedMediaSession, private sdk: GenesysCloudWebrtSdk) {
-    this.mediaResourceId = uuidv4();
+    this.mediaResourceId = globalThis.crypto.randomUUID();
 
     if (this.shouldGatherImmediately(session)) {
       this.startGatheringStats();
@@ -225,7 +224,7 @@ export class StatsAggregator {
       to: this.session.peerID,
       genesysWebrtc: {
         jsonrpc: '2.0',
-        id: uuidv4(),
+        id: globalThis.crypto.randomUUID(),
         method: 'report-statistics',
         params: {
           sessionId: this.session.id,

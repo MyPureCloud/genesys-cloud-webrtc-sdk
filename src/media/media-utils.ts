@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 import { GenesysCloudWebrtcSdk } from '../client';
 import { IExtendedMediaSession, ISessionIdAndConversationId } from '../types/interfaces';
 
@@ -25,7 +23,7 @@ export const getOrCreateAudioMediaElement = function (className: string = GC_AUD
 };
 
 export const createUniqueAudioMediaElement = function (): HTMLAudioElement {
-  const className = `${GC_AUDIO_EL_CLASS}-${uuidv4()}`;
+  const className = `${GC_AUDIO_EL_CLASS}-${globalThis.crypto.randomUUID()}`;
   return getOrCreateAudioMediaElement(className);
 };
 
