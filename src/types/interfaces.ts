@@ -277,6 +277,9 @@ export interface ISdkFullConfig {
    */
   alertableInteractionTypes?: AlertableInteractionTypes[];
 
+  /** if video constraints should be skipped. Useful when the SDK is used on mobile devices */
+  skipConstraints?: boolean;
+
   /** defaults for various SDK functionality */
   defaults?: {
 
@@ -439,8 +442,6 @@ export interface ISdkFullConfig {
      */
     monitorMicVolume?: boolean;
   };
-  /** if video constraints should be skipped. Useful when the SDK is used on mobile devices */
-  skipConstraints?: boolean;
 }
 
 export interface ISdkConfig extends ISdkFullConfig{
