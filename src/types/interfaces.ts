@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage, AlertableInteractionTypes } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -7,6 +7,7 @@ import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
 import { SdkError } from '../utils';
 import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { StatsAggregator } from '../stats-aggregator';
 
 export { ISessionInfo, IPendingSession };
 // extend the emittable events
@@ -263,6 +264,18 @@ export interface ISdkFullConfig {
    * Optional: default `false`
    */
   useServerSidePings?: boolean;
+
+  /**
+   * Controls whether to report statistics, such as estimated MOS (Mean Opinion Score).
+   *
+   * Optional: default `false`
+   */
+  reportStatistics?: boolean;
+
+  /**
+   * Genesys internal use only - non-Genesys apps that pass in `alertableInteractionTypes` may experience unexpected behavior
+   */
+  alertableInteractionTypes?: AlertableInteractionTypes[];
 
   /** defaults for various SDK functionality */
   defaults?: {
@@ -903,6 +916,8 @@ export interface IExtendedMediaSession extends IMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   pcParticipant?: IConversationParticipant;
+  statsAggregator?: StatsAggregator;
+  reconnectCount?: number;
   _alreadyAccepted?: boolean;
   _emittedSessionStarteds?: { [conversationId: string]: true };
   _screenShareStream?: MediaStream;
@@ -1023,6 +1038,8 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
+  // **Genesys internal use only** - non-Genesys consumers may experient unexpected behavior
+  _sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
   sessionInterrupted: (event) => { sessionId: string, sessionType: string, conversationId: string };
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;

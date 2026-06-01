@@ -325,6 +325,34 @@ describe('handleSessionInit()', () => {
     expect(acceptSessionSpy).toHaveBeenCalled();
     expect(oldSession.sessionReplacedByReinvite).toBeTruthy();
   });
+
+  it('should create a StatsAggregator when reportStatistics is enabled', async () => {
+    const superInit = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit');
+    const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
+    mockSdk._config.autoConnectSessions = true;
+    mockSdk._config.reportStatistics = true;
+
+    const session: any = new MockSession();
+    await handler.handleSessionInit(session);
+
+    expect(superInit).toHaveBeenCalled();
+    expect(session.statsAggregator).toBeDefined();
+    expect(acceptSessionSpy).toHaveBeenCalled();
+  });
+
+  it('should not create a StatsAggregator when reportStatistics is not enabled', async () => {
+    const superInit = jest.spyOn(BaseSessionHandler.prototype, 'handleSessionInit');
+    const acceptSessionSpy = jest.spyOn(handler, 'acceptSession').mockImplementation();
+    mockSdk._config.autoConnectSessions = true;
+    mockSdk._config.reportStatistics = false;
+
+    const session: any = new MockSession();
+    await handler.handleSessionInit(session);
+
+    expect(superInit).toHaveBeenCalled();
+    expect(session.statsAggregator).toBeUndefined();
+    expect(acceptSessionSpy).toHaveBeenCalled();
+  });
 });
 
 describe('acceptSession()', () => {
@@ -1516,7 +1544,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.conversations[update.id],
       session
     );
-    expect(sdkEmitSpy).not.toHaveBeenCalled();
+    // STREAM-1590 and STREAM-1591: We used to not want this to emit at all, but now we want a private event for StatsAggregator
+    expect(sdkEmitSpy).toHaveBeenCalledWith(
+      '_sessionEnded',
+      session,
+      { condition: JingleReasons.success }
+    );
   });
 
   it('should emit removed event and "sessionEnded" if we had an activeSession', async () => {
@@ -2845,6 +2878,31 @@ describe('isConversationHeld()', () => {
 
       await handler.disableHandler();
       expect(handler.boundPersistentConnectionEventHandler).not.toEqual(old);
+    });
+  });
+
+  describe('enableHandler', () => {
+    it('should listen for persistent connection events when not a guest', async () => {
+      (mockSdk as any).isGuest = false;
+      const subscribeSpy = mockSdk._streamingConnection.notifications.subscribe;
+
+      await handler.enableHandler();
+
+      expect(subscribeSpy).toHaveBeenCalledWith(
+        expect.stringContaining('persistentconnection'),
+        expect.any(Function),
+        true
+      );
+      expect(handler.boundPersistentConnectionEventHandler).toBeDefined();
+    });
+
+    it('should not listen for persistent connection events when a guest', async () => {
+      (mockSdk as any).isGuest = true;
+      const subscribeSpy = mockSdk._streamingConnection.notifications.subscribe;
+
+      await handler.enableHandler();
+
+      expect(subscribeSpy).not.toHaveBeenCalled();
     });
   });
 });
