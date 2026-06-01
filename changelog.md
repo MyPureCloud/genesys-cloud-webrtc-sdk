@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
+* [STREAM-1589](https://inindca.atlassian.net/browse/STREAM-1589) - Drop `mediaResourceId` and simply rely on `sessionId` for media statistics
 
 ### Fixed
 * [STREAM-1322](https://inindca.atlassian.net/browse/STREAM-1322) - Fix `logLevel` not being passed to the internal streaming-client, causing it to always default to `'info'` regardless of the SDK's configured log level.

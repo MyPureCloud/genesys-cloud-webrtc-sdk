@@ -421,7 +421,6 @@ describe('StatsAggregator', () => {
       expect(iqArg.genesysWebrtc.params.conversationId).toBe(mockSession.conversationId);
       expect(iqArg.genesysWebrtc.params.sessionId).toBe(mockSession.id);
       expect(iqArg.genesysWebrtc.params.communicationId).toBe('testCall');
-      expect(iqArg.genesysWebrtc.params.mediaResourceId).toBeTruthy();
       expect(iqArg.genesysWebrtc.params.stats).toBeDefined();
     });
 

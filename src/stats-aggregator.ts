@@ -10,7 +10,6 @@ interface ISentStats {
 }
 
 export class StatsAggregator {
-  private mediaResourceId: string;
   private statsGatherer?: StatsGatherer;
 
   private setBaseline = false;
@@ -24,8 +23,6 @@ export class StatsAggregator {
   private boundStatsHandler?: (stats: StatsEvent) => void;
 
   constructor(private session: IExtendedMediaSession, private sdk: GenesysCloudWebrtSdk) {
-    this.mediaResourceId = uuidv4();
-
     if (this.shouldGatherImmediately(session)) {
       this.startGatheringStats();
     }
@@ -231,7 +228,6 @@ export class StatsAggregator {
           sessionId: this.session.id,
           conversationId,
           communicationId,
-          mediaResourceId: this.mediaResourceId,
           stats: statsData
         }
       }
