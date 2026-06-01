@@ -101,6 +101,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   station: IStation | null;
   headset: ISdkHeadsetService;
   _pauseDisconnectedMessages: boolean;
+  _preDisconnectSessionIds: string[];
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -168,6 +169,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
         reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
+        skipConstraints: options.skipConstraints,
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
@@ -181,7 +183,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           outputDeviceId: defaultsOptions.outputDeviceId || null,
           monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
         }
-      }
+      },
     };
 
     this._orgDetails = { id: options.organizationId } as IOrgDetails;
@@ -209,6 +211,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     });
 
     this._connected = false;
+    this._preDisconnectSessionIds = [];
     this._streamingConnection = null;
     this._http = new HttpClient();
   }

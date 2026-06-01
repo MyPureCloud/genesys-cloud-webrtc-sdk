@@ -6,7 +6,7 @@ import { GenesysCloudWebrtcSdk } from '../client';
 import { LogLevels, SessionTypes, SdkErrorTypes } from '../types/enums';
 import { SessionManager } from './session-manager';
 import { checkHasTransceiverFunctionality, logDeviceChange } from '../media/media-utils';
-import { createAndEmitSdkError, delay, requestApi } from '../utils';
+import { createAndEmitSdkError, delay, isPeerConnectionDisconnected, requestApi } from '../utils';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import {
   IPendingSession,
@@ -144,7 +144,7 @@ export default abstract class BaseSessionHandler {
   checkPeerConnectionState (session: IExtendedMediaSession): void {
     const sessionState = session.state;
     const peerConnectionState = session.peerConnection.connectionState;
-    if (sessionState === 'active' && peerConnectionState === 'closed') {
+    if (sessionState === 'active' && isPeerConnectionDisconnected(peerConnectionState)) {
       this.log('warn', 'peer connection state does not match session state. cleaning up.', { sessionState, peerConnectionState, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
       this.onSessionTerminated(session, { condition: Constants.JingleReasonCondition.Gone });
     }
@@ -535,7 +535,12 @@ export default abstract class BaseSessionHandler {
       return;
     }
 
-    return this.applyTrackConstraints(sender);
+    /* It is useful to not apply constraints when dealing with devices that have their own hardware logic for video orientation, such as phones */
+    if (this.sdk._config.skipConstraints) {
+      return Promise.resolve();
+    } else {
+      return this.applyTrackConstraints(sender);
+    }
   }
 
   // we want to apply track constraints but in safari specifically for screen share streams the settings don't immediately populate
