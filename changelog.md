@@ -3,17 +3,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...HEAD)
 ### Added
-* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
 * [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
-* [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
-* [STREAM-1590](https://inindca.atlassian.net/browse/STREAM-1590) - Emit private `_sessionEnded` event to stop gathering media stats in certain concurrent call scenarios.
 * [STREAM-1224](https://inindca.atlassian.net/browse/STREAM-1224) - Add `skipConstraints` to `ISdkFullConfig` to improve mobile devices support.
 
 ### Changed
-* [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
 * [STREAM-1589](https://inindca.atlassian.net/browse/STREAM-1589) - Drop `mediaResourceId` and simply rely on `sessionId` for media statistics
+
+# [v13.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...v13.2.0)
+### Added
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
+* [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
+* [STREAM-1590](https://inindca.atlassian.net/browse/STREAM-1590) - Emit private `_sessionEnded` event to stop gathering media stats in certain concurrent call scenarios.
+
+### Changed
+* [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
 
 ### Fixed
 * [STREAM-1322](https://inindca.atlassian.net/browse/STREAM-1322) - Fix `logLevel` not being passed to the internal streaming-client, causing it to always default to `'info'` regardless of the SDK's configured log level.
