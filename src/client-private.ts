@@ -120,15 +120,15 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);
   on('requestIncomingRtcSession', this.sessionManager.onPropose.bind(this.sessionManager));
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
-  on('rtcSessionError', this.emit.bind(this, 'error' as any));
-  on('traceRtcSession', this.emit.bind(this, 'trace' as any));
+  on('rtcSessionError', this.emit.bind(this, 'error' as unknown as Parameters<typeof this.emit>[0]));
+  on('traceRtcSession', this.emit.bind(this, 'trace' as unknown as Parameters<typeof this.emit>[0]));
 
   /* if streaming-client is emitting these events, that means we should have the pendingSession stored where we can look up the corresponding conversationId – and it won't interfere with any persistent connection */
   on('cancelIncomingRtcSession', this.sessionManager.onCancelPendingSession.bind(this.sessionManager));
   on('handledIncomingRtcSession', this.sessionManager.onHandledPendingSession.bind(this.sessionManager));
 
   // other events
-  this._streamingConnection.on('error', this.emit.bind(this, 'sdkError' as any));
+  this._streamingConnection.on('error', this.emit.bind(this, 'sdkError' as unknown as Parameters<typeof this.emit>[0]));
 }
 
 export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
