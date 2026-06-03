@@ -18,7 +18,7 @@ export const getOrCreateAudioMediaElement = function (className: string = GC_AUD
   }
   const audio = document.createElement('audio');
   audio.classList.add(className);
-  (audio.style as any) = 'visibility: hidden';
+  audio.style.visibility = 'hidden';
 
   document.body.append(audio);
   return audio;
@@ -81,7 +81,7 @@ export const checkHasTransceiverFunctionality = function (): boolean {
      */
     const origGetStats = dummyRtcPeerConnection.getStats.bind(dummyRtcPeerConnection);
     /* istanbul ignore next */
-    (dummyRtcPeerConnection as any).getStats = (selector?: MediaStreamTrack | null): Promise<RTCStatsReport | any> => {
+    (dummyRtcPeerConnection as unknown as { getStats: (selector?: MediaStreamTrack | null) => Promise<RTCStatsReport | Record<string, never>> }).getStats = (selector?: MediaStreamTrack | null): Promise<RTCStatsReport | Record<string, never>> => {
       return origGetStats(selector).catch(e => {
         if (e.name === 'InvalidStateError' && e.message === 'RTCPeerConnection is gone (did you enter Offline mode?)') {
           return {};

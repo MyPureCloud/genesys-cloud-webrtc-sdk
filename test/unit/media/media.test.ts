@@ -1059,7 +1059,7 @@ describe('SdkMedia', () => {
       expect(emitSpy).not.toHaveBeenCalled();
 
       /* already tracked audio tracks should be ignored */
-      sdkMedia['audioTracksBeingMonitored'][mockAudioTrack.id] = 123123;
+      sdkMedia['audioTracksBeingMonitored'][mockAudioTrack.id] = 123123 as unknown as ReturnType<typeof setInterval>;
       monitorMicVolumeFn(mockStream, mockAudioTrack);
       jest.advanceTimersByTime(110);
 
