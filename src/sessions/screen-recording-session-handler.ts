@@ -35,7 +35,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
     await super.handlePropose(pendingSession);
   }
 
-  async acceptSession (session: ScreenRecordingMediaSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: ScreenRecordingMediaSession, params: IAcceptSessionRequest): Promise<void> {
     const mediaStream = params.mediaStream;
 
     if (!mediaStream) {
@@ -48,7 +48,7 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
 
     session._outboundStream = mediaStream;
 
-    let addMediaPromise: Promise<any> = Promise.resolve();
+    let addMediaPromise: Promise<unknown> = Promise.resolve();
     mediaStream.getTracks().forEach((track) => {
       addMediaPromise = addMediaPromise.then(() => {
         this.sdk.logger.info('Adding screen track to session', { trackId: track.id, label: track.label, conversationId: session.conversationId, sessionType: this.sessionType });
@@ -76,20 +76,20 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
         take(1)
       ).subscribe({
         next: async () => await this.updateScreenRecordingMetadatas(session, metadatas),
-        error: (e) => this._logSubscriptionError(e)
+        error: (_e) => this._logSubscriptionError(_e)
       });
   }
 
   /* istanbul ignore next */
-  _logSubscriptionError(e: unknown) {
+  _logSubscriptionError(_e: unknown) {
     // This is for testing thrown exceptions with an RXJS subscription
   }
 
-  async endSession (conversationId: string, session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
+  async endSession (conversationId: string, _session: IExtendedMediaSession, _reason?: Constants.JingleReasonCondition): Promise<void> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${this.sessionType} must be ended remotely`, { conversationId });
   }
 
-  updateOutgoingMedia (session: IExtendedMediaSession,  options: IUpdateOutgoingMedia): never {
+  updateOutgoingMedia (session: IExtendedMediaSession, _options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for screen recording sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for screen recording sessions');
   }
@@ -97,8 +97,8 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
   private updateScreenRecordingMetadatas (session: ScreenRecordingMediaSession, metadatas: ScreenRecordingMetadata[]) {
     this.log('info', 'sending screen metadatas', { conversationId: session.conversationId, sessionId: session.id, metadatas })
     metadatas.forEach((meta) => {
-      // adding any here because I don't want to add this to the public interface
-      (meta as any)._trackId = meta.trackId;
+      // adding _trackId because I don't want to add this to the public interface
+      (meta as unknown as Record<string, unknown>)._trackId = meta.trackId;
 
       const transceiver = session.pc.getTransceivers()
         .find((transceiver) => transceiver.sender.track?.id === meta.trackId);

@@ -21,7 +21,7 @@ declare module 'genesys-cloud-streaming-client' {
   }
 }
 
-export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
+export type KeyFrom<T extends { [key: string]: unknown }, key extends keyof T> = key;
 
 /**
  * SDK configuration options for constructing a new instance
@@ -810,7 +810,7 @@ export interface ICallStateFromParticipant {
     code: string;
     message: string;
     messageWithParams: string;
-    messageParams: { [key: string]: any }
+    messageParams: { [key: string]: unknown }
   }
 }
 
@@ -925,7 +925,7 @@ export interface IExtendedMediaSession extends IMediaSession {
   _emittedSessionStarteds?: { [conversationId: string]: true };
   _screenShareStream?: MediaStream;
   _outboundStream?: MediaStream;
-  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
+  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<void>; };
   _visibilityHandler?: EventListener;
 }
 
@@ -1001,7 +1001,7 @@ export interface SubscriptionEvent {
     correlationId: string;
   };
   topicName: string;
-  eventBody: any;
+  eventBody: unknown;
 }
 
 export interface IParticipantsUpdate {
@@ -1032,7 +1032,7 @@ export interface IJingleReason {
 
 export interface SdkEvents {
   sdkError: SdkError;
-  trace: (...args: any[]) => void;
+  trace: (...args: unknown[]) => void;
   connected: (info: { reconnect: boolean }) => void;
   ready: void;
   disconnected: (info: string, eventData: { reconnecting: boolean }) => void;

@@ -1,14 +1,24 @@
 // Hopefully this file is just temporary. Windows 11 currently has an issue where ice stop responding on the first
 // webrtc session after a system reboot. The purpose of this file is to force a webrtc connection upon bootstrap
 // in order to work around the windows 11 issue.
+
+interface NavigatorUAData {
+  platform: string;
+  getHighEntropyValues(hints: string[]): Promise<{ platformVersion: string }>;
+}
+
+interface NavigatorWithUAData extends Navigator {
+  userAgentData?: NavigatorUAData;
+}
+
 export const isWindows11 = async (): Promise<boolean | undefined> => {
-  if (!(navigator as any).userAgentData) {
+  if (!(navigator as NavigatorWithUAData).userAgentData) {
     console.warn('unable to determine if windows11');
     return;
   }
 
-  if ((navigator as any).userAgentData.platform === "Windows") {
-    const userAgentData = await (navigator as any).userAgentData.getHighEntropyValues(["platformVersion"]);
+  if ((navigator as NavigatorWithUAData).userAgentData!.platform === "Windows") {
+    const userAgentData = await (navigator as NavigatorWithUAData).userAgentData!.getHighEntropyValues(["platformVersion"]);
 
     // in the genesys cloud desktop app, platformVersion is just an empty string
     if (!userAgentData.platformVersion) {
@@ -27,16 +37,20 @@ export const isWindows11 = async (): Promise<boolean | undefined> => {
   }
 }
 
-export const doBasicWebrtcSession = async (iceServers: any[]): Promise<void> => {
+export const doBasicWebrtcSession = async (iceServers: RTCIceServer[]): Promise<void> => {
   console.info('running windows11 webrtc hack')
   const pc1 = new RTCPeerConnection({ iceServers });
   const pc2 = new RTCPeerConnection({ iceServers });
 
   pc1.onicecandidate = (ev: RTCPeerConnectionIceEvent) => {
-    pc2.addIceCandidate((ev as any).candidate);
+    if (ev.candidate) {
+      pc2.addIceCandidate(ev.candidate);
+    }
   };
   pc2.onicecandidate = (ev: RTCPeerConnectionIceEvent) => {
-    pc1.addIceCandidate((ev as any).candidate);
+    if (ev.candidate) {
+      pc1.addIceCandidate(ev.candidate);
+    }
   };
 
   pc1.onconnectionstatechange = () => {
@@ -58,7 +72,7 @@ export const doBasicWebrtcSession = async (iceServers: any[]): Promise<void> => 
   pc1.setRemoteDescription(answer);
 }
 
-export async function setupWebrtcForWindows11 (iceServers: any[]) {
+export async function setupWebrtcForWindows11 (iceServers: RTCIceServer[]) {
   const isWindows11Value = await isWindows11();
 
   // assume windows11 if indeterminate
