@@ -51,7 +51,7 @@ export default abstract class BaseSessionHandler {
     this.sdk.emit('conversationUpdateRaw', update);
   }
 
-  protected log (level: LogLevels, message: any, details?: any, logOptions?: ILogMessageOptions): void {
+  protected log (level: LogLevels, message: string, details?: object, logOptions?: ILogMessageOptions): void {
     this.sdk.logger[level].call(this.sdk.logger, message, details, logOptions);
   }
 
@@ -69,24 +69,24 @@ export default abstract class BaseSessionHandler {
       .map(session => ({ conversationId: session.conversationId, sessionId: session.id, sessionType: this.sessionType }));
   }
 
-  async startSession (sessionStartParams: IStartSessionParams): Promise<any> {
+  async startSession (sessionStartParams: IStartSessionParams): Promise<unknown> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `sessionType ${sessionStartParams.sessionType} can only be started using the genesys cloud api`, { sessionStartParams });
   }
 
-  async handlePropose (pendingSession: IPendingSession): Promise<any> {
+  async handlePropose (pendingSession: IPendingSession): Promise<void> {
     pendingSession.sessionType = this.sessionType;
     this.sdk.emit('pendingSession', pendingSession);
   }
 
-  async proceedWithSession (session: IPendingSession): Promise<any> {
+  async proceedWithSession (session: IPendingSession): Promise<void> {
     this.sessionManager.webrtcSessions.acceptRtcSession(session.id);
   }
 
-  async rejectPendingSession (session: IPendingSession): Promise<any> {
+  async rejectPendingSession (session: IPendingSession): Promise<void> {
     this.sessionManager.webrtcSessions.rejectRtcSession(session.id);
   }
 
-  async handleSessionInit (session: IExtendedMediaSession): Promise<any> {
+  async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     const pendingSession = this.sessionManager.getPendingSession(session);
     if (pendingSession) {
       session.conversationId = session.conversationId || pendingSession.conversationId;
@@ -108,7 +108,7 @@ export default abstract class BaseSessionHandler {
     session._visibilityHandler = boundVisibilityHandler;
     document.addEventListener('visibilitychange', boundVisibilityHandler);
 
-    session.on('connectionState' as any, (state: string) => {
+    session.on('connectionState', (state) => {
       this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
       /* Emit sessionInterrupted when the connection is interrupted so that consuming apps can inform users (e.g. Volt). */
       if (state === 'interrupted') {
@@ -160,21 +160,23 @@ export default abstract class BaseSessionHandler {
     this.sdk.emit('sessionEnded', session, reason);
   }
 
-  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
-    const logExtras: any = {
-      sessionType: session.sessionType,
-      conversationId: session.conversationId,
-      sessionId: session.id,
-      params
-    };
+  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<void> {
+    const logParams: Record<string, unknown> = { ...params };
 
     /* clean up log params */
     const keysNotToFilter = ['conversationId', 'sessionType', 'screenRecordingMetadatas'] as Array<keyof IAcceptSessionRequest>;
 
     /* we only want to mask params that actually exist */
-    Object.keys(logExtras.params)
-      .filter(key => !keysNotToFilter.includes(key as keyof IAcceptSessionRequest) && params[key])
-      .forEach(key => logExtras.params[key] = {});
+    Object.keys(logParams)
+      .filter(key => !keysNotToFilter.includes(key as keyof IAcceptSessionRequest) && params[key as keyof IAcceptSessionRequest])
+      .forEach(key => logParams[key] = {});
+
+    const logExtras: Record<string, unknown> = {
+      sessionType: session.sessionType,
+      conversationId: session.conversationId,
+      sessionId: session.id,
+      params: logParams
+    };
 
     const outputDeviceId = this.sdk._config.defaults.outputDeviceId || '';
     const isSupported = this.sdk.media.getState().hasOutputDeviceSupport;
@@ -206,7 +208,7 @@ export default abstract class BaseSessionHandler {
     return this.forceEndSession(session, reason);
   }
 
-  async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
+  async setVideoMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<void> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Video mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
@@ -214,7 +216,7 @@ export default abstract class BaseSessionHandler {
     });
   }
 
-  async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<any> {
+  async setAudioMute (session: IExtendedMediaSession, params: ISessionMuteRequest): Promise<void> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Audio mute not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
@@ -222,7 +224,7 @@ export default abstract class BaseSessionHandler {
     });
   }
 
-  async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest): Promise<any> {
+  async setConversationHeld (session: IExtendedMediaSession, params: IConversationHeldRequest): Promise<void> {
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, `Setting conversation on "hold" not supported for sessionType ${session.sessionType}`, {
       conversationId: session.conversationId,
       sessionId: session.id,
@@ -236,7 +238,7 @@ export default abstract class BaseSessionHandler {
    * @param session to update
    * @param options for updating outgoing media
    */
-  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<any> {
+  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<void> {
     logDeviceChange(this.sdk, session, 'calledToChangeDevices', {
       requestedNewMediaStream: options.stream,
       requestedVideoDeviceId: options.videoDeviceId,
@@ -254,7 +256,7 @@ export default abstract class BaseSessionHandler {
     }
 
     const outboundStream = session._outboundStream;
-    const destroyMediaPromises: Promise<any>[] = [];
+    const destroyMediaPromises: Promise<void>[] = [];
     const trackIdsToIgnore: string[] = [];
     const trackKindsToIgnore: string[] = [];
     const senderTracks = session.peerConnection.getSenders()
@@ -266,7 +268,7 @@ export default abstract class BaseSessionHandler {
     let updateAudio = options.audioDeviceId !== undefined && options.audioDeviceId !== false;
     let stream: MediaStream = options.stream;
 
-    const loggableOptions: any = { ...options };
+    const loggableOptions: Record<string, unknown> = { ...options };
     loggableOptions.session = options.session && { sessionId: options.session.id };
 
     /* make sure we don't request the same media that is already active on the session */
@@ -366,11 +368,11 @@ export default abstract class BaseSessionHandler {
           const userId = this.sdk._personDetails.id;
           if (updateAudio) {
             this.log('warn', 'User denied media permissions. Sending mute for audio', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
-            audioMute = session.mute(userId as any, 'audio');
+            audioMute = session.mute(userId, 'audio');
           }
           if (updateVideo) {
             this.log('warn', 'User denied media permissions. Sending mute for video', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
-            videoMute = session.mute(userId as any, 'video');
+            videoMute = session.mute(userId, 'video');
           }
 
           await Promise.all([audioMute, videoMute]);
@@ -404,7 +406,7 @@ export default abstract class BaseSessionHandler {
         toAudioTrack: stream.getAudioTracks()[0]
       });
 
-      const newMediaPromises: Promise<any>[] = stream.getTracks().map(async track => {
+      const newMediaPromises: Promise<void>[] = stream.getTracks().map(async track => {
         await this.addReplaceTrackToSession(session, track);
         outboundStream.addTrack(track);
 
@@ -464,7 +466,7 @@ export default abstract class BaseSessionHandler {
    * @param allowLegacyStreamBasedActionsFallback if false, an error will be thrown if track based actions are not supported
    */
   async addMediaToSession (session: IExtendedMediaSession, stream: MediaStream): Promise<void> {
-    const promises: any[] = [];
+    const promises: unknown[] = [];
     if (checkHasTransceiverFunctionality()) {
       this.log('info', 'Using track based actions', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
       const senders = session.peerConnection.getSenders();
