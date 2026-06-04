@@ -76,12 +76,12 @@ export class ScreenRecordingSessionHandler extends BaseSessionHandler {
         take(1)
       ).subscribe({
         next: async () => await this.updateScreenRecordingMetadatas(session, metadatas),
-        error: (_e) => this._logSubscriptionError(_e)
+        error: (e) => this._logSubscriptionError(e)
       });
   }
 
   /* istanbul ignore next */
-  _logSubscriptionError(_e: unknown) {
+  _logSubscriptionError(_: unknown) {
     // This is for testing thrown exceptions with an RXJS subscription
   }
 

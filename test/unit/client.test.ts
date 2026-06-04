@@ -221,7 +221,7 @@ describe('Client', () => {
     it('should call session manager to start video conference', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoConference('123');
       expect(sessionManagerMock.startSession).toBeCalledWith({ jid: '123', sessionType: SessionTypes.collaborateVideo });
     });
@@ -249,7 +249,7 @@ describe('Client', () => {
         }
       };
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoConference('test-room@conference.com');
 
       expect(sessionManagerMock.startSession).toBeCalledWith({
@@ -316,7 +316,7 @@ describe('Client', () => {
     it('should call session manager to start video meeting', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoMeeting('123abc');
       expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
     });
@@ -365,7 +365,7 @@ describe('Client', () => {
       const media = new MockStream({ video: true });
       sdk = constructSdk({ organizationId: 'some-org' }); // for guest user sdk
 
-      sessionManagerMock.startSession.mockResolvedValue(media);
+      sessionManagerMock.startSession.mockResolvedValue(media as unknown as MediaStream);
 
       const stream = await sdk.startScreenShare();
 
@@ -402,7 +402,7 @@ describe('Client', () => {
     it('proxies the call to the sessionManager', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.acceptSession.mockResolvedValue({ conversationId: 'some-convo' });
+      sessionManagerMock.acceptSession.mockResolvedValue(undefined);
 
       const params = { conversationId: '5512551' };
       await sdk.acceptSession(params);
@@ -1439,7 +1439,7 @@ describe('Client', () => {
     it('should call session manager to start softphone session', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ id: '123', selfUri: '/conversations/123' });
       await sdk.startSoftphoneSession({ phoneNumber: '123' } as any);
       expect(sessionManagerMock.startSession).toBeCalledWith({ phoneNumber: '123', sessionType: 'softphone' });
     });
