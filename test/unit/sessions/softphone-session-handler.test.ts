@@ -1145,14 +1145,14 @@ describe('handleSoftphoneConversationUpdate()', () => {
   const userJid = 'martians-like-to-talk-too@mars.com';
   let emitConversationEventSpy: jest.SpyInstance;
   let sdkEmitSpy: jest.SpyInstance;
-  let notifyClientAddressSpy: jest.SpyInstance;
+  let notifyClientMetadataSpy: jest.SpyInstance;
 
   beforeEach(() => {
     mockSdk._personDetails = { id: userId, chat: { jabberId: userJid } } as IPersonDetails;
     emitConversationEventSpy = jest.spyOn(handler, 'emitConversationEvent')
       .mockImplementation();
     sdkEmitSpy = jest.spyOn(mockSdk, 'emit').mockImplementation();
-    notifyClientAddressSpy = jest.spyOn(handler as any, 'notifyClientAddress')
+    notifyClientMetadataSpy = jest.spyOn(handler as any, 'notifyClientMetadata')
       .mockImplementation();
   });
 
@@ -1614,11 +1614,11 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(handler.conversations[update.id]).toBeTruthy();
   });
 
-  describe('notifyClientAddress', () => {
+  describe('notifyClientMetadata', () => {
     let requestApiSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      notifyClientAddressSpy.mockRestore();
+      notifyClientMetadataSpy.mockRestore();
       requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     });
 
@@ -1626,7 +1626,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
       requestApiSpy.mockRestore();
     });
 
-    it('should notify client address when call transitions from alerting to connected (inbound)', () => {
+    it('should notify client metadata when call transitions from alerting to connected (inbound)', () => {
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
         previousCallState: { state: CommunicationStates.alerting }
@@ -1639,12 +1639,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
       expect(requestApiSpy).toHaveBeenCalledWith(
-        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
         { method: 'post' }
       );
     });
 
-    it('should notify client address when call transitions from contacting to connected (outbound)', () => {
+    it('should notify client metadata when call transitions from contacting to connected (outbound)', () => {
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
         previousCallState: { state: CommunicationStates.contacting }
@@ -1655,12 +1655,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
       expect(requestApiSpy).toHaveBeenCalledWith(
-        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
         { method: 'post' }
       );
     });
 
-    it('should notify client address when call transitions from dialing to connected (outbound)', () => {
+    it('should notify client metadata when call transitions from dialing to connected (outbound)', () => {
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
         previousCallState: { state: CommunicationStates.dialing }
@@ -1671,12 +1671,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
       expect(requestApiSpy).toHaveBeenCalledWith(
-        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
         { method: 'post' }
       );
     });
 
-    it('should notify client address for persistent connection (new conversation on existing session)', () => {
+    it('should notify client metadata for persistent connection (new conversation on existing session)', () => {
       const session = new MockSession() as any as IExtendedMediaSession;
       session.conversationId = 'old-conversation-id';
       (session as any)._emittedSessionStarteds = {};
@@ -1719,12 +1719,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
       expect(requestApiSpy).toHaveBeenCalledWith(
-        `/conversations/${newConversationId}/calls/${callState.id}/clientaddress`,
+        `/conversations/calls/${newConversationId}/communications/${callState.id}/metadata`,
         { method: 'post' }
       );
     });
 
-    it('should NOT notify client address when call transitions to dialing (not yet connected)', () => {
+    it('should NOT notify client metadata when call transitions to dialing (not yet connected)', () => {
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.dialing,
         previousCallState: { state: CommunicationStates.contacting }
@@ -1736,12 +1736,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
       expect(requestApiSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('clientaddress'),
+        expect.stringContaining('metadata'),
         expect.anything()
       );
     });
 
-    it('should NOT notify client address when no session exists (another client handled it)', () => {
+    it('should NOT notify client metadata when no session exists (another client handled it)', () => {
       const { update, participant, callState, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
         previousCallState: { state: CommunicationStates.contacting }
@@ -1752,12 +1752,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, undefined);
 
       expect(requestApiSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('clientaddress'),
+        expect.stringContaining('metadata'),
         expect.anything()
       );
     });
 
-    it('should NOT notify client address when state is already connected (duplicate update)', () => {
+    it('should NOT notify client metadata when state is already connected (duplicate update)', () => {
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
         previousCallState: { state: CommunicationStates.connected }
@@ -1768,12 +1768,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
       expect(requestApiSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('clientaddress'),
+        expect.stringContaining('metadata'),
         expect.anything()
       );
     });
 
-    it('should not block call handling if notifyClientAddress fails', async () => {
+    it('should not block call handling if notifyClientMetadata fails', async () => {
       requestApiSpy.mockRejectedValue(new Error('network error'));
 
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
@@ -1791,12 +1791,12 @@ describe('handleSoftphoneConversationUpdate()', () => {
       await flushPromises();
 
       expect(requestApiSpy).toHaveBeenCalledWith(
-        `/conversations/${update.id}/calls/${callState.id}/clientaddress`,
+        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
         { method: 'post' }
       );
       // The error should be logged but not propagated
       expect(mockSdk.logger.warn).toHaveBeenCalledWith(
-        'failed to notify client address',
+        'failed to notify client metadata',
         expect.objectContaining({ conversationId: update.id, communicationId: callState.id }),
         undefined
       );
