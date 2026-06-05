@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...HEAD)
+
+# [v13.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...v13.2.1)
+
 ### Added
 * [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
 * [STREAM-1224](https://inindca.atlassian.net/browse/STREAM-1224) - Add `skipConstraints` to `ISdkFullConfig` to improve mobile devices support.
