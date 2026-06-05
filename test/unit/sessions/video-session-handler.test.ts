@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -1475,10 +1473,10 @@ describe('pinParticipantVideo', () => {
       address: null as any,
       confined: null as any,
       direction: null as any,
-      id: uuidv4(),
+      id: globalThis.crypto.randomUUID(),
       state: CommunicationStates.connected,
       purpose: 'user',
-      userId: uuidv4(),
+      userId: globalThis.crypto.randomUUID(),
       muted: false,
       videoMuted: false
     };

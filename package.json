@@ -68,7 +68,6 @@
     "rxjs": "^7.8.1",
     "softphone-vendor-headsets": "3.0.0",
     "strict-event-emitter-types": "^2.0.0",
-    "uuid": "^9.0.1",
     "webrtc-stats-gatherer": "^9.1.0"
   },
   "devDependencies": {

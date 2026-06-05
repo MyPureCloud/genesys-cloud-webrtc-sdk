@@ -6,7 +6,6 @@ import browserama from 'browserama';
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
 import { SdkErrorTypes } from '../types/enums';
-import { v4 as uuidv4 } from 'uuid';
 import {
   IExtendedMediaSession,
   IMediaRequestOptions,
@@ -143,7 +142,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   ): Promise<MediaStream | void> {
     const optionsCopy = (options && { ...options }) || {};
     if (!optionsCopy.uuid) {
-      optionsCopy.uuid = uuidv4();
+      optionsCopy.uuid = globalThis.crypto.randomUUID();
     }
     const requestingAudio = mediaType === 'audio';
     const requestingVideo = mediaType === 'video';
@@ -317,7 +316,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   ): Promise<MediaStream> {
     const optionsCopy = { ...mediaReqOptions };
     if (!optionsCopy.uuid) {
-      optionsCopy.uuid = uuidv4();
+      optionsCopy.uuid = globalThis.crypto.randomUUID();
     }
 
     /* `getStandardConstraints` will set media type to `truthy` if `null` was passed in */
@@ -440,7 +439,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const constraints = this.getScreenShareConstraints();
 
     const baseNrStatInfo = {
-      requestId: uuidv4(),
+      requestId: globalThis.crypto.randomUUID(),
       audioRequested: false,
       videoRequested: false,
       displayRequested: true,
