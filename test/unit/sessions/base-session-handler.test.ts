@@ -6,7 +6,6 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
 import { IExtendedMediaSession, ConversationUpdate, IAcceptSessionRequest } from '../../../src';
-import { v4 as uuidv4 } from 'uuid';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
@@ -249,7 +248,7 @@ describe('updateOutgoingMedia()', () => {
     session.peerConnection._addSender(existingTrack);
 
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue({} as any);
-    const device = { deviceId: uuidv4(), label: existingTrack.label, kind: 'audioinput' };
+    const device = { deviceId: globalThis.crypto.randomUUID(), label: existingTrack.label, kind: 'audioinput' };
     mockSdk.media['setDevices']([device as any]);
 
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: false, audioDeviceId: device.deviceId });
@@ -263,7 +262,7 @@ describe('updateOutgoingMedia()', () => {
     session.peerConnection._addSender(existingTrack);
 
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue({} as any);
-    const device = { deviceId: uuidv4(), label: existingTrack.label, kind: 'videoinput' };
+    const device = { deviceId: globalThis.crypto.randomUUID(), label: existingTrack.label, kind: 'videoinput' };
     mockSdk.media['setDevices']([device as any]);
 
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: device.deviceId, audioDeviceId: false });
@@ -1051,8 +1050,8 @@ describe('getActiveConversations', () => {
     handler.sessionType = SessionTypes.softphone;
 
     const sessions = [
-      { sessionType: SessionTypes.collaborateVideo, conversationId: 'convo2', id: uuidv4() } as unknown as IExtendedMediaSession,
-      { sessionType: SessionTypes.softphone, conversationId: 'convo1', id: uuidv4() } as unknown as IExtendedMediaSession
+      { sessionType: SessionTypes.collaborateVideo, conversationId: 'convo2', id: globalThis.crypto.randomUUID() } as unknown as IExtendedMediaSession,
+      { sessionType: SessionTypes.softphone, conversationId: 'convo1', id: globalThis.crypto.randomUUID() } as unknown as IExtendedMediaSession
     ];
 
     jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessions);

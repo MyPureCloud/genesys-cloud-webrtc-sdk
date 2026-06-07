@@ -602,12 +602,13 @@ describe('SdkMedia', () => {
         expect(e.message).toBe('Must call `requestMediaPermissions()` with at least one valid media type: `audio`, `video`, or `both`');
       }
     });
-    it('should not populate uuid with v4 if one already exists in optionsCopy', () => {
-      const v4Spy = jest.fn();
-      jest.mock('uuid', () => ({ v4: v4Spy}));
+
+    it('should use the uuid already in optionsCopy', async () => {
       const reqOptions: IMediaRequestOptions = { audio: true, video: false, retryOnFailure: false, uuid: '123456-789' };
-      sdkMedia.requestMediaPermissions('audio', false, reqOptions);
-      expect(v4Spy).not.toHaveBeenCalled();
+      await sdkMedia.requestMediaPermissions('audio', false, reqOptions);
+      expect(startSingleMediaSpy).toHaveBeenCalledWith('audio', expect.objectContaining({
+        uuid: reqOptions.uuid
+      }));
       jest.clearAllMocks();
     });
   });
@@ -2253,4 +2254,3 @@ describe('SdkMedia', () => {
     });
   });
 });
-
