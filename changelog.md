@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
 * [STREAM-1224](https://inindca.atlassian.net/browse/STREAM-1224) - Add `skipConstraints` to `ISdkFullConfig` to improve mobile devices support.
+* [STREAM-1394](https://inindca.atlassian.net/browse/STREAM-1394) - Notify the backend when a client call reaches a connected state
 
 ### Changed
 * [STREAM-1589](https://inindca.atlassian.net/browse/STREAM-1589) - Drop `mediaResourceId` and simply rely on `sessionId` for media statistics
