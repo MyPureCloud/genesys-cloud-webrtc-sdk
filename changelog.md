@@ -3,9 +3,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.1...HEAD)
 
-# [v13.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...v13.2.1)
+# [v13.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...v13.2.1)
+### Breaking Changes
+* [STREAM-1600](https://inindca.atlassian.net/browse/STREAM-1600) - Replace `uuid` with native `globalThis.crypto.randomUUID()`. `randomUUID()` has been widely available in browsers since 2022, so this should only affect you if you use the SDK in an older browser. Also update `genesys-cloud-client-logger` to v5 and `genesys-cloud-streaming-client` to v20 to pick up their respective `uuid` removals.
 
 ### Added
 * [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
@@ -14,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-456](https://inindca.atlassian.net/browse/STREAM-456) - Bump `softphone-vendor-headsets` to v3.0.0
 * [STREAM-1589](https://inindca.atlassian.net/browse/STREAM-1589) - Drop `mediaResourceId` and simply rely on `sessionId` for media statistics
+* [STREAM-1681](https://inindca.atlassian.net/browse/STREAM-1681) - Update `axios` to v1.16.0 or higher to address vulnerability
 
 # [v13.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...v13.2.0)
 ### Added
