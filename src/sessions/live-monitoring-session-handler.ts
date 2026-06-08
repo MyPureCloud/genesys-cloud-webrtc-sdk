@@ -60,7 +60,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     // Set outbound stream to primary video media stream for monitoring targets
     session._outboundStream = params.mediaStream;
 
-    let addMediaPromise: Promise<any> = Promise.resolve();
+    let addMediaPromise: Promise<unknown> = Promise.resolve();
     params.mediaStream.getTracks().forEach((track) => {
       addMediaPromise = addMediaPromise.then(() => {
         const trackStream = createNewStreamWithTrack(track);
@@ -97,8 +97,8 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     this.log('info', `Accepting live screen monitoring session as observer with ${videoElements.length} available video elements for ${session.pc.getReceivers().length} receivers with ${tracks.length} video tracks`);
 
     try {
-      let addEmptyMediaPromise: Promise<any> = Promise.resolve();
-      tracks.forEach((targetTrack) => {
+      let addEmptyMediaPromise: Promise<unknown> = Promise.resolve();
+      tracks.forEach((_targetTrack) => {
         addEmptyMediaPromise = addEmptyMediaPromise.then(() => {
           const canvas = document.createElement('canvas');
           canvas.width = 1;
@@ -110,7 +110,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
         });
       });
       await addEmptyMediaPromise;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.sdk.logger.error('Error when adding empty video streams', error);
     }
 
@@ -144,7 +144,7 @@ export class LiveMonitoringSessionHandler extends BaseSessionHandler {
     return super.endSession(conversationId, session, reason);
   }
 
-  updateOutgoingMedia(session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
+  updateOutgoingMedia(session: IExtendedMediaSession, _options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for live monitoring sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for live monitoring sessions');
   }

@@ -169,6 +169,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
         reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
+        skipConstraints: options.skipConstraints,
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
@@ -182,7 +183,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           outputDeviceId: defaultsOptions.outputDeviceId || null,
           monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
         }
-      }
+      },
     };
 
     this._orgDetails = { id: options.organizationId } as IOrgDetails;
@@ -363,7 +364,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async startScreenShare (): Promise<MediaStream> {
     if (this.isGuest) {
-      return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
+      return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare }) as Promise<MediaStream>;
     } else {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
@@ -390,7 +391,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Video conferencing requires authentication via JWT or access token.');
     }
 
-    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
+    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo }) as Promise<{ conversationId: string }>;
   }
 
   /**
@@ -409,7 +410,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing meetings not supported for guests');
     }
 
-    return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
+    return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo }) as Promise<{ conversationId: string }>;
   }
 
   /**
@@ -420,7 +421,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
     (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
-    const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+    const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams)) as { id: string; selfUri: string };
     return callInfo;
   }
 

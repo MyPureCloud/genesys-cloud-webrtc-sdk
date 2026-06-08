@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -511,7 +509,7 @@ describe('handlePropose', () => {
     handler.requestedSessions[previouslyRequestedJid] = true;
 
     const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
 
     await handler.handlePropose({
       id: '1241241',
@@ -534,7 +532,7 @@ describe('handlePropose', () => {
     handler.requestedMeetingSessions[previouslyRequestedMeetingId] = true;
 
     const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
 
     await handler.handlePropose({
       id: '1241241',
@@ -555,7 +553,7 @@ describe('handlePropose', () => {
   it('should not emit session if not requested and its a conference', async () => {
     const jid = '123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
 
     const emitSpy = jest.fn();
 
@@ -580,7 +578,7 @@ describe('handlePropose', () => {
   it('should not emit session if peer request and the requestor is current user and not requested by this client', async () => {
     const jid = 'peer-123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
     jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(true);
     jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(false);
 
@@ -607,7 +605,7 @@ describe('handlePropose', () => {
   it('should emit session if peer request', async () => {
     const jid = 'peer-123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
     jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(true);
     jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(false);
 
@@ -633,7 +631,7 @@ describe('handlePropose', () => {
   it('should emit session if agent video request', async () => {
     const jid = 'agent-123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
     jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(false);
     jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(true);
 
@@ -1475,10 +1473,10 @@ describe('pinParticipantVideo', () => {
       address: null as any,
       confined: null as any,
       direction: null as any,
-      id: uuidv4(),
+      id: globalThis.crypto.randomUUID(),
       state: CommunicationStates.connected,
       purpose: 'user',
-      userId: uuidv4(),
+      userId: globalThis.crypto.randomUUID(),
       muted: false,
       videoMuted: false
     };
