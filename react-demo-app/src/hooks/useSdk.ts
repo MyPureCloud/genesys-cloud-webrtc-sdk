@@ -23,6 +23,12 @@ import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
 
+// IRIS client testing
+import licenseText from '/src/iris.ilc?raw';
+import keyText from '/src/iris.key?raw';
+import { GenesysIrisClient } from 'genesys-iris-client';
+import { setIrisClient } from '../features/irisSlice';
+
 interface IAuthData {
   token: string;
   environment: {
@@ -35,8 +41,11 @@ export default function useSdk() {
   let webrtcSdk: GenesysCloudWebrtcSdk;
   const dispatch = useDispatch();
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
+  const irisClient = useSelector((state: RootState) => state.iris.irisClient);
 
   async function initWebrtcSDK(authData: IAuthData) {
+    const irisClient = await constructIrisClient();
+
     const options: ISdkConfig = {
       accessToken: authData.token,
       environment: authData.environment.uri,
@@ -44,15 +53,46 @@ export default function useSdk() {
       originAppName: 'webrtc-demo-app',
       optOutOfTelemetry: true,
       logLevel: 'info',
-      useServerSidePings: true
+      useServerSidePings: true,
+      defaults: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        audioProcessor: (irisClient as any),
+        micNoiseSuppression: false,
+        micEchoCancellation: false,
+        micAutoGainControl: false
+      }
     };
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
+    console.warn('webrtcSdk', webrtcSdk);
     dispatch(setSdk(webrtcSdk as MinimalSdk));
+    dispatch(setIrisClient(irisClient));
 
     connectEventHandlers();
 
     await webrtcSdk.initialize();
+  }
+
+  async function constructIrisClient() {
+    const irisClient = new GenesysIrisClient({
+      company: 'GENESYS_TEST',
+      key: keyText,
+      license: licenseText,
+      team: 'Dev Team',
+      user: 'Zach'
+    });
+
+    return irisClient;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // (sdk as any).audioProcessor.setAudioProcessor(irisClient);
+    // dispatch(setIrisClient(irisClient));
+  }
+
+  async function initIris()  {
+    const irisClient = await constructIrisClient();
+    dispatch(setIrisClient(irisClient));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (sdk as any).audioProcessor.setAudioProcessor(irisClient);
   }
 
   function connectEventHandlers() {
@@ -200,6 +240,7 @@ export default function useSdk() {
     updateAudioVolume,
     destroySdk,
     updateOnQueueStatus,
-    disconnectPersistentConnection
+    disconnectPersistentConnection,
+    initIris
   };
 }
