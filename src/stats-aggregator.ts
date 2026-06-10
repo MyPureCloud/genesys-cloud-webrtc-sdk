@@ -1,5 +1,4 @@
 import StatsGatherer, { GetStatsEvent, StatsEvent } from "webrtc-stats-gatherer";
-import { v4 as uuidv4 } from "uuid";
 
 import GenesysCloudWebrtSdk, { IConversationParticipantFromEvent, IExtendedMediaSession } from ".";
 
@@ -10,7 +9,6 @@ interface ISentStats {
 }
 
 export class StatsAggregator {
-  private mediaResourceId: string;
   private statsGatherer?: StatsGatherer;
 
   private setBaseline = false;
@@ -24,21 +22,20 @@ export class StatsAggregator {
   private boundStatsHandler?: (stats: StatsEvent) => void;
 
   constructor(private session: IExtendedMediaSession, private sdk: GenesysCloudWebrtSdk) {
-    this.mediaResourceId = uuidv4();
-
     if (this.shouldGatherImmediately(session)) {
       this.startGatheringStats();
     }
 
     const boundSessionStartedHandler = this.onSessionStarted.bind(this);
-    const boundSessionEndedHandler = this.onSessionEnded.bind(this);
+    const boundPrivateSessionEndedHandler = this.onPrivateSessionEnded.bind(this);
     sdk.on('sessionStarted', boundSessionStartedHandler);
-    sdk.on('sessionEnded', boundSessionEndedHandler);
+    // STREAM-1590: Use a private event to stop gathering in certain concurrent call scenarios
+    sdk.on('_sessionEnded', boundPrivateSessionEndedHandler);
 
     session.once('terminated', () => {
       this.stopGatheringStats();
       sdk.off('sessionStarted', boundSessionStartedHandler);
-      sdk.off('sessionEnded', boundSessionEndedHandler);
+      sdk.off('_sessionEnded', boundPrivateSessionEndedHandler);
     });
   }
 
@@ -79,7 +76,7 @@ export class StatsAggregator {
       this.startGatheringStats();
   }
 
-  private onSessionEnded(session: IExtendedMediaSession) {
+  private onPrivateSessionEnded(session: IExtendedMediaSession) {
     if (session !== this.session) {
       return;
     }
@@ -224,13 +221,12 @@ export class StatsAggregator {
       to: this.session.peerID,
       genesysWebrtc: {
         jsonrpc: '2.0',
-        id: uuidv4(),
+        id: globalThis.crypto.randomUUID(),
         method: 'report-statistics',
         params: {
           sessionId: this.session.id,
           conversationId,
           communicationId,
-          mediaResourceId: this.mediaResourceId,
           stats: statsData
         }
       }

@@ -31,7 +31,7 @@ import ScreenRecordingSessionHandler from './screen-recording-session-handler';
 import LiveMonitoringSessionHandler from './live-monitoring-session-handler';
 import { WebrtcExtensionAPI } from 'genesys-cloud-streaming-client/dist/es/webrtc';
 
-const sessionHandlersToConfigure: any[] = [
+const sessionHandlersToConfigure: (new (sdk: GenesysCloudWebrtcSdk, sessionManager: SessionManager) => BaseSessionHandler)[] = [
   SoftphoneSessionHandler,
   VideoSessionHandler,
   ScreenShareSessionHandler,
@@ -48,7 +48,7 @@ export class SessionManager {
     this.sessionHandlers = sessionHandlersToConfigure.map((ClassDef) => new ClassDef(this.sdk, this));
   }
 
-  private log (level: LogLevels, message: any, details?: any): void {
+  private log (level: LogLevels, message: string, details?: object): void {
     this.sdk.logger[level](message, details);
   }
 
@@ -166,7 +166,7 @@ export class SessionManager {
     return this.webrtcSessions.getAllSessions() as IExtendedMediaSession[];
   }
 
-  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: any }): BaseSessionHandler {
+  getSessionHandler (params: { sessionInfo?: ISessionInfo, sessionType?: SessionTypes | SessionTypesAsStrings, jingleSession?: IExtendedMediaSession }): BaseSessionHandler {
     let handler: BaseSessionHandler;
     if (params.sessionType || params.sessionInfo?.sessionType) {
       handler = this.sessionHandlers.find((handler) => handler.sessionType == (params.sessionType || params.sessionInfo?.sessionType));
@@ -187,7 +187,7 @@ export class SessionManager {
     return handler;
   }
 
-  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams): Promise<any> {
+  async startSession (startSessionParams: IStartSessionParams | IStartVideoSessionParams | IStartVideoMeetingSessionParams | IStartSoftphoneSessionParams): Promise<{ conversationId: string } | { id: string; selfUri: string } | MediaStream> {
     if (!this.sdk.connected) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'A session cannot be started as streaming client is not yet connected', { sessionType: startSessionParams.sessionType });
     }
@@ -197,7 +197,7 @@ export class SessionManager {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.generic, 'Cannot start a session with a disabled session handler', { startSessionParams, allowedSessionTypes: this.sdk._config.allowedSessionTypes });
     }
 
-    return handler.startSession(startSessionParams);
+    return handler.startSession(startSessionParams) as Promise<{ conversationId: string } | { id: string; selfUri: string } | MediaStream>;
   }
 
   /**
@@ -205,14 +205,14 @@ export class SessionManager {
    *
    * @param options for updating outgoing media
    */
-  async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<any> {
+  async updateOutgoingMedia (options: IUpdateOutgoingMedia): Promise<void> {
     const session = options.session || this.getSession({ conversationId: options.conversationId });
     const handler = this.getSessionHandler({ jingleSession: session });
 
     return handler.updateOutgoingMedia(session, options);
   }
 
-  async updateOutgoingMediaForAllSessions (options?: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<any> {
+  async updateOutgoingMediaForAllSessions (options?: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'>): Promise<void> {
     const opts = options || {
       videoDeviceId: this.sdk._config.defaults.videoDeviceId,
       audioDeviceId: this.sdk._config.defaults.audioDeviceId
@@ -232,7 +232,7 @@ export class SessionManager {
         ...opts
       });
     });
-    return Promise.all(promises);
+    await Promise.all(promises);
   }
 
   updateAudioVolume (volume: number): void {
@@ -248,7 +248,7 @@ export class SessionManager {
     });
   }
 
-  async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<any> {
+  async updateOutputDeviceForAllSessions (outputDeviceId: string | boolean | null): Promise<void> {
     const sessions = this.getAllActiveSessions().filter(s => s.sessionType !== SessionTypes.acdScreenShare);
     const _outputDeviceId = this.sdk.media.getValidDeviceId('audiooutput', outputDeviceId, ...sessions) || '';
     const ids = sessions.map(s => ({ sessionId: s.id, conversationId: s.conversationId, sessionType: s.sessionType }));
@@ -268,7 +268,7 @@ export class SessionManager {
       return handler.updateOutputDevice(session, _outputDeviceId);
     });
 
-    return Promise.all(promises);
+    await Promise.all(promises);
   }
 
   async addOrReplaceTrackOnSession (track: MediaStreamTrack, session: IExtendedMediaSession): Promise<void> {
@@ -398,7 +398,7 @@ export class SessionManager {
     return sessionHandler.handleSessionInit(session);
   }
 
-  async acceptSession (params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (params: IAcceptSessionRequest): Promise<void> {
     if (!params || !params.conversationId) {
       throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.invalid_options, 'A conversationId is required for acceptSession');
     }

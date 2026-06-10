@@ -11,6 +11,7 @@ import {
   IUpdateOutgoingMedia,
   IStartSoftphoneSessionParams,
   IConversationParticipantFromEvent,
+  IConversationParticipant,
   ICallStateFromParticipant,
   IStoredConversationState,
   ISdkConversationUpdateEvent,
@@ -213,7 +214,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     delete conversationUpdateForLogging.session
 
     if (session) {
-      session.pcParticipant = participant as any;
+      session.pcParticipant = participant as unknown as IConversationParticipant;
     }
 
     this.log('debug', 'about to process conversation event', { sessionId: session?.id, update, conversationUpdateForLogging, callState });
@@ -377,6 +378,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
             if there is a previous state, that means we are ending this call – otherwise it means we have
             already ended it (we get `disconnected` and `terminated` events back-to-back for ending calls. We only want to process one of them.)
           */
+          // STREAM-1591: Unify these events without causing other problems.
+          this.sdk.emit('_sessionEnded', session, { condition: JingleReasons.success });
           if (session && session === this.activeSession) {
             session.conversationId = conversationId;
             this.sdk.emit('sessionEnded', session, { condition: JingleReasons.success });
@@ -639,7 +642,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<void> {
     const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
     const privAnswerMode = session.privAnswerMode;
 
@@ -711,7 +714,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     if (!this.conversations[session.conversationId]) {
       // we don't want to store the fake conversation when priv-answer-mode=true
       if (session.privAnswerMode !== 'Auto') {
-        this.conversations[session.conversationId] = { session } as any;
+        this.conversations[session.conversationId] = { session } as unknown as IStoredConversationState;
       }
     } else {
       this.conversations[session.conversationId].session = session;
@@ -746,7 +749,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     });
   }
 
-  async rejectPendingSession (pendingSession: IPendingSession): Promise<any> {
+  async rejectPendingSession (pendingSession: IPendingSession): Promise<void> {
     let participant = this.getUserParticipantFromConversationEvent(
       this.conversations[pendingSession.conversationId]?.conversationUpdate
     );
@@ -764,7 +767,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     });
   }
 
-  _rejectUcCall (conversationId: string, participantId: string): Promise<any> {
+  _rejectUcCall (conversationId: string, participantId: string): Promise<void> {
     return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}/replace`, {
       method: 'post',
       data: JSON.stringify({ voicemail: true })
@@ -957,7 +960,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera
-  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<any> {
+  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<void> {
     const newOptions: IUpdateOutgoingMedia = { ...options, videoDeviceId: undefined };
     return super.updateOutgoingMedia(session, newOptions);
   }
@@ -975,7 +978,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     conversationId: string,
     participantId: string,
     body: { muted: boolean } | { state: CommunicationStates } | { held: boolean }
-  ): Promise<any> {
+  ): Promise<void> {
     return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}`, {
       method: 'patch',
       data: JSON.stringify(body)

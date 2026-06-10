@@ -24,6 +24,14 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { jwtDecode } from "jwt-decode";
 
+interface IJwtPayload {
+  data: {
+    jid: string;
+    conversationId: string;
+    sourceCommunicationId: string;
+  };
+}
+
 export class VideoSessionHandler extends BaseSessionHandler {
   requestedSessions: { [roomJid: string]: boolean } = {};
   requestedMeetingSessions: { [meetingId: string]: boolean } = {};
@@ -117,7 +125,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         return participantUpdate;
       });
 
-    const lastUpdate: IParticipantsUpdate = session._lastParticipantsUpdate || {} as any;
+    const lastUpdate: IParticipantsUpdate = session._lastParticipantsUpdate || {} as IParticipantsUpdate;
     const lastActiveParticipants = lastUpdate.activeParticipants || [];
 
     const addedParticipants = differenceBy(activeVideoParticipants, lastActiveParticipants, 'participantId');
@@ -151,7 +159,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
 
     if (this.sdk._config.jwt) {
-      const decodedJwt: any = jwtDecode(this.sdk._config.jwt);
+      const decodedJwt: IJwtPayload = jwtDecode<IJwtPayload>(this.sdk._config.jwt);
       const opts = {
         jid: decodedJwt.data.jid,
         conversationId: decodedJwt.data.conversationId,
@@ -256,7 +264,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     await super.handlePropose(pendingSession);
   }
 
-  async handleSessionInit (session: VideoMediaSession): Promise<any> {
+  async handleSessionInit (session: VideoMediaSession): Promise<void> {
     session.startScreenShare = this.startScreenShare.bind(this, session);
     session.stopScreenShare = this.stopScreenShare.bind(this, session);
     session.pinParticipantVideo = this.pinParticipantVideo.bind(this, session);
@@ -265,7 +273,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     return super.handleSessionInit(session);
   }
 
-  async acceptSession (session: VideoMediaSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: VideoMediaSession, params: IAcceptSessionRequest): Promise<void> {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
@@ -385,14 +393,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
     if (!videoSender || !videoSender.track.enabled) {
       session.videoMuted = true;
       this.log('info', 'Sending initial video mute', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      videoMute = session.mute(userId as any, 'video');
+      videoMute = session.mute(userId, 'video');
     }
 
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
     if (!audioSender || !audioSender.track.enabled) {
       session.audioMuted = true;
       this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      audioMute = session.mute(userId as any, 'audio');
+      audioMute = session.mute(userId, 'audio');
     }
 
     await Promise.all([videoMute, audioMute]);
@@ -464,7 +472,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       }
 
       if (!skipServerUpdate) {
-        await session.mute(userId as any, 'video');
+        await session.mute(userId, 'video');
       }
 
       // if we are unmuting, we need to get a new camera track and add that to the session
@@ -509,7 +517,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       session._outboundStream.addTrack(track);
 
       if (!skipServerUpdate) {
-        await session.unmute(userId as any, 'video');
+        await session.unmute(userId, 'video');
       }
     }
 
@@ -552,7 +560,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       if (!outgoingTracks.length) {
         this.log('warn', 'Unable to find any outgoing audio tracks to mute', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       } else {
-        await session.mute(userId as any, 'audio');
+        await session.mute(userId, 'audio');
       }
     } else {
       // make sure there's audio to unmute. if not, create it.
@@ -566,7 +574,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         await this.addReplaceTrackToSession(session, track);
       }
 
-      await session.unmute(userId as any, 'audio');
+      await session.unmute(userId, 'audio');
     }
 
     session.audioMuted = !!params.mute;
