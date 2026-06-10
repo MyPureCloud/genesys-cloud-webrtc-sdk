@@ -167,8 +167,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useHeadsets: options.useHeadsets || false, // default false
         customHeaders: options.customHeaders,
         useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
+        useWebHidOnDesktopCyberAcoustics: options.useWebHidOnDesktopCyberAcoustics,
+        useWebHidOnDesktopJabra: options.useWebHidOnDesktopJabra,
+        useWebHidOnDesktopVbet: options.useWebHidOnDesktopVbet,
+        useWebHidOnDesktopYealink: options.useWebHidOnDesktopYealink,
         reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
+        hostedContext: options.hostedContext,
         skipConstraints: options.skipConstraints,
         /* sdk defaults */
         defaults: {

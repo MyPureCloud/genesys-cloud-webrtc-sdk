@@ -442,6 +442,11 @@ export interface ISdkFullConfig {
      */
     monitorMicVolume?: boolean;
   };
+  hostedContext?: unknown;
+  useWebHidOnDesktopJabra?: boolean;
+  useWebHidOnDesktopYealink?: boolean;
+  useWebHidOnDesktopVbet?: boolean;
+  useWebHidOnDesktopCyberAcoustics?: boolean;
 }
 
 export interface ISdkConfig extends ISdkFullConfig{
