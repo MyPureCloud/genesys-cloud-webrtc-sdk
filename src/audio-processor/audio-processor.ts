@@ -12,6 +12,12 @@ export class SdkAudioProcessor {
     }
   }
 
+  /**
+   * Set the audio processor for enhanced noise suppression. This can be called
+   * as part of SDK initialization based on configuration or after SDK initialization.
+   * @param audioProcessor
+   * @returns void
+   */
   public setAudioProcessor(audioProcessor: IAudioProcessor): void {
     if (!audioProcessor) {
       this.sdk.logger.error('Audio processor is required to set audio processor for enhanced noise suppression.');
@@ -22,6 +28,11 @@ export class SdkAudioProcessor {
     this.init();
   }
 
+  /**
+   * Initialize the audio processor for enhanced noise suppression. This will
+   * initialize the audio processor and start the audio context.
+   * @returns void
+   */
   public async init(): Promise<void> {
     if (!this.audioProcessor) {
       this.sdk.logger.error('Audio processor is required to initialize audio contexts.');
@@ -37,6 +48,12 @@ export class SdkAudioProcessor {
     }
   }
 
+  /**
+   * Begin processing the audio stream for enhanced noise suppression. This will
+   * pass the audio stream into the audio processor. Unfiltered audio will never leave the user's machine.
+   * @param audioStream - the audio stream to process.
+   * @returns the processed audio stream.
+   */
   public async process(audioStream: MediaStream): Promise<MediaStream> {
     if (!this.audioProcessor) {
       this.sdk.logger.error('Audio processor is required for enhanced noise suppression. Returning unprocessed audio stream.');
@@ -52,6 +69,11 @@ export class SdkAudioProcessor {
     }
   }
 
+  /**
+   * Destroy the audio processor for enhanced noise suppression. This will
+   * stop the audio context and clean up the audio processor.
+   * @returns void
+   */
   public async destroy(): Promise<void> {
     if (!this.audioProcessor) {
       return;

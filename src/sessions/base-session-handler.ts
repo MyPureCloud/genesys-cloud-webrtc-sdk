@@ -351,11 +351,6 @@ export default abstract class BaseSessionHandler {
     if (!stream && (updateAudio || updateVideo)) {
       try {
         stream = await this.sdk.media.startMedia(newStartMediaContraints);
-
-        if (this.sdk.audioProcessor) {
-          stream = await this.sdk.audioProcessor.process(stream);
-          this.log('info', 'updateOutgoingMedia - processing updated media with audio processor.');
-        }
       } catch (e) {
         /*
           In FF, if the user does not grant us permissions for the new media,
@@ -385,6 +380,24 @@ export default abstract class BaseSessionHandler {
         /* don't need to emit this error because `startMedia()` did */
         throw e;
       }
+    }
+
+    /**
+     * Run any outbound audio through the configured audio processor. Handles both the
+     * freshly-started media above and any stream passed in via options.stream. We swap
+     * only the audio tracks so video tracks on the stream are preserved.
+     */
+    if (stream && this.sdk.audioProcessor && stream.getAudioTracks().length) {
+      const processed = await this.sdk.audioProcessor.process(stream);
+      stream.getAudioTracks().forEach(track => {
+        track.stop();
+        stream.removeTrack(track);
+      });
+      processed.getAudioTracks().forEach(track => stream.addTrack(track));
+      this.log('info', 'updateOutgoingMedia - processed outgoing audio with audio processor.', {
+        sessionId: session.id,
+        conversationId: session.conversationId
+      });
     }
 
     /* If new media is not started, stream is undefined and there are no tracks. */
