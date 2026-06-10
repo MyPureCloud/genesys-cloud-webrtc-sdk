@@ -32,18 +32,15 @@ export default function Softphone() {
   }
 
   function destroyIris() {
-    console.warn('irisClient', irisClient);
     if (!irisClient) {
       return;
     }
-    console.warn('Destroying IRIS client');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch(setIrisClient(null as any));
     irisClient.destroy();
   }
 
   // async function initializeIris() {
-  //   console.warn('initializeIris');
   //   const irisClient = new GenesysIrisClient({
   //     company: 'GENESYS_TEST',
   //     key: keyText,

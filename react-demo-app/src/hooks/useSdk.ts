@@ -23,8 +23,9 @@ import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
 
 // IRIS client testing
-import licenseText from '/src/iris.ilc?raw';
-import keyText from '/src/iris.key?raw';
+// Manually add these in either the src or public folder of the demo app.
+// import licenseText from '../../iris.ilc?raw';
+// import keyText from '../../iris.key?raw';
 import { GenesysIrisClient } from 'genesys-iris-client';
 import { setIrisClient } from '../features/irisSlice';
 
@@ -43,7 +44,7 @@ export default function useSdk() {
   const irisClient = useSelector((state: RootState) => state.iris.irisClient);
 
   async function initWebrtcSDK(authData: IAuthData) {
-    const irisClient = await constructIrisClient();
+    // const irisClient = await constructIrisClient();
 
     const options: ISdkConfig = {
       accessToken: authData.token,
@@ -55,7 +56,7 @@ export default function useSdk() {
       useServerSidePings: true,
       defaults: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        audioProcessor: (irisClient as any),
+        // audioProcessor: (irisClient as any),
         micNoiseSuppression: false,
         micEchoCancellation: false,
         micAutoGainControl: false
@@ -78,13 +79,10 @@ export default function useSdk() {
       key: keyText,
       license: licenseText,
       team: 'Dev Team',
-      user: 'Zach'
+      user: 'The Omnissiah'
     });
 
     return irisClient;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // (sdk as any).audioProcessor.setAudioProcessor(irisClient);
-    // dispatch(setIrisClient(irisClient));
   }
 
   async function initIris()  {
