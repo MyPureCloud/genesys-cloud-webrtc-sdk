@@ -66,7 +66,7 @@
     "lodash": "^4.18.1",
     "process-fast": "^1.0.0",
     "rxjs": "^7.8.1",
-    "softphone-vendor-headsets": "^3.0.0-STREAM-456-2.25",
+    "softphone-vendor-headsets": "^3.0.1",
     "strict-event-emitter-types": "^2.0.0",
     "webrtc-stats-gatherer": "^9.1.0"
   },
