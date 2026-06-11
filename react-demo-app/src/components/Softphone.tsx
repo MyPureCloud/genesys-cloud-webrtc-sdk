@@ -7,17 +7,15 @@ import PendingSessionsTable from "./PendingSessionsTable";
 import ActiveConversationsTable from "./ActiveConversationsTable";
 import HandledPendingSessionsTable from "./HandledPendingSessionsTable";
 import StationDetails from "./StationDetails";
-import { useSelector, useDispatch } from "react-redux";
+import AudioProcessor from "./AudioProcessor";
+import { useSelector } from "react-redux";
 import { RootState } from '../types/store';
-import { setIrisClient } from "../features/irisSlice";
 
 export default function Softphone() {
-  const dispatch = useDispatch();
   const [phoneNumber, setPhoneNumber] = useState("*86");
   const [onQueueStatus, setOnQueueStatus] = useState(false);
-  const { startSoftphoneSession, updateOnQueueStatus, disconnectPersistentConnection, initIris } = useSdk();
+  const { startSoftphoneSession, updateOnQueueStatus, disconnectPersistentConnection } = useSdk();
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
-  const irisClient = useSelector((state: RootState) => state.iris.irisClient);
   const [persistentConnectionEnabled] = useState(sdk?.station?.webRtcPersistentEnabled || false);
 
   function placeCall(event?: FormEvent<HTMLFormElement>) {
@@ -30,27 +28,6 @@ export default function Softphone() {
     updateOnQueueStatus(!onQueueStatus);
     setOnQueueStatus(!onQueueStatus);
   }
-
-  function destroyIris() {
-    if (!irisClient) {
-      return;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    dispatch(setIrisClient(null as any));
-    irisClient.destroy();
-  }
-
-  // async function initializeIris() {
-  //   const irisClient = new GenesysIrisClient({
-  //     company: 'GENESYS_TEST',
-  //     key: keyText,
-  //     license: licenseText,
-  //     team: 'Dev Team',
-  //     user: 'Zach'
-  //   });
-  // }
-
-
 
   // GuxButton's don't support form events currently but we want a form for keyboard navigation.
   return (
@@ -92,26 +69,11 @@ export default function Softphone() {
               uncheckedLabel="Off Queue"
             ></GuxToggle>
           </Card>
+          <AudioProcessor></AudioProcessor>
           <StationDetails></StationDetails>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
           <PendingSessionsTable></PendingSessionsTable>
           <ActiveConversationsTable></ActiveConversationsTable>
-          <div>
-            <GuxButton
-              accent="secondary"
-              className="softphone-disconnect-btn"
-              onClick={() => initIris()}
-            >
-              Init Iris
-            </GuxButton>
-            <GuxButton
-              accent="secondary"
-              className="softphone-disconnect-btn"
-              onClick={() => destroyIris()}
-            >
-              Destroy Iris
-            </GuxButton>
-          </div>
         </div>
       </Card>
     </>
