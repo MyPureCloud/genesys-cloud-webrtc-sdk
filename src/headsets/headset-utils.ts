@@ -2,7 +2,7 @@ export class HeadsetChangesQueue {
     static toDoQueue = [];
     static processingPromise = false;
 
-    static queueHeadsetChanges(fn: () => Promise<any> | any) {
+    static queueHeadsetChanges(fn: () => Promise<unknown> | unknown) {
       return new Promise<void>((resolve, reject) => {
         this.toDoQueue.push({
           fn,

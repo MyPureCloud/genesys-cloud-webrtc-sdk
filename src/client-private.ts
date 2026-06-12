@@ -4,7 +4,8 @@ import { GenesysCloudWebrtcSdk } from './client';
 import { SessionManager } from './sessions/session-manager';
 import { SubscriptionEvent } from './types/interfaces';
 import { ConversationUpdate } from './conversations/conversation-update';
-import { isAgentVideoJid } from "./utils";
+import { isAgentVideoJid, isPeerConnectionDisconnected } from "./utils";
+import {Constants} from "stanza";
 
 /**
  * Establish the connection with the streaming client.
@@ -74,6 +75,12 @@ export async function setupStreamingClient (this: GenesysCloudWebrtcSdk): Promis
       this._pauseDisconnectedMessages = false;
       this.emit('connected', { reconnect: this._hasConnected });
       this.logger.info('GenesysCloud streaming client connected', { reconnect: this._hasConnected });
+
+      /* on reconnect, clean up any sessions that were active before the disconnect but whose peer connections are now dead */
+      if (this._hasConnected && this.sessionManager) {
+        cleanupOrphanedSessions.call(this);
+      }
+
       this._hasConnected = true;
       // refresh turn servers every 6 hours
       this.logger.info('GenesysCloud streaming client ready for use');
@@ -113,15 +120,15 @@ export async function proxyStreamingClientEvents (this: GenesysCloudWebrtcSdk): 
   const on = this._streamingConnection.webrtcSessions.on.bind(this._streamingConnection);
   on('requestIncomingRtcSession', this.sessionManager.onPropose.bind(this.sessionManager));
   on('incomingRtcSession', this.sessionManager.onSessionInit.bind(this.sessionManager));
-  on('rtcSessionError', this.emit.bind(this, 'error' as any));
-  on('traceRtcSession', this.emit.bind(this, 'trace' as any));
+  on('rtcSessionError', this.emit.bind(this, 'error' as unknown as Parameters<typeof this.emit>[0]));
+  on('traceRtcSession', this.emit.bind(this, 'trace' as unknown as Parameters<typeof this.emit>[0]));
 
   /* if streaming-client is emitting these events, that means we should have the pendingSession stored where we can look up the corresponding conversationId – and it won't interfere with any persistent connection */
   on('cancelIncomingRtcSession', this.sessionManager.onCancelPendingSession.bind(this.sessionManager));
   on('handledIncomingRtcSession', this.sessionManager.onHandledPendingSession.bind(this.sessionManager));
 
   // other events
-  this._streamingConnection.on('error', this.emit.bind(this, 'sdkError' as any));
+  this._streamingConnection.on('error', this.emit.bind(this, 'sdkError' as unknown as Parameters<typeof this.emit>[0]));
 }
 
 export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, updateEvent: SubscriptionEvent) {
@@ -133,5 +140,58 @@ export const handleConversationUpdate = function (this: GenesysCloudWebrtcSdk, u
 export const handleDisconnectedEvent = function (this: GenesysCloudWebrtcSdk, eventData: { reconnecting: boolean }) {
   const message = 'Streaming API connection disconnected';
   this.logger.error(message);
+
+  /* snapshot active session IDs so we can check for orphans after reconnect */
+  if (this.sessionManager) {
+    this._preDisconnectSessionIds = this.sessionManager.getAllSessions().map(s => s.id);
+    this.logger.info('Snapshotted pre-disconnect sessions', { sessionIds: this._preDisconnectSessionIds });
+  }
+
   this.emit('disconnected', message, eventData);
+}
+
+/**
+ * After a reconnect, check sessions that existed before the disconnect.
+ * If their peer connection is now dead, clean them up to prevent leaked
+ * event listeners (e.g. visibilitychange) and media tracks.
+ */
+export const cleanupOrphanedSessions = function (this: GenesysCloudWebrtcSdk) {
+  const preDisconnectIds = this._preDisconnectSessionIds;
+  this._preDisconnectSessionIds = [];
+
+  if (!preDisconnectIds.length) {
+    return;
+  }
+
+  const allSessions = this.sessionManager.getAllSessions();
+
+  for (const sessionId of preDisconnectIds) {
+    const session = allSessions.find(s => s.id === sessionId);
+    if (!session) {
+      continue;
+    }
+
+    const pcState = session.peerConnection?.connectionState;
+    if (!pcState || isPeerConnectionDisconnected(pcState)) {
+      this.logger.warn('Cleaning up orphaned session after reconnect', {
+        sessionId: session.id,
+        conversationId: session.conversationId,
+        sessionType: session.sessionType,
+        peerConnectionState: pcState
+      });
+
+      try {
+        const handler = this.sessionManager.getSessionHandler({ jingleSession: session });
+        handler.onSessionTerminated(session, { condition: Constants.JingleReasonCondition.Gone });
+      } catch (e) {
+        this.logger.warn('Failed to clean up orphaned session', { sessionId, error: e.message });
+      }
+    } else {
+      this.logger.info('Pre-disconnect session still has live peer connection after reconnect, keeping it', {
+        sessionId: session.id,
+        conversationId: session.conversationId,
+        peerConnectionState: pcState
+      });
+    }
+  }
 }

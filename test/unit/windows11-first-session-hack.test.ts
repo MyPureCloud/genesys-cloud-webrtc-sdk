@@ -140,13 +140,19 @@ describe('doBasicWebrtcSession', () => {
   it('happy path', async () => {
     // we will use this to kick off certain actions automatically
     pc1.setRemoteDescription.mockImplementation(() => {
-      pc1.onicecandidate({});
-      pc2.onicecandidate({});
+      const mockCandidate = { candidate: 'candidate:123' };
+      pc1.onicecandidate({ candidate: mockCandidate });
+      pc2.onicecandidate({ candidate: mockCandidate });
+      // also fire with null candidate to cover the else branch
+      pc1.onicecandidate({ candidate: null });
+      pc2.onicecandidate({ candidate: null });
       pc1.connectionState = 'started';
       pc1.onconnectionstatechange()
       pc1.connectionState = 'disconnected';
       pc1.onconnectionstatechange()
 
+      expect(pc2.addIceCandidate).toHaveBeenCalledWith(mockCandidate);
+      expect(pc1.addIceCandidate).toHaveBeenCalledWith(mockCandidate);
       expect(pc1.close).toHaveBeenCalled();
       expect(pc2.close).toHaveBeenCalled();
     });

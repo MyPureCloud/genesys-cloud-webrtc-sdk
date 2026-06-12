@@ -12,7 +12,7 @@ type Events = {
   [HeadsetEvents.deviceAnsweredCall]: EventInfoWithConversationId;
   [HeadsetEvents.deviceEndedCall]: EventInfoWithConversationId
   [HeadsetEvents.deviceRejectedCall]: EventInfoWithConversationId;
-  [HeadsetEvents.loggableEvent]: any;
+  [HeadsetEvents.loggableEvent]: unknown;
   [HeadsetEvents.webHidPermissionRequested]: WebHidPermissionRequest;
   [HeadsetEvents.deviceConnectionStatusChanged]: ExpandedDeviceConnectionStatus;
 }

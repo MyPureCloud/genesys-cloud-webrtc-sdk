@@ -19,15 +19,15 @@ export class SdkHeadsetService extends SdkHeadsetBase {
   private createDecoratedLogger (): ILogger {
     const fns = ['debug', 'log', 'info', 'warn', 'error'];
 
-    const customLogger: any = {};
+    const customLogger: Partial<ILogger> = {};
     fns.forEach(fn => {
       const orig = this.sdk.logger[fn].bind(this.sdk.logger);
-      customLogger[fn] = (message: string | Error, details?: any, opts?: ILogMessageOptions) => {
+      customLogger[fn] = (message: string | Error, details?: object, opts?: ILogMessageOptions) => {
         orig(message, {...details, conversationInfo: this.sdk.sessionManager.getAllActiveConversations()}, opts);
       }
     });
 
-    return customLogger;
+    return customLogger as ILogger;
   }
 
   deviceIsSupported (params: { micLabel: string }): boolean {

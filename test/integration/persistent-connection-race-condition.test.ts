@@ -13,7 +13,6 @@ import {
 } from '../../src';
 import { EventEmitter } from 'events';
 import SoftphoneSessionHandler from '../../src/sessions/softphone-session-handler';
-import { v4 as uuidv4 } from 'uuid';
 import { flushPromises } from '../test-utils';
 jest.mock('../../src/media/media');
 
@@ -138,7 +137,7 @@ describe('Persistent Connection Race Conditions', () => {
 
     // mimick state of an established, idle persistent connection
     const softphoneHandler = sdk.sessionManager.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
-    const firstSessionId = uuidv4();
+    const firstSessionId = globalThis.crypto.randomUUID();
     const firstSession = softphoneHandler['activeSession'] = {
       id: firstSessionId,
       peerConnection: {

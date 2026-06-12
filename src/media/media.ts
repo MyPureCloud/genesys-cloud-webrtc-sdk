@@ -6,7 +6,6 @@ import browserama from 'browserama';
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
 import { SdkErrorTypes } from '../types/enums';
-import { v4 as uuidv4 } from 'uuid';
 import {
   IExtendedMediaSession,
   IMediaRequestOptions,
@@ -28,9 +27,9 @@ declare const window: {
 export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkMediaEvents> }) {
   private sdk: GenesysCloudWebrtcSdk;
   private state: ISdkMediaState;
-  private audioTracksBeingMonitored: { [trackId: string]: any } = {};
+  private audioTracksBeingMonitored: { [trackId: string]: ReturnType<typeof setInterval> } = {};
   private allMediaTracksCreated = new Map<string, MediaStreamTrack>();
-  private onDeviceChangeListenerRef: any;
+  private onDeviceChangeListenerRef: (() => void) | undefined;
   /* stream or track id and function to remove listeners */
   private defaultsBeingMonitored = new Map<string, (() => void)>();
 
@@ -143,7 +142,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   ): Promise<MediaStream | void> {
     const optionsCopy = (options && { ...options }) || {};
     if (!optionsCopy.uuid) {
-      optionsCopy.uuid = uuidv4();
+      optionsCopy.uuid = globalThis.crypto.randomUUID();
     }
     const requestingAudio = mediaType === 'audio';
     const requestingVideo = mediaType === 'video';
@@ -317,7 +316,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   ): Promise<MediaStream> {
     const optionsCopy = { ...mediaReqOptions };
     if (!optionsCopy.uuid) {
-      optionsCopy.uuid = uuidv4();
+      optionsCopy.uuid = globalThis.crypto.randomUUID();
     }
 
     /* `getStandardConstraints` will set media type to `truthy` if `null` was passed in */
@@ -440,7 +439,7 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     const constraints = this.getScreenShareConstraints();
 
     const baseNrStatInfo = {
-      requestId: uuidv4(),
+      requestId: globalThis.crypto.randomUUID(),
       audioRequested: false,
       videoRequested: false,
       displayRequested: true,
@@ -906,50 +905,54 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    * @param options media request options
    */
   private getStandardConstraints (options: IMediaRequestOptions): MediaStreamConstraints {
-    const constraints: any = {
-      video: {},
-      audio: {
-        googAudioMirroring: false,
-        autoGainControl: this.sdk._config.defaults.micAutoGainControl,
-        echoCancellation: this.sdk._config.defaults.micEchoCancellation,
-        noiseSuppression: this.sdk._config.defaults.micNoiseSuppression,
-        googDucking: false,
-        googHighpassFilter: true
-      }
+    type ConstraintObj = MediaTrackConstraints & Record<string, unknown>;
+    const videoConstraints: ConstraintObj = {};
+    const audioConstraints: ConstraintObj = {
+      googAudioMirroring: false,
+      autoGainControl: this.sdk._config.defaults.micAutoGainControl,
+      echoCancellation: this.sdk._config.defaults.micEchoCancellation,
+      noiseSuppression: this.sdk._config.defaults.micNoiseSuppression,
+      googDucking: false,
+      googHighpassFilter: true
     };
 
     if (browserama.isChromeOrChromium) {
-      constraints.video.googNoiseReduction = true;
+      videoConstraints.googNoiseReduction = true;
     }
+
+    const constraints: { video: ConstraintObj | boolean; audio: ConstraintObj | boolean } = {
+      video: videoConstraints,
+      audio: audioConstraints
+    };
 
     /* `false|undefined` means don't request */
     if (options.audio === false || options.audio === undefined) {
       constraints.audio = false;
     } else if (typeof options.audio === 'string') {
-      constraints.audio.deviceId = { exact: options.audio };
+      audioConstraints.deviceId = { exact: options.audio };
     } else if (options.audio === true && typeof this.sdk._config.defaults.audioDeviceId === 'string') {
-      constraints.audio.deviceId = { exact: this.sdk._config.defaults.audioDeviceId };
+      audioConstraints.deviceId = { exact: this.sdk._config.defaults.audioDeviceId };
     } /* any other truthy value is system default */
 
     /* `false|undefined` means don't request */
     if (options.video === false || options.video === undefined) {
       constraints.video = false;
     } else if (typeof options.video === 'string') {
-      constraints.video.deviceId = { exact: options.video };
+      videoConstraints.deviceId = { exact: options.video };
     } else if (options.video === true && typeof this.sdk._config.defaults.videoDeviceId === 'string') {
-      constraints.video.deviceId = { exact: this.sdk._config.defaults.videoDeviceId };
+      videoConstraints.deviceId = { exact: this.sdk._config.defaults.videoDeviceId };
     }  /* any other truthy value is system default */
 
     /* video resolution and frameRate */
     if (constraints.video) {
       /* `false` will not use any frameRate (even SDK default) */
       if (options.videoFrameRate !== false) {
-        constraints.video.frameRate = options.videoFrameRate || { ideal: 30 };
+        videoConstraints.frameRate = options.videoFrameRate || { ideal: 30 };
       }
       /* `false` will not use any videoResolution (even SDK default) */
       if (options.videoResolution !== false) {
         const resolution = options.videoResolution || this.sdk._config.defaults.videoResolution;
-        Object.assign(constraints.video, resolution);
+        Object.assign(videoConstraints, resolution);
       }
     }
 
