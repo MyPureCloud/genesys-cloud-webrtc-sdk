@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useSdk from '../hooks/useSdk';
 import './ActiveConversationsTable.css';
 import { GuxButton, GuxTable, GuxRadialLoading } from 'genesys-spark-components-react';
@@ -12,7 +12,7 @@ export default function ActiveConversationsTable() {
   const conversationsObj = useSelector(
     (state: RootState) => state.conversations.activeConversations
   );
-  const conversations = Object.values(conversationsObj);
+  const conversations = useMemo(() => Object.values(conversationsObj), [conversationsObj]);
   const { endSession, toggleAudioMute, toggleHoldState } = useSdk();
   const [holdLabels, setHoldLabels ] = useState<Array<string | JSX.Element>>([]);
   const [muteLabels, setMuteLabels ] = useState<Array<string | JSX.Element>>([]);

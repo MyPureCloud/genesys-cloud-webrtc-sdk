@@ -169,6 +169,13 @@ export function mockGetOrgApi (params: MockSingleApiOptions): AxiosMockAdapter {
   return intercept.reply(200, MOCK_ORG);
 }
 
+// Mock the `users/me` request streaming-client uses to check network connectivity
+export function mockGetUserApiForStreamingClient (): AxiosMockAdapter {
+  const intercept = getAxiosAdapter().onGet(`${getDefaultHostUri()}/api/v2/users/me`);
+
+  return intercept.reply(200, MOCK_USER);
+}
+
 export function mockGetUserApi (params: MockSingleApiOptions): AxiosMockAdapter {
   const intercept = getAxiosAdapter().onGet(`${getDefaultHostUri()}/api/v2/users/me?expand=station`);
 
@@ -252,6 +259,7 @@ function mockApis (options: MockApiOptions = {}): MockApiReturns {
     //   .reply(200, { id: 'someguestchangeid' });
 
   } else {
+    mockGetUserApiForStreamingClient();
     mockGetOrgApi({ shouldFail: failOrg });
     mockGetUserApi({ shouldFail: failUser });
     mockGetChannelApi({ });

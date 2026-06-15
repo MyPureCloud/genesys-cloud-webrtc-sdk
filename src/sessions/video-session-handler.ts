@@ -1,4 +1,4 @@
-import { differenceBy, intersection } from 'lodash';
+import { differenceBy } from 'lodash';
 import { Constants } from 'stanza';
 
 import {
@@ -8,8 +8,6 @@ import {
   IExtendedMediaSession,
   IParticipantUpdate,
   IParticipantsUpdate,
-  IOnScreenParticipantsUpdate,
-  ISpeakersUpdate,
   IConversationParticipant,
   IMediaRequestOptions,
   IStartVideoSessionParams,
@@ -26,33 +24,12 @@ import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { jwtDecode } from "jwt-decode";
 
-/**
- * speakers is an array of audio track ids sending audio
- */
-export interface IMediaChangeEvent {
-  eventBody: {
-    id: string,
-    participants: IMediaChangeEventParticipant[],
-    speakers: string[]
+interface IJwtPayload {
+  data: {
+    jid: string;
+    conversationId: string;
+    sourceCommunicationId: string;
   };
-  metadata: {
-    CorrelationId: string
-  };
-}
-
-/**
- * sinks represents outgoing paths for this track. For example, if we have a track that looks like { id: "1", mediaType: "audio", sinks: ["a", "b"] }
- * then we know that the audio of track "1" can be heard on tracks "a" and "b". Another way to say this is whichever participants are receiving
- * tracks "a" or "b" are hearing this participant
- */
-export interface IMediaChangeEventParticipant {
-  communicationId: string;
-  userId: string;
-  tracks: {
-    id: string,
-    mediaType: 'audio' | 'video',
-    sinks?: string[]
-  }[];
 }
 
 export class VideoSessionHandler extends BaseSessionHandler {
@@ -148,7 +125,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         return participantUpdate;
       });
 
-    const lastUpdate: IParticipantsUpdate = session._lastParticipantsUpdate || {} as any;
+    const lastUpdate: IParticipantsUpdate = session._lastParticipantsUpdate || {} as IParticipantsUpdate;
     const lastActiveParticipants = lastUpdate.activeParticipants || [];
 
     const addedParticipants = differenceBy(activeVideoParticipants, lastActiveParticipants, 'participantId');
@@ -163,91 +140,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     session._lastParticipantsUpdate = update;
     session.emit('participantsUpdate', update);
-  }
-
-  updateParticipantsOnScreen (session: VideoMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
-    const incomingVideoTrackIds = session.pc.getReceivers()
-      .filter((receiver) => receiver.track && receiver.track.kind === 'video')
-      .map((receiver) => receiver.track.id);
-
-    /**
-     * Firefox messes the trackIds up from what is actually in the sdp offer.
-     * Need to pull it from the offer to accurately match the track.sinks
-     */
-    const incomingVideoMsidTrackId = this.getTrackIdFromSdp(session.pc.remoteDescription.sdp, 'video');
-
-    if (incomingVideoMsidTrackId) {
-      incomingVideoTrackIds.push(incomingVideoMsidTrackId);
-    }
-
-    const onScreenParticipants: Array<{ userId: string }> = [];
-    mediaUpdateEvent.eventBody.participants.forEach((updateParticipant: IMediaChangeEventParticipant) => {
-      const matchingVideoTracks = updateParticipant.tracks
-        .filter((track) => track.mediaType === 'video')
-        .filter((track) => {
-          const intersectingTracks = intersection(track.sinks, incomingVideoTrackIds);
-          return intersectingTracks.length;
-        });
-
-      if (matchingVideoTracks.length) {
-        onScreenParticipants.push({ userId: updateParticipant.userId });
-      }
-    });
-
-    const lastUpdate: IOnScreenParticipantsUpdate = session._lastOnScreenUpdate || { participants: [] } as any;
-
-    // send out an update if the onScreenParticipants count or items changed
-    if (lastUpdate.participants.length === onScreenParticipants.length) {
-      const changed = differenceBy(lastUpdate.participants, onScreenParticipants, 'userId').length ||
-        differenceBy(lastUpdate.participants, onScreenParticipants, 'userId').length;
-
-      if (!changed) {
-        return;
-      }
-    }
-
-    const update: IOnScreenParticipantsUpdate = {
-      participants: onScreenParticipants
-    };
-
-    session._lastOnScreenUpdate = update;
-    session.emit('activeVideoParticipantsUpdate', update);
-  }
-
-  updateSpeakers (session: IExtendedMediaSession, mediaUpdateEvent: IMediaChangeEvent) {
-    const incomingAudioTrackIds = session.pc.getReceivers()
-      .filter((receiver) => receiver.track && receiver.track.kind === 'audio')
-      .map((receiver) => receiver.track.id);
-
-    /**
-     * Firefox messes the trackIds up from what is actually in the sdp offer.
-     * Need to pull it from the offer to accurately match the track.sinks
-     */
-    const incomingAudioMsidTrackId = this.getTrackIdFromSdp(session.pc.remoteDescription.sdp, 'audio');
-
-    if (incomingAudioMsidTrackId) {
-      incomingAudioTrackIds.push(incomingAudioMsidTrackId);
-    }
-
-    const speakingParticipants: Array<{ userId: string }> = [];
-    mediaUpdateEvent.eventBody.participants.forEach((updateParticipant: IMediaChangeEventParticipant) => {
-      const matchingAudioTracks = updateParticipant.tracks
-        .filter((track) => track.mediaType === 'audio')
-        .filter((track) => {
-          const intersectingTracks = intersection(track.sinks, incomingAudioTrackIds);
-          return intersectingTracks.length;
-        });
-
-      if (matchingAudioTracks.length) {
-        speakingParticipants.push({ userId: updateParticipant.userId });
-      }
-    });
-
-    const update: ISpeakersUpdate = {
-      speakers: speakingParticipants
-    };
-
-    session.emit('speakersUpdate', update);
   }
 
   // triggers a propose from the backend
@@ -267,7 +159,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
 
     if (this.sdk._config.jwt) {
-      const decodedJwt: any = jwtDecode(this.sdk._config.jwt);
+      const decodedJwt: IJwtPayload = jwtDecode<IJwtPayload>(this.sdk._config.jwt);
       const opts = {
         jid: decodedJwt.data.jid,
         conversationId: decodedJwt.data.conversationId,
@@ -372,7 +264,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     await super.handlePropose(pendingSession);
   }
 
-  async handleSessionInit (session: VideoMediaSession): Promise<any> {
+  async handleSessionInit (session: VideoMediaSession): Promise<void> {
     session.startScreenShare = this.startScreenShare.bind(this, session);
     session.stopScreenShare = this.stopScreenShare.bind(this, session);
     session.pinParticipantVideo = this.pinParticipantVideo.bind(this, session);
@@ -381,7 +273,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
     return super.handleSessionInit(session);
   }
 
-  async acceptSession (session: VideoMediaSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: VideoMediaSession, params: IAcceptSessionRequest): Promise<void> {
     const audioElement = params.audioElement || this.sdk._config.defaults.audioElement;
     const sessionInfo = { conversationId: session.conversationId, sessionId: session.id };
     if (!audioElement) {
@@ -414,10 +306,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     session._outboundStream = stream;
-    // If using a JWT, we can't subscribe to the media change events.
-    if (!this.sdk._config.jwt) {
-    await this.sdk._streamingConnection.notifications.subscribe(`v2.conversations.${session.conversationId}.media`, this.handleMediaChangeEvent.bind(this, session));
-    }
 
     await this.addMediaToSession(session, stream);
 
@@ -505,14 +393,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
     if (!videoSender || !videoSender.track.enabled) {
       session.videoMuted = true;
       this.log('info', 'Sending initial video mute', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      videoMute = session.mute(userId as any, 'video');
+      videoMute = session.mute(userId, 'video');
     }
 
     const audioSender = session.pc.getSenders().find((sender) => sender.track && sender.track.kind === 'audio');
     if (!audioSender || !audioSender.track.enabled) {
       session.audioMuted = true;
       this.log('info', 'Sending initial audio mute', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-      audioMute = session.mute(userId as any, 'audio');
+      audioMute = session.mute(userId, 'audio');
     }
 
     await Promise.all([videoMute, audioMute]);
@@ -584,7 +472,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       }
 
       if (!skipServerUpdate) {
-        await session.mute(userId as any, 'video');
+        await session.mute(userId, 'video');
       }
 
       // if we are unmuting, we need to get a new camera track and add that to the session
@@ -629,7 +517,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       session._outboundStream.addTrack(track);
 
       if (!skipServerUpdate) {
-        await session.unmute(userId as any, 'video');
+        await session.unmute(userId, 'video');
       }
     }
 
@@ -672,7 +560,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
       if (!outgoingTracks.length) {
         this.log('warn', 'Unable to find any outgoing audio tracks to mute', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
       } else {
-        await session.mute(userId as any, 'audio');
+        await session.mute(userId, 'audio');
       }
     } else {
       // make sure there's audio to unmute. if not, create it.
@@ -686,7 +574,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         await this.addReplaceTrackToSession(session, track);
       }
 
-      await session.unmute(userId as any, 'audio');
+      await session.unmute(userId, 'audio');
     }
 
     session.audioMuted = !!params.mute;
@@ -697,11 +585,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
       await this.sdk.updateOutgoingMedia({ audioDeviceId: params.unmuteDeviceId });
     }
-  }
-
-  handleMediaChangeEvent (session: VideoMediaSession, event: IMediaChangeEvent): void {
-    this.updateParticipantsOnScreen(session, event);
-    this.updateSpeakers(session, event);
   }
 
   async startScreenShare (session: VideoMediaSession): Promise<void> {

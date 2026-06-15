@@ -124,8 +124,12 @@ export const isAgentVideoJid = function (jid: string) {
   return isVideoJid(jid) && jid.startsWith('agent-');
 };
 
+export const isLiveScreenMonitorJid = function (jid: string) {
+  return jid.startsWith('livemonitor-');
+};
+
 export const isVideoJid = function (jid: string): boolean {
-  return jid && !!jid.match(/@conference/) && !isAcdJid(jid) && !isScreenRecordingJid(jid);
+  return jid && !!jid.match(/@conference/) && !isAcdJid(jid) && !isScreenRecordingJid(jid) && !isLiveScreenMonitorJid(jid);
 };
 
 export const isPeerConnectionDisconnected = function (state: ConnectionState) {

@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [16, 18, 20]
+        node-version: [18, 20, 22]
         operating-system:
           - ubuntu-latest
           - windows-latest
@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [16, 18, 20]
+        node-version: [18, 20, 22]
         operating-system: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.operating-system }}
     steps:

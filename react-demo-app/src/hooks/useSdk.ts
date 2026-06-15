@@ -11,7 +11,6 @@ import {
   ISdkGumRequest,
   IExtendedMediaSession
 } from 'genesys-cloud-webrtc-sdk';
-import { v4 } from 'uuid';
 import { useDispatch } from 'react-redux';
 import {
   removePendingSession,
@@ -50,7 +49,7 @@ export default function useSdk() {
     const options: ISdkConfig = {
       accessToken: authData.token,
       environment: authData.environment.uri,
-      originAppId: v4(),
+      originAppId: globalThis.crypto.randomUUID(),
       originAppName: 'webrtc-demo-app',
       optOutOfTelemetry: true,
       logLevel: 'info',
@@ -97,7 +96,7 @@ export default function useSdk() {
   }
 
   function handlePendingSession(pendingSession: IPendingSession): void {
-    dispatch(updatePendingSessions(pendingSession));
+    dispatch(updatePendingSessions({ ...pendingSession }));
   }
   // If a pendingSession was cancelled or handled, we can remove it from our state.
   function handleCancelPendingSession(sessionInfo: ISessionIdAndConversationId): void {

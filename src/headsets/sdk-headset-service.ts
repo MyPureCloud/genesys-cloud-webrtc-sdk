@@ -12,22 +12,30 @@ export class SdkHeadsetService extends SdkHeadsetBase {
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super(sdk);
-    this.headsetLibrary = HeadsetService.getInstance({ logger: this.createDecoratedLogger(), appName: sdk._config.originAppName });
+    this.headsetLibrary = HeadsetService.getInstance({
+      logger: this.createDecoratedLogger(),
+      appName: sdk._config.originAppName,
+      hostedContext: sdk._config.hostedContext,
+      useWebHidOnDesktopJabra: sdk._config.useWebHidOnDesktopJabra,
+      useWebHidOnDesktopYealink: sdk._config.useWebHidOnDesktopYealink,
+      useWebHidOnDesktopVbet: sdk._config.useWebHidOnDesktopVbet,
+      useWebHidOnDesktopCyberAcoustics: sdk._config.useWebHidOnDesktopCyberAcoustics
+    });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
   }
 
   private createDecoratedLogger (): ILogger {
     const fns = ['debug', 'log', 'info', 'warn', 'error'];
 
-    const customLogger: any = {};
+    const customLogger: Partial<ILogger> = {};
     fns.forEach(fn => {
       const orig = this.sdk.logger[fn].bind(this.sdk.logger);
-      customLogger[fn] = (message: string | Error, details?: any, opts?: ILogMessageOptions) => {
+      customLogger[fn] = (message: string | Error, details?: object, opts?: ILogMessageOptions) => {
         orig(message, {...details, conversationInfo: this.sdk.sessionManager.getAllActiveConversations()}, opts);
       }
     });
 
-    return customLogger;
+    return customLogger as ILogger;
   }
 
   deviceIsSupported (params: { micLabel: string }): boolean {
@@ -108,9 +116,9 @@ export class SdkHeadsetService extends SdkHeadsetBase {
    * @param conversationId a string representing the conversation that needs to be ended
    * @returns Promise<void>
    */
-  async endCurrentCall (conversationId: string): Promise<void> {
+  async endCurrentCall (conversationId: string, hasOtherActiveCalls: boolean): Promise<void> {
     if (conversationId) {
-      return this.headsetLibrary.endCall(conversationId);
+      return this.headsetLibrary.endCall(conversationId, hasOtherActiveCalls);
     }
   }
 

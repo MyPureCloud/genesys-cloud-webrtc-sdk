@@ -75,7 +75,8 @@ export class SimpleMockSdk extends EventEmitter {
     _webrtcSessions: {
       refreshIceServers: jest.fn(),
       getSessionManager: jest.fn(),
-      proxyNRStat: jest.fn()
+      proxyNRStat: jest.fn(),
+      sendIq: jest.fn().mockResolvedValue(undefined)
     }
   };
   sessionManager = {
@@ -118,12 +119,18 @@ class MockTransceiver {
   }
 }
 
+class MockRemoteDescription {
+  sdp: string;
+}
+
 class MockPC extends EventTarget {
   _mockSession: MockSession;
   _transceivers: MockTransceiver[] = [];
   _senders: MockSender[] = [];
   _receivers: MockReceiver[] = [];
   connectionState = 'connected';
+  remoteDescription: MockRemoteDescription;
+  getStats = jest.fn().mockResolvedValue(null);
 
   constructor (session: MockSession) {
     super();
@@ -157,6 +164,10 @@ class MockPC extends EventTarget {
   _addReceiver (track: MockTrack) {
     this._receivers.push(new MockReceiver(track));
   }
+
+  addTrack (track: MockTrack) {
+    this._addSender(track);
+  }
 }
 
 export class MockSession extends EventEmitter {
@@ -166,6 +177,7 @@ export class MockSession extends EventEmitter {
   sid = random().toString();
   conversationId = random().toString();
   originalRoomJid = random().toString() + '@organization.com';
+  peerID = 'peer@conference.com';
   peerConnection = new MockPC(this);
   pc: MockPC;
   pcParticipant: any;

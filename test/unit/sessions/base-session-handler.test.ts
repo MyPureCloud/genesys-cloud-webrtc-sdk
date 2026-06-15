@@ -6,7 +6,6 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import { SessionManager } from '../../../src/sessions/session-manager';
 import browserama from 'browserama';
 import { IExtendedMediaSession, ConversationUpdate, IAcceptSessionRequest } from '../../../src';
-import { v4 as uuidv4 } from 'uuid';
 
 class TestableBaseSessionHandler extends BaseSessionHandler {
   sessionType: SessionTypes;
@@ -249,7 +248,7 @@ describe('updateOutgoingMedia()', () => {
     session.peerConnection._addSender(existingTrack);
 
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue({} as any);
-    const device = { deviceId: uuidv4(), label: existingTrack.label, kind: 'audioinput' };
+    const device = { deviceId: globalThis.crypto.randomUUID(), label: existingTrack.label, kind: 'audioinput' };
     mockSdk.media['setDevices']([device as any]);
 
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: false, audioDeviceId: device.deviceId });
@@ -263,7 +262,7 @@ describe('updateOutgoingMedia()', () => {
     session.peerConnection._addSender(existingTrack);
 
     jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue({} as any);
-    const device = { deviceId: uuidv4(), label: existingTrack.label, kind: 'videoinput' };
+    const device = { deviceId: globalThis.crypto.randomUUID(), label: existingTrack.label, kind: 'videoinput' };
     mockSdk.media['setDevices']([device as any]);
 
     await handler.updateOutgoingMedia(session as any, { videoDeviceId: device.deviceId, audioDeviceId: false });
@@ -466,6 +465,9 @@ describe('handleConversationUpdate', () => {
   it('nothing to test', () => {
     handler.handleConversationUpdate({} as any, {} as any);
   });
+  it('nothing to test', () => {
+    handler.handleConversationUpdateRaw({} as any);
+  });
 });
 
 describe('handlePropose', () => {
@@ -539,6 +541,27 @@ describe('handleSessionInit', () => {
     expect(eventSpy).toHaveBeenCalled();
   });
 
+  it('should terminate session when connectionState becomes failed', async () => {
+    const session: any = new MockSession();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession');
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    session.id = '123abc';
+    session.conversationId = 'convoabc';
+    session.state = 'active';
+
+    await handler.handleSessionInit(session);
+    session.emit('connectionState', 'failed');
+
+    expect(logSpy).toHaveBeenCalledWith('warn', 'RTCPeerConnection failed. Cleaning up session.', {
+      state: 'failed',
+      conversationId: session.conversationId,
+      sid: session.id,
+      sessionType: session.sessionType
+    });
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'failed-transport');
+  });
+
   it('should set conversationId and fromUserId on existing pendingSession and emit sessionStarted', async () => {
     const session: any = new MockSession();
     session.conversationId = null;
@@ -557,6 +580,24 @@ describe('handleSessionInit', () => {
     expect(session.conversationId).toEqual(pendingSession.conversationId);
     expect(session.fromUserId).toEqual('fake');
     expect(eventSpy).toHaveBeenCalled();
+  });
+
+  it('should initialize _emittedSessionStarteds but not emit sessionStarted for reinvite sessions', async () => {
+    const session: any = new MockSession();
+    session.conversationId = 'convo123';
+    session.reinvite = true;
+
+    const pendingSession = createPendingSession();
+    jest.spyOn(mockSessionManager, 'getPendingSession').mockReturnValue(pendingSession);
+
+    const eventSpy = jest.fn();
+    mockSdk.on('sessionStarted', eventSpy);
+
+    await handler.handleSessionInit(session);
+
+    expect(mockSdk._streamingConnection.webrtcSessions.rtcSessionAccepted).toHaveBeenCalled();
+    expect(session._emittedSessionStarteds).toEqual({ 'convo123': true });
+    expect(eventSpy).not.toHaveBeenCalled();
   });
 
   it('should set up terminated listener', async () => {
@@ -910,6 +951,27 @@ describe('addReplaceTrackToSession', () => {
 
     expect(track.applyConstraints).not.toHaveBeenCalled();
   });
+
+  it('should skip constraints for mobile devices', async () => {
+    mockSdk._config.skipConstraints = true;
+    const session = new MockSession();
+    session.peerConnection._senders = [new MockSender(new MockTrack('video'))];
+
+    const track = new MockTrack('video');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+
+    expect(track.applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('shoud not skip constraints for non-mobile devices', async () => {
+    const session = new MockSession();
+    session.peerConnection._senders = [new MockSender(new MockTrack('video'))];
+
+    const track = new MockTrack('video');
+    await handler.addReplaceTrackToSession(session as any, track as any);
+
+    expect(track.applyConstraints).toHaveBeenCalled();
+  });
 });
 
 describe('endTracks', () => {
@@ -988,8 +1050,8 @@ describe('getActiveConversations', () => {
     handler.sessionType = SessionTypes.softphone;
 
     const sessions = [
-      { sessionType: SessionTypes.collaborateVideo, conversationId: 'convo2', id: uuidv4() } as unknown as IExtendedMediaSession,
-      { sessionType: SessionTypes.softphone, conversationId: 'convo1', id: uuidv4() } as unknown as IExtendedMediaSession
+      { sessionType: SessionTypes.collaborateVideo, conversationId: 'convo2', id: globalThis.crypto.randomUUID() } as unknown as IExtendedMediaSession,
+      { sessionType: SessionTypes.softphone, conversationId: 'convo1', id: globalThis.crypto.randomUUID() } as unknown as IExtendedMediaSession
     ];
 
     jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue(sessions);

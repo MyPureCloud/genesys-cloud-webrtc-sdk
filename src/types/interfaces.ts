@@ -1,5 +1,5 @@
 /* eslint-disable-line @typescript-eslint/no-explicit-any */
-import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage } from 'genesys-cloud-streaming-client';
+import { ISessionInfo, IPendingSession, IMediaSession, TypedJsonRpcMessage, AlertableInteractionTypes } from 'genesys-cloud-streaming-client';
 import { JingleReason } from 'stanza/protocol';
 import { Constants } from 'stanza';
 import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
@@ -7,13 +7,13 @@ import ILogger, { LogFormatterFn } from 'genesys-cloud-client-logger';
 import { SdkError } from '../utils';
 import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
 import { ConversationUpdate } from '../conversations/conversation-update';
+import { StatsAggregator } from '../stats-aggregator';
 
 export { ISessionInfo, IPendingSession };
 // extend the emittable events
 declare module 'genesys-cloud-streaming-client' {
   export interface SessionEvents {
     participantsUpdate: IParticipantsUpdate;
-    activeVideoParticipantsUpdate: IOnScreenParticipantsUpdate;
     speakersUpdate: ISpeakersUpdate;
     incomingMedia: void;
     pinnedParticipant: { participantId: string | null };
@@ -21,7 +21,7 @@ declare module 'genesys-cloud-streaming-client' {
   }
 }
 
-export type KeyFrom<T extends { [key: string]: any }, key extends keyof T> = key;
+export type KeyFrom<T extends { [key: string]: unknown }, key extends keyof T> = key;
 
 /**
  * SDK configuration options for constructing a new instance
@@ -90,6 +90,14 @@ export interface ISdkFullConfig {
   autoAcceptPendingScreenRecordingRequests?: boolean;
 
   /**
+   * If a propose for a live screen monitoring is received *and* this client is configured to handle screen monitoring
+   *   sessions, automatically call `acceptPendingSession()` for this request.
+   *
+   * Optional: default `false`.
+   */
+  autoAcceptPendingLiveScreenMonitoringRequests?: boolean
+
+  /**
    * The identifier that will go into the full jid. The jid will be constructed as {usersBareJid}/{jidResource}
    * This is helpful for identifying specific clients and considered advanced usage.
    */
@@ -108,9 +116,7 @@ export interface ISdkFullConfig {
   /**
    * If the station is configured for persistent connection and an active connection is required to go on queue,
    * a "fake" call will be used to establish the persistent connection as part of the process to go on queue.
-   * This setting is additional configuration for how the webrtc sdk handles this circumstance but
-   * only comes into play if `disableAutoAnswer` is `true`. If `disableAutoAnswer` is `false`, `eagerPersistentConnectionEstablishment`
-   * will always be `'auto'`.
+   * This setting is additional configuration for how the webrtc sdk handles this circumstance.
    *
    * Options:
    * ``` ts
@@ -258,6 +264,39 @@ export interface ISdkFullConfig {
    * Optional: default `false`
    */
   useServerSidePings?: boolean;
+
+  /**
+   * Feature toggles for each WebHID enabled headset vendor.  If enabled, this will allow WebHID to be used on the native desktop application.
+   *
+   * Optional: default `false`
+   */
+  useWebHidOnDesktopJabra?: boolean;
+  useWebHidOnDesktopYealink?: boolean;
+  useWebHidOnDesktopVbet?: boolean;
+  useWebHidOnDesktopCyberAcoustics?: boolean;
+
+  /**
+   * Controls whether to report statistics, such as estimated MOS (Mean Opinion Score).
+   *
+   * Optional: default `false`
+   */
+  reportStatistics?: boolean;
+
+  /**
+   * Genesys internal use only - non-Genesys apps that pass in `alertableInteractionTypes` may experience unexpected behavior
+   */
+  alertableInteractionTypes?: AlertableInteractionTypes[];
+
+  /**
+   * Object passed down from consuming application.  This helps communicate with the desktop app and provides valuable pieces of information such as flags
+   * and functions to help with the communication
+   *
+   * Optional
+   */
+  hostedContext?: unknown;
+
+  /** if video constraints should be skipped. Useful when the SDK is used on mobile devices */
+  skipConstraints?: boolean;
 
   /** defaults for various SDK functionality */
   defaults?: {
@@ -669,6 +708,12 @@ export interface IAcceptSessionRequest extends ISdkMediaDeviceIds {
 
   /** video element to attach incoming video to. default is sdk `defaults.videoElement` */
   videoElement?: HTMLVideoElement;
+
+  /** array of video elements for live monitoring observers to attach multiple video streams */
+  videoElements?: HTMLVideoElement[];
+
+  /** Flag set to true when the participant is a monitoring observer. default is `false` */
+  liveMonitoringObserver?: boolean
 }
 
 export interface IEndSessionRequest {
@@ -703,6 +748,8 @@ export interface JWTDetails {
     uid: string; // userId
     jid: string;
     gcbaid: string; // genesys cloud background assistant id
+    conversationId?: string;
+    sourceCommunicationId?: string;
   };
   exp: number; // exp in seconds
   iat: number; // issued at time in seconds,
@@ -781,7 +828,7 @@ export interface ICallStateFromParticipant {
     code: string;
     message: string;
     messageWithParams: string;
-    messageParams: { [key: string]: any }
+    messageParams: { [key: string]: unknown }
   }
 }
 
@@ -890,11 +937,13 @@ export interface IExtendedMediaSession extends IMediaSession {
   videoMuted?: boolean;
   audioMuted?: boolean;
   pcParticipant?: IConversationParticipant;
+  statsAggregator?: StatsAggregator;
+  reconnectCount?: number;
   _alreadyAccepted?: boolean;
   _emittedSessionStarteds?: { [conversationId: string]: true };
   _screenShareStream?: MediaStream;
   _outboundStream?: MediaStream;
-  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<any>; };
+  _outputAudioElement?: HTMLAudioElement & { sinkId?: string; setSinkId?: (deviceId: string) => Promise<void>; };
   _visibilityHandler?: EventListener;
 }
 
@@ -914,7 +963,6 @@ export interface VideoMediaSession extends IExtendedMediaSession {
   pinParticipantVideo?: (participantId: string) => Promise<void>;
   _resurrectVideoOnScreenShareEnd?: boolean;
   _lastParticipantsUpdate?: IParticipantsUpdate;
-  _lastOnScreenUpdate?: IOnScreenParticipantsUpdate;
 }
 
 export interface ScreenRecordingMediaSession extends IExtendedMediaSession {
@@ -962,12 +1010,16 @@ export interface ScreenRecordingMetadata {
   primary: boolean;
 }
 
+export interface LiveScreenMonitoringSession extends IExtendedMediaSession {
+  sessionType: SessionTypes.liveScreenMonitoring;
+}
+
 export interface SubscriptionEvent {
   metadata: {
     correlationId: string;
   };
   topicName: string;
-  eventBody: any;
+  eventBody: unknown;
 }
 
 export interface IParticipantsUpdate {
@@ -984,15 +1036,6 @@ export interface IParticipantUpdate {
   videoMuted: boolean;
   audioMuted: boolean;
 }
-
-export interface IOnScreenParticipantsUpdate {
-  participants: Array<
-    {
-      userId: string;
-    }
-  >;
-}
-
 export interface ISpeakersUpdate {
   speakers: Array<
     {
@@ -1007,7 +1050,7 @@ export interface IJingleReason {
 
 export interface SdkEvents {
   sdkError: SdkError;
-  trace: (...args: any[]) => void;
+  trace: (...args: unknown[]) => void;
   connected: (info: { reconnect: boolean }) => void;
   ready: void;
   disconnected: (info: string, eventData: { reconnecting: boolean }) => void;
@@ -1016,10 +1059,13 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
+  // **Genesys internal use only** - non-Genesys consumers may experient unexpected behavior
+  _sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
   sessionInterrupted: (event) => { sessionId: string, sessionType: string, conversationId: string };
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;
   conversationUpdate: ISdkConversationUpdateEvent;
+  conversationUpdateRaw: SubscriptionEvent;
   station: (event: { action: 'Associated' | 'Disassociated', station: IStation | null }) => void;
   concurrentSoftphoneSessionsEnabled: boolean; // lineAppearence > 1
   resolutionUpdated: IResolutionChange
@@ -1287,8 +1333,6 @@ export interface IncomingStreamStatus {
   sourcePinId: string;
   /** Track ID from the SDP of the viewed member's client */
   sourceTrackId?: string;
-  //TODO: Remove this when the camelcase version is deployed for media service
-  appid?: IDataChannelAppId;
   appId?: IDataChannelAppId;
   contentType?: 'camera' | 'screenshare' | 'playback';
 }

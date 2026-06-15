@@ -19,7 +19,7 @@ export class ScreenShareSessionHandler extends BaseSessionHandler {
     return;
   }
 
-  async startSession (startParams: IStartSessionParams): Promise<MediaStream> {
+  async startSession (_startParams: IStartSessionParams): Promise<MediaStream> {
     const { jwt, conversation, sourceCommunicationId } = this.sdk._customerData;
 
     const jid = parseJwt(jwt).data.jid;
@@ -109,7 +109,7 @@ export class ScreenShareSessionHandler extends BaseSessionHandler {
     }
   }
 
-  public updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): never {
+  public updateOutgoingMedia (session: IExtendedMediaSession, _options: IUpdateOutgoingMedia): never {
     this.log('warn', 'Cannot update outgoing media for acd screen share sessions', { sessionId: session.id, sessionType: session.sessionType });
     throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.not_supported, 'Cannot update outgoing media for acd screen share sessions');
   }

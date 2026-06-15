@@ -3,7 +3,106 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.0.0...HEAD)
+### Added
+* [STREAM-1394](https://inindca.atlassian.net/browse/STREAM-1394) - Notify the backend when a client call reaches a connected state
+### Changed
+* [STREAM-456](https://inindca.atlassian.net/browse/STREAM-456) - Update softphone-vendor-headsets dependency to properly accommodate WebHID on the desktop app; Passed down `hostedContext` from consuming app as well as necessary feature toggles
+
+# [v14.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...v14.0.0)
+### Breaking Changes
+* [STREAM-1600](https://inindca.atlassian.net/browse/STREAM-1600) - Replace `uuid` with native `globalThis.crypto.randomUUID()`. `randomUUID()` has been widely available in browsers since 2022, so this should only affect you if you use the SDK in an older browser. Also update `genesys-cloud-client-logger` to v5 and `genesys-cloud-streaming-client` to v20 to pick up their respective `uuid` removals.
+
+### Added
+* [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
+* [STREAM-1224](https://inindca.atlassian.net/browse/STREAM-1224) - Add `skipConstraints` to `ISdkFullConfig` to improve mobile devices support.
+
+### Changed
+* [STREAM-1589](https://inindca.atlassian.net/browse/STREAM-1589) - Drop `mediaResourceId` and simply rely on `sessionId` for media statistics
+* [STREAM-1681](https://inindca.atlassian.net/browse/STREAM-1681) - Update `axios` to v1.16.0 or higher to address vulnerability
+
+# [v13.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.1.0...v13.2.0)
+### Added
+* [STREAM-151](https://inindca.atlassian.net/browse/STREAM-151) - Send media statistics to the server. Aggregates stats, calculates a MOS score and pushes at regular intervals.
+* [STREAM-1568](https://inindca.atlassian.net/browse/STREAM-1568) - Add passthrough for `alertableInteractionTypes` to streaming-client.
+* [STREAM-1590](https://inindca.atlassian.net/browse/STREAM-1590) - Emit private `_sessionEnded` event to stop gathering media stats in certain concurrent call scenarios.
+
+### Changed
+* [STREAM-1487](https://inindca.atlassian.net/browse/STREAM-1487) - Update `axios` to v1.15.2
+
+### Fixed
+* [STREAM-1322](https://inindca.atlassian.net/browse/STREAM-1322) - Fix `logLevel` not being passed to the internal streaming-client, causing it to always default to `'info'` regardless of the SDK's configured log level.
+
+# [v13.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.0.0...v13.1.0)
+### Added
+* [STREAM-1180](https://inindca.atlassian.net/browse/STREAM-1180) - Allow for different media handling strategies. This supports alerting leader functionality, where one instance of the SDK needs to handle media, but other instances should not automatically handle media.
+
+# [v13.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.1.0...v13.0.0)
+### Breaking Changes
+* [STREAM-1351](https://inindca.atlassian.net/browse/STREAM-1351) - Removed `v2.conversations.{id}.media` notification subscription. Removed the `activeVideoParticipantsUpdate` session event and `IOnScreenParticipantsUpdate` interface. Speaker and on-screen participant updates are now entirely handled via the data channel.
+
+### Added
+* [STREAM-1056](https://inindca.atlassian.net/browse/STREAM-1056) Added documentation for live screen monitoring functionality
+
+### Fixed
+* [STREAM-905](https://inindca.atlassian.net/browse/STREAM-905) - Fix issue where `sessionStarted` was not emitted for calls that re-use persistent connections after a media recovery has occurred. Now initializing `_emittedSessionStarteds` for reinvites but only emitting if not a reinvite.
+
+# [v12.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v12.0.0...v12.1.0)
+### Added
+* [STREAM-1153](https://inindca.atlassian.net/browse/STREAM-1153) - Add support for monitoring multiple screens during live monitoring sessions
+* [STREAM-1123](https://inindca.atlassian.net/browse/STREAM-1123) - Only update necessary tracks when changing devices. Prevent virtual background from getting replaced
+* [STREAM-781](https://inindca.atlassian.net/browse/STREAM-781) - Fix issue where hold caused `Unhandled promise rejection from setConversationHeld` for inactive conversations.
+
+### Changed
+* [STREAM-1211](https://inindca.atlassian.net/browse/STREAM-1211) - Update `axios` to `v1.13.5`.
+* [STREAM-1285](https://inindca.atlassian.net/browse/STREAM-1285) - Refactor `handlePropose` in SoftphoneSessionHandler for clarity and future changes. Update associated comments to better reflect implementation.
+* [STREAM-1403](https://inindca.atlassian.net/browse/STREAM-1403) - Update `lodash` to `v4.18.1` to address Snyk vulnerability.
+* [STREAM-1423](https://inindca.atlassian.net/browse/STREAM-1423) - Update `axios` to `v1.15.0`.
+
+# [v12.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.1...v12.0.0)
+### Added
+* [STREAM-1099](https://inindca.atlassian.net/browse/STREAM-1099) - Emit `participantsUpdate` for JWT Video Guests
+
+### Breaking Changes
+* [STREAM-1178](https://inindca.atlassian.net/browse/STREAM-1178) - REVERT STREAM-825, removed ability to send multiple tracks when screensharing.
+* [STREAM-1130](https://inindca.atlassian.net/browse/STREAM-1130) - Updated TypeScript to v5.9.3 and Webpack to v5.105.0, removed legacy Spigot testing, added `.nvmrc`, demo app dependency updates, updated Node versions in testing matrices.
+
+# [v11.5.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.5.0...v11.5.1)
+### Added
+* [STREAM-1034](https://inindca.atlassian.net/browse/STREAM-1034) - Added JWT support for live monitoring sessions
+
+### Changed
+* [STREAM-1122](https://inindca.atlassian.net/browse/STREAM-1122) - Bump streaming-client to v19.5.0.
+
+# [v11.5.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.0...v11.5.0)
+### Fixed
+* [STREAM-1028](https://inindca.atlassian.net/browse/STREAM-1025) - Fix issue preventing monitoring observers from ending `liveScreenMonitoring` sessions and add accept session logic for observers.
+* [STREAM-1027](https://inindca.atlassian.net/browse/STREAM-992) - Fix jid to session type evaluation for live monitor jids
+
+### Added
+* [STREAM-878](https://inindca.atlassian.net/browse/STREAM-992) - Added in check to properly pass in a boolean to the headset library to determine if we have other active calls
+
+# [v11.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...v11.4.0)
+### Added
+* [STREAM-992](https://inindca.atlassian.net/browse/STREAM-992) - Added pull request template checklist.
+* [STREAM-825](https://inindca.atlassian.net/browse/STREAM-825) - Add ability to send multiple tracks when screensharing
+* [STREAM-777](https://inindca.atlassian.net/browse/STREAM-777) - Support live screen-monitoring
+
+### Fixed
+* [STREAM-990](https://inindca.atlassian.net/browse/STREAM-990) - Demo app: Store a copy of pendingSessions so freezing them doesn't affect the SDK's usage of those objects
+* [STREAM-1025](https://inindca.atlassian.net/browse/STREAM-1025) - Fix issue causing wrong session handler to be used for `liveScreenMonitoring` sessions.
+
+#### Changed
+* [STREAM-981](https://inindca.atlassian.net/browse/STREAM-981) - Remove appid from IncomingStreamStatus interface
+
+# [v11.3.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.3...v11.3.4)
+### Fixed
+* [STREAM-978](https://inindca.atlassian.net/browse/STREAM-978) - When the RTCPeerConnection is in a 'failed' state, clean up the session. Filter out voicemail participants from conversation update events. Fix potential TypeError when fetching conversations.
+* [STREAM-987](https://inindca.atlassian.net/browse/STREAM-987) - Demo app: Memoize conversations so they don't change every render when nothing has changed
+
+# [v11.3.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...v11.3.3)
+#### Changed
+* [#937] - Exposes raw webmessage data from conversation topic
 
 ### Added
 * [STREAM-600](https://inindca.atlassian.net/browse/STREAM-600) - Add Video to SDK demo app

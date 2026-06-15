@@ -29,7 +29,9 @@ import {
   IStation,
   IPersonDetails,
   ISessionIdAndConversationId,
-  VideoSessionHandler
+  VideoSessionHandler,
+  MediaHandling,
+  IActiveConversationDescription
 } from '../../src';
 import * as utils from '../../src/utils';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
@@ -219,7 +221,7 @@ describe('Client', () => {
     it('should call session manager to start video conference', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoConference('123');
       expect(sessionManagerMock.startSession).toBeCalledWith({ jid: '123', sessionType: SessionTypes.collaborateVideo });
     });
@@ -247,7 +249,7 @@ describe('Client', () => {
         }
       };
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoConference('test-room@conference.com');
 
       expect(sessionManagerMock.startSession).toBeCalledWith({
@@ -314,7 +316,7 @@ describe('Client', () => {
     it('should call session manager to start video meeting', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoMeeting('123abc');
       expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
     });
@@ -331,26 +333,22 @@ describe('Client', () => {
     });
   });
 
-  describe('startVideoMeeting()', () => {
-    it('should call session manager to start video meeting', async () => {
+  describe('isLiveScreenMonitoringSession', () => {
+    beforeEach(() => {
       sdk = constructSdk();
-
-      sessionManagerMock.startSession.mockResolvedValue({});
-      await sdk.startVideoMeeting('123abc');
-      expect(sessionManagerMock.startSession).toBeCalledWith({ meetingId: '123abc', sessionType: SessionTypes.collaborateVideo });
     });
 
-    it('should throw if guest user', async () => {
-      sdk = constructSdk({ organizationId: 'some-org' }); // no access_token is a guest user
-      try {
-        await sdk.startVideoMeeting('123');
-        fail('should have failed');
-      } catch (e) {
-        expect(e).toEqual(new Error('video conferencing meetings not supported for guests'));
-        expect(sessionManagerMock.startSession).not.toHaveBeenCalled();
-      }
+    it('should be true', () => {
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.liveScreenMonitoring } as any)).toBeTruthy();
+    });
+
+    it('should be false', () => {
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.acdScreenShare } as any)).toBeFalsy();
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.softphone } as any)).toBeFalsy();
+      expect(sdk.isLiveScreenMonitoringSession({ sessionType: SessionTypes.screenRecording } as any)).toBeFalsy();
     });
   });
+
 
   describe('startScreenShare()', () => {
     it('should reject if authenticated user', async () => {
@@ -367,7 +365,7 @@ describe('Client', () => {
       const media = new MockStream({ video: true });
       sdk = constructSdk({ organizationId: 'some-org' }); // for guest user sdk
 
-      sessionManagerMock.startSession.mockResolvedValue(media);
+      sessionManagerMock.startSession.mockResolvedValue(media as unknown as MediaStream);
 
       const stream = await sdk.startScreenShare();
 
@@ -404,7 +402,7 @@ describe('Client', () => {
     it('proxies the call to the sessionManager', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.acceptSession.mockResolvedValue({ conversationId: 'some-convo' });
+      sessionManagerMock.acceptSession.mockResolvedValue(undefined);
 
       const params = { conversationId: '5512551' };
       await sdk.acceptSession(params);
@@ -829,7 +827,7 @@ describe('Client', () => {
       await sdk.updateDefaultDevices(options);
 
       expect(sdk.headset.updateAudioInputDevice).toHaveBeenCalledWith(options.audioDeviceId);
-      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith();
+      expect(sdk.sessionManager.updateOutgoingMediaForAllSessions).toHaveBeenCalledWith({"audioDeviceId": "new-audio-device-id"});
       expect(sessionManagerMock.updateOutputDeviceForAllSessions).not.toHaveBeenCalled();
 
       sessionManagerMock.updateOutgoingMediaForAllSessions.mockReset();
@@ -1163,6 +1161,71 @@ describe('Client', () => {
     });
   });
 
+  describe('setMediaHandling()', () => {
+    it('should just set media handling and headsets if there is no sessionManager yet', () => {
+      const mockSdk = constructSdk();
+      (sdk as any).sessionManager = null;
+      const useHeadsetsSpy = jest.fn();
+      mockSdk.setUseHeadsets = useHeadsetsSpy;
+
+      sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
+
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+    });
+
+    it('should throw and reduce media handling if new media handling will not use headsets but there is an active conversation', () => {
+      sdk = constructSdk();
+      const conversations = [{ conversationId: 'test-conversation-id' }] as IActiveConversationDescription[];
+      sessionManagerMock.getAllActiveConversations.mockReturnValue(conversations);
+
+      expect(() => {
+        sdk.setMediaHandling(MediaHandling.reducedMedia);
+      }).toThrow();
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
+    });
+
+    it('should disconnect any sessions not connected to an active conversation when set to a reduced handling of media', () => {
+      sdk = constructSdk();
+      sdk.setUseHeadsets = jest.fn();
+
+      const mockSession = new MockSession(SessionTypes.softphone);
+      const conversations = [{ sessionId: mockSession.id }] as IActiveConversationDescription[];
+      sessionManagerMock.getAllActiveConversations.mockReturnValue(conversations);
+      const idleSession = new MockSession(SessionTypes.softphone);
+      const idleSessionId = idleSession.id;
+      const sessions = [mockSession, idleSession] as unknown as IExtendedMediaSession[];
+      sessionManagerMock.getAllSessions.mockReturnValue(sessions);
+      const forceTerminateSpy = jest.fn();
+      sessionManagerMock.forceTerminateSession = forceTerminateSpy;
+
+      sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
+
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
+      expect(forceTerminateSpy).toHaveBeenCalledTimes(1);
+      expect(forceTerminateSpy).toHaveBeenCalledWith(idleSessionId);
+    });
+
+    it('should use headsets when handling any media', () => {
+      sdk = constructSdk();
+      sessionManagerMock.getAllActiveConversations.mockReturnValue([]);
+      const useHeadsetsSpy = jest.fn();
+      sdk.setUseHeadsets = useHeadsetsSpy;
+
+      sdk.setMediaHandling(MediaHandling.standardMedia);
+      expect(sdk._mediaHandling).toBe(MediaHandling.standardMedia);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+
+      sdk.setMediaHandling(MediaHandling.alertingLeaderMedia);
+      expect(sdk._mediaHandling).toBe(MediaHandling.alertingLeaderMedia);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+
+      sdk.setMediaHandling(MediaHandling.reducedMediaHeadsets);
+      expect(sdk._mediaHandling).toBe(MediaHandling.reducedMediaHeadsets);
+      expect(useHeadsetsSpy).toHaveBeenCalledWith(true);
+    });
+  });
+
   describe('destroy()', () => {
     it('should log, end all sessions, remove listeners, destory media, and disconnect ws', async () => {
       sdk = constructSdk();
@@ -1376,7 +1439,7 @@ describe('Client', () => {
     it('should call session manager to start softphone session', async () => {
       sdk = constructSdk();
 
-      sessionManagerMock.startSession.mockResolvedValue({});
+      sessionManagerMock.startSession.mockResolvedValue({ id: '123', selfUri: '/conversations/123' });
       await sdk.startSoftphoneSession({ phoneNumber: '123' } as any);
       expect(sessionManagerMock.startSession).toBeCalledWith({ phoneNumber: '123', sessionType: 'softphone' });
     });

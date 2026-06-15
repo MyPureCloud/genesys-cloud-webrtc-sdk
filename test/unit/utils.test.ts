@@ -317,6 +317,7 @@ describe('jid utils', () => {
   it('isVideoJid', () => {
     expect(utils.isVideoJid('sdkfjk@conference.test.com')).toBeTruthy();
     expect(utils.isVideoJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isVideoJid('livemonitor-sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isVideoJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isVideoJid('sdkfjk@test.com')).toBeFalsy();
   });
@@ -333,6 +334,13 @@ describe('jid utils', () => {
     expect(utils.isAgentVideoJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isAgentVideoJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
     expect(utils.isAgentVideoJid('sdkfjk@test.com')).toBeFalsy();
+  });
+
+  it('isLiveScreenMonitorJid', () => {
+    expect(utils.isLiveScreenMonitorJid('livemonitor-agent-@conference.test.com')).toBeTruthy();
+    expect(utils.isLiveScreenMonitorJid('screenrecording-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isLiveScreenMonitorJid('acd-sdkfjk@conference.test.com')).toBeFalsy();
+    expect(utils.isLiveScreenMonitorJid('sdkfjk@test.com')).toBeFalsy();
   });
 });
 

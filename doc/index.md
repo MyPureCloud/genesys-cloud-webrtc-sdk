@@ -18,6 +18,7 @@
 - [WebRTC SoftPhone]
 - [WebRTC Video Conferencing]
 - [WebRTC Screen Recording]
+- [WebRTC Live Screen Monitoring]
 - [WebRTC Media] (media, devices, and permissions support)
 - [WebRTC Headset Integration]
 
@@ -131,6 +132,7 @@ interface ISdkConfig {
   wsHost?: string;
   autoConnectSessions?: boolean;
   autoAcceptPendingScreenRecordingRequests?: boolean;
+  autoAcceptPendingLiveScreenMonitoringRequests?: boolean;
   jidResource?: string;
   disableAutoAnswer?: boolean;
   logLevel?: LogLevels;
@@ -217,6 +219,14 @@ using `sdk.acceptSession({ conversationId })`.
 `autoAcceptPendingScreenRecordingRequests?: boolean;` Optional: default `false`
 
 If true, incoming proposes for screen recording sessions will be accepted immediately
+and no `pendingSession` event will be emitted. The consumer will still have to react to
+`sessionStarted` in order to add screen media and then call `sdk.acceptSession(...)`.
+
+#### `autoAcceptPendingLiveScreenMonitoringRequests`
+
+`autoAcceptPendingLiveScreenMonitoringRequests?: boolean;` Optional: default `false`
+
+If true, incoming proposes for live screen monitoring sessions will be accepted immediately
 and no `pendingSession` event will be emitted. The consumer will still have to react to
 `sessionStarted` in order to add screen media and then call `sdk.acceptSession(...)`.
 
@@ -1200,7 +1210,7 @@ Params:
     provided, no media will be requested.
   - `audioElement?: HTMLAudioElement` Optional: audio element to attach incoming audio to
     default is sdk `defaults.audioElement`
-  - `videoElement?: HTMLAudioElement` Optional: video element to attach incoming video to
+  - `videoElement?: HTMLVideoElement` Optional: video element to attach incoming video to
     default is sdk `defaults.videoElement`. (only used for video sessions)
   - `videoDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
   - `audioDeviceId?: string | boolean | null;` Optional: See [ISdkMediaDeviceIds] for full details
@@ -2042,6 +2052,7 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [WebRTC SoftPhone]: softphone.md
 [WebRTC Video Conferencing]: video.md
 [WebRTC Screen Recording]: screen-recording.md
+[WebRTC Live Screen Monitoring]: live-screen-monitoring.md
 [WebRTC Media]: media.md
 [ISdkMediaDeviceIds]: media.md#isdkmediadeviceids
 [SDK Media audioTrackVolume event]: media.md#audiotrackvolume

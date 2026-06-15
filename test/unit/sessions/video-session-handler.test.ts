@@ -1,6 +1,3 @@
-import nock from 'nock';
-import { v4 as uuidv4 } from 'uuid';
-
 import { SimpleMockSdk, MockSession, MockStream, MockTrack, random } from '../../test-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SessionManager } from '../../../src/sessions/session-manager';
@@ -9,8 +6,8 @@ import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/t
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
 import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
-import VideoSessionHandler, { IMediaChangeEvent } from '../../../src/sessions/video-session-handler';
-import { ConversationUpdate, GenesysDataChannelMessageParams, ICallStateFromParticipant, IConversationParticipantFromEvent, IParticipantVideo, IPersonDetails } from '../../../src/';
+import VideoSessionHandler from '../../../src/sessions/video-session-handler';
+import { ConversationUpdate, IConversationParticipantFromEvent, IParticipantVideo, IPersonDetails } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { jwtDecode } from 'jwt-decode';
 
@@ -25,7 +22,6 @@ let userId: string;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  nock.cleanAll();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
@@ -316,154 +312,6 @@ describe('handleConversationUpdate', () => {
   });
 });
 
-describe('mediaUpdateEvent', () => {
-  let mediaEvent: IMediaChangeEvent;
-  let session: any;
-  const incomingVideoId = '8a28ff7f-bfe7-4490-b921-0df0dd44bc23';
-  const incomingAudioId = '9c10d6bd-6dd8-423c-b317-b64f831f8d48';
-  const sendingUser = '2058ab75-7514-4092-b39e-ad2dcb8079a9';
-  const otherUser = 'dc432f16-031f-4ffc-a89a-3c291029647f';
-
-  beforeEach(() => {
-    mediaEvent = {
-      metadata: { CorrelationId: '123' },
-      eventBody: {
-        id: 'c89f515b-69fb-4730-93f8-dcff24997fec',
-        participants: [
-          {
-            communicationId: 'c1b10be3-51a6-4f3c-b4fc-75834a8115c3',
-            userId: sendingUser,
-            tracks: [
-              {
-                id: 'fc61add6-8934-4e97-ac17-9f715ab16449',
-                mediaType: 'audio',
-                sinks: [incomingAudioId]
-              },
-              {
-                id: '30f1b98c-b272-4df1-bb90-4a91a8db85ec',
-                mediaType: 'video',
-                sinks: [incomingVideoId]
-              }
-            ]
-          },
-          {
-            communicationId: 'ca13afab-ac4a-4346-87ac-bb5fa4179df9',
-            userId: 'dc432f16-031f-4ffc-a89a-3c291029647f',
-            tracks: [
-              {
-                id: 'a2b940a0-d58a-420d-a923-6923a7402b62',
-                mediaType: 'audio',
-                sinks: []
-              },
-              {
-                id: '46b8b64f-4743-4f2c-b91f-00bbe680a37f',
-                mediaType: 'video',
-                sinks: ['52b2fd95-6c13-4e4b-aea9-99eaf7f4661b']
-              }
-            ]
-          }
-        ],
-        speakers: ['fc61add6-8934-4e97-ac17-9f715ab16449']
-      }
-    };
-
-    session = {
-      pc: {
-        remoteDescription: {
-          sdp: 'v=0\notherstuff'
-        },
-        getReceivers: jest.fn().mockReturnValue([
-          { track: { kind: 'video', id: incomingVideoId } },
-          { track: { kind: 'audio', id: incomingAudioId } }
-        ]),
-      },
-      emit: jest.fn()
-    };
-  });
-
-  describe('updateParticipantsOnScreen', () => {
-    it('should only emit if the onScreenParticipant changes', () => {
-      handler.updateParticipantsOnScreen(session, mediaEvent);
-
-      const expected = {
-        participants: [
-          { userId: sendingUser }
-        ]
-      };
-
-      expect(session.emit).toHaveBeenCalledWith('activeVideoParticipantsUpdate', expected);
-      session.emit.mockReset();
-
-      handler.updateParticipantsOnScreen(session, mediaEvent);
-      expect(session.emit).not.toHaveBeenCalled();
-    });
-
-    it('should be able to match using the trackId from the sdp (for Firefox)', () => {
-      session.pc.getReceivers.mockReturnValue([
-        { track: { kind: 'video', id: '{some-firefox-track-id}' } }
-      ]);
-      jest.spyOn(handler, 'getTrackIdFromSdp').mockReturnValue(incomingVideoId);
-
-      handler.updateParticipantsOnScreen(session, mediaEvent);
-
-      const expected = {
-        participants: [
-          { userId: sendingUser }
-        ]
-      };
-
-      expect(session.emit).toHaveBeenCalledWith('activeVideoParticipantsUpdate', expected);
-      session.emit.mockReset();
-    });
-
-    it('should emit if participantCount has not changed but on screen has', () => {
-      handler.updateParticipantsOnScreen(session, mediaEvent);
-
-      const expected = {
-        participants: [
-          { userId: sendingUser }
-        ]
-      };
-
-      expect(session.emit).toHaveBeenCalledWith('activeVideoParticipantsUpdate', expected);
-      session.emit.mockReset();
-
-      const expected2 = {
-        participants: [
-          { userId: otherUser }
-        ]
-      };
-
-      const videoInfo = mediaEvent.eventBody.participants[0].tracks[1];
-      videoInfo.sinks = [];
-
-      const otherVideo = mediaEvent.eventBody.participants[1].tracks[1];
-      otherVideo.sinks = [incomingVideoId];
-
-      handler.updateParticipantsOnScreen(session, mediaEvent);
-      expect(session.emit).toHaveBeenCalledWith('activeVideoParticipantsUpdate', expected2);
-      expect(session.emit).toHaveBeenCalled();
-    });
-  });
-
-  describe('updateSpeakers', () => {
-    it('should send out speaker update', () => {
-      handler.updateSpeakers(session, mediaEvent);
-      expect(session.emit).toHaveBeenCalledWith('speakersUpdate', { speakers: [{ userId: sendingUser }] });
-    });
-
-    it('should be able to match using the trackId from the sdp (for Firefox) and send the speaker update', () => {
-      session.pc.getReceivers.mockReturnValue([
-        { track: { kind: 'audio', id: '{some-firefox-track-id}' } }
-      ]);
-      jest.spyOn(handler, 'getTrackIdFromSdp').mockReturnValue(incomingAudioId);
-
-      handler.updateSpeakers(session, mediaEvent);
-      expect(session.emit).toHaveBeenCalledWith('speakersUpdate', { speakers: [{ userId: sendingUser }] });
-    });
-  });
-});
-
 describe('startSession', () => {
   it('should post to video conference api', async () => {
     const roomJid = '123@conference.com';
@@ -661,7 +509,7 @@ describe('handlePropose', () => {
     handler.requestedSessions[previouslyRequestedJid] = true;
 
     const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
 
     await handler.handlePropose({
       id: '1241241',
@@ -684,7 +532,7 @@ describe('handlePropose', () => {
     handler.requestedMeetingSessions[previouslyRequestedMeetingId] = true;
 
     const parentHandler = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
 
     await handler.handlePropose({
       id: '1241241',
@@ -705,7 +553,7 @@ describe('handlePropose', () => {
   it('should not emit session if not requested and its a conference', async () => {
     const jid = '123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
 
     const emitSpy = jest.fn();
 
@@ -730,7 +578,7 @@ describe('handlePropose', () => {
   it('should not emit session if peer request and the requestor is current user and not requested by this client', async () => {
     const jid = 'peer-123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
     jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(true);
     jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(false);
 
@@ -757,7 +605,7 @@ describe('handlePropose', () => {
   it('should emit session if peer request', async () => {
     const jid = 'peer-123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
     jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(true);
     jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(false);
 
@@ -783,7 +631,7 @@ describe('handlePropose', () => {
   it('should emit session if agent video request', async () => {
     const jid = 'agent-123@conference.com';
 
-    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue({});
+    jest.spyOn(handler, 'proceedWithSession').mockResolvedValue(undefined);
     jest.spyOn(utils, 'isPeerVideoJid').mockReturnValue(false);
     jest.spyOn(utils, 'isAgentVideoJid').mockReturnValue(true);
 
@@ -907,14 +755,6 @@ describe('acceptSession', () => {
     setDevices([{ kind: 'videoinput' } as any]);
     await handler.acceptSession(session, { conversationId: session.conversationId, audioElement: audio, videoElement: video });
     expect(startMediaSpy).toHaveBeenCalledWith({ video: true, audio: false, session });
-  });
-
-  it('should subscribe to media change events', async () => {
-    const audio = document.createElement('audio');
-    const video = document.createElement('video');
-    await handler.acceptSession(session, { conversationId: session.conversationId, audioElement: audio, videoElement: video });
-
-    expect(mockSdk._streamingConnection.notifications.subscribe).toHaveBeenCalled();
   });
 
   it('should attach tracks later if not available', async () => {
@@ -1448,18 +1288,6 @@ describe('setAudioMute', () => {
   });
 });
 
-describe('handleMediaChangeEvent', () => {
-  it('should update on-screen and speakers', () => {
-    jest.spyOn(handler, 'updateParticipantsOnScreen').mockReturnValue();
-    jest.spyOn(handler, 'updateSpeakers').mockReturnValue();
-
-    handler.handleMediaChangeEvent(new MockSession() as any, {} as any);
-
-    expect(handler.updateParticipantsOnScreen).toHaveBeenCalled();
-    expect(handler.updateSpeakers).toHaveBeenCalled();
-  });
-});
-
 describe('getSendersByTrackType', () => {
   it('should only return senders with a track and matching the track type', () => {
     const track1 = { track: { kind: 'audio' } };
@@ -1544,7 +1372,7 @@ describe('stopScreenShare', () => {
     session = new MockSession();
   });
 
-  it('should do nothing if there is no active screen share', async () => {
+  it('should do nothing if there is no screenshare stream', async () => {
     session._screenShareStream = null;
 
     await handler.stopScreenShare(session);
@@ -1645,10 +1473,10 @@ describe('pinParticipantVideo', () => {
       address: null as any,
       confined: null as any,
       direction: null as any,
-      id: uuidv4(),
+      id: globalThis.crypto.randomUUID(),
       state: CommunicationStates.connected,
       purpose: 'user',
-      userId: uuidv4(),
+      userId: globalThis.crypto.randomUUID(),
       muted: false,
       videoMuted: false
     };

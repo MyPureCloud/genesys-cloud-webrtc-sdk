@@ -28,7 +28,8 @@ import {
   VideoMediaSession,
   IVideoResolution,
   JWTDetails,
-  ISdkFullConfig
+  ISdkFullConfig,
+  LiveScreenMonitoringSession
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -36,7 +37,7 @@ import {
 } from './client-private';
 import { requestApi, createAndEmitSdkError, defaultConfigOption, requestApiWithRetry } from './utils';
 import { setupLogging } from './logging';
-import { SdkErrorTypes, SessionTypes } from './types/enums';
+import { MediaHandling, SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
 import { SdkMedia } from './media/media';
 import { HeadsetProxyService } from './headsets/headset';
@@ -100,6 +101,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   station: IStation | null;
   headset: ISdkHeadsetService;
   _pauseDisconnectedMessages: boolean;
+  _preDisconnectSessionIds: string[];
 
   _connected: boolean;
   _streamingConnection: StreamingClient;
@@ -110,6 +112,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   _customerData: ICustomerData;
   _hasConnected: boolean;
   _config: ISdkFullConfig;
+  _mediaHandling = MediaHandling.standardMedia;
 
   get isInitialized (): boolean {
     return !!this._streamingConnection;
@@ -142,12 +145,12 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     /* grab copies or valid objects */
     const defaultsOptions = options.defaults || {};
 
-    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare];
+    let allowedSessionTypes = options.allowedSessionTypes || [SessionTypes.softphone, SessionTypes.collaborateVideo, SessionTypes.acdScreenShare, SessionTypes.liveScreenMonitoring];
 
-    // If using JWT auth, we only support screen recording and video conferencing.
+    // If using JWT auth, we only support screen recording, video conferencing and live screen monitoring.
     if (options.jwt) {
-      console.debug(`Forcing allowed session types to be ${SessionTypes.screenRecording} and ${SessionTypes.collaborateVideo} due to jwt auth`);
-      allowedSessionTypes = [ SessionTypes.screenRecording, SessionTypes.collaborateVideo ];
+      console.debug(`Forcing allowed session types to be ${SessionTypes.screenRecording}, ${SessionTypes.collaborateVideo} and ${SessionTypes.liveScreenMonitoring} due to jwt auth`);
+      allowedSessionTypes = [ SessionTypes.screenRecording, SessionTypes.collaborateVideo, SessionTypes.liveScreenMonitoring ];
     }
 
     this._config = {
@@ -156,6 +159,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       ...{
         autoConnectSessions: options.autoConnectSessions !== false, // default true
         autoAcceptPendingScreenRecordingRequests: !!options.autoAcceptPendingScreenRecordingRequests,
+        autoAcceptPendingLiveScreenMonitoringRequests: !!options.autoAcceptPendingLiveScreenMonitoringRequests,
         logLevel: options.logLevel || 'info',
         disableAutoAnswer: options.disableAutoAnswer || false, // default false
         optOutOfTelemetry: options.optOutOfTelemetry || false, // default false
@@ -163,7 +167,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useHeadsets: options.useHeadsets || false, // default false
         customHeaders: options.customHeaders,
         useServerSidePings: defaultConfigOption(options.useServerSidePings, false),
+        useWebHidOnDesktopCyberAcoustics: options.useWebHidOnDesktopCyberAcoustics,
+        useWebHidOnDesktopJabra: options.useWebHidOnDesktopJabra,
+        useWebHidOnDesktopVbet: options.useWebHidOnDesktopVbet,
+        useWebHidOnDesktopYealink: options.useWebHidOnDesktopYealink,
+        reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
+        hostedContext: options.hostedContext,
+        skipConstraints: options.skipConstraints,
         /* sdk defaults */
         defaults: {
           ...defaultsOptions,
@@ -177,7 +188,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           outputDeviceId: defaultsOptions.outputDeviceId || null,
           monitorMicVolume: !!defaultsOptions.monitorMicVolume // default to false
         }
-      }
+      },
     };
 
     this._orgDetails = { id: options.organizationId } as IOrgDetails;
@@ -205,6 +216,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     });
 
     this._connected = false;
+    this._preDisconnectSessionIds = [];
     this._streamingConnection = null;
     this._http = new HttpClient();
   }
@@ -223,7 +235,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  and other necessary async tasks are complete.
    */
   async initialize (opts?: { securityCode: string } | ICustomerData): Promise<void> {
-    const httpRequests: Promise<any>[] = [];
+    const httpRequests: Promise<unknown>[] = [];
     if (this.isGuest) {
       let guestPromise: Promise<void>;
 
@@ -343,6 +355,10 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     return session.sessionType === SessionTypes.collaborateVideo;
   }
 
+  isLiveScreenMonitoringSession (session: IExtendedMediaSession): session is LiveScreenMonitoringSession {
+    return session.sessionType === SessionTypes.liveScreenMonitoring;
+  }
+
   /**
    * Start a screen share. Currently, screen share is only supported
    *  for guest users.
@@ -353,7 +369,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async startScreenShare (): Promise<MediaStream> {
     if (this.isGuest) {
-      return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare });
+      return this.sessionManager.startSession({ sessionType: SessionTypes.acdScreenShare }) as Promise<MediaStream>;
     } else {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Agent screen share is not yet supported');
     }
@@ -380,7 +396,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Video conferencing requires authentication via JWT or access token.');
     }
 
-    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo });
+    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo }) as Promise<{ conversationId: string }>;
   }
 
   /**
@@ -399,7 +415,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'video conferencing meetings not supported for guests');
     }
 
-    return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo });
+    return this.sessionManager.startSession({ meetingId, sessionType: SessionTypes.collaborateVideo }) as Promise<{ conversationId: string }>;
   }
 
   /**
@@ -410,7 +426,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    */
   async startSoftphoneSession (softphoneParams: Omit<IStartSoftphoneSessionParams, 'sessionType'>): Promise<{ id: string, selfUri: string }> {
     (softphoneParams as IStartSoftphoneSessionParams).sessionType = SessionTypes.softphone;
-    const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams));
+    const callInfo = await this.sessionManager.startSession((softphoneParams as IStartSoftphoneSessionParams)) as { id: string; selfUri: string };
     return callInfo;
   }
 
@@ -488,7 +504,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the default
    *  device values have been updated
    */
-  async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<any> {
+  async updateDefaultDevices (options: IMediaDeviceIds & { updateActiveSessions?: boolean } = {}): Promise<void> {
     const updateVideo = options.videoDeviceId !== undefined;
     const updateAudio = options.audioDeviceId !== undefined;
     const updateOutput = options.outputDeviceId !== undefined;
@@ -518,8 +534,11 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       });
 
       if ((updateVideo || updateAudio) && this.sessionManager) {
+        const updateOptions: Pick<IUpdateOutgoingMedia, 'audioDeviceId' | 'videoDeviceId'> = {};
+        if (updateVideo) updateOptions.videoDeviceId = options.videoDeviceId;
+        if (updateAudio) updateOptions.audioDeviceId = options.audioDeviceId;
         promises.push(
-          this.sessionManager.updateOutgoingMediaForAllSessions()
+          this.sessionManager.updateOutgoingMediaForAllSessions(updateOptions)
         );
       }
 
@@ -529,7 +548,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         );
       }
 
-      return Promise.all(promises);
+      return Promise.all(promises).then(() => undefined);
     }
   }
 
@@ -559,7 +578,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the event has been emitted
    * signaling that the resolution has updated
    */
-  async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<any> {
+  async updateDefaultResolution(resolution: IVideoResolution | undefined, updateActiveSessions: boolean): Promise<void> {
     this._config.defaults.videoResolution = resolution;
     if (!updateActiveSessions) {
       return;
@@ -620,7 +639,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once the default
    *  settings and sessions are updated (if specified)
    */
-  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<any> {
+  async updateDefaultMediaSettings (settings: IMediaSettings & { updateActiveSessions?: boolean }): Promise<void> {
     const allowedSettings: Array<keyof IMediaSettings> = [
       'micAutoGainControl',
       'micEchoCancellation',
@@ -628,13 +647,13 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
       'monitorMicVolume'
     ];
 
-    const entries = (Object.entries(settings) as Array<[keyof IMediaSettings, any]>)
+    const entries = (Object.entries(settings) as Array<[keyof IMediaSettings, IMediaSettings[keyof IMediaSettings]]>)
       .filter(([setting]) => allowedSettings.includes(setting));
 
     this.logger.info('updating media settings', entries);
 
     entries.forEach(([key, value]) => {
-      this._config.defaults[key] = value;
+      (this._config.defaults as Record<string, unknown>)[key] = value;
     });
 
     if (settings.updateActiveSessions) {
@@ -687,6 +706,14 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
           jabberId: decoded.data.jid
         }
       };
+
+      this._customerData = {
+        conversation: {
+          id: decoded.data.conversationId,
+        },
+        sourceCommunicationId: decoded.data.sourceCommunicationId,
+        jwt: this._config.jwt
+      }
 
       this._orgDetails = {
         id: decoded.org,
@@ -846,6 +873,51 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   }
 
   /**
+   * **Genesys internal use only** - non-Genesys apps may experience unexpected behavior.
+   *
+   * Change the media handling for softphone sessions, which should be
+   * be chosen based on the alerting leader status of the consuming client.
+   *
+   * If media handling is reduced, idle persistent connections will be
+   * disconnected.
+   *
+   * @param mediaHandling how softphone media should be handled
+   */
+  setMediaHandling (mediaHandling: MediaHandling): void {
+    const useHeadsets = !(mediaHandling === MediaHandling.reducedMedia);
+
+    if (!this.sessionManager) {
+      this._mediaHandling = mediaHandling;
+      this.setUseHeadsets(useHeadsets);
+      return;
+    }
+
+    const activeConversations = this.sessionManager.getAllActiveConversations();
+
+    if (activeConversations.length !== 0 && !useHeadsets) {
+      this._mediaHandling = MediaHandling.reducedMediaHeadsets;
+      this.setUseHeadsets(true);
+      throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Cannot downgrade media handling to stop using headsets during an active call');
+    }
+
+    this._mediaHandling = mediaHandling;
+    this.setUseHeadsets(useHeadsets);
+
+    const reduceMediaHandling = mediaHandling === MediaHandling.reducedMediaHeadsets || mediaHandling === MediaHandling.reducedMedia;
+    if (reduceMediaHandling) {
+      const conversationSessionIds = activeConversations.map(conversation => conversation.sessionId);
+      // Disconnect connections that aren't associated with an active conversation.
+      // When a client is no longer the alerting leader, it needs to give up any
+      // persistent connections. Active calls should be maintained.
+      this.sessionManager.getAllSessions().forEach(session => {
+        if (session.sessionType === SessionTypes.softphone && !conversationSessionIds.includes(session.id)) {
+          this.sessionManager.forceTerminateSession(session.id);
+        }
+      });
+    }
+  }
+
+  /**
    * Accept a pending session based on the passed in conversation ID.
    *
    * @param params conversationId of the pending session to accept
@@ -898,7 +970,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * Disconnect the streaming connection
    * @returns a promise that fullfils once the web socket has disconnected
    */
-  disconnect (): Promise<any> {
+  disconnect (): Promise<void> {
     this._http.stopAllRetries();
     return this._streamingConnection?.disconnect();
   }
@@ -915,7 +987,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    * @returns a promise that fullfils once all the cleanup
    *  tasks have completed
    */
-  async destroy (): Promise<any> {
+  async destroy (): Promise<void> {
     if (!this.sessionManager) {
       return;
     }

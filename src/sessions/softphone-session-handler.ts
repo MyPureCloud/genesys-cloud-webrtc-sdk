@@ -11,6 +11,7 @@ import {
   IUpdateOutgoingMedia,
   IStartSoftphoneSessionParams,
   IConversationParticipantFromEvent,
+  IConversationParticipant,
   ICallStateFromParticipant,
   IStoredConversationState,
   ISdkConversationUpdateEvent,
@@ -19,7 +20,7 @@ import {
   PersistentConnectionEvent,
   HawkNotification
 } from '../types/interfaces';
-import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates } from '../types/enums';
+import { SessionTypes, SdkErrorTypes, JingleReasons, CommunicationStates, MediaHandling } from '../types/enums';
 import { attachAudioMedia, logDeviceChange, createUniqueAudioMediaElement } from '../media/media-utils';
 import { requestApi, isSoftphoneJid, createAndEmitSdkError, isPeerConnectionDisconnected } from '../utils';
 import { HeadsetChangesQueue } from '../headsets/headset-utils';
@@ -29,6 +30,7 @@ import { SessionManager } from './session-manager';
 import { FirstAlertingConversationStat } from 'genesys-cloud-streaming-client';
 import { HeadsetProxyService } from '../headsets/headset';
 import { removeAddressFieldFromConversationUpdate } from '../utils';
+import { StatsAggregator } from '../stats-aggregator';
 
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
@@ -150,34 +152,51 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     const isPrivAnswerAuto = pendingSession.privAnswerMode === 'Auto';
     const eagerConnectionEstablishmentMode = this.sdk._config.eagerPersistentConnectionEstablishment;
     const logInfo = { sessionId: pendingSession?.id, conversationId: pendingSession.conversationId };
+    const reducedMediaHandling = this.sdk._mediaHandling === MediaHandling.reducedMediaHeadsets || this.sdk._mediaHandling === MediaHandling.reducedMedia;
 
-    if (isPrivAnswerAuto) {
-      this.log('info', 'received a propose with privAnswerMode=true', logInfo);
-    }
+    if (reducedMediaHandling) {
+      this.log('info', 'received a propose while the SDK is configured for reduced media handling', logInfo);
 
-    // if eagerPersistentConnectionEstablishment==='none' then we want to completely swallow the propose
-    const shouldIgnorePrivAnswerPropose = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'none';
-    if (shouldIgnorePrivAnswerPropose) {
-      this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=true will be ignored', logInfo);
-      return;
-    }
+      if (pendingSession.autoAnswer) {
+        // emit the pendingSession event
+        await super.handlePropose(pendingSession);
 
-    const shouldAutoAnswerPrivately = isPrivAnswerAuto && eagerConnectionEstablishmentMode === 'auto';
-
-    // we want to emit the pendingSession event in all cases except when eagerConnectionEstablishmentMode === auto and this is a privAnswerMode call
-    if (!shouldAutoAnswerPrivately) {
-      await super.handlePropose(pendingSession);
-    } else {
-      return await this.proceedWithSession(pendingSession);
-    }
-
-    // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
-    if (pendingSession.autoAnswer) {
-      if (this.sdk._config.disableAutoAnswer) {
-        // It is possible that the consuming client has its own logic for auto-answering calls (eg. web-dir).
-        this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+        if (this.sdk._config.disableAutoAnswer) {
+          // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
+          this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+        } else {
+          await this.proceedWithSession(pendingSession);
+        }
       } else {
-        await this.proceedWithSession(pendingSession);
+        this.log('info', 'media handling is reduced, but this propose is not marked as autoAnswer and will be ignored', logInfo);
+        return;
+      }
+    } else {
+      if (isPrivAnswerAuto) {
+        this.log('info', 'received a propose with privAnswerMode=Auto', logInfo);
+
+        if (eagerConnectionEstablishmentMode === 'none') {
+          this.log('info', 'eagerPersistentConnectionEstablishment is "none" so propose with privAnswerMode=Auto will be ignored', logInfo);
+          return;
+        } else if (eagerConnectionEstablishmentMode === 'auto') {
+          // we don't need to emit a pendingSession event when we auto-answer eager persistent connections
+          return await this.proceedWithSession(pendingSession);
+        } else {
+          await super.handlePropose(pendingSession);
+        }
+      } else {
+        // we want to emit the pendingSession event in all other cases
+        await super.handlePropose(pendingSession);
+
+        // calls will can be marked as auto-answer or priv-answer-mode: Auto, but never both
+        if (pendingSession.autoAnswer) {
+          if (this.sdk._config.disableAutoAnswer) {
+            // It is possible that the consuming client has its own logic for auto-answering calls (e.g. web-dir).
+            this.log('info', 'received an autoAnswer tagged propose but the SDK was configured to not auto-answer, deferring to the consuming client.', logInfo);
+          } else {
+            await this.proceedWithSession(pendingSession);
+          }
+        }
       }
     }
   }
@@ -185,7 +204,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   getActiveConversations (): IActiveConversationDescription[] {
     const currentConversations = this.lastEmittedSdkConversationEvent?.current || [];
 
-    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session.id, sessionType: this.sessionType }));
+    return currentConversations.map(currentConvo => ({ conversationId: currentConvo.conversationId, sessionId: currentConvo.session?.id, sessionType: this.sessionType }));
   }
 
   handleSoftphoneConversationUpdate (update: ConversationUpdate, participant: IConversationParticipantFromEvent, callState: ICallStateFromParticipant, session?: IExtendedMediaSession): void {
@@ -195,7 +214,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     delete conversationUpdateForLogging.session
 
     if (session) {
-      session.pcParticipant = participant as any;
+      session.pcParticipant = participant as unknown as IConversationParticipant;
     }
 
     this.log('debug', 'about to process conversation event', { sessionId: session?.id, update, conversationUpdateForLogging, callState });
@@ -338,11 +357,18 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           }
           eventToEmit = 'added';
         }
+
+        /* notify the backend of the client's IP address when the call reaches 'connected' state.
+           This is checked separately because the 'added' block above may not execute for
+           dialing -> connected transitions (since dialing is already a "connected" state). */
+        if (callState.state === CommunicationStates.connected && previousCallState?.state !== CommunicationStates.connected && session) {
+          this.notifyClientMetadata(conversationId, callState.id);
+        }
       } else if (this.isEndedState(callState)) {
         if (this.isPendingState(previousCallState) && !isOutbound) {
           this.sdk.headset.rejectIncomingCall(conversationId);
         } else {
-          this.sdk.headset.endCurrentCall(conversationId);
+          this.sdk.headset.endCurrentCall(conversationId, Object.keys(this.conversations).length > 1);
         }
 
         HeadsetChangesQueue.clearQueue();
@@ -359,6 +385,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
             if there is a previous state, that means we are ending this call – otherwise it means we have
             already ended it (we get `disconnected` and `terminated` events back-to-back for ending calls. We only want to process one of them.)
           */
+          // STREAM-1591: Unify these events without causing other problems.
+          this.sdk.emit('_sessionEnded', session, { condition: JingleReasons.success });
           if (session && session === this.activeSession) {
             session.conversationId = conversationId;
             this.sdk.emit('sessionEnded', session, { condition: JingleReasons.success });
@@ -500,7 +528,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    const participantsForUser = update.participants.filter(p => p.userId === this.sdk._personDetails.id).reverse();
+    // Filter out voicemail participants - user ID can appear multiple times with different purposes.
+    const participantsForUser = update.participants.filter((p) => p.userId === this.sdk._personDetails.id && p.purpose !== 'voicemail').reverse();
     let participant: IConversationParticipantFromEvent;
 
     if (!participantsForUser.length) {
@@ -586,6 +615,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   async handleSessionInit (session: IExtendedMediaSession): Promise<void> {
     await super.handleSessionInit(session);
 
+    if (this.sdk._config.reportStatistics) {
+      session.statsAggregator = new StatsAggregator(session, this.sdk);
+    }
+
     const acceptParams: IAcceptSessionRequest = { conversationId: session.conversationId };
 
     // if this is a reinvite, we want to silently replace the old session and mark the old session as replaced
@@ -599,6 +632,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
       if (oldSession) {
         oldSession.sessionReplacedByReinvite = true;
+        session.reconnectCount = (oldSession.reconnectCount ?? 0) + 1
         const oldSessionInfo = { conversationId: oldSession.conversationId, sessionId: oldSession.id, sessionType: this.sessionType };
         this.log('info', 'force terminating session that was replaced by reinvite', oldSessionInfo);
 
@@ -615,7 +649,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     }
   }
 
-  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<any> {
+  async acceptSession (session: IExtendedMediaSession, params: IAcceptSessionRequest): Promise<void> {
     const lineAppearance1 = !this.sdk.isConcurrentSoftphoneSessionsEnabled();
     const privAnswerMode = session.privAnswerMode;
 
@@ -684,7 +718,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     if (!this.conversations[session.conversationId]) {
       // we don't want to store the fake conversation when priv-answer-mode=true
       if (session.privAnswerMode !== 'Auto') {
-        this.conversations[session.conversationId] = { session } as any;
+        this.conversations[session.conversationId] = { session } as unknown as IStoredConversationState;
       }
     } else {
       this.conversations[session.conversationId].session = session;
@@ -719,7 +753,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     });
   }
 
-  async rejectPendingSession (pendingSession: IPendingSession): Promise<any> {
+  async rejectPendingSession (pendingSession: IPendingSession): Promise<void> {
     let participant = this.getUserParticipantFromConversationEvent(
       this.conversations[pendingSession.conversationId]?.conversationUpdate
     );
@@ -737,7 +771,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     });
   }
 
-  _rejectUcCall (conversationId: string, participantId: string): Promise<any> {
+  _rejectUcCall (conversationId: string, participantId: string): Promise<void> {
     return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}/replace`, {
       method: 'post',
       data: JSON.stringify({ voicemail: true })
@@ -903,9 +937,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     * connection that will attempt to hold the previous ended call
     */
     const otherSessions = sessions.filter(session => {
+      const convo = this.conversations[session.conversationId];
       return session.sessionType === SessionTypes.softphone &&
-        this.conversations[session.conversationId] &&
+        convo &&
         !this.isConversationHeld(session.conversationId) &&
+        !this.isEndedState(convo.mostRecentCallState) &&
         session !== currentSession;
     });
 
@@ -913,6 +949,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     otherSessions.forEach(session => {
       this.setConversationHeld(session, { conversationId: session.conversationId, held: true })
+        .catch(err => {
+          this.log('warn', 'Failed to hold other session during holdOtherSessions', {
+            sessionId: session.id,
+            conversationId: session.conversationId,
+            error: err
+          });
+        });
     });
   }
 
@@ -921,7 +964,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   // since softphone sessions will *never* have video, we set the videoDeviceId to undefined so we don't spin up the camera
-  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<any> {
+  async updateOutgoingMedia (session: IExtendedMediaSession, options: IUpdateOutgoingMedia): Promise<void> {
     const newOptions: IUpdateOutgoingMedia = { ...options, videoDeviceId: undefined };
     return super.updateOutgoingMedia(session, newOptions);
   }
@@ -939,7 +982,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     conversationId: string,
     participantId: string,
     body: { muted: boolean } | { state: CommunicationStates } | { held: boolean }
-  ): Promise<any> {
+  ): Promise<void> {
     return requestApi.call(this.sdk, `/conversations/calls/${conversationId}/participants/${participantId}`, {
       method: 'patch',
       data: JSON.stringify(body)
@@ -956,6 +999,21 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
   private isEndedState (call: ICallStateFromParticipant): boolean {
     return call?.state === CommunicationStates.disconnected || call?.state === CommunicationStates.terminated;
+  }
+
+  /**
+   * Notify the backend that a call has connected for this client.
+   * The server captures the client's IP address from the HTTP request.
+   * This is fire-and-forget — errors are logged but do not affect call handling.
+   */
+  private notifyClientMetadata (conversationId: string, communicationId: string): void {
+    const path = `/conversations/calls/${conversationId}/communications/${communicationId}/metadata`;
+    this.log('info', 'notifying client metadata for connected call', { conversationId, communicationId });
+
+    requestApi.call(this.sdk, path, { method: 'post' })
+      .catch(err => {
+        this.log('warn', 'failed to notify client metadata', { conversationId, communicationId, error: err?.message });
+      });
   }
 }
 

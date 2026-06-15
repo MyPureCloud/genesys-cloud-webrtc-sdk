@@ -12,7 +12,7 @@ type Events = {
   [HeadsetEvents.deviceAnsweredCall]: EventInfoWithConversationId;
   [HeadsetEvents.deviceEndedCall]: EventInfoWithConversationId
   [HeadsetEvents.deviceRejectedCall]: EventInfoWithConversationId;
-  [HeadsetEvents.loggableEvent]: any;
+  [HeadsetEvents.loggableEvent]: unknown;
   [HeadsetEvents.webHidPermissionRequested]: WebHidPermissionRequest;
   [HeadsetEvents.deviceConnectionStatusChanged]: ExpandedDeviceConnectionStatus;
 }
@@ -30,7 +30,7 @@ export interface ISdkHeadsetService {
   retryConnection (micLabel: string): Promise<void>;
   setRinging (callInfo: { conversationId: string, contactName?: string }, hasOtherActiveCalls: boolean): Promise<void>;
   outgoingCall (callInfo: { conversationId: string, contactName?: string }): Promise<void>;
-  endCurrentCall (conversationId: string): Promise<void>;
+  endCurrentCall (conversationId: string, hasOtherActiveCalls: boolean): Promise<void>;
   endAllCalls (): Promise<void>;
   answerIncomingCall (conversationId: string, autoAnswer: boolean): Promise<void>;
   rejectIncomingCall (conversationId: string, expectExistingConversation?: boolean): Promise<void>;
