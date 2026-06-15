@@ -20,6 +20,7 @@
 - [WebRTC Screen Recording]
 - [WebRTC Live Screen Monitoring]
 - [WebRTC Media] (media, devices, and permissions support)
+- [WebRTC Audio Processing] (bring-your-own noise suppression / audio processing)
 - [WebRTC Headset Integration]
 
 ### App Authorization
@@ -357,6 +358,7 @@ Optional. Defaults for various SDK functionality. See individual options for def
 
 ```ts
 defaults?: {
+    audioProcessor?: IAudioProcessor;
     audioStream?: MediaStream;
     audioElement?: HTMLAudioElement;
     videoElement?: HTMLVideoElement;
@@ -374,6 +376,16 @@ defaults?: {
     monitorMicVolume?: boolean;
   };
 ```
+
+#### `defaults.audioProcessor`
+
+`audioProcessor?: IAudioProcessor;` Optional: no default.
+
+A bring-your-own audio processor used for enhanced noise suppression or other
+audio processing of outgoing softphone audio. When provided, the SDK will set
+and initialize it automatically. The processor must implement the `IAudioProcessor`
+interface. See [WebRTC Audio Processing] for the interface contract, runtime usage,
+and full details.
 
 #### `defaults.audioStream`
 
@@ -2054,6 +2066,7 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [WebRTC Screen Recording]: screen-recording.md
 [WebRTC Live Screen Monitoring]: live-screen-monitoring.md
 [WebRTC Media]: media.md
+[WebRTC Audio Processing]: audio-processor.md
 [ISdkMediaDeviceIds]: media.md#isdkmediadeviceids
 [SDK Media audioTrackVolume event]: media.md#audiotrackvolume
 [GenesysCloudMediaSession]: #genesyscloudmediasession
