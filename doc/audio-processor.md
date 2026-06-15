@@ -6,6 +6,8 @@ It is the consuming application's responsibility to instantiate an audio process
 
 > *Note: Unfiltered audio never leaves the user's machine. The processor runs locally in the browser and the SDK only sends the processed stream.*
 
+> *Note: Audio processing is currently only available for softphone sessions and will be expanded to video in the future.*
+
 ## WebRTC SDK Audio Processing Index
 
 This documentation expands upon the [GenesysCloudWebrtcSdk] documentation but is specific to audio processing.
