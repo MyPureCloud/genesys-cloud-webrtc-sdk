@@ -167,6 +167,7 @@ export default function useAuth() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Genesys-App': 'webrtc-demo-app',
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',

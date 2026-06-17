@@ -44,6 +44,7 @@ import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
 import { setupWebrtcForWindows11 } from './windows11-first-session-hack';
 import { ISdkHeadsetService } from './headsets/headset-types';
+import { SdkAudioProcessor } from './audio-processor/audio-processor';
 
 const ENVIRONMENTS = [
   'mypurecloud.com',
@@ -97,6 +98,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
   static readonly VERSION = '__GENESYS_CLOUD_WEBRTC_SDK_VERSION__';
   logger: Logger;
   sessionManager: SessionManager;
+  audioProcessor: SdkAudioProcessor;
   media: SdkMedia;
   station: IStation | null;
   headset: ISdkHeadsetService;
@@ -198,6 +200,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
+    this.audioProcessor = new SdkAudioProcessor(this, this._config.defaults.audioProcessor);
     this.headset = new HeadsetProxyService(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 

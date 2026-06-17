@@ -8,6 +8,7 @@ import { SdkError } from '../utils';
 import { LogLevels, SessionTypes, JingleReasons, CommunicationStates } from './enums';
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { StatsAggregator } from '../stats-aggregator';
+import { IAudioProcessor } from '../audio-processor/interface';
 
 export { ISessionInfo, IPendingSession };
 // extend the emittable events
@@ -300,6 +301,12 @@ export interface ISdkFullConfig {
 
   /** defaults for various SDK functionality */
   defaults?: {
+    /**
+     * Audio processor to use for enhanced noise suppression.
+     *
+     * Optional: no default
+     */
+    audioProcessor?: IAudioProcessor;
 
     /**
      * A default audio stream to accept softphone sessions with

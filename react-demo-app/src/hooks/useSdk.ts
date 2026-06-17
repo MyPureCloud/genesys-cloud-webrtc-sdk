@@ -22,6 +22,16 @@ import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
 
+// Audio processor testing.
+// The SDK accepts any audio processor that implements the IAudioProcessor interface.
+// GenesysIrisClient is used here as a concrete example implementation.
+// Manually add these in either the src or public folder of the demo app.
+import licenseText from '../../iris.ilc?raw';
+import keyText from '../../iris.key?raw';
+import { GenesysIrisClient } from 'genesys-iris-client';
+import { setAudioProcessor } from '../features/audioProcessorSlice';
+import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
+
 interface IAuthData {
   token: string;
   environment: {
@@ -36,6 +46,8 @@ export default function useSdk() {
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
 
   async function initWebrtcSDK(authData: IAuthData) {
+    const audioProcessor = await constructAudioProcessor();
+
     const options: ISdkConfig = {
       accessToken: authData.token,
       environment: authData.environment.uri,
@@ -43,15 +55,52 @@ export default function useSdk() {
       originAppName: 'webrtc-demo-app',
       optOutOfTelemetry: true,
       logLevel: 'info',
-      useServerSidePings: true
+      useServerSidePings: true,
+      defaults: {
+        audioProcessor: audioProcessor || undefined,
+        micNoiseSuppression: false,
+        micEchoCancellation: false,
+        micAutoGainControl: false
+      }
     };
+
+    if (!audioProcessor && options.defaults) {
+      options.defaults.micNoiseSuppression = false;
+      options.defaults.micEchoCancellation = false;
+      options.defaults.micAutoGainControl = false;
+    }
 
     webrtcSdk = new GenesysCloudWebrtcSdk(options);
     dispatch(setSdk(webrtcSdk as MinimalSdk));
+    dispatch(setAudioProcessor(audioProcessor));
 
     connectEventHandlers();
 
     await webrtcSdk.initialize();
+  }
+
+  // Construct a concrete audio processor. GenesysIrisClient is used here as an
+  // example implementation of the IAudioProcessor interface.
+  async function constructAudioProcessor(): Promise<IAudioProcessor | undefined> {
+    if (!keyText || !licenseText) {
+      return;
+    }
+    const irisClient = new GenesysIrisClient({
+      company: 'GENESYS_TEST',
+      key: keyText,
+      license: licenseText,
+      team: 'Dev Team',
+      user: 'The Omnissiah'
+    });
+
+    return irisClient as unknown as IAudioProcessor;
+  }
+
+  async function initAudioProcessor()  {
+    const audioProcessor = await constructAudioProcessor();
+    dispatch(setAudioProcessor(audioProcessor));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (sdk as any).audioProcessor.setAudioProcessor(audioProcessor);
   }
 
   function connectEventHandlers() {
@@ -199,6 +248,7 @@ export default function useSdk() {
     updateAudioVolume,
     destroySdk,
     updateOnQueueStatus,
-    disconnectPersistentConnection
+    disconnectPersistentConnection,
+    initAudioProcessor
   };
 }

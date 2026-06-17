@@ -7,6 +7,7 @@ import PendingSessionsTable from "./PendingSessionsTable";
 import ActiveConversationsTable from "./ActiveConversationsTable";
 import HandledPendingSessionsTable from "./HandledPendingSessionsTable";
 import StationDetails from "./StationDetails";
+import AudioProcessor from "./AudioProcessor";
 import { useSelector } from "react-redux";
 import { RootState } from '../types/store';
 
@@ -68,6 +69,7 @@ export default function Softphone() {
               uncheckedLabel="Off Queue"
             ></GuxToggle>
           </Card>
+          <AudioProcessor></AudioProcessor>
           <StationDetails></StationDetails>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
           <PendingSessionsTable></PendingSessionsTable>

@@ -3,6 +3,7 @@ import authReducer from './features/authSlice';
 import conversationsReducer from './features/conversationsSlice';
 import devicesReducer from './features/devicesSlice';
 import sdkReducer from './features/sdkSlice';
+import audioProcessorReducer from './features/audioProcessorSlice';
 
 
 export const store= configureStore({
@@ -10,7 +11,8 @@ export const store= configureStore({
     auth: authReducer,
     conversations: conversationsReducer,
     devices: devicesReducer,
-    sdk: sdkReducer
+    sdk: sdkReducer,
+    audioProcessor: audioProcessorReducer
   },
   middleware: getDefaultMiddleware => getDefaultMiddleware({serializableCheck: false})
 })
