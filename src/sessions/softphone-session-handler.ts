@@ -357,6 +357,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           }
           eventToEmit = 'added';
         }
+
+        /* notify the backend of the client's IP address when the call reaches 'connected' state.
+           This is checked separately because the 'added' block above may not execute for
+           dialing -> connected transitions (since dialing is already a "connected" state). */
+        if (callState.state === CommunicationStates.connected && previousCallState?.state !== CommunicationStates.connected && session) {
+          this.notifyClientMetadata(conversationId, callState.id);
+        }
       } else if (this.isEndedState(callState)) {
         if (this.isPendingState(previousCallState) && !isOutbound) {
           this.sdk.headset.rejectIncomingCall(conversationId);
@@ -992,6 +999,21 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
   private isEndedState (call: ICallStateFromParticipant): boolean {
     return call?.state === CommunicationStates.disconnected || call?.state === CommunicationStates.terminated;
+  }
+
+  /**
+   * Notify the backend that a call has connected for this client.
+   * The server captures the client's IP address from the HTTP request.
+   * This is fire-and-forget — errors are logged but do not affect call handling.
+   */
+  private notifyClientMetadata (conversationId: string, communicationId: string): void {
+    const path = `/conversations/calls/${conversationId}/communications/${communicationId}/metadata`;
+    this.log('info', 'notifying client metadata for connected call', { conversationId, communicationId });
+
+    requestApi.call(this.sdk, path, { method: 'post' })
+      .catch(err => {
+        this.log('warn', 'failed to notify client metadata', { conversationId, communicationId, error: err?.message });
+      });
   }
 }
 

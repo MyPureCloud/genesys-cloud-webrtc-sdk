@@ -12,7 +12,15 @@ export class SdkHeadsetService extends SdkHeadsetBase {
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super(sdk);
-    this.headsetLibrary = HeadsetService.getInstance({ logger: this.createDecoratedLogger(), appName: sdk._config.originAppName });
+    this.headsetLibrary = HeadsetService.getInstance({
+      logger: this.createDecoratedLogger(),
+      appName: sdk._config.originAppName,
+      hostedContext: sdk._config.hostedContext,
+      useWebHidOnDesktopJabra: sdk._config.useWebHidOnDesktopJabra,
+      useWebHidOnDesktopYealink: sdk._config.useWebHidOnDesktopYealink,
+      useWebHidOnDesktopVbet: sdk._config.useWebHidOnDesktopVbet,
+      useWebHidOnDesktopCyberAcoustics: sdk._config.useWebHidOnDesktopCyberAcoustics
+    });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
   }
 

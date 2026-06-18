@@ -266,6 +266,16 @@ export interface ISdkFullConfig {
   useServerSidePings?: boolean;
 
   /**
+   * Feature toggles for each WebHID enabled headset vendor.  If enabled, this will allow WebHID to be used on the native desktop application.
+   *
+   * Optional: default `false`
+   */
+  useWebHidOnDesktopJabra?: boolean;
+  useWebHidOnDesktopYealink?: boolean;
+  useWebHidOnDesktopVbet?: boolean;
+  useWebHidOnDesktopCyberAcoustics?: boolean;
+
+  /**
    * Controls whether to report statistics, such as estimated MOS (Mean Opinion Score).
    *
    * Optional: default `false`
@@ -276,6 +286,14 @@ export interface ISdkFullConfig {
    * Genesys internal use only - non-Genesys apps that pass in `alertableInteractionTypes` may experience unexpected behavior
    */
   alertableInteractionTypes?: AlertableInteractionTypes[];
+
+  /**
+   * Object passed down from consuming application.  This helps communicate with the desktop app and provides valuable pieces of information such as flags
+   * and functions to help with the communication
+   *
+   * Optional
+   */
+  hostedContext?: unknown;
 
   /** if video constraints should be skipped. Useful when the SDK is used on mobile devices */
   skipConstraints?: boolean;
