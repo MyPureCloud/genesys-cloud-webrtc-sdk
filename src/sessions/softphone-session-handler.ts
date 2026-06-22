@@ -297,19 +297,33 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
         /* only emit `pendingSession` if we already have an active session */
         if (session && session === this.activeSession) {
-          const pendingSession: IPendingSession = {
-            id: session.id,
-            sessionId: session.id,
-            autoAnswer: isOutbound,
-            conversationId,
-            sessionType: this.sessionType,
-            originalRoomJid: session.originalRoomJid,
-            fromUserId: session.fromUserId,
-            fromJid: session.peerID,
-            toJid: this.sdk._personDetails.chat.jabberId
-          };
-          this.sessionManager.pendingSessions.push(pendingSession);
-          this.sdk.emit('pendingSession', pendingSession);
+          /*
+           * Guard against duplicate pendingSession emissions caused by delayed Hawk conversation events.
+           * If the session has already emitted sessionStarted for this conversationId (via the Jingle signaling path),
+           * or if a pendingSession already exists for this conversation, the call has already progressed
+           * beyond the pending stage and we should not emit again.
+           */
+          if (session._emittedSessionStarteds?.[conversationId] || this.sessionManager.getPendingSession({ conversationId, sessionType: this.sessionType })) {
+            this.log('info', 'suppressing duplicate pendingSession from conversation event — session already active or pending for this conversation', {
+              conversationId,
+              sessionId: session.id,
+              alreadyStarted: !!session._emittedSessionStarteds?.[conversationId]
+            });
+          } else {
+            const pendingSession: IPendingSession = {
+              id: session.id,
+              sessionId: session.id,
+              autoAnswer: isOutbound,
+              conversationId,
+              sessionType: this.sessionType,
+              originalRoomJid: session.originalRoomJid,
+              fromUserId: session.fromUserId,
+              fromJid: session.peerID,
+              toJid: this.sdk._personDetails.chat.jabberId
+            };
+            this.sessionManager.pendingSessions.push(pendingSession);
+            this.sdk.emit('pendingSession', pendingSession);
+          }
         }
         /* we don't want to emit events for these */
         eventToEmit = false;
