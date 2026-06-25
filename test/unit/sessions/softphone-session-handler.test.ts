@@ -1357,7 +1357,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
-  it('should not emit a duplicate pendingSession if sessionStarted was already emitted for this conversation (STREAM-1241)', () => {
+  it('should not emit a duplicate pendingSession if sessionStarted was already emitted for this conversation', () => {
     const { update, participant, callState, session } = generateUpdate({
       callState: CommunicationStates.alerting
     });
@@ -1384,7 +1384,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
-  it('should not emit a duplicate pendingSession if a pendingSession already exists for the conversation (STREAM-1241)', () => {
+  it('should not emit a duplicate pendingSession if a pendingSession already exists for the conversation', () => {
     const { update, participant, callState, session } = generateUpdate({
       callState: CommunicationStates.alerting
     });
