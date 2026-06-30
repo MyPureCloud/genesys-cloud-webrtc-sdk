@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-1394](https://inindca.atlassian.net/browse/STREAM-1394) - Notify the backend when a client call reaches a connected state
 ### Changed
 * [STREAM-456](https://inindca.atlassian.net/browse/STREAM-456) - Update softphone-vendor-headsets dependency to properly accommodate WebHID on the desktop app; Passed down `hostedContext` from consuming app as well as necessary feature toggles
+* [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
 
 # [v14.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...v14.0.0)
 ### Breaking Changes
