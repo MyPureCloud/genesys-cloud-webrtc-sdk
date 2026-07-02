@@ -3,17 +3,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.1...HEAD)
+
+# [v14.1.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.1.1)
 ### Fixed
 * [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
+### Changed
+* [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
+* [STREAM-1662](https://inindca.atlassian.net/browse/STREAM-1662) - Remove `sourceType` from stats object from client.
 
 # [v14.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.0.0...v14.1.0)
 ### Added
 * [STREAM-1394](https://inindca.atlassian.net/browse/STREAM-1394) - Notify the backend when a client call reaches a connected state
 ### Changed
 * [STREAM-456](https://inindca.atlassian.net/browse/STREAM-456) - Update softphone-vendor-headsets dependency to properly accommodate WebHID on the desktop app; Passed down `hostedContext` from consuming app as well as necessary feature toggles
-* [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
-* [STREAM-1662](https://inindca.atlassian.net/browse/STREAM-1662) - Remove `sourceType` from stats object from client.
 
 # [v14.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...v14.0.0)
 ### Breaking Changes
