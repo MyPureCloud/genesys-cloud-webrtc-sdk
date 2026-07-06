@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...HEAD)
 ### Fixed
 * [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
+* [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1394) - Prevent redundant pendingSession for already-connected call
 
 # [v14.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.0.0...v14.1.0)
 ### Added
