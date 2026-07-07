@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v14.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.0)
 ### Fixed
 * [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
+* [STREAM-1867](https://inindca.atlassian.net/browse/STREAM-1867) - Dependency bump for `softphone-vendor-headsets` to fix a Plantronics/Poly issue around mute state persisting between calls and another issue around `hostedContext` not being populated
 ### Changed
 * [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
 * [STREAM-1662](https://inindca.atlassian.net/browse/STREAM-1662) - Remove `sourceType` from stats object from client.
