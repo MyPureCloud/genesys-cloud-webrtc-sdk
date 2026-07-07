@@ -1357,6 +1357,67 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
+  it('should not emit a duplicate pendingSession if sessionStarted was already emitted for this conversation', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+
+    handler.activeSession = session;
+    // Simulate that the session already progressed to started via Jingle signaling
+    session._emittedSessionStarteds = { [update.id]: true };
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(sdkEmitSpy).not.toHaveBeenCalledWith(
+      'pendingSession',
+      expect.any(Object)
+    );
+    expect(mockSessionManager.pendingSessions.length).toBe(0);
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'suppressing duplicate pendingSession from conversation event — session already active or pending for this conversation',
+      expect.objectContaining({
+        conversationId: update.id,
+        sessionId: session.id,
+        alreadyStarted: true
+      }),
+      undefined
+    );
+  });
+
+  it('should not emit a duplicate pendingSession if a pendingSession already exists for the conversation', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+
+    handler.activeSession = session;
+    // Simulate that a pendingSession already exists (from an earlier Jingle propose)
+    mockSessionManager.pendingSessions.push({
+      id: session.id,
+      sessionId: session.id,
+      autoAnswer: false,
+      conversationId: update.id,
+      sessionType: SessionTypes.softphone
+    } as IPendingSession);
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    // Should still only have the original one, not a duplicate
+    expect(mockSessionManager.pendingSessions.length).toBe(1);
+    expect(sdkEmitSpy).not.toHaveBeenCalledWith(
+      'pendingSession',
+      expect.any(Object)
+    );
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'suppressing duplicate pendingSession from conversation event — session already active or pending for this conversation',
+      expect.objectContaining({
+        conversationId: update.id,
+        sessionId: session.id,
+        alreadyStarted: false
+      }),
+      undefined
+    );
+  });
+
   it('should not emit "sessionStarted" for conversationUpdates in a connected state when the session was accepted by the normal session-accept', () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.connected,
