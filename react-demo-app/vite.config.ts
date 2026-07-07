@@ -22,5 +22,8 @@ export default defineConfig({
         'vite-plugin-node-polyfills/shims/global'
       ]
     }
+  },
+  optimizeDeps: {
+    exclude: ['genesys-iris-client']
   }
 })

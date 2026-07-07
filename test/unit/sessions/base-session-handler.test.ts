@@ -426,6 +426,113 @@ describe('updateOutgoingMedia()', () => {
       expect(session.mute).not.toHaveBeenCalledWith(mockSdk._personDetails.id, 'video');
     }
   });
+
+  describe('audio processor integration', () => {
+    /* The mocked SDK does not include an audioProcessor by default; tests opt-in here. */
+    const installAudioProcessor = (processedStream: MockStream) => {
+      const processFn = jest.fn().mockResolvedValue(processedStream);
+      (mockSdk as any).audioProcessor = { process: processFn };
+      return processFn;
+    };
+
+    it('should run a caller-supplied audio stream through the audio processor and swap audio tracks', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const inputStream = new MockStream({ audio: true });
+      const originalAudioTrack = inputStream.getAudioTracks()[0];
+      const processedStream = new MockStream({ audio: true });
+      const processedAudioTrack = processedStream.getAudioTracks()[0];
+
+      const processSpy = installAudioProcessor(processedStream);
+
+      await handler.updateOutgoingMedia(session as any, { stream: inputStream as any });
+
+      expect(processSpy).toHaveBeenCalledWith(inputStream);
+      /* original audio track is stopped and no longer on the stream */
+      expect(originalAudioTrack.stop).toHaveBeenCalled();
+      expect(inputStream.getTracks()).not.toContain(originalAudioTrack);
+      /* processed audio track is now on the stream and added to the session */
+      expect(inputStream.getAudioTracks()).toContain(processedAudioTrack);
+      expect(session.getTracks()).toContain(processedAudioTrack);
+    });
+
+    it('should preserve video tracks on the supplied stream when processing audio', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const inputStream = new MockStream({ audio: true, video: true });
+      const videoTrack = inputStream.getVideoTracks()[0];
+      const processedStream = new MockStream({ audio: true });
+
+      installAudioProcessor(processedStream);
+
+      await handler.updateOutgoingMedia(session as any, { stream: inputStream as any });
+
+      /* video track stays untouched on the stream and is added to the session */
+      expect(inputStream.getVideoTracks()).toContain(videoTrack);
+      expect(videoTrack.stop).not.toHaveBeenCalled();
+      expect(session.getTracks()).toContain(videoTrack);
+      expect(session.getTracks()).toContain(processedStream.getAudioTracks()[0]);
+    });
+
+    it('should not call the audio processor when the supplied stream has no audio tracks', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const inputStream = new MockStream({ video: true });
+
+      const processSpy = installAudioProcessor(new MockStream({ audio: true }));
+
+      await handler.updateOutgoingMedia(session as any, { stream: inputStream as any });
+
+      expect(processSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not call the audio processor when sdk.audioProcessor is not configured', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const inputStream = new MockStream({ audio: true });
+      const originalAudioTrack = inputStream.getAudioTracks()[0];
+
+      /* explicitly ensure no processor is set */
+      (mockSdk as any).audioProcessor = undefined;
+
+      await handler.updateOutgoingMedia(session as any, { stream: inputStream as any });
+
+      /* original audio track flows through unchanged */
+      expect(originalAudioTrack.stop).not.toHaveBeenCalled();
+      expect(session.getTracks()).toContain(originalAudioTrack);
+    });
+
+    it('should run media from startMedia through the audio processor when audio is requested', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const startedStream = new MockStream({ audio: true });
+      const startedAudioTrack = startedStream.getAudioTracks()[0];
+      const processedStream = new MockStream({ audio: true });
+      const processedAudioTrack = processedStream.getAudioTracks()[0];
+
+      jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(startedStream as any);
+      const processSpy = installAudioProcessor(processedStream);
+
+      await handler.updateOutgoingMedia(session as any, { audioDeviceId: 'audio-device' });
+
+      expect(processSpy).toHaveBeenCalledWith(startedStream);
+      expect(startedAudioTrack.stop).toHaveBeenCalled();
+      expect(session.getTracks()).toContain(processedAudioTrack);
+    });
+
+    it('should not call the audio processor when only video is being updated', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const startedStream = new MockStream({ video: true });
+
+      jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(startedStream as any);
+      const processSpy = installAudioProcessor(new MockStream({ audio: true }));
+
+      await handler.updateOutgoingMedia(session as any, { videoDeviceId: 'video-device' });
+
+      expect(processSpy).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe('updateOutputDevice()', () => {

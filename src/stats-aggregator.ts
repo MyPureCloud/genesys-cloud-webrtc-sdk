@@ -205,7 +205,6 @@ export class StatsAggregator {
     } = this.sdk._config;
 
     const statsData = {
-      sourceType: 'Client',
       client: {
         originAppName,
         originAppId,

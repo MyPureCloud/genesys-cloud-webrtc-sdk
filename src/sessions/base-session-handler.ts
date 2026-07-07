@@ -382,6 +382,24 @@ export default abstract class BaseSessionHandler {
       }
     }
 
+    /**
+     * Run any outbound audio through the configured audio processor. Handles both the
+     * freshly-started media above and any stream passed in via options.stream. We swap
+     * only the audio tracks so video tracks on the stream are preserved.
+     */
+    if (stream && this.sdk.audioProcessor && stream.getAudioTracks().length) {
+      const processed = await this.sdk.audioProcessor.process(stream);
+      stream.getAudioTracks().forEach(track => {
+        track.stop();
+        stream.removeTrack(track);
+      });
+      processed.getAudioTracks().forEach(track => stream.addTrack(track));
+      this.log('info', 'updateOutgoingMedia - processed outgoing audio with audio processor.', {
+        sessionId: session.id,
+        conversationId: session.conversationId
+      });
+    }
+
     /* If new media is not started, stream is undefined and there are no tracks. */
     if (stream) {
       /* if our session has video on mute, make sure our stream does not have a video track (mainly checking any passed in stream)  */
