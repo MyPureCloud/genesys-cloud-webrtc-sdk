@@ -371,13 +371,6 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           }
           eventToEmit = 'added';
         }
-
-        /* notify the backend of the client's IP address when the call reaches 'connected' state.
-           This is checked separately because the 'added' block above may not execute for
-           dialing -> connected transitions (since dialing is already a "connected" state). */
-        if (callState.state === CommunicationStates.connected && previousCallState?.state !== CommunicationStates.connected && session) {
-          this.notifyClientMetadata(conversationId, callState.id);
-        }
       } else if (this.isEndedState(callState)) {
         if (this.isPendingState(previousCallState) && !isOutbound) {
           this.sdk.headset.rejectIncomingCall(conversationId);
@@ -392,6 +385,19 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         if (this.isPendingState(previousCallState)) {
           if (session && session === this.activeSession) {
             this.sessionManager.onCancelPendingSession(session.id, conversationId);
+
+            // If the session never fully established (e.g. SDP answer was sent but ICE never completed),
+            // terminate it so it doesn't linger as a zombie that future calls try to reuse.
+            if (session.peerConnection.connectionState !== 'connected') {
+              this.log('warn', 'terminating session that never fully established after pending session was canceled', {
+                sessionId: session.id,
+                conversationId,
+                connectionState: session.peerConnection.connectionState
+              });
+              this.forceEndSession(session, JingleReasons.gone).catch((err) => {
+                this.log('error', 'failed to terminate zombie session', { sessionId: session.id, conversationId, error: err });
+              });
+            }
           }
           delete this.conversations[conversationId];
         } else if (previousCallState) {
@@ -696,9 +702,6 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         session
       });
       this.log('info', 'Media started', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
-    }
-    if (this.sdk.audioProcessor) {
-      stream = await this.sdk.audioProcessor.process(stream);
     }
     await this.addMediaToSession(session, stream);
     session._outboundStream = stream;
@@ -1016,21 +1019,6 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
   private isEndedState (call: ICallStateFromParticipant): boolean {
     return call?.state === CommunicationStates.disconnected || call?.state === CommunicationStates.terminated;
-  }
-
-  /**
-   * Notify the backend that a call has connected for this client.
-   * The server captures the client's IP address from the HTTP request.
-   * This is fire-and-forget — errors are logged but do not affect call handling.
-   */
-  private notifyClientMetadata (conversationId: string, communicationId: string): void {
-    const path = `/conversations/calls/${conversationId}/communications/${communicationId}/metadata`;
-    this.log('info', 'notifying client metadata for connected call', { conversationId, communicationId });
-
-    requestApi.call(this.sdk, path, { method: 'post' })
-      .catch(err => {
-        this.log('warn', 'failed to notify client metadata', { conversationId, communicationId, error: err?.message });
-      });
   }
 }
 
