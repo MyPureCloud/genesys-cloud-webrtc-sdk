@@ -401,7 +401,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
                 conversationId,
                 connectionState: session.peerConnection.connectionState
               });
-              this.forceEndSession(session, JingleReasons.gone).catch((err) => {
+              this.forceEndSession(session, JingleReasons.timeout).catch((err) => {
                 this.log('error', 'failed to terminate zombie session', { sessionId: session.id, conversationId, error: err });
               });
             }

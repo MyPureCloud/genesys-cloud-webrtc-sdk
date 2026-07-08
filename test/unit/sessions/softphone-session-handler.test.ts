@@ -1598,7 +1598,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     await flushPromises();
 
     expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(session.id, update.id);
-    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'gone');
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'timeout');
     expect(handler.conversations[update.id]).toBeFalsy();
   });
 
@@ -1643,7 +1643,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
     await flushPromises();
 
-    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'gone');
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'timeout');
     expect(logSpy).toHaveBeenCalledWith(
       'error',
       'failed to terminate zombie session',
