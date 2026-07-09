@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...HEAD)
 
 # [v14.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.1)
 ### Fixed
@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v14.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.0)
 ### Fixed
-* [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
+* [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1800) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
 * [STREAM-1867](https://inindca.atlassian.net/browse/STREAM-1867) - Dependency bump for `softphone-vendor-headsets` to fix a Plantronics/Poly issue around mute state persisting between calls and another issue around `hostedContext` not being populated
-* [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1394) - Prevent redundant pendingSession for already-connected call
+* [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1241) - Prevent redundant pendingSession for already-connected call
 ### Changed
 * [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
 * [STREAM-1662](https://inindca.atlassian.net/browse/STREAM-1662) - Remove `sourceType` from stats object from client.
