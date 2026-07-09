@@ -3,19 +3,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...HEAD)
+
+# [v14.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.1)
+### Fixed
+* [STREAM-1789](https://inindca.atlassian.net/browse/STREAM-1789) - Terminate persistent connection sessions that never fully established (ICE never completed) when the pending call is canceled, preventing zombie sessions with stale conversationIds from being reused by future calls
+
+# [v14.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.0)
 ### Fixed
 * [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
+* [STREAM-1867](https://inindca.atlassian.net/browse/STREAM-1867) - Dependency bump for `softphone-vendor-headsets` to fix a Plantronics/Poly issue around mute state persisting between calls and another issue around `hostedContext` not being populated
 * [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1394) - Prevent redundant pendingSession for already-connected call
-* [STREAM-1789](https://inindca.atlassian.net/browse/STREAM-1789) - Terminate persistent connection sessions that never fully established (ICE never completed) when the pending call is canceled, preventing zombie sessions with stale conversationIds from being reused by future calls
+### Changed
+* [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
+* [STREAM-1662](https://inindca.atlassian.net/browse/STREAM-1662) - Remove `sourceType` from stats object from client.
+### Added
+* [STREAM-1517](https://inindca.atlassian.net/browse/STREAM-1517) - Added a pluggable audio processing interface to allow consumers to manipulate audio streams for enhanced noise suppression, etc.
 
 # [v14.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.0.0...v14.1.0)
 ### Added
 * [STREAM-1394](https://inindca.atlassian.net/browse/STREAM-1394) - Notify the backend when a client call reaches a connected state
 ### Changed
 * [STREAM-456](https://inindca.atlassian.net/browse/STREAM-456) - Update softphone-vendor-headsets dependency to properly accommodate WebHID on the desktop app; Passed down `hostedContext` from consuming app as well as necessary feature toggles
-* [STREAM-1807](https://inindca.atlassian.net/browse/STREAM-1807) - Upgrade `streaming-client` to v20.0.1 to pick up some dependency updates to address vulnerabilities.
-* [STREAM-1662](https://inindca.atlassian.net/browse/STREAM-1662) - Remove `sourceType` from stats object from client.
 
 # [v14.0.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v13.2.0...v14.0.0)
 ### Breaking Changes
@@ -25,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-494](https://inindca.atlassian.net/browse/STREAM-494) - Properly track and clean up sessions after a disconnect event
 * [STREAM-1224](https://inindca.atlassian.net/browse/STREAM-1224) - Add `skipConstraints` to `ISdkFullConfig` to improve mobile devices support.
 * [STREAM-1394](https://inindca.atlassian.net/browse/STREAM-1394) - Notify the backend when a client call reaches a connected state
-* [STREAM-1517](https://inindca.atlassian.net/browse/STREAM-1517) - Added a pluggable audio processing interface to allow consumers to manipulate audio streams for enhanced noise suppression, etc.
 
 ### Changed
 * [STREAM-1589](https://inindca.atlassian.net/browse/STREAM-1589) - Drop `mediaResourceId` and simply rely on `sessionId` for media statistics
