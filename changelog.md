@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...HEAD)
+
+### Added STREAM-1968
+* [STREAM-1968](https://inindca.atlassian.net/browse/STREAM-1968) - New Noise Testing app for the demo app.
 ### Fixed
 * [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
 * [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1394) - Prevent redundant pendingSession for already-connected call
