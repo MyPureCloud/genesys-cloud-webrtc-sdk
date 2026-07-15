@@ -91,6 +91,17 @@ describe('handlePropose()', () => {
     expect(superSpyProceed).not.toHaveBeenCalled();
   });
 
+  it('should remove the pendingSession when ignoring due to reducedMedia', async () => {
+    const removePendingSessionSpy = jest.spyOn(mockSessionManager, 'removePendingSession');
+    const pendingSession = createPendingSession(SessionTypes.softphone);
+    pendingSession.autoAnswer = false;
+
+    mockSdk._mediaHandling = MediaHandling.reducedMedia;
+    await handler.handlePropose(pendingSession);
+
+    expect(removePendingSessionSpy).toHaveBeenCalled();
+  });
+
   it('should not autoAnswer if mediaHandling is reducedMedia, autoAnswer is true, but disableAutoAnswer is configured', async () => {
     const superSpyHandlePropose = jest.spyOn(BaseSessionHandler.prototype, 'handlePropose');
     const superSpyProceed = jest.spyOn(BaseSessionHandler.prototype, 'proceedWithSession').mockImplementation();
