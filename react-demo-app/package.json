@@ -36,5 +36,34 @@
     "eslint-plugin-react-refresh": "^0.4.6",
     "typescript": "^5.2.2",
     "vite": "^6.3.7"
+  },
+  "overrides": {
+    "axios": "1.18.1",
+    "follow-redirects": "1.16.0",
+    "qs": "6.15.3",
+    "js-yaml": "4.3.0",
+    "linkify-it": "5.0.2",
+    "lodash": "4.18.1",
+    "picomatch": "2.3.2",
+    "vite": {
+      "picomatch": "4.0.4"
+    },
+    "tinyglobby": {
+      "picomatch": "4.0.4"
+    },
+    "typedoc": {
+      "brace-expansion": "5.0.7"
+    }
+  },
+  "overridesComments": {
+    "_NOTE": "Overrides pin vulnerable transitive dependencies to fixed versions. See Snyk IDs below.",
+    "axios@1.18.1": "SNYK-JS-AXIOS-15252993, SNYK-JS-AXIOS-15969258, SNYK-JS-AXIOS-16298058, SNYK-JS-AXIOS-16299904, SNYK-JS-AXIOS-16299921, SNYK-JS-AXIOS-16299923, SNYK-JS-AXIOS-16417750, SNYK-JS-AXIOS-17111060, SNYK-JS-AXIOS-17111062, SNYK-JS-AXIOS-17111079, SNYK-JS-AXIOS-17172681",
+    "follow-redirects@1.16.0": "SNYK-JS-FOLLOWREDIRECTS-16032162",
+    "qs@6.15.3": "SNYK-JS-QS-14724253, SNYK-JS-QS-15268416",
+    "js-yaml@4.3.0": "SNYK-JS-JSYAML-17900054",
+    "linkify-it@5.0.2": "SNYK-JS-LINKIFYIT-17901217",
+    "lodash@4.18.1": "SNYK-JS-LODASH-15869625",
+    "picomatch@2.3.2": "SNYK-JS-PICOMATCH-15765511",
+    "brace-expansion@5.0.7": "SNYK-JS-BRACEEXPANSION-17706650"
   }
 }
