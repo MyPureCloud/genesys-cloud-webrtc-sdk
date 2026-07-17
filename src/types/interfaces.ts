@@ -275,6 +275,7 @@ export interface ISdkFullConfig {
   useWebHidOnDesktopYealink?: boolean;
   useWebHidOnDesktopVbet?: boolean;
   useWebHidOnDesktopCyberAcoustics?: boolean;
+  useNewPolyImplementation?: boolean;
 
   /**
    * Controls whether to report statistics, such as estimated MOS (Mean Opinion Score).

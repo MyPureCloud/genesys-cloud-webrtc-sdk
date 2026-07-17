@@ -19,7 +19,8 @@ export class SdkHeadsetService extends SdkHeadsetBase {
       useWebHidOnDesktopJabra: sdk._config.useWebHidOnDesktopJabra,
       useWebHidOnDesktopYealink: sdk._config.useWebHidOnDesktopYealink,
       useWebHidOnDesktopVbet: sdk._config.useWebHidOnDesktopVbet,
-      useWebHidOnDesktopCyberAcoustics: sdk._config.useWebHidOnDesktopCyberAcoustics
+      useWebHidOnDesktopCyberAcoustics: sdk._config.useWebHidOnDesktopCyberAcoustics,
+      useNewPolyImplementation: sdk._config.useNewPolyImplementation
     });
     this.headsetEvents$ = this.headsetLibrary.headsetEvents$;
   }
