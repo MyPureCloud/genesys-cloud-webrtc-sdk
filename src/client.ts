@@ -200,7 +200,8 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     this._config.logger = this.logger;
 
     this.media = new SdkMedia(this);
-    this.audioProcessor = new SdkAudioProcessor(this, this._config.defaults.audioProcessor);
+    // this.audioProcessor = new SdkAudioProcessor(this, this._config.defaults.audioProcessor);
+    // this.audioProcessor = false;
     this.headset = new HeadsetProxyService(this);
     this.setDefaultAudioStream(defaultsOptions.audioStream);
 
