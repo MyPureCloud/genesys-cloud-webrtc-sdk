@@ -22,12 +22,12 @@ import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
 
-// Audio processor testing.
+// Uncomment for audio processor testing.
 // The SDK accepts any audio processor that implements the IAudioProcessor interface.
 // GenesysIrisClient is used here as a concrete example implementation.
 // Manually add these in either the src or public folder of the demo app.
-import licenseText from '../assets/iris.lic?raw';
-import keyText from '../assets/iris.key?raw';
+// import licenseText from '../assets/iris.lic?raw';
+// import keyText from '../assets/iris.key?raw';
 import { GenesysIrisClient } from 'genesys-iris-client';
 import { setAudioProcessor } from '../features/audioProcessorSlice';
 import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
