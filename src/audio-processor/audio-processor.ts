@@ -13,6 +13,15 @@ export class SdkAudioProcessor {
   }
 
   /**
+   * Whether an audio processor is actually configured. This wrapper is always
+   * instantiated (so consumers can call `setAudioProcessor` after SDK init), so
+   * callers must use this to determine if outbound audio should be processed.
+   */
+  public get isEnabled(): boolean {
+    return !!this.audioProcessor;
+  }
+
+  /**
    * Set the audio processor for enhanced noise suppression. This can be called
    * as part of SDK initialization based on configuration or after SDK initialization.
    * @param audioProcessor

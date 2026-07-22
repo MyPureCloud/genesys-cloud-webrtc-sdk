@@ -541,7 +541,7 @@ describe('acceptSession()', () => {
     const mockOutgoingStream = new MockStream({ audio: true });
     const processedStream = new MockStream({ audio: true });
     const processSpy = jest.fn().mockResolvedValue(processedStream);
-    (mockSdk as any).audioProcessor = { process: processSpy };
+    (mockSdk as any).audioProcessor = { isEnabled: true, process: processSpy };
 
     const session: any = new MockSession();
     session.peerConnection.getReceivers = jest.fn().mockReturnValue([
