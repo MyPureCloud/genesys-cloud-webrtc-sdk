@@ -387,17 +387,25 @@ export default abstract class BaseSessionHandler {
      * freshly-started media above and any stream passed in via options.stream. We swap
      * only the audio tracks so video tracks on the stream are preserved.
      */
-    if (stream && this.sdk.audioProcessor && stream.getAudioTracks().length) {
+    if (stream && this.sdk.audioProcessor?.isEnabled && stream.getAudioTracks().length) {
       const processed = await this.sdk.audioProcessor.process(stream);
-      stream.getAudioTracks().forEach(track => {
-        track.stop();
-        stream.removeTrack(track);
-      });
-      processed.getAudioTracks().forEach(track => stream.addTrack(track));
-      this.log('info', 'updateOutgoingMedia - processed outgoing audio with audio processor.', {
-        sessionId: session.id,
-        conversationId: session.conversationId
-      });
+      /*
+        `process()` falls back to returning the same stream if processing fails. In that
+        case `processed === stream`, so swapping tracks would stop and drop the only audio
+        track without adding anything back. Only swap when we got a distinct stream.
+      */
+      if (processed !== stream) {
+        const processedAudioTracks = processed.getAudioTracks();
+        stream.getAudioTracks().forEach(track => {
+          track.stop();
+          stream.removeTrack(track);
+        });
+        processedAudioTracks.forEach(track => stream.addTrack(track));
+        this.log('info', 'updateOutgoingMedia - processed outgoing audio with audio processor.', {
+          sessionId: session.id,
+          conversationId: session.conversationId
+        });
+      }
     }
 
     /* If new media is not started, stream is undefined and there are no tracks. */

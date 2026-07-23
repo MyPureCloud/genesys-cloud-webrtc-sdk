@@ -710,7 +710,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       });
       this.log('info', 'Media started', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     }
-    if (this.sdk.audioProcessor) {
+    if (this.sdk.audioProcessor?.isEnabled) {
       stream = await this.sdk.audioProcessor.process(stream);
     }
     await this.addMediaToSession(session, stream);
