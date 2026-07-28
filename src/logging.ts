@@ -10,7 +10,8 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     originAppName,
     originAppVersion,
     logFormatters,
-    customHeaders
+    customHeaders,
+    useUniqueLogUploader
   } = this._config;
 
   let url = `https://api.${this._config.environment}/api/v2/diagnostics/trace`;
@@ -20,7 +21,7 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     url += '/backgroundassistant';
     accessToken = this._config.jwt;
   }
-  
+
   this.logger = new Logger({
     accessToken,
     logLevel,
@@ -31,6 +32,7 @@ export function setupLogging (this: GenesysCloudWebrtcSdk, logger?: ILogger) {
     initializeServerLogging: !(this.isGuest || optOutOfTelemetry),
     logger,
     formatters: logFormatters,
+    useUniqueLogUploader,
     /* consumerApp info */
     originAppId,
     originAppName,

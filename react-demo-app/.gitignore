@@ -24,4 +24,6 @@ dist-ssr
 *.sw?
 
 iris.ilc
+iris.lic
 iris.key
+src/assets/iris.*

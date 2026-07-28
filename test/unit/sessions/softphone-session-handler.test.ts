@@ -541,7 +541,7 @@ describe('acceptSession()', () => {
     const mockOutgoingStream = new MockStream({ audio: true });
     const processedStream = new MockStream({ audio: true });
     const processSpy = jest.fn().mockResolvedValue(processedStream);
-    (mockSdk as any).audioProcessor = { process: processSpy };
+    (mockSdk as any).audioProcessor = { isEnabled: true, process: processSpy };
 
     const session: any = new MockSession();
     session.peerConnection.getReceivers = jest.fn().mockReturnValue([
@@ -1357,6 +1357,67 @@ describe('handleSoftphoneConversationUpdate()', () => {
     );
   });
 
+  it('should not emit a duplicate pendingSession if sessionStarted was already emitted for this conversation', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+
+    handler.activeSession = session;
+    // Simulate that the session already progressed to started via Jingle signaling
+    session._emittedSessionStarteds = { [update.id]: true };
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    expect(sdkEmitSpy).not.toHaveBeenCalledWith(
+      'pendingSession',
+      expect.any(Object)
+    );
+    expect(mockSessionManager.pendingSessions.length).toBe(0);
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'suppressing duplicate pendingSession from conversation event — session already active or pending for this conversation',
+      expect.objectContaining({
+        conversationId: update.id,
+        sessionId: session.id,
+        alreadyStarted: true
+      }),
+      undefined
+    );
+  });
+
+  it('should not emit a duplicate pendingSession if a pendingSession already exists for the conversation', () => {
+    const { update, participant, callState, session } = generateUpdate({
+      callState: CommunicationStates.alerting
+    });
+
+    handler.activeSession = session;
+    // Simulate that a pendingSession already exists (from an earlier Jingle propose)
+    mockSessionManager.pendingSessions.push({
+      id: session.id,
+      sessionId: session.id,
+      autoAnswer: false,
+      conversationId: update.id,
+      sessionType: SessionTypes.softphone
+    } as IPendingSession);
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    // Should still only have the original one, not a duplicate
+    expect(mockSessionManager.pendingSessions.length).toBe(1);
+    expect(sdkEmitSpy).not.toHaveBeenCalledWith(
+      'pendingSession',
+      expect.any(Object)
+    );
+    expect(mockSdk.logger.info).toHaveBeenCalledWith(
+      'suppressing duplicate pendingSession from conversation event — session already active or pending for this conversation',
+      expect.objectContaining({
+        conversationId: update.id,
+        sessionId: session.id,
+        alreadyStarted: false
+      }),
+      undefined
+    );
+  });
+
   it('should not emit "sessionStarted" for conversationUpdates in a connected state when the session was accepted by the normal session-accept', () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.connected,
@@ -1516,6 +1577,78 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
     expect(handler.conversations[update.id]).toBeFalsy();
     expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should terminate session that never fully established when pending session is canceled', async () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.alerting }
+    });
+    const onCancelPendingSessionSpy = jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession').mockResolvedValue(undefined);
+
+    // Simulate a session where SDP answer was sent but ICE never completed
+    (session.peerConnection as any).connectionState = 'new';
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(session.id, update.id);
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'timeout');
+    expect(handler.conversations[update.id]).toBeFalsy();
+  });
+
+  it('should not terminate session if it is already connected when pending session is canceled', async () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.alerting }
+    });
+    const onCancelPendingSessionSpy = jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession').mockResolvedValue(undefined);
+
+    // Session is already fully connected (persistent connection is healthy)
+    (session.peerConnection as any).connectionState = 'connected';
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(session.id, update.id);
+    expect(forceEndSessionSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+  });
+
+  it('should not throw if forceEndSession rejects when terminating zombie session', async () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.alerting }
+    });
+    jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession').mockRejectedValue(new Error('terminate failed'));
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    (session.peerConnection as any).connectionState = 'connecting';
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'timeout');
+    expect(logSpy).toHaveBeenCalledWith(
+      'error',
+      'failed to terminate zombie session',
+      expect.objectContaining({ sessionId: session.id, conversationId: update.id })
+    );
   });
 
   it('should delete conversationState, not emit an event, and not cancelPendingSession if session does not match active session', async () => {

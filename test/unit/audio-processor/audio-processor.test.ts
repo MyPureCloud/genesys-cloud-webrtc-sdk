@@ -41,6 +41,29 @@ describe('SdkAudioProcessor', () => {
     });
   });
 
+  describe('isEnabled', () => {
+    it('should be false when no processor is configured', () => {
+      const wrapper = new SdkAudioProcessor(mockSdk);
+
+      expect(wrapper.isEnabled).toBe(false);
+    });
+
+    it('should be true once a processor is configured', () => {
+      const wrapper = new SdkAudioProcessor(mockSdk, makeProcessor());
+
+      expect(wrapper.isEnabled).toBe(true);
+    });
+
+    it('should return to false after the processor is destroyed', async () => {
+      const wrapper = new SdkAudioProcessor(mockSdk, makeProcessor());
+      expect(wrapper.isEnabled).toBe(true);
+
+      await wrapper.destroy();
+
+      expect(wrapper.isEnabled).toBe(false);
+    });
+  });
+
   describe('setAudioProcessor()', () => {
     it('should log an error and not assign if called with a falsy processor', () => {
       const wrapper = new SdkAudioProcessor(mockSdk);

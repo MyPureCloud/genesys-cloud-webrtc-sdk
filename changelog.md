@@ -3,7 +3,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...HEAD)
+
+# [v14.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...v14.2.1)
+
+### Added
+* [STREAM-1968](https://inindca.atlassian.net/browse/STREAM-1968) - New Noise Testing app for the demo app.
+
+### Fixed
+* [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1800) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
+* [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1241) - Prevent redundant pendingSession for already-connected call
+* [STREAM-1789](https://inindca.atlassian.net/browse/STREAM-1789) - Terminate persistent connection sessions that never fully established (ICE never completed) when the pending call is canceled, preventing zombie sessions with stale conversationIds from being reused by future calls.
+* [STREAM-2038](https://inindca.atlassian.net/browse/STREAM-2038) - Added `isEnabled` flag to audio-processor to gate processing. Verify processed stream is different than original stream before swapping audio tracks.
 
 # [v14.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.0)
 ### Fixed

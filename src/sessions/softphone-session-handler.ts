@@ -297,19 +297,33 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
         /* only emit `pendingSession` if we already have an active session */
         if (session && session === this.activeSession) {
-          const pendingSession: IPendingSession = {
-            id: session.id,
-            sessionId: session.id,
-            autoAnswer: isOutbound,
-            conversationId,
-            sessionType: this.sessionType,
-            originalRoomJid: session.originalRoomJid,
-            fromUserId: session.fromUserId,
-            fromJid: session.peerID,
-            toJid: this.sdk._personDetails.chat.jabberId
-          };
-          this.sessionManager.pendingSessions.push(pendingSession);
-          this.sdk.emit('pendingSession', pendingSession);
+          /*
+           * Guard against duplicate pendingSession emissions caused by delayed Hawk conversation events.
+           * If the session has already emitted sessionStarted for this conversationId (via the Jingle signaling path),
+           * or if a pendingSession already exists for this conversation, the call has already progressed
+           * beyond the pending stage and we should not emit again.
+           */
+          if (session._emittedSessionStarteds?.[conversationId] || this.sessionManager.getPendingSession({ conversationId, sessionType: this.sessionType })) {
+            this.log('info', 'suppressing duplicate pendingSession from conversation event — session already active or pending for this conversation', {
+              conversationId,
+              sessionId: session.id,
+              alreadyStarted: !!session._emittedSessionStarteds?.[conversationId]
+            });
+          } else {
+            const pendingSession: IPendingSession = {
+              id: session.id,
+              sessionId: session.id,
+              autoAnswer: isOutbound,
+              conversationId,
+              sessionType: this.sessionType,
+              originalRoomJid: session.originalRoomJid,
+              fromUserId: session.fromUserId,
+              fromJid: session.peerID,
+              toJid: this.sdk._personDetails.chat.jabberId
+            };
+            this.sessionManager.pendingSessions.push(pendingSession);
+            this.sdk.emit('pendingSession', pendingSession);
+          }
         }
         /* we don't want to emit events for these */
         eventToEmit = false;
@@ -378,6 +392,19 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         if (this.isPendingState(previousCallState)) {
           if (session && session === this.activeSession) {
             this.sessionManager.onCancelPendingSession(session.id, conversationId);
+
+            // If the session never fully established (e.g. SDP answer was sent but ICE never completed),
+            // terminate it so it doesn't linger as a zombie that future calls try to reuse.
+            if (session.peerConnection.connectionState !== 'connected') {
+              this.log('warn', 'terminating session that never fully established after pending session was canceled', {
+                sessionId: session.id,
+                conversationId,
+                connectionState: session.peerConnection.connectionState
+              });
+              this.forceEndSession(session, JingleReasons.timeout).catch((err) => {
+                this.log('error', 'failed to terminate zombie session', { sessionId: session.id, conversationId, error: err });
+              });
+            }
           }
           delete this.conversations[conversationId];
         } else if (previousCallState) {
@@ -683,7 +710,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       });
       this.log('info', 'Media started', { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType });
     }
-    if (this.sdk.audioProcessor) {
+    if (this.sdk.audioProcessor?.isEnabled) {
       stream = await this.sdk.audioProcessor.process(stream);
     }
     await this.addMediaToSession(session, stream);
