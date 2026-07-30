@@ -431,7 +431,7 @@ describe('updateOutgoingMedia()', () => {
     /* The mocked SDK does not include an audioProcessor by default; tests opt-in here. */
     const installAudioProcessor = (processedStream: MockStream) => {
       const processFn = jest.fn().mockResolvedValue(processedStream);
-      (mockSdk as any).audioProcessor = { process: processFn };
+      (mockSdk as any).audioProcessor = { isEnabled: true, process: processFn };
       return processFn;
     };
 
@@ -531,6 +531,42 @@ describe('updateOutgoingMedia()', () => {
       await handler.updateOutgoingMedia(session as any, { videoDeviceId: 'video-device' });
 
       expect(processSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not process or drop audio when the processor wrapper is present but not enabled', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const inputStream = new MockStream({ audio: true });
+      const originalAudioTrack = inputStream.getAudioTracks()[0];
+      const processFn = jest.fn();
+
+      /* production scenario: the wrapper is always instantiated but no processor is configured */
+      (mockSdk as any).audioProcessor = { isEnabled: false, process: processFn };
+
+      await handler.updateOutgoingMedia(session as any, { stream: inputStream as any });
+
+      expect(processFn).not.toHaveBeenCalled();
+      expect(originalAudioTrack.stop).not.toHaveBeenCalled();
+      expect(session.getTracks()).toContain(originalAudioTrack);
+    });
+
+    it('should keep the outgoing audio track when the processor returns the same stream (processing no-op/failure)', async () => {
+      const session = new MockSession();
+      session._outboundStream = new MockStream();
+      const inputStream = new MockStream({ audio: true });
+      const originalAudioTrack = inputStream.getAudioTracks()[0];
+
+      /* process() falls back to returning the same stream (e.g. it threw internally) */
+      const processFn = jest.fn().mockResolvedValue(inputStream);
+      (mockSdk as any).audioProcessor = { isEnabled: true, process: processFn };
+
+      await handler.updateOutgoingMedia(session as any, { stream: inputStream as any });
+
+      expect(processFn).toHaveBeenCalledWith(inputStream);
+      /* regression: the only audio track must not be stopped/dropped, leaving the session without a mic */
+      expect(originalAudioTrack.stop).not.toHaveBeenCalled();
+      expect(inputStream.getAudioTracks()).toContain(originalAudioTrack);
+      expect(session.getTracks()).toContain(originalAudioTrack);
     });
   });
 });
