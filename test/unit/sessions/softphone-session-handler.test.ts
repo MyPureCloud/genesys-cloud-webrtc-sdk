@@ -1556,6 +1556,28 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
+  it('should remove all pending sessions for a conversationId when call connects (zombie cleanup)', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    // Simulate the zombie scenario: a pending session was created with the active session's ID
+    // for this conversationId, AND a separate pending session exists from the propose
+    const zombiePendingSession = { id: session.id, conversationId: update.id, sessionType: SessionTypes.softphone } as any;
+    const proposePendingSession = { id: 'propose-session-id', conversationId: update.id, sessionType: SessionTypes.softphone } as any;
+    const unrelatedPendingSession = { id: 'other-id', conversationId: 'other-convo', sessionType: SessionTypes.softphone } as any;
+    mockSessionManager.pendingSessions = [zombiePendingSession, proposePendingSession, unrelatedPendingSession];
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    // Both pending sessions for this conversationId should be removed, but the unrelated one stays
+    expect(mockSessionManager.pendingSessions).toEqual([unrelatedPendingSession]);
+  });
+
   it('should handle pending sessions we rejected', async () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.disconnected,
