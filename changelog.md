@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-1968](https://inindca.atlassian.net/browse/STREAM-1968) - New Noise Testing app for the demo app.
 
 ### Fixed
+* [STREAM-1974](https://inindca.atlassian.net/browse/STREAM-1974) - Clean up all pending sessions for a conversationId when a call connects, preventing zombie pending sessions from accumulating during concurrent calls
 * [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
 * [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1394) - Prevent redundant pendingSession for already-connected call
 * [STREAM-1789](https://inindca.atlassian.net/browse/STREAM-1789) - Terminate persistent connection sessions that never fully established (ICE never completed) when the pending call is canceled, preventing zombie sessions with stale conversationIds from being reused by future calls.
