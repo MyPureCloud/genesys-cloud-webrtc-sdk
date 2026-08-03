@@ -872,6 +872,17 @@ describe('proceedWithSession()', () => {
       { state: CommunicationStates.connected }
     );
   });
+
+  it('should throw an error if participant cannot be found', async () => {
+    getUserParticipantFromConversationEventSpy.mockReturnValue(undefined);
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession!.id = pendingSession.id;
+
+    await expect(handler.proceedWithSession(pendingSession)).rejects.toThrow();
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('rejectPendingSession()', () => {
@@ -951,6 +962,17 @@ describe('rejectPendingSession()', () => {
       participant.id,
       { state: CommunicationStates.disconnected }
     );
+  });
+
+  it('should throw an error if participant cannot be found', async () => {
+    getUserParticipantFromConversationEventSpy.mockReturnValue(undefined);
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession!.id = pendingSession.id;
+
+    await expect(handler.rejectPendingSession(pendingSession)).rejects.toThrow();
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
   });
 });
 

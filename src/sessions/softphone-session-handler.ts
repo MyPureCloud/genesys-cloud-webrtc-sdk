@@ -765,6 +765,12 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       participant = await this.fetchUserParticipantFromConversationId(pendingSession.conversationId);
     }
 
+    if (!participant) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
+        'Failed to proceed with session: participant not found for conversationId',
+        { conversationId: pendingSession.conversationId });
+    }
+
     return this.patchPhoneCall(pendingSession.conversationId, participant.id, {
       state: CommunicationStates.connected
     });
@@ -777,6 +783,12 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     if (!participant) {
       participant = await this.fetchUserParticipantFromConversationId(pendingSession.conversationId);
+    }
+
+    if (!participant) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
+        'Failed to reject pending session: participant not found for conversationId',
+        { conversationId: pendingSession.conversationId });
     }
 
     if (participant.purpose === 'user') {
