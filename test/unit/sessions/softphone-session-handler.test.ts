@@ -541,7 +541,7 @@ describe('acceptSession()', () => {
     const mockOutgoingStream = new MockStream({ audio: true });
     const processedStream = new MockStream({ audio: true });
     const processSpy = jest.fn().mockResolvedValue(processedStream);
-    (mockSdk as any).audioProcessor = { process: processSpy };
+    (mockSdk as any).audioProcessor = { isEnabled: true, process: processSpy };
 
     const session: any = new MockSession();
     session.peerConnection.getReceivers = jest.fn().mockReturnValue([
@@ -1599,6 +1599,78 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(emitConversationEventSpy).not.toHaveBeenCalled();
     expect(handler.conversations[update.id]).toBeFalsy();
     expect(sdkEmitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should terminate session that never fully established when pending session is canceled', async () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.alerting }
+    });
+    const onCancelPendingSessionSpy = jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession').mockResolvedValue(undefined);
+
+    // Simulate a session where SDP answer was sent but ICE never completed
+    (session.peerConnection as any).connectionState = 'new';
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(session.id, update.id);
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'timeout');
+    expect(handler.conversations[update.id]).toBeFalsy();
+  });
+
+  it('should not terminate session if it is already connected when pending session is canceled', async () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.alerting }
+    });
+    const onCancelPendingSessionSpy = jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession').mockResolvedValue(undefined);
+
+    // Session is already fully connected (persistent connection is healthy)
+    (session.peerConnection as any).connectionState = 'connected';
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(onCancelPendingSessionSpy).toHaveBeenCalledWith(session.id, update.id);
+    expect(forceEndSessionSpy).not.toHaveBeenCalled();
+    expect(handler.conversations[update.id]).toBeFalsy();
+  });
+
+  it('should not throw if forceEndSession rejects when terminating zombie session', async () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.disconnected,
+      previousCallState: { state: CommunicationStates.alerting }
+    });
+    jest.spyOn(mockSessionManager, 'onCancelPendingSession').mockImplementation();
+    const forceEndSessionSpy = jest.spyOn(handler, 'forceEndSession').mockRejectedValue(new Error('terminate failed'));
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    (session.peerConnection as any).connectionState = 'connecting';
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    await flushPromises();
+
+    expect(forceEndSessionSpy).toHaveBeenCalledWith(session, 'timeout');
+    expect(logSpy).toHaveBeenCalledWith(
+      'error',
+      'failed to terminate zombie session',
+      expect.objectContaining({ sessionId: session.id, conversationId: update.id })
+    );
   });
 
   it('should delete conversationState, not emit an event, and not cancelPendingSession if session does not match active session', async () => {

@@ -1,0 +1,310 @@
+.noise-tester {
+  margin-top: 1rem;
+}
+
+.noise-tester .collapsible-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.noise-tester .collapse-arrow {
+  display: inline-block;
+  transition: transform 0.2s;
+  font-size: 0.75em;
+}
+
+.noise-tester .collapse-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.noise-tester .controls-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.noise-tester .audio-processor-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.noise-tester .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.noise-tester .status-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.noise-tester .status-dot.inactive {
+  background: #dc2626;
+  box-shadow: 0 0 6px #dc2626;
+}
+
+.noise-tester .status-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.noise-tester .status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.noise-tester .actions-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.noise-tester .challenge-actions-grid {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.noise-tester .challenge-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.noise-tester .challenge-buttons .actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.noise-tester .status-text {
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 0.75rem;
+}
+
+.noise-tester .noise-cancelled-banner {
+  background: #1a2e1a;
+  border: 1px solid #2d5a2d;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  width: 50%;
+}
+
+.noise-tester .noise-cancelled-banner .label {
+  display: block;
+  font-size: 0.75rem;
+  color: #d0d0d0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.noise-tester .noise-cancelled-banner .value {
+  display: block;
+  font-family: monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.noise-tester .noise-cancelled-banner .hint {
+  display: block;
+  font-size: 0.7rem;
+  color: #d0d0d0;
+}
+
+.noise-tester .noise-cancelled-banner .cancelled-graph {
+  width: 100%;
+  height: 100px;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.noise-tester .meters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.noise-tester .meter-panel h4 {
+  margin: 0 0 0.25rem;
+}
+
+.noise-tester .meter-panel .hint {
+  font-size: 0.75rem;
+  color: #555;
+  margin: 0 0 0.5rem;
+}
+
+.noise-tester .readout {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.noise-tester .readout .label {
+  color: #e8e8e8;
+  margin-right: 0.25rem;
+}
+
+.noise-tester canvas {
+  width: 100%;
+  height: 40px;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+
+.noise-tester .challenge-section {
+  border-top: 1px solid #333;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.noise-tester .challenge-instructions {
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  color: #222;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.noise-tester .challenge-instructions ol {
+  margin: 0.25rem 0 0.5rem 1.25rem;
+  padding: 0;
+}
+
+.noise-tester .challenge-instructions li {
+  margin-bottom: 0.25rem;
+}
+
+.noise-tester .challenge-instructions em {
+  color: #555;
+}
+
+.noise-tester .challenge-status-text {
+  font-size: 0.85rem;
+  color: #222;
+  background: #e8e8e8;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.noise-tester .results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.noise-tester .result-card {
+  background: #1a1a2e;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+
+.noise-tester .result-card .label {
+  font-size: 0.7rem;
+  color: #fff;
+  display: block;
+}
+
+.noise-tester .result-card .value {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.noise-tester .result-card.highlight {
+  background: #1a2e1a;
+  border: 1px solid #2d5a2d;
+}
+
+.noise-tester .log-section {
+  border-top: 1px solid #333;
+  padding-top: 0.75rem;
+  margin-top: 1rem;
+}
+
+.noise-tester .log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: #555;
+}
+
+.noise-tester .log-list li {
+  padding: 0.15rem 0;
+}
+
+@media (max-width: 768px) {
+  .noise-tester .noise-cancelled-banner {
+  background: #1a2e1a;
+  border: 1px solid #2d5a2d;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  width: 50%;
+}
+
+.noise-tester .noise-cancelled-banner .label {
+  display: block;
+  font-size: 0.75rem;
+  color: #e8e8e8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.noise-tester .noise-cancelled-banner .value {
+  display: block;
+  font-family: monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.noise-tester .noise-cancelled-banner .hint {
+  display: block;
+  font-size: 0.7rem;
+  color: #e8e8e8;
+}
+
+.noise-tester .noise-cancelled-banner .cancelled-graph {
+  width: 100%;
+  height: 100px;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.noise-tester .meters-grid {
+    grid-template-columns: 1fr;
+  }
+  .noise-tester .results-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
