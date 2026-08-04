@@ -873,14 +873,16 @@ describe('proceedWithSession()', () => {
     );
   });
 
-  it('should throw an error if participant cannot be found', async () => {
+  it('should fall back to oRTC proceed if participant cannot be found', async () => {
     getUserParticipantFromConversationEventSpy.mockReturnValue(undefined);
     fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
 
     handler.activeSession = new MockSession() as any;
     handler.activeSession!.id = pendingSession.id;
 
-    await expect(handler.proceedWithSession(pendingSession)).rejects.toThrow();
+    await handler.proceedWithSession(pendingSession);
+
+    expect(proceedWithSessionSpy).toHaveBeenCalledWith(pendingSession);
     expect(patchPhoneCallSpy).not.toHaveBeenCalled();
   });
 });
@@ -964,14 +966,16 @@ describe('rejectPendingSession()', () => {
     );
   });
 
-  it('should throw an error if participant cannot be found', async () => {
+  it('should fall back to oRTC reject if participant cannot be found', async () => {
     getUserParticipantFromConversationEventSpy.mockReturnValue(undefined);
     fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
 
     handler.activeSession = new MockSession() as any;
     handler.activeSession!.id = pendingSession.id;
 
-    await expect(handler.rejectPendingSession(pendingSession)).rejects.toThrow();
+    await handler.rejectPendingSession(pendingSession);
+
+    expect(superRejectPendingSessionSpy).toHaveBeenCalledWith(pendingSession);
     expect(patchPhoneCallSpy).not.toHaveBeenCalled();
   });
 });

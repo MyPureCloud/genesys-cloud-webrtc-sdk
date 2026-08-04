@@ -779,9 +779,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (!participant) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
-        'Failed to proceed with session: participant not found for conversationId',
-        { conversationId: pendingSession.conversationId });
+      // Participant not yet available on the conversation (race condition in group ring scenarios).
+      // Fall back to XMPP-level proceed which lets the platform handle session setup.
+      this.log('warn', 'participant not found for proceedWithSession, falling back to oRTC proceed', {
+        conversationId: pendingSession.conversationId,
+        sessionId: pendingSession.id
+      });
+      return super.proceedWithSession(pendingSession);
     }
 
     return this.patchPhoneCall(pendingSession.conversationId, participant.id, {
@@ -799,9 +803,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
     }
 
     if (!participant) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
-        'Failed to reject pending session: participant not found for conversationId',
-        { conversationId: pendingSession.conversationId });
+      // Participant not yet available on the conversation (race condition in group ring scenarios).
+      // Fall back to XMPP-level rejection which lets the platform handle routing to the next agent.
+      this.log('warn', 'participant not found for rejectPendingSession, falling back to oRTC reject', {
+        conversationId: pendingSession.conversationId,
+        sessionId: pendingSession.id
+      });
+      return super.rejectPendingSession(pendingSession);
     }
 
     if (participant.purpose === 'user') {
