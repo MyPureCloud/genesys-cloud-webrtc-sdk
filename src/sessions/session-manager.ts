@@ -116,10 +116,6 @@ export class SessionManager {
     this.pendingSessions = this.pendingSessions.filter(s => s !== pendingSession);
   }
 
-  removePendingSessionsByConversationId (conversationId: string): void {
-    this.pendingSessions = this.pendingSessions.filter(s => s.conversationId !== conversationId);
-  }
-
   getSession (params: { conversationId: string, sessionType?: SessionTypes, searchScreenRecordingSessions?: boolean }): IExtendedMediaSession {
 
     let sessionTypesToSearch: SessionTypes[];

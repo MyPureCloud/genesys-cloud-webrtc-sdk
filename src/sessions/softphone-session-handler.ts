@@ -373,7 +373,11 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           // Clean up any remaining pending sessions for this conversationId.
           // This handles the case where a conversation update created a pending session
           // on the active session's ID, but a different session (from propose) actually handled the call.
-          this.sessionManager.removePendingSessionsByConversationId(conversationId);
+          // We route each through onHandledPendingSession so the 'handledPendingSession' event fires
+          // for consumers — a silent filter would swallow the event if this path wins the race.
+          this.sessionManager.pendingSessions
+            .filter(p => p.conversationId === conversationId)
+            .forEach(p => this.sessionManager.onHandledPendingSession(p.id, conversationId));
 
           eventToEmit = 'added';
         }

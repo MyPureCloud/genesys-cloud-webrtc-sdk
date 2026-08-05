@@ -1556,7 +1556,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
     expect(sdkEmitSpy).not.toHaveBeenCalled();
   });
 
-  it('should remove all pending sessions for a conversationId when call connects (zombie cleanup)', () => {
+  it('should emit handledPendingSession for all zombie pending sessions when call connects (conversation update wins race)', () => {
     const { update, participant, callState, session, previousUpdate } = generateUpdate({
       callState: CommunicationStates.connected,
       previousCallState: { state: CommunicationStates.contacting }
@@ -1576,6 +1576,37 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
     // Both pending sessions for this conversationId should be removed, but the unrelated one stays
     expect(mockSessionManager.pendingSessions).toEqual([unrelatedPendingSession]);
+
+    // handledPendingSession should be emitted for BOTH matching pending sessions (not silently filtered)
+    expect(sdkEmitSpy).toHaveBeenCalledWith('handledPendingSession', { sessionId: session.id, conversationId: update.id });
+    expect(sdkEmitSpy).toHaveBeenCalledWith('handledPendingSession', { sessionId: 'propose-session-id', conversationId: update.id });
+  });
+
+  it('should not double-emit handledPendingSession if XMPP stanza already removed the pending session (XMPP wins race)', () => {
+    const { update, participant, callState, session, previousUpdate } = generateUpdate({
+      callState: CommunicationStates.connected,
+      previousCallState: { state: CommunicationStates.contacting }
+    });
+
+    handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+    handler.activeSession = session;
+
+    // Simulate the race condition where the XMPP stanza already handled the propose pending session
+    // (channel 1 won the race), so only the zombie on the active session's ID remains
+    const zombiePendingSession = { id: session.id, conversationId: update.id, sessionType: SessionTypes.softphone } as any;
+    const unrelatedPendingSession = { id: 'other-id', conversationId: 'other-convo', sessionType: SessionTypes.softphone } as any;
+    mockSessionManager.pendingSessions = [zombiePendingSession, unrelatedPendingSession];
+
+    handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+    // Zombie is cleaned up, unrelated stays
+    expect(mockSessionManager.pendingSessions).toEqual([unrelatedPendingSession]);
+
+    // handledPendingSession fires exactly once for the zombie — no double-emit for the already-handled propose session
+    const handledCalls = sdkEmitSpy.mock.calls.filter(([event]: [string]) => event === 'handledPendingSession');
+    expect(handledCalls).toEqual([
+      ['handledPendingSession', { sessionId: session.id, conversationId: update.id }]
+    ]);
   });
 
   it('should handle pending sessions we rejected', async () => {
