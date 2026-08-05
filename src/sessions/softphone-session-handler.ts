@@ -169,6 +169,9 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         }
       } else {
         this.log('info', 'media handling is reduced, but this propose is not marked as autoAnswer and will be ignored', logInfo);
+        // Remove from pendingSessions so a repeat propose has a chance of being answered
+        // if media handling changes in the meantime
+        this.sessionManager.removePendingSession(pendingSession);
         return;
       }
     } else {
