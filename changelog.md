@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-1931](https://inindca.atlassian.net/browse/STREAM-1931) - When ignoring a `propose` when the SDK is configured for `reducedMedia`, remove the `pendingSession` from tracking so it has a chance to be answered if media handling changes (rather than continuing to be ignored as a duplicate `propose`)
 
+### Added
+* [STREAM-2119](https://inindca.atlassian.net/browse/STREAM-1968) - Bump SVH dependency to include Poly WebHID changes, pass down necessary feature toggle
+
 # [v14.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...v14.2.1)
 
 ### Added
