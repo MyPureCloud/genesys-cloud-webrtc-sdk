@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v14.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...v14.2.2)
 ### Fixed
 * [STREAM-1931](https://inindca.atlassian.net/browse/STREAM-1931) - When ignoring a `propose` when the SDK is configured for `reducedMedia`, remove the `pendingSession` from tracking so it has a chance to be answered if media handling changes (rather than continuing to be ignored as a duplicate `propose`)
+* [STREAM-1382](https://inindca.atlassian.net/browse/STREAM-1382) - Fixed group ring webtrc call rejection error.
 
 ### Added
 * [STREAM-2119](https://inindca.atlassian.net/browse/STREAM-1968) - Bump SVH dependency to include Poly WebHID changes, pass down necessary feature toggle
@@ -22,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1241) - Prevent redundant pendingSession for already-connected call
 * [STREAM-1789](https://inindca.atlassian.net/browse/STREAM-1789) - Terminate persistent connection sessions that never fully established (ICE never completed) when the pending call is canceled, preventing zombie sessions with stale conversationIds from being reused by future calls.
 * [STREAM-2038](https://inindca.atlassian.net/browse/STREAM-2038) - Added `isEnabled` flag to audio-processor to gate processing. Verify processed stream is different than original stream before swapping audio tracks.
-* [STREAM-1382](https://inindca.atlassian.net/browse/STREAM-1382) - Fixed group ring webtrc call rejection error.
 
 # [v14.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.0)
 ### Fixed
