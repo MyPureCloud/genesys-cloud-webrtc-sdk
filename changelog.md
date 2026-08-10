@@ -3,17 +3,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...HEAD)
+
+### Fixed
+* [STREAM-1931](https://inindca.atlassian.net/browse/STREAM-1931) - When ignoring a `propose` when the SDK is configured for `reducedMedia`, remove the `pendingSession` from tracking so it has a chance to be answered if media handling changes (rather than continuing to be ignored as a duplicate `propose`)
+
+# [v14.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...v14.2.1)
 
 ### Added
 * [STREAM-1968](https://inindca.atlassian.net/browse/STREAM-1968) - New Noise Testing app for the demo app.
 
 ### Fixed
-* [STREAM-1800](https://inindca.atlassian.net/browse/STREAM-1394) - Dependency bump for `softphone-vendor-headsets` to fix a recent issue with the vendor Yealink
-* [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1394) - Prevent redundant pendingSession for already-connected call
+* [STREAM-1241](https://inindca.atlassian.net/browse/STREAM-1241) - Prevent redundant pendingSession for already-connected call
 * [STREAM-1789](https://inindca.atlassian.net/browse/STREAM-1789) - Terminate persistent connection sessions that never fully established (ICE never completed) when the pending call is canceled, preventing zombie sessions with stale conversationIds from being reused by future calls.
 * [STREAM-2038](https://inindca.atlassian.net/browse/STREAM-2038) - Added `isEnabled` flag to audio-processor to gate processing. Verify processed stream is different than original stream before swapping audio tracks.
-
+* [STREAM-1382](https://inindca.atlassian.net/browse/STREAM-1382) - Fixed group ring webtrc call rejection error.
 
 # [v14.2.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.1.0...v14.2.0)
 ### Fixed
@@ -99,11 +103,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v11.5.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.4.0...v11.5.0)
 ### Fixed
-* [STREAM-1028](https://inindca.atlassian.net/browse/STREAM-1025) - Fix issue preventing monitoring observers from ending `liveScreenMonitoring` sessions and add accept session logic for observers.
-* [STREAM-1027](https://inindca.atlassian.net/browse/STREAM-992) - Fix jid to session type evaluation for live monitor jids
+* [STREAM-1028](https://inindca.atlassian.net/browse/STREAM-1028) - Fix issue preventing monitoring observers from ending `liveScreenMonitoring` sessions and add accept session logic for observers.
+* [STREAM-1027](https://inindca.atlassian.net/browse/STREAM-1027) - Fix jid to session type evaluation for live monitor jids
 
 ### Added
-* [STREAM-878](https://inindca.atlassian.net/browse/STREAM-992) - Added in check to properly pass in a boolean to the headset library to determine if we have other active calls
+* [STREAM-878](https://inindca.atlassian.net/browse/STREAM-878) - Added in check to properly pass in a boolean to the headset library to determine if we have other active calls
 
 # [v11.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.4...v11.4.0)
 ### Added
@@ -115,7 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-990](https://inindca.atlassian.net/browse/STREAM-990) - Demo app: Store a copy of pendingSessions so freezing them doesn't affect the SDK's usage of those objects
 * [STREAM-1025](https://inindca.atlassian.net/browse/STREAM-1025) - Fix issue causing wrong session handler to be used for `liveScreenMonitoring` sessions.
 
-#### Changed
+### Changed
 * [STREAM-981](https://inindca.atlassian.net/browse/STREAM-981) - Remove appid from IncomingStreamStatus interface
 
 # [v11.3.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.3...v11.3.4)
@@ -124,7 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-987](https://inindca.atlassian.net/browse/STREAM-987) - Demo app: Memoize conversations so they don't change every render when nothing has changed
 
 # [v11.3.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.2...v11.3.3)
-#### Changed
+### Changed
 * [#937] - Exposes raw webmessage data from conversation topic
 
 # [v11.3.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.1...v11.3.2)
@@ -135,18 +139,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-599](https://inindca.atlassian.net/browse/STREAM-599) - Addressed Snyk vulnerabilities and type insecurities in demo app.
 
 ### Added
-* [STREAM-866](https://inindca.atlassian.net/browse/STREAM-850) - Generate a test report in JUnit.xml format
+* [STREAM-866](https://inindca.atlassian.net/browse/STREAM-866) - Generate a test report in JUnit.xml format
 
 # [v11.3.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.3.0...v11.3.1)
-# Changed
+### Changed
 * [STREAM-850](https://inindca.atlassian.net/browse/STREAM-850) - Suppress `error.ininedgecontrol.session.inactive` errors to prevent consuming UIs from presenting benign errors
 
 # [v11.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v11.2.3...v11.3.0)
-# Added
+### Added
 * [STREAM-785](https://inindca.atlassian.net/browse/STREAM-785) - Added GitHub Actions for linting, testing, and building in an effort to make the build process more transparent and reliable.
 * [STREAM-350](https://inindca.atlassian.net/browse/STREAM-350) - Accept JWT authentication for video conferencing.
 
-# Changed
+### Changed
 * [STREAM-798](https://inindca.atlassian.net/browse/STREAM-798) - Bump streaming-client to version 19.3.0 to pick up the following fixes/changes:
   - [STREAM-154](https://inindca.atlassian.net/browse/STREAM-154) - Track StanzaMediaSessions so events can still be processed if streaming-client is disconnected and reconnected.
   - [STREAM-155](https://inindca.atlassian.net/browse/STREAM-155) - Calling `disconnect` will now stop any in-progress connection attempts.
@@ -231,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-218](https://inindca.atlassian.net/browse/STREAM-218) - bump streaming for priv-auto-answer on session object; dont create a conversation object for priv-auto-answer sessions.
 
-# Added
+### Added
 * [STREAM-222](https://inindca.atlassian.net/browse/STREAM-222) - Created new SDK demo app using React/Vite.
 
 # [v9.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.2.2...v9.2.3)
@@ -270,7 +274,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [v9.1.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v9.0.8...v9.1.0)
 ### Fixed
 * [STREAM-73](https://inindca.atlassian.net/browse/STREAM-73) - fix for issue where Sennheiser/EPOS devices maintained a mute state when starting a new call
-* [STREAM-74](https://inindca.atlassian.net/browse/STREAM-73) - fix for issue where the WebHID permission modal popped up constantly for Jabra
+* [STREAM-74](https://inindca.atlassian.net/browse/STREAM-74) - fix for issue where the WebHID permission modal popped up constantly for Jabra
 ### Changed
 * [no-jira] Use default of `false` for `useServerSidePings`
 * [WEBRTCS-1106](https://inindca.atlassian.net/browse/WEBRTCS-1106) - bump streaming client for reinvite functionality
@@ -950,5 +954,5 @@ _or_ it will set the session mute if there are no devices available to switch to
 ### Added
 * `sdk.acceptSession` to be used in lieu of `session.accept()` in order to do some things before `session.accept()`
 
-#### Changed
+### Changed
 * Moved code base to a typescript implementation
