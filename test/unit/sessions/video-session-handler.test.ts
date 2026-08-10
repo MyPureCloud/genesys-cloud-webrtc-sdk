@@ -182,6 +182,7 @@ describe('handleConversationUpdate', () => {
       id: '7b809e10-fb79-4420-9d5f-69d232ddf490',
       userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf',
       purpose: 'user',
+      name: 'Patrick Star',
       videos: [
         {
           state: CommunicationStates.connected,
@@ -201,6 +202,43 @@ describe('handleConversationUpdate', () => {
     };
 
     jest.spyOn(handler, 'findLocalParticipantInConversationUpdate').mockReturnValue(null);
+  });
+
+  it('should include the participant name and purpose on the emitted update', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    participant1.purpose = 'agent';
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0]).toEqual(expect.objectContaining({
+      participantId: participant1.id,
+      userId: participant1.userId,
+      name: 'Patrick Star',
+      purpose: 'agent'
+    }));
+    expect(emittedUpdate.addedParticipants[0].name).toEqual('Patrick Star');
+  });
+
+  it('should leave the name undefined if the participant does not have one', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    delete participant1.name;
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    expect(session.emit).toHaveBeenCalledTimes(1);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].name).toBe(undefined);
+    expect(emittedUpdate.activeParticipants[0].purpose).toEqual('user');
   });
 
   it('should set the localParticipant on the session', () => {

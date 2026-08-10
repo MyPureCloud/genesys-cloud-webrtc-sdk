@@ -18,6 +18,35 @@ describe('ConversationUpdate', () => {
       });
     });
 
+    it('should preserve the participant name', () => {
+      const update = {
+        participants: [
+          { id: '7b809e10-fb79-4420-9d5f-69d232ddf490', purpose: 'agent', userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf', name: 'Patrick Star' }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0]).toEqual({
+        ...update.participants[0],
+        videos: [],
+        calls: []
+      });
+      expect(conversationUpdate.participants[0].name).toBe('Patrick Star');
+    });
+
+    it('should leave the participant name undefined if the event does not have one', () => {
+      const update = {
+        participants: [
+          { id: '7b809e10-fb79-4420-9d5f-69d232ddf490', purpose: 'agent', userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf' }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].name).toBe(undefined);
+    });
+
     it('should pluck only needed video props', () => {
       const video = {
         id: 'geroge-washington',

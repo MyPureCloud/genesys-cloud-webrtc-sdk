@@ -33,6 +33,7 @@ export class ConversationUpdate {
         id: p.id,
         purpose: p.purpose,
         userId: p.userId,
+        name: p.name,
         address: p.address,
         state: p.state,
         direction: p.direction,
