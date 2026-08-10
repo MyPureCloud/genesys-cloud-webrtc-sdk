@@ -1053,6 +1053,7 @@ export interface IParticipantsUpdate {
 export interface IParticipantUpdate {
   participantId: string;
   userId: string;
+  communicationId: string;
   name?: string;
   purpose?: string;
   sharingScreen: boolean;

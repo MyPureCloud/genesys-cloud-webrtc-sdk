@@ -117,6 +117,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
         const participantUpdate: IParticipantUpdate = {
           participantId: pcParticipant.id,
           userId: pcParticipant.userId,
+          communicationId: activeVideo.id,
           name: pcParticipant.name,
           purpose: pcParticipant.purpose,
           audioMuted: activeVideo.audioMuted,
