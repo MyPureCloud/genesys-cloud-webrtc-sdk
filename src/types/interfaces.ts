@@ -818,10 +818,6 @@ export interface IConversationParticipantFromEvent {
   id: string;
   purpose: string;
   userId: string;
-  /**
-   * Display name of the participant. Not all conversation events
-   *  include a name, so this may be `undefined`.
-   */
   name?: string;
   videos: Array<IParticipantVideo>;
   calls: Array<ICallStateFromParticipant>;
