@@ -173,6 +173,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
         useWebHidOnDesktopJabra: options.useWebHidOnDesktopJabra,
         useWebHidOnDesktopVbet: options.useWebHidOnDesktopVbet,
         useWebHidOnDesktopYealink: options.useWebHidOnDesktopYealink,
+        useNewPolyImplementation: options.useNewPolyImplementation,
         reportStatistics: defaultConfigOption(options.reportStatistics, false),
         eagerPersistentConnectionEstablishment: defaultConfigOption(options.eagerPersistentConnectionEstablishment, 'auto'),
         hostedContext: options.hostedContext,
