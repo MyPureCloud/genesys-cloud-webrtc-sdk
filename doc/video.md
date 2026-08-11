@@ -53,7 +53,7 @@ The most common cases are, but not limited to:
 
 Declaration:
 ``` ts
-sdk.on('participantsUpdate', (update: IParticipantsUpdate) => {});
+session.on('participantsUpdate', (update: IParticipantsUpdate) => {});
 
 /* interface declarations */
 interface IParticipantsUpdate {
@@ -66,6 +66,9 @@ interface IParticipantsUpdate {
 interface IParticipantUpdate {
   participantId: string; // id corresponding to the participant on the conversation,
   userId: string,
+  communicationId: string; // id of the participant's connected video communication,
+  name?: string; // display name of the participant, if the conversation event included one,
+  purpose?: string; // role the participant plays on the conversation, e.g. 'agent' or 'customer',
   sharingScreen: boolean; // whether or not the onScreenParticipant is sharing their screen,
   videoMuted: boolean,
   audioMuted: boolean
@@ -73,6 +76,14 @@ interface IParticipantUpdate {
 ```
 Value of event:
 * `update: IParticipantsUpdate` – list of updated participants
+
+Use `purpose` to determine which participant a `name` belongs to. For example, to find
+the agent on the conversation:
+
+``` ts
+const agent = update.activeParticipants.find((participant) => participant.purpose === 'agent');
+console.log(agent?.name, agent?.communicationId);
+```
 
 ## Video Session Methods
 

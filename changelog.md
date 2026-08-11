@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...HEAD)
 
+### Added
+* [STREAM-2108](https://inindca.atlassian.net/browse/STREAM-2108) - Expose the optional `name` and `purpose` fields on `IParticipantUpdate`, so consumers can read a participant's display name and role from the video session-level `participantsUpdate` event. Both fields are optional, so this is backwards compatible.
+* [STREAM-1996](https://inindca.atlassian.net/browse/STREAM-1996) - Expose the `communicationId` field on `IParticipantUpdate`, so consumers can read the id of a participant's connected video communication from the video session-level `participantsUpdate` event. The field is always populated, so it is declared non-optional.
+
 ### Fixed
 * [STREAM-1931](https://inindca.atlassian.net/browse/STREAM-1931) - When ignoring a `propose` when the SDK is configured for `reducedMedia`, remove the `pendingSession` from tracking so it has a chance to be answered if media handling changes (rather than continuing to be ignored as a duplicate `propose`)
 
