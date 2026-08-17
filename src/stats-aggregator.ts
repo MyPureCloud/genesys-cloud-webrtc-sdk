@@ -65,6 +65,7 @@ export class StatsAggregator {
         return;
       }
       this.statsGatherer.off('stats', this.boundStatsHandler);
+      this.statsGatherer.stop();
       this.statsGatherer = undefined;
   }
 
