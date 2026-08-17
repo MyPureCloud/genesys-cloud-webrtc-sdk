@@ -3,6 +3,8 @@ import { Constants } from 'stanza';
 
 import {
   IPendingSession,
+  IPendingVideoSession,
+  IActiveVideoSessions,
   IAcceptSessionRequest,
   ISessionMuteRequest,
   IExtendedMediaSession,
@@ -37,6 +39,37 @@ export class VideoSessionHandler extends BaseSessionHandler {
   requestedMeetingSessions: { [meetingId: string]: boolean } = {};
 
   sessionType = SessionTypes.collaborateVideo;
+
+  /**
+   * Check if there is an active video session with an agent (ACD) JID.
+   */
+  hasActiveAgentVideoSession (): boolean {
+    return this.sessionManager.getAllActiveSessions()
+      .filter(s => s.sessionType === SessionTypes.collaborateVideo)
+      .some(s => isAgentVideoJid(s.originalRoomJid));
+  }
+
+  /**
+   * Check if there is an active video session with a peer (non-ACD) JID.
+   */
+  hasActivePeerVideoSession (): boolean {
+    return this.sessionManager.getAllActiveSessions()
+      .filter(s => s.sessionType === SessionTypes.collaborateVideo)
+      .some(s => isPeerVideoJid(s.originalRoomJid));
+  }
+
+  /**
+   * Get the state of active video sessions (agent vs peer).
+   */
+  getActiveVideoSessions (): IActiveVideoSessions {
+    const videoSessions = this.sessionManager.getAllActiveSessions()
+      .filter(s => s.sessionType === SessionTypes.collaborateVideo);
+
+    return {
+      hasAgentVideoSession: videoSessions.some(s => isAgentVideoJid(s.originalRoomJid)),
+      hasPeerVideoSession: videoSessions.some(s => isPeerVideoJid(s.originalRoomJid))
+    };
+  }
 
   shouldHandleSessionByJid (jid: string): boolean {
     return isVideoJid(jid);
@@ -147,6 +180,21 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
   // triggers a propose from the backend
   async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
+    // Prevent starting a non-ACD video session when an ACD video session is active, and vice versa
+    const { hasAgentVideoSession, hasPeerVideoSession } = this.getActiveVideoSessions();
+
+    if (hasAgentVideoSession) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
+        'Cannot start a video session while an ACD video session is active. Please end the current ACD video first.',
+        { hasAgentVideoSession });
+    }
+
+    if (hasPeerVideoSession) {
+      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
+        'Cannot start a video session while another video session is active. Please end the current video call first.',
+        { hasPeerVideoSession });
+    }
+
     if ("jid" in startParams) {
       // TypeScript will know that all references to `startParams` in this block are of type `IStartVideoSessionParams`
       // See https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-in-operator-narrowing
@@ -239,6 +287,14 @@ export class VideoSessionHandler extends BaseSessionHandler {
       delete this.requestedMeetingSessions[pendingSession.meetingId];
       await this.proceedWithSession(pendingSession);
       return;
+    }
+
+    // Annotate the pending session with conflicting video state so consumers can show appropriate UI
+    const { hasAgentVideoSession, hasPeerVideoSession } = this.getActiveVideoSessions();
+    if (hasAgentVideoSession || hasPeerVideoSession) {
+      const videoSession = pendingSession as IPendingVideoSession;
+      videoSession.hasConflictingVideoSession = true;
+      videoSession.conflictingSessionType = hasAgentVideoSession ? 'agent' : 'peer';
     }
 
     // auto answer agent sessions

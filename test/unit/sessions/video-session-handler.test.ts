@@ -21,7 +21,7 @@ let mockSessionManager: SessionManager;
 let userId: string;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.restoreAllMocks();
   mockSdk = (new SimpleMockSdk() as any);
   (mockSdk as any).isGuest = true;
   mockSdk._config.autoConnectSessions = true;
@@ -537,6 +537,40 @@ describe('startSession', () => {
     expect(Object.values(handler.requestedMeetingSessions).length).toBe(0);
   });
 
+  it('should throw error when starting session while agent video is active', async () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.com', state: 'active' } as any
+    ]);
+
+    await expect(handler.startSession({ jid: 'peer-456@conference.com', sessionType: SessionTypes.collaborateVideo }))
+      .rejects
+      .toThrow('Cannot start a video session while an ACD video session is active');
+  });
+
+  it('should throw error when starting session while peer video is active', async () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.com', state: 'active' } as any
+    ]);
+
+    await expect(handler.startSession({ jid: 'peer-456@conference.com', sessionType: SessionTypes.collaborateVideo }))
+      .rejects
+      .toThrow('Cannot start a video session while another video session is active');
+  });
+
+  it('should allow starting session when no conflicting video sessions exist', async () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([]);
+    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: { conversationId: 'conv-123' } });
+
+    mockSdk._personDetails = {
+      chat: {
+        jabberId: 'part1@test.com'
+      }
+    } as any;
+
+    const result = await handler.startSession({ jid: 'peer-123@conference.com', sessionType: SessionTypes.collaborateVideo });
+    expect(result).toEqual({ conversationId: 'conv-123' });
+  });
+
   describe('startSession with JWT', () => {
     const mockJwt = 'test.jwt.token';
     const mockJid = 'test-jid';
@@ -546,7 +580,8 @@ describe('startSession', () => {
     beforeEach(() => {
       mockSdk._config.jwt = mockJwt;
       (mockSdk._streamingConnection as any).webrtcSessions = {
-        initiateRtcSession: jest.fn().mockResolvedValue(undefined)
+        initiateRtcSession: jest.fn().mockResolvedValue(undefined),
+        getAllSessions: jest.fn().mockReturnValue([])
       };
     });
 
@@ -592,6 +627,78 @@ describe('startSession', () => {
       delete mockSdk._config.jwt;
       jest.resetAllMocks();
     });
+  });
+});
+
+describe('hasActiveAgentVideoSession', () => {
+  it('should return true when there is an active agent video session', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.test.com', state: 'active' } as any
+    ]);
+    expect(handler.hasActiveAgentVideoSession()).toBe(true);
+  });
+
+  it('should return false when there is no active agent video session', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.test.com', state: 'active' } as any
+    ]);
+    expect(handler.hasActiveAgentVideoSession()).toBe(false);
+  });
+});
+
+describe('hasActivePeerVideoSession', () => {
+  it('should return true when there is an active peer video session', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.test.com', state: 'active' } as any
+    ]);
+    expect(handler.hasActivePeerVideoSession()).toBe(true);
+  });
+
+  it('should return false when there is no active peer video session', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.test.com', state: 'active' } as any
+    ]);
+    expect(handler.hasActivePeerVideoSession()).toBe(false);
+  });
+});
+
+describe('getActiveVideoSessions', () => {
+  it('should return hasAgentVideoSession true when there is an active agent video', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.test.com', state: 'active' } as any
+    ]);
+
+    const result = handler.getActiveVideoSessions();
+    expect(result.hasAgentVideoSession).toBe(true);
+    expect(result.hasPeerVideoSession).toBe(false);
+  });
+
+  it('should return hasPeerVideoSession true when there is an active peer video', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.test.com', state: 'active' } as any
+    ]);
+
+    const result = handler.getActiveVideoSessions();
+    expect(result.hasAgentVideoSession).toBe(false);
+    expect(result.hasPeerVideoSession).toBe(true);
+  });
+
+  it('should return both false when no video sessions active', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([]);
+
+    const result = handler.getActiveVideoSessions();
+    expect(result.hasAgentVideoSession).toBe(false);
+    expect(result.hasPeerVideoSession).toBe(false);
+  });
+
+  it('should ignore non-video sessions', () => {
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.softphone, originalRoomJid: 'agent-123@conference.test.com', state: 'active' } as any
+    ]);
+
+    const result = handler.getActiveVideoSessions();
+    expect(result.hasAgentVideoSession).toBe(false);
+    expect(result.hasPeerVideoSession).toBe(false);
   });
 });
 
@@ -743,6 +850,88 @@ describe('handlePropose', () => {
     });
 
     expect(handler.proceedWithSession).not.toHaveBeenCalled();
+    expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it('should annotate pending session with hasConflictingVideoSession when agent video is active', async () => {
+    const jid = 'peer-123@conference.com';
+
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-456@conference.test.com', state: 'active' } as any
+    ]);
+
+    const emitSpy = jest.fn();
+    mockSdk.once('pendingSession', emitSpy);
+
+    const pendingSession: any = {
+      id: '1241241',
+      sessionId: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      fromJid: jid,
+      toJid: '',
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
+    };
+
+    await handler.handlePropose(pendingSession);
+
+    expect(pendingSession.hasConflictingVideoSession).toBe(true);
+    expect(pendingSession.conflictingSessionType).toBe('agent');
+    expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it('should annotate pending session with conflictingSessionType peer when peer video is active', async () => {
+    const jid = 'peer-789@conference.com';
+
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
+      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-456@conference.test.com', state: 'active' } as any
+    ]);
+
+    const emitSpy = jest.fn();
+    mockSdk.once('pendingSession', emitSpy);
+
+    const pendingSession: any = {
+      id: '1241241',
+      sessionId: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      fromJid: jid,
+      toJid: '',
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
+    };
+
+    await handler.handlePropose(pendingSession);
+
+    expect(pendingSession.hasConflictingVideoSession).toBe(true);
+    expect(pendingSession.conflictingSessionType).toBe('peer');
+    expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it('should not annotate pending session when no conflicting video sessions', async () => {
+    const jid = 'peer-123@conference.com';
+
+    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([]);
+
+    const emitSpy = jest.fn();
+    mockSdk.once('pendingSession', emitSpy);
+
+    const pendingSession: any = {
+      id: '1241241',
+      sessionId: '1241241',
+      sessionType: SessionTypes.collaborateVideo,
+      fromJid: jid,
+      toJid: '',
+      autoAnswer: false,
+      conversationId: '141241241',
+      originalRoomJid: jid
+    };
+
+    await handler.handlePropose(pendingSession);
+
+    expect(pendingSession.hasConflictingVideoSession).toBeUndefined();
+    expect(pendingSession.conflictingSessionType).toBeUndefined();
     expect(emitSpy).toHaveBeenCalled();
   });
 });

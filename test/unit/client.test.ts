@@ -284,10 +284,14 @@ describe('Client', () => {
       const mockInitiateRtcSession = jest.fn().mockResolvedValue(undefined);
       sdk._streamingConnection = {
         webrtcSessions: {
-          initiateRtcSession: mockInitiateRtcSession
+          initiateRtcSession: mockInitiateRtcSession,
+          getAllSessions: jest.fn().mockReturnValue([])
         },
         disconnect: jest.fn().mockResolvedValue(undefined)
       } as any;
+
+      // Mock getAllActiveSessions since the session manager was created with a different sdk instance
+      jest.spyOn(sessionManagerMock, 'getAllActiveSessions').mockReturnValue([]);
 
       const requestApiSpy = jest.spyOn(utils, 'requestApi');
 
@@ -428,6 +432,22 @@ describe('Client', () => {
       sessionManagerMock.forceTerminateSession.mockResolvedValue();
       await sdk.forceTerminateSession('sessionId');
       expect(sdk.sessionManager.forceTerminateSession).toBeCalledWith('sessionId', undefined);
+    });
+  });
+
+  describe('getActiveVideoSessions()', () => {
+    it('should get the video session handler and return its active video sessions', () => {
+      sdk = constructSdk();
+
+      const expectedResult = { hasAgentVideoSession: true, hasPeerVideoSession: false };
+      const mockHandler = { getActiveVideoSessions: jest.fn().mockReturnValue(expectedResult) };
+      sessionManagerMock.getSessionHandler = jest.fn().mockReturnValue(mockHandler);
+
+      const result = sdk.getActiveVideoSessions();
+
+      expect(sessionManagerMock.getSessionHandler).toHaveBeenCalledWith({ sessionType: SessionTypes.collaborateVideo });
+      expect(mockHandler.getActiveVideoSessions).toHaveBeenCalled();
+      expect(result).toEqual(expectedResult);
     });
   });
 
