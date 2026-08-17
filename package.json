@@ -68,7 +68,7 @@
     "rxjs": "^7.8.1",
     "softphone-vendor-headsets": "^4.0.0",
     "strict-event-emitter-types": "^2.0.0",
-    "webrtc-stats-gatherer": "^9.1.0"
+    "webrtc-stats-gatherer": "^9.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.24.6",
