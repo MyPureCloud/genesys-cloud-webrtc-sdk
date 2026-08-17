@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...HEAD)
 
 ### Fixed
+* [STREAM-1694](https://inindca.atlassian.net/browse/STREAM-1694) - Fix duplicate `RTCPeerConnection.getStats()` polling on persistent connection reuse by properly stopping the previous `StatsGatherer` before creating a new one.
 * [STREAM-1931](https://inindca.atlassian.net/browse/STREAM-1931) - When ignoring a `propose` when the SDK is configured for `reducedMedia`, remove the `pendingSession` from tracking so it has a chance to be answered if media handling changes (rather than continuing to be ignored as a duplicate `propose`)
 
 # [v14.2.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.0...v14.2.1)
