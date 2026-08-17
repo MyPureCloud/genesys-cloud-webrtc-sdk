@@ -872,6 +872,19 @@ describe('proceedWithSession()', () => {
       { state: CommunicationStates.connected }
     );
   });
+
+  it('should fall back to oRTC proceed if participant cannot be found', async () => {
+    getUserParticipantFromConversationEventSpy.mockReturnValue(undefined);
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession!.id = pendingSession.id;
+
+    await handler.proceedWithSession(pendingSession);
+
+    expect(proceedWithSessionSpy).toHaveBeenCalledWith(pendingSession);
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('rejectPendingSession()', () => {
@@ -951,6 +964,19 @@ describe('rejectPendingSession()', () => {
       participant.id,
       { state: CommunicationStates.disconnected }
     );
+  });
+
+  it('should fall back to oRTC reject if participant cannot be found', async () => {
+    getUserParticipantFromConversationEventSpy.mockReturnValue(undefined);
+    fetchUserParticipantFromConversationIdSpy.mockResolvedValue(undefined);
+
+    handler.activeSession = new MockSession() as any;
+    handler.activeSession!.id = pendingSession.id;
+
+    await handler.rejectPendingSession(pendingSession);
+
+    expect(superRejectPendingSessionSpy).toHaveBeenCalledWith(pendingSession);
+    expect(patchPhoneCallSpy).not.toHaveBeenCalled();
   });
 });
 
