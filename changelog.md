@@ -3,7 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.2...HEAD)
+
+
+# [v14.2.2](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...v14.2.2)
+### Fixed
+* [STREAM-1931](https://inindca.atlassian.net/browse/STREAM-1931) - When ignoring a `propose` when the SDK is configured for `reducedMedia`, remove the `pendingSession` from tracking so it has a chance to be answered if media handling changes (rather than continuing to be ignored as a duplicate `propose`)
+* [STREAM-1382](https://inindca.atlassian.net/browse/STREAM-1382) - Fixed group ring webtrc call rejection error.
+
+### Added
+* [STREAM-2119](https://inindca.atlassian.net/browse/STREAM-1968) - Bump SVH dependency to include Poly WebHID changes, pass down necessary feature toggle
 
 ### Added
 * [STREAM-2108](https://inindca.atlassian.net/browse/STREAM-2108) - Expose the optional `name` and `purpose` fields on `IParticipantUpdate`, so consumers can read a participant's display name and role from the video session-level `participantsUpdate` event. Both fields are optional, so this is backwards compatible.
