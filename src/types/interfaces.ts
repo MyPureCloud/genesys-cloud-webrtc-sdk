@@ -819,6 +819,7 @@ export interface IConversationParticipantFromEvent {
   id: string;
   purpose: string;
   userId: string;
+  name?: string;
   videos: Array<IParticipantVideo>;
   calls: Array<ICallStateFromParticipant>;
 }
@@ -1049,6 +1050,9 @@ export interface IParticipantsUpdate {
 export interface IParticipantUpdate {
   participantId: string;
   userId: string;
+  communicationId: string;
+  name?: string;
+  purpose?: string;
   sharingScreen: boolean;
   videoMuted: boolean;
   audioMuted: boolean;

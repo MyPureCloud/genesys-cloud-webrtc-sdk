@@ -182,6 +182,7 @@ describe('handleConversationUpdate', () => {
       id: '7b809e10-fb79-4420-9d5f-69d232ddf490',
       userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf',
       purpose: 'user',
+      name: 'Patrick Star',
       videos: [
         {
           state: CommunicationStates.connected,
@@ -201,6 +202,97 @@ describe('handleConversationUpdate', () => {
     };
 
     jest.spyOn(handler, 'findLocalParticipantInConversationUpdate').mockReturnValue(null);
+  });
+
+  it('should include the participant name and purpose on the emitted update', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    participant1.purpose = 'agent';
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0]).toEqual(expect.objectContaining({
+      participantId: participant1.id,
+      userId: participant1.userId,
+      name: 'Patrick Star',
+      purpose: 'agent'
+    }));
+    expect(emittedUpdate.addedParticipants[0].name).toEqual('Patrick Star');
+  });
+
+  it('should leave the name undefined if the participant does not have one', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    delete participant1.name;
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    expect(session.emit).toHaveBeenCalledTimes(1);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].name).toBe(undefined);
+    expect(emittedUpdate.activeParticipants[0].purpose).toEqual('user');
+  });
+
+  it('should include the communicationId of the connected video on the emitted update', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].communicationId).toEqual('5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5');
+    expect(emittedUpdate.addedParticipants[0].communicationId).toEqual('5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5');
+  });
+
+  it('should use the connected video communicationId rather than the first video', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    participant1.videos.unshift({
+      ...participant1.videos[0],
+      id: 'a5a9e35a-9a26-4c1a-9f8f-0e6b1a2f1ac5',
+      state: CommunicationStates.terminated
+    });
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].communicationId).toEqual('5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5');
+  });
+
+  it('should include the agent name and communicationId when the local participant cannot be resolved (guest flow)', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    /* guests have no `_personDetails.id` to match on, so the local participant is never found */
+    (handler.findLocalParticipantInConversationUpdate as jest.Mock).mockReturnValue(null);
+    participant1.purpose = 'agent';
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    expect(session.emit).toHaveBeenCalledTimes(1);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect((session as any).pcParticipant).toBe(null);
+
+    const agent = emittedUpdate.activeParticipants.find((participant) => participant.purpose === 'agent');
+    expect(agent.name).toEqual('Patrick Star');
+    expect(agent.communicationId).toEqual('5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5');
+    expect(emittedUpdate.conversationId).toEqual(conversationUpdate.id);
   });
 
   it('should set the localParticipant on the session', () => {
