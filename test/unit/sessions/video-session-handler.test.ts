@@ -630,38 +630,6 @@ describe('startSession', () => {
   });
 });
 
-describe('hasActiveAgentVideoSession', () => {
-  it('should return true when there is an active agent video session', () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
-      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.test.com', state: 'active' } as any
-    ]);
-    expect(handler.hasActiveAgentVideoSession()).toBe(true);
-  });
-
-  it('should return false when there is no active agent video session', () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
-      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.test.com', state: 'active' } as any
-    ]);
-    expect(handler.hasActiveAgentVideoSession()).toBe(false);
-  });
-});
-
-describe('hasActivePeerVideoSession', () => {
-  it('should return true when there is an active peer video session', () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
-      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.test.com', state: 'active' } as any
-    ]);
-    expect(handler.hasActivePeerVideoSession()).toBe(true);
-  });
-
-  it('should return false when there is no active peer video session', () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
-      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.test.com', state: 'active' } as any
-    ]);
-    expect(handler.hasActivePeerVideoSession()).toBe(false);
-  });
-});
-
 describe('getActiveVideoSessions', () => {
   it('should return hasAgentVideoSession true when there is an active agent video', () => {
     jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([

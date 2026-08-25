@@ -41,24 +41,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
   sessionType = SessionTypes.collaborateVideo;
 
   /**
-   * Check if there is an active video session with an agent (ACD) JID.
-   */
-  hasActiveAgentVideoSession (): boolean {
-    return this.sessionManager.getAllActiveSessions()
-      .filter(s => s.sessionType === SessionTypes.collaborateVideo)
-      .some(s => isAgentVideoJid(s.originalRoomJid));
-  }
-
-  /**
-   * Check if there is an active video session with a peer (non-ACD) JID.
-   */
-  hasActivePeerVideoSession (): boolean {
-    return this.sessionManager.getAllActiveSessions()
-      .filter(s => s.sessionType === SessionTypes.collaborateVideo)
-      .some(s => isPeerVideoJid(s.originalRoomJid));
-  }
-
-  /**
    * Get the state of active video sessions (agent vs peer).
    */
   getActiveVideoSessions (): IActiveVideoSessions {
