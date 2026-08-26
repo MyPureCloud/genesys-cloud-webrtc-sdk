@@ -537,28 +537,10 @@ describe('startSession', () => {
     expect(Object.values(handler.requestedMeetingSessions).length).toBe(0);
   });
 
-  it('should throw error when starting session while agent video is active', async () => {
+  it('should allow starting session even when another video session is active', async () => {
     jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
       { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.com', state: 'active' } as any
     ]);
-
-    await expect(handler.startSession({ jid: 'peer-456@conference.com', sessionType: SessionTypes.collaborateVideo }))
-      .rejects
-      .toThrow('Cannot start a video session while an ACD video session is active');
-  });
-
-  it('should throw error when starting session while peer video is active', async () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
-      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'peer-123@conference.com', state: 'active' } as any
-    ]);
-
-    await expect(handler.startSession({ jid: 'peer-456@conference.com', sessionType: SessionTypes.collaborateVideo }))
-      .rejects
-      .toThrow('Cannot start a video session while another video session is active');
-  });
-
-  it('should allow starting session when no conflicting video sessions exist', async () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([]);
     jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: { conversationId: 'conv-123' } });
 
     mockSdk._personDetails = {
@@ -567,7 +549,7 @@ describe('startSession', () => {
       }
     } as any;
 
-    const result = await handler.startSession({ jid: 'peer-123@conference.com', sessionType: SessionTypes.collaborateVideo });
+    const result = await handler.startSession({ jid: 'peer-456@conference.com', sessionType: SessionTypes.collaborateVideo });
     expect(result).toEqual({ conversationId: 'conv-123' });
   });
 

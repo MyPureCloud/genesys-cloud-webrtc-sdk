@@ -162,21 +162,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
   // triggers a propose from the backend
   async startSession(startParams: IStartVideoSessionParams | IStartVideoMeetingSessionParams): Promise<{ conversationId: string }> {
-    // Prevent starting a non-ACD video session when an ACD video session is active, and vice versa
-    const { hasAgentVideoSession, hasPeerVideoSession } = this.getActiveVideoSessions();
-
-    if (hasAgentVideoSession) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
-        'Cannot start a video session while an ACD video session is active. Please end the current ACD video first.',
-        { hasAgentVideoSession });
-    }
-
-    if (hasPeerVideoSession) {
-      throw createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session,
-        'Cannot start a video session while another video session is active. Please end the current video call first.',
-        { hasPeerVideoSession });
-    }
-
     if ("jid" in startParams) {
       // TypeScript will know that all references to `startParams` in this block are of type `IStartVideoSessionParams`
       // See https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-in-operator-narrowing
