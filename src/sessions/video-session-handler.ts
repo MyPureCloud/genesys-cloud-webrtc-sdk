@@ -3,7 +3,6 @@ import { Constants } from 'stanza';
 
 import {
   IPendingSession,
-  IPendingVideoSession,
   IActiveVideoSessions,
   IAcceptSessionRequest,
   ISessionMuteRequest,
@@ -254,14 +253,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
       delete this.requestedMeetingSessions[pendingSession.meetingId];
       await this.proceedWithSession(pendingSession);
       return;
-    }
-
-    // Annotate the pending session with conflicting video state so consumers can show appropriate UI
-    const { hasAgentVideoSession, hasPeerVideoSession } = this.getActiveVideoSessions();
-    if (hasAgentVideoSession || hasPeerVideoSession) {
-      const videoSession = pendingSession as IPendingVideoSession;
-      videoSession.hasConflictingVideoSession = true;
-      videoSession.conflictingSessionType = hasAgentVideoSession ? 'agent' : 'peer';
     }
 
     // auto answer agent sessions

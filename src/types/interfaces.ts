@@ -19,16 +19,6 @@ export interface IActiveVideoSessions {
   hasPeerVideoSession: boolean;
 }
 
-/**
- * Extended pending session with video conflict information.
- * These properties are added when a video propose is received while another video session is active.
- */
-export interface IPendingVideoSession extends IPendingSession {
-  /** Whether there is already an active video session that conflicts with this incoming session */
-  hasConflictingVideoSession?: boolean;
-  /** The type of the conflicting active video session: 'agent' (ACD) or 'peer' (non-ACD/collaborate) */
-  conflictingSessionType?: 'agent' | 'peer';
-}
 // extend the emittable events
 declare module 'genesys-cloud-streaming-client' {
   export interface SessionEvents {
