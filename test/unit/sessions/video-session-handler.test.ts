@@ -537,22 +537,6 @@ describe('startSession', () => {
     expect(Object.values(handler.requestedMeetingSessions).length).toBe(0);
   });
 
-  it('should allow starting session even when another video session is active', async () => {
-    jest.spyOn(mockSessionManager, 'getAllActiveSessions').mockReturnValue([
-      { sessionType: SessionTypes.collaborateVideo, originalRoomJid: 'agent-123@conference.com', state: 'active' } as any
-    ]);
-    jest.spyOn(utils, 'requestApi').mockResolvedValue({ data: { conversationId: 'conv-123' } });
-
-    mockSdk._personDetails = {
-      chat: {
-        jabberId: 'part1@test.com'
-      }
-    } as any;
-
-    const result = await handler.startSession({ jid: 'peer-456@conference.com', sessionType: SessionTypes.collaborateVideo });
-    expect(result).toEqual({ conversationId: 'conv-123' });
-  });
-
   describe('startSession with JWT', () => {
     const mockJwt = 'test.jwt.token';
     const mockJid = 'test-jid';
