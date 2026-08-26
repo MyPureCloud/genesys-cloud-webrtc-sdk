@@ -1198,3 +1198,17 @@ describe('getAllActiveConversations', () => {
     expect(sessionManager.getAllActiveConversations().length).toEqual(4);
   });
 });
+
+describe('getActiveVideoSessions', () => {
+  it('should delegate to the video session handler', () => {
+    const expectedResult = { hasAgentVideoSession: true, hasPeerVideoSession: false };
+    const mockVideoHandler = { getActiveVideoSessions: jest.fn().mockReturnValue(expectedResult) };
+    jest.spyOn(sessionManager, 'getSessionHandler').mockReturnValue(mockVideoHandler as any);
+
+    const result = sessionManager.getActiveVideoSessions();
+
+    expect(sessionManager.getSessionHandler).toHaveBeenCalledWith({ sessionType: SessionTypes.collaborateVideo });
+    expect(mockVideoHandler.getActiveVideoSessions).toHaveBeenCalled();
+    expect(result).toEqual(expectedResult);
+  });
+});
