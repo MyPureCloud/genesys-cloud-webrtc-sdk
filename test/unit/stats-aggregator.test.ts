@@ -136,6 +136,34 @@ describe('StatsAggregator', () => {
     });
   });
 
+  describe('persistent connection reuse — STREAM-1694', () => {
+    it('should call stop() on the stats gatherer and allow a fresh gatherer on session reuse', () => {
+      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
+      (mockSession as unknown as Record<string, unknown>).privAnswerMode = 'Auto';
+      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
+      const statsAggregator = new StatsAggregator(mockSession, sdk);
+
+      // No gathering yet for eager persistent connection
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+
+      // First conversation starts — stats gathering begins
+      (sdk as unknown as SimpleMockSdk).emit('sessionStarted', mockSession);
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+      const firstGatherer = statsAggregator['statsGatherer'];
+      const stopSpy = jest.spyOn(firstGatherer, 'stop');
+
+      // First conversation ends — stats gathering should stop
+      (sdk as unknown as SimpleMockSdk).emit('_sessionEnded', mockSession);
+      expect(statsAggregator['statsGatherer']).toBeFalsy();
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+
+      // Second conversation starts — should be able to create a new gatherer without conflict
+      (sdk as unknown as SimpleMockSdk).emit('sessionStarted', mockSession);
+      expect(statsAggregator['statsGatherer']).toBeTruthy();
+      expect(statsAggregator['statsGatherer']).not.toBe(firstGatherer);
+    });
+  });
+
   describe('handleStatsUpdate', () => {
     it('should only handle a GetStatsEvent', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;
