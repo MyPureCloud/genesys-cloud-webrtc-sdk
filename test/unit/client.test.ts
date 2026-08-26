@@ -284,14 +284,10 @@ describe('Client', () => {
       const mockInitiateRtcSession = jest.fn().mockResolvedValue(undefined);
       sdk._streamingConnection = {
         webrtcSessions: {
-          initiateRtcSession: mockInitiateRtcSession,
-          getAllSessions: jest.fn().mockReturnValue([])
+          initiateRtcSession: mockInitiateRtcSession
         },
         disconnect: jest.fn().mockResolvedValue(undefined)
       } as any;
-
-      // Mock getAllActiveSessions since the session manager was created with a different sdk instance
-      jest.spyOn(sessionManagerMock, 'getAllActiveSessions').mockReturnValue([]);
 
       const requestApiSpy = jest.spyOn(utils, 'requestApi');
 
