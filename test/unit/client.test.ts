@@ -435,22 +435,6 @@ describe('Client', () => {
     });
   });
 
-  describe('getActiveVideoSessions()', () => {
-    it('should get the video session handler and return its active video sessions', () => {
-      sdk = constructSdk();
-
-      const expectedResult = { hasAgentVideoSession: true, hasPeerVideoSession: false };
-      const mockHandler = { getActiveVideoSessions: jest.fn().mockReturnValue(expectedResult) };
-      sessionManagerMock.getSessionHandler = jest.fn().mockReturnValue(mockHandler);
-
-      const result = sdk.getActiveVideoSessions();
-
-      expect(sessionManagerMock.getSessionHandler).toHaveBeenCalledWith({ sessionType: SessionTypes.collaborateVideo });
-      expect(mockHandler.getActiveVideoSessions).toHaveBeenCalled();
-      expect(result).toEqual(expectedResult);
-    });
-  });
-
   describe('fetchUsersStation()', () => {
     let station: IStation;
     let user: IPersonDetails;

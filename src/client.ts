@@ -29,8 +29,7 @@ import {
   IVideoResolution,
   JWTDetails,
   ISdkFullConfig,
-  LiveScreenMonitoringSession,
-  IActiveVideoSessions
+  LiveScreenMonitoringSession
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -40,7 +39,6 @@ import { requestApi, createAndEmitSdkError, defaultConfigOption, requestApiWithR
 import { setupLogging } from './logging';
 import { MediaHandling, SdkErrorTypes, SessionTypes } from './types/enums';
 import { SessionManager } from './sessions/session-manager';
-import VideoSessionHandler from './sessions/video-session-handler';
 import { SdkMedia } from './media/media';
 import { HeadsetProxyService } from './headsets/headset';
 import { Constants } from 'stanza';
@@ -359,17 +357,6 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
 
   isVideoSession (session: IExtendedMediaSession): session is VideoMediaSession {
     return session.sessionType === SessionTypes.collaborateVideo;
-  }
-
-  /**
-   * Returns the current state of active video sessions, indicating whether
-   * there is an active ACD (agent) video session, a non-ACD (peer/collaborate) video session, or both.
-   *
-   * Use this to determine whether to disable "Start Video" buttons in the UI.
-   */
-  getActiveVideoSessions (): IActiveVideoSessions {
-    const handler = this.sessionManager.getSessionHandler({ sessionType: SessionTypes.collaborateVideo }) as VideoSessionHandler;
-    return handler.getActiveVideoSessions();
   }
 
   isLiveScreenMonitoringSession (session: IExtendedMediaSession): session is LiveScreenMonitoringSession {

@@ -22,6 +22,7 @@ import {
   IPendingSessionActionParams,
   VideoMediaSession,
   IActiveConversationDescription,
+  IActiveVideoSessions,
   SubscriptionEvent
 } from '../types/interfaces';
 import { ConversationUpdate } from '../conversations/conversation-update';
@@ -160,6 +161,17 @@ export class SessionManager {
 
   getAllActiveConversations (): IActiveConversationDescription[] {
     return [].concat(...this.sessionHandlers.map(handler => handler.getActiveConversations()));
+  }
+
+  /**
+   * Returns the current state of active video sessions, indicating whether
+   * there is an active ACD (agent) video session, a non-ACD (peer/collaborate) video session, or both.
+   *
+   * Use this to determine whether to disable "Start Video" buttons in the UI.
+   */
+  getActiveVideoSessions (): IActiveVideoSessions {
+    const handler = this.getSessionHandler({ sessionType: SessionTypes.collaborateVideo }) as VideoSessionHandler;
+    return handler.getActiveVideoSessions();
   }
 
   getAllSessions (): IExtendedMediaSession[] {
