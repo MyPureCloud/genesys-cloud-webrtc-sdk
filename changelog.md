@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.2...HEAD)
+### Changed
+* [STREAM-1939](https://inindca.atlassian.net/browse/STREAM-1939) - Upgraded axios to v1.20.0 to fix Snyk vulnerabilities
+
 ### Added
 * [STREAM-2108](https://inindca.atlassian.net/browse/STREAM-2108) - Expose the optional `name` and `purpose` fields on `IParticipantUpdate`, so consumers can read a participant's display name and role from the video session-level `participantsUpdate` event. Both fields are optional, so this is backwards compatible.
 * [STREAM-1996](https://inindca.atlassian.net/browse/STREAM-1996) - Expose the `communicationId` field on `IParticipantUpdate`, so consumers can read the id of a participant's connected video communication from the video session-level `participantsUpdate` event. The field is always populated, so it is declared non-optional.
