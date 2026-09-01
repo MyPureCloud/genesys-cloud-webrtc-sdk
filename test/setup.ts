@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import 'whatwg-fetch';
 
 Object.defineProperty(globalThis, 'crypto', {
   value: { randomUUID }

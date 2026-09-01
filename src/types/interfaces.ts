@@ -309,6 +309,11 @@ export interface ISdkFullConfig {
   /** if video constraints should be skipped. Useful when the SDK is used on mobile devices */
   skipConstraints?: boolean;
 
+  /**
+   * Genesys internal use only - These options may change or be removed at any time without communication.
+   */
+  experimentalOptions?: Record<string, unknown>;
+
   /** defaults for various SDK functionality */
   defaults?: {
     /**
