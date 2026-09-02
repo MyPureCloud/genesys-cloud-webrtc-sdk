@@ -3,9 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.3...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.4...HEAD)
+
+# [v14.2.4](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.3...v14.2.4)
 ### Changed
 * [STREAM-1939](https://inindca.atlassian.net/browse/STREAM-1939) - Upgraded axios to v1.20.0 to fix Snyk vulnerabilities
+
 ### Fixed
 * [STREAM-2280](https://inindca.atlassian.net/browse/STREAM-2280) - Upgraded `softphone-vendor-headsets` to v4.1.0 to fix issues around Poly and Jabra
 
