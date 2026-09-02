@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-2280](https://inindca.atlassian.net/browse/STREAM-2280) - Upgraded `softphone-vendor-headsets` to v4.1.0 to fix issues around Poly and Jabra
 
-# [v14.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.1...v14.2.3)
+# [v14.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.2...v14.2.3)
 ### Added
 * [STREAM-2108](https://inindca.atlassian.net/browse/STREAM-2108) - Expose the optional `name` and `purpose` fields on `IParticipantUpdate`, so consumers can read a participant's display name and role from the video session-level `participantsUpdate` event. Both fields are optional, so this is backwards compatible.
 * [STREAM-1996](https://inindca.atlassian.net/browse/STREAM-1996) - Expose the `communicationId` field on `IParticipantUpdate`, so consumers can read the id of a participant's connected video communication from the video session-level `participantsUpdate` event. The field is always populated, so it is declared non-optional.
