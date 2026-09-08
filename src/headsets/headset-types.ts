@@ -22,6 +22,7 @@ export type ExpandedConsumedHeadsetEvents<T = keyof Events> = T extends keyof Ev
     : never;
 
 export interface ISdkHeadsetService {
+  destroy(): void;
   headsetEvents$: Observable<ExpandedConsumedHeadsetEvents>;
   currentSelectedImplementation: VendorImplementation;
 

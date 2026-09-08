@@ -20,6 +20,13 @@ export abstract class SdkHeadsetBase implements ISdkHeadsetService {
   }
 
   /**
+   * Handles any cleanup needed
+   * @params none
+   * @returns void
+   */
+  destroy () {}
+
+  /**
    * Determines if the retry button is necessary to be rendered
    * @params params: an object containing micLabel
    * @returns boolean
