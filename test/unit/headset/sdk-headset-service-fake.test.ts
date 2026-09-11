@@ -15,3 +15,9 @@ describe('deviceIsSupported', () => {
     expect(service.deviceIsSupported({ micLabel: 'asdf' })).toBeFalsy();
   });
 });
+
+describe('destroy', () => {
+  it('should proxy to the headset service', () => {
+    expect(service.destroy()).toBeFalsy(); 
+  });
+});

@@ -1227,7 +1227,7 @@ describe('Client', () => {
   });
 
   describe('destroy()', () => {
-    it('should log, end all sessions, remove listeners, destory media, and disconnect ws', async () => {
+    it('should log, end all sessions, remove listeners, destroy media, and disconnect ws', async () => {
       sdk = constructSdk();
 
       const session1 = new MockSession();
@@ -1236,6 +1236,7 @@ describe('Client', () => {
       sessionManagerMock.getAllSessions.mockReturnValue([session1, session2] as any);
       sessionManagerMock.forceTerminateSession.mockResolvedValue();
       mediaMock.destroy.mockReturnValue();
+      sdk.headset.destroy = jest.fn();
 
       jest.spyOn(sdk, 'removeAllListeners');
       jest.spyOn(sdk, 'disconnect').mockResolvedValue(undefined);
@@ -1251,6 +1252,7 @@ describe('Client', () => {
       expect(sdk.sessionManager.forceTerminateSession).toHaveBeenCalledWith(session1.id);
       expect(sdk.sessionManager.forceTerminateSession).toHaveBeenCalledWith(session2.id);
       expect(sdk.removeAllListeners).toHaveBeenCalled();
+      expect(sdk.headset.destroy).toHaveBeenCalled();
       expect(sdk.media.destroy).toHaveBeenCalled();
       expect(sdk.disconnect).toHaveBeenCalled();
     });
