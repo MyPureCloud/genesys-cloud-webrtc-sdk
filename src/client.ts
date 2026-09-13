@@ -1004,6 +1004,7 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
     await Promise.all(activeSessions.map(s => this.sessionManager.forceTerminateSession(s.id)));
 
     this.removeAllListeners();
+    this.headset.destroy();
     this.media.destroy();
     await this.disconnect();
   }

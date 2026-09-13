@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [STREAM-1939](https://inindca.atlassian.net/browse/STREAM-1939) - Upgraded axios to v1.20.0 to fix Snyk vulnerabilities
 ### Fixed
 * [STREAM-2280](https://inindca.atlassian.net/browse/STREAM-2280) - Upgraded `softphone-vendor-headsets` to v4.1.0 to fix issues around Poly and Jabra
+* [STREAM-2011](https://inindca.atlassian.net/browse/STREAM-2011) - Fix memory leak with `useHeadsets: true` and using multiple instances of the SDK.
 
 # [v14.2.3](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.2...v14.2.3)
 ### Added
