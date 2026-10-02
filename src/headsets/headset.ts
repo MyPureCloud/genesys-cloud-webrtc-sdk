@@ -44,6 +44,11 @@ export class HeadsetProxyService implements ISdkHeadsetService {
     this.setUseHeadsets(!!this.sdk._config.useHeadsets);
   }
 
+  destroy() {
+    // Clean up the current device and unsubscribe from headsetEvents
+    this.setUseHeadsets(false);
+  }
+
   // this is to be called externally to start/stop headsets, not internally
   setUseHeadsets (useHeadsets: boolean) {
     // TODO: PCM-2060 - remove this

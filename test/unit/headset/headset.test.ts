@@ -280,6 +280,16 @@ describe('HeadsetProxyService', () => {
     currentHeadsetService = proxyService['currentHeadsetService'];
   });
 
+  describe('destroy', () => {
+    it('should call `setUseHeadsets` with `false` to clean up the device, etc.', () => {
+      proxyService.setUseHeadsets = jest.fn();
+
+      proxyService.destroy();
+
+      expect(proxyService.setUseHeadsets).toHaveBeenCalledWith(false);
+    });
+  });
+
   describe('setUseHeadsets', () => {
     it('should update input device to null on old service', () => {
       const originalHeadsetService = proxyService['currentHeadsetService'];
