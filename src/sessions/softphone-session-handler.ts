@@ -1062,6 +1062,10 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
    * This is fire-and-forget — errors are logged but do not affect call handling.
    */
   private notifyClientMetadata (conversationId: string, communicationId: string): void {
+    if (!this.sdk._config.experimentalOptions?.reportSoftphoneClientMetadata) {
+      return;
+    }
+
     const path = `/conversations/calls/${conversationId}/communications/${communicationId}/metadata`;
     this.log('info', 'notifying client metadata for connected call', { conversationId, communicationId });
 
