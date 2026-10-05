@@ -27,7 +27,13 @@ declare const window: {
 export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, SdkMediaEvents> }) {
   private sdk: GenesysCloudWebrtcSdk;
   private state: ISdkMediaState;
-  private audioTracksBeingMonitored: { [trackId: string]: ReturnType<typeof setInterval> } = {};
+  private audioTracksBeingMonitored: {
+    [trackId: string]: {
+      intervalId: ReturnType<typeof setInterval>;
+      audioContext: AudioContext;
+      audioSource: MediaStreamAudioSourceNode;
+    }
+  } = {};
   private allMediaTracksCreated = new Map<string, MediaStreamTrack>();
   private onDeviceChangeListenerRef: (() => void) | undefined;
   /* stream or track id and function to remove listeners */
@@ -861,17 +867,29 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       this.emit('audioTrackVolume', { track, volume: averageVolume, sessionId, muted: !track.enabled || track.muted });
     };
 
-    this.audioTracksBeingMonitored[track.id] = setInterval(volumeCallback, 100);
+    this.audioTracksBeingMonitored[track.id] = {
+      intervalId: setInterval(volumeCallback, 100),
+      audioContext,
+      audioSource
+    };
   }
 
   private clearAudioInputMonitor (trackId: string) {
-    const intervalId = this.audioTracksBeingMonitored[trackId];
-    if (!intervalId) {
+    const monitor = this.audioTracksBeingMonitored[trackId];
+    if (!monitor) {
       return;
     }
 
-    clearInterval(intervalId);
+    clearInterval(monitor.intervalId);
     delete this.audioTracksBeingMonitored[trackId];
+
+    /* Each AudioContext holds an audio output stream until it is closed (Chrome caps these at 50) */
+    monitor.audioSource.disconnect();
+    if (monitor.audioContext.state !== 'closed') {
+      monitor.audioContext.close().catch((error) => {
+        this.sdk.logger.warn('Failed to close AudioContext used to monitor mic volume', { trackId, error });
+      });
+    }
   }
 
   private hasGetDisplayMedia (): boolean {
