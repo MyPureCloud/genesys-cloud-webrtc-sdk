@@ -2,7 +2,7 @@ import browserama from 'browserama';
 
 import { SdkMedia } from '../../../src/media/media';
 import GenesysCloudWebrtcSdk from '../../../src/client';
-import { getRandomIntInclusive, MockAudioContext, MockSession, MockStream, MockTrack, SimpleMockSdk, MockAnalyser } from '../../test-utils';
+import { getRandomIntInclusive, MockAudioContext, MockAudioSource, MockSession, MockStream, MockTrack, SimpleMockSdk, MockAnalyser } from '../../test-utils';
 import { SdkErrorTypes } from '../../../src/types/enums';
 import { SdkError } from '../../../src/utils';
 import { IMediaRequestOptions } from '../../../src/types/interfaces';
@@ -1060,7 +1060,11 @@ describe('SdkMedia', () => {
       expect(emitSpy).not.toHaveBeenCalled();
 
       /* already tracked audio tracks should be ignored */
-      sdkMedia['audioTracksBeingMonitored'][mockAudioTrack.id] = 123123 as unknown as ReturnType<typeof setInterval>;
+      sdkMedia['audioTracksBeingMonitored'][mockAudioTrack.id] = {
+        intervalId: 123123 as unknown as ReturnType<typeof setInterval>,
+        audioContext: new MockAudioContext() as unknown as AudioContext,
+        audioSource: new MockAudioSource() as unknown as MediaStreamAudioSourceNode
+      };
       monitorMicVolumeFn(mockStream, mockAudioTrack);
       jest.advanceTimersByTime(110);
 
@@ -1186,12 +1190,72 @@ describe('SdkMedia', () => {
       expect(clearIntervalSpy).not.toHaveBeenCalled();
     });
 
-    it('should clearInterval and remove trackId', () => {
+    it('should clearInterval, close the AudioContext, and remove trackId', () => {
       const trackId = 'some-track-id';
-      const intId = sdkMedia['audioTracksBeingMonitored'][trackId] = setInterval(() => { }, 1000000);
+      const intervalId = setInterval(() => { }, 1000000);
+      const audioContext = new MockAudioContext();
+      const audioSource = new MockAudioSource();
+      const closeSpy = jest.spyOn(audioContext, 'close');
+      const disconnectSpy = jest.spyOn(audioSource, 'disconnect');
+      sdkMedia['audioTracksBeingMonitored'][trackId] = {
+        intervalId,
+        audioContext: audioContext as unknown as AudioContext,
+        audioSource: audioSource as unknown as MediaStreamAudioSourceNode
+      };
 
       sdkMedia['clearAudioInputMonitor'](trackId);
-      expect(clearIntervalSpy).toHaveBeenCalledWith(intId);
+      expect(clearIntervalSpy).toHaveBeenCalledWith(intervalId);
+      expect(disconnectSpy).toHaveBeenCalled();
+      expect(closeSpy).toHaveBeenCalled();
+      expect(sdkMedia['audioTracksBeingMonitored'][trackId]).toBeUndefined();
+    });
+
+    it('should not close an AudioContext that is already closed', () => {
+      const trackId = 'some-track-id';
+      const audioContext = new MockAudioContext();
+      audioContext.state = 'closed';
+      const closeSpy = jest.spyOn(audioContext, 'close');
+      sdkMedia['audioTracksBeingMonitored'][trackId] = {
+        intervalId: setInterval(() => { }, 1000000),
+        audioContext: audioContext as unknown as AudioContext,
+        audioSource: new MockAudioSource() as unknown as MediaStreamAudioSourceNode
+      };
+
+      sdkMedia['clearAudioInputMonitor'](trackId);
+      expect(closeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should log a warning if closing the AudioContext fails', async () => {
+      const trackId = 'some-track-id';
+      const audioContext = new MockAudioContext();
+      const error = new Error('close failed');
+      jest.spyOn(audioContext, 'close').mockRejectedValue(error);
+      sdkMedia['audioTracksBeingMonitored'][trackId] = {
+        intervalId: setInterval(() => { }, 1000000),
+        audioContext: audioContext as unknown as AudioContext,
+        audioSource: new MockAudioSource() as unknown as MediaStreamAudioSourceNode
+      };
+
+      sdkMedia['clearAudioInputMonitor'](trackId);
+      await Promise.resolve();
+      expect(sdk.logger.warn).toHaveBeenCalledWith(
+        'Failed to close AudioContext used to monitor mic volume',
+        { trackId, error }
+      );
+    });
+
+    it('should close the AudioContext when a monitored track is stopped', () => {
+      Object.defineProperty(window, 'AudioContext', { value: MockAudioContext, writable: true });
+      const closeSpy = jest.spyOn(MockAudioContext.prototype, 'close');
+      const mockStream = new MockStream({ audio: true }) as any as MediaStream;
+      const mockAudioTrack = mockStream.getAudioTracks()[0];
+
+      sdkMedia['trackMedia'](mockStream, true);
+      expect(sdkMedia['audioTracksBeingMonitored'][mockAudioTrack.id]).toBeTruthy();
+
+      mockAudioTrack.stop();
+      expect(closeSpy).toHaveBeenCalled();
+      expect(sdkMedia['audioTracksBeingMonitored'][mockAudioTrack.id]).toBeUndefined();
     });
   });
 
