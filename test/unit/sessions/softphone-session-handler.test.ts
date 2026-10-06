@@ -672,8 +672,8 @@ describe('acceptSession()', () => {
     expect(attachSpy).toHaveBeenCalledWith(mockSdk, mockIncomingStream, volume, element, ids);
   });
 
-  it('should setup listener and remove audio element from DOM once session ends', async () => {
-    const mockAudioElement = { parentNode: { removeChild: jest.fn() } } as any as HTMLAudioElement;
+  it('should setup listener, release media, and remove audio element from DOM once session ends', async () => {
+    const mockAudioElement = { pause: jest.fn(), remove: jest.fn(), srcObject: {} } as any as HTMLAudioElement;
     jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
 
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
@@ -701,11 +701,13 @@ describe('acceptSession()', () => {
 
     session.emit('terminated');
 
-    expect(mockAudioElement.parentNode!.removeChild).toHaveBeenCalledWith(mockAudioElement);
+    expect(mockAudioElement.pause).toHaveBeenCalled();
+    expect(mockAudioElement.srcObject).toBeNull();
+    expect(mockAudioElement.remove).toHaveBeenCalled();
   });
 
-  it('should setup listener but not remove the audio element from the DOM if it was not tracked', async () => {
-    const mockAudioElement = { parentNode: { removeChild: jest.fn() } } as any as HTMLAudioElement;
+  it('should still tear down the unique audio element if session._outputAudioElement was changed', async () => {
+    const mockAudioElement = { pause: jest.fn(), remove: jest.fn(), srcObject: {} } as any as HTMLAudioElement;
     jest.spyOn(mediaUtils, 'createUniqueAudioMediaElement').mockReturnValue(mockAudioElement);
 
     jest.spyOn(BaseSessionHandler.prototype, 'acceptSession');
@@ -732,7 +734,8 @@ describe('acceptSession()', () => {
 
     session.emit('terminated');
 
-    expect(mockAudioElement.parentNode!.removeChild).not.toHaveBeenCalledWith(mockAudioElement);
+    expect(mockAudioElement.srcObject).toBeNull();
+    expect(mockAudioElement.remove).toHaveBeenCalled();
   });
 
   it('should hold other sessions if LA>1', () => {

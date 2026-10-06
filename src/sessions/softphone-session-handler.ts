@@ -726,12 +726,14 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
 
     /* if we aren't given an element, then we need to setup our own, unique one (per session), then tear it down on terminate */
     if (!element) {
-      element = createUniqueAudioMediaElement();
+      const uniqueElement = createUniqueAudioMediaElement();
+      element = uniqueElement;
       session.once('terminated', () => {
-        if (session._outputAudioElement === element) {
-          this.log('debug', 'session ended and was using a unique audio element. removing from DOM', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
-          session._outputAudioElement.parentNode.removeChild(session._outputAudioElement);
-        }
+        this.log('debug', 'session ended and was using a unique audio element. removing from DOM', { sessionId: session.id, conversationId: session.conversationId, sessionType: session.sessionType });
+        /* removing the element alone does not release its audio output until it is garbage collected, so detach the media first */
+        uniqueElement.pause();
+        uniqueElement.srcObject = null;
+        uniqueElement.remove();
       });
     }
 

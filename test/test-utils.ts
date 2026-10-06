@@ -309,16 +309,22 @@ export class MockStream extends MockEventer {
 }
 
 export class MockAudioContext {
+  state: AudioContextState = 'running';
   createMediaStreamSource (stream: MediaStream | MockStream): MockAudioSource {
     return new MockAudioSource();
   }
   createAnalyser (): MockAnalyser {
     return new MockAnalyser();
   }
+  close (): Promise<void> {
+    this.state = 'closed';
+    return Promise.resolve();
+  }
 }
 
 export class MockAudioSource {
   connect (_analyzer: MockAnalyser) { }
+  disconnect () { }
 }
 
 export class MockAnalyser {
