@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.5...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...HEAD)
+
+# [v14.2.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.5...v14.2.6)
 ### Fixed
 * [STREAM-2573](https://inindca.atlassian.net/browse/STREAM-2573) - Fix audio output leaks that could exceed Chrome's limit of 50 audio output streams during long sessions, causing one-way audio (the user can no longer hear the remote party). The `AudioContext` used by `monitorMicVolume` is now closed when its track ends, and the softphone session's audio element now releases its media when the session ends.
 
