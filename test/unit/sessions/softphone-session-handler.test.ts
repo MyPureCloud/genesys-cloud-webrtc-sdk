@@ -1811,12 +1811,35 @@ describe('handleSoftphoneConversationUpdate()', () => {
     let requestApiSpy: jest.SpyInstance;
 
     beforeEach(() => {
+      mockSdk._config.experimentalFeatures = {
+        reportSoftphoneClientMetadata: true
+      };
       notifyClientMetadataSpy.mockRestore();
       requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     });
 
     afterEach(() => {
       requestApiSpy.mockRestore();
+    });
+
+    it('should NOT notify client metadata when feature toggle is off', () => {
+      mockSdk._config.experimentalFeatures = undefined;
+
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.alerting }
+      });
+
+      callState.direction = 'inbound';
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+      handler.activeSession = session;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).not.toHaveBeenCalledWith(
+        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
+        { method: 'post' }
+      );
     });
 
     it('should notify client metadata when call transitions from alerting to connected (inbound)', () => {
