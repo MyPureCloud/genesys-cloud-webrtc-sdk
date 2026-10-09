@@ -310,10 +310,10 @@ export interface ISdkFullConfig {
   skipConstraints?: boolean;
 
   /**
-   * Genesys internal use only - These options may change or be removed at any time without communication.
-   * Developers of consuming apps are responsible for verifying any behavior changes related to one of these options.
+   * Genesys internal use only - These features may change or be removed at any time without communication.
+   * Developers of consuming apps are responsible for verifying any behavior changes related to one of these features.
    */
-  experimentalOptions?: Record<string, unknown>;
+  experimentalFeatures?: Record<string, unknown>;
 
   /** defaults for various SDK functionality */
   defaults?: {

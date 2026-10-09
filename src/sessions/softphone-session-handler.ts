@@ -1062,7 +1062,7 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
    * This is fire-and-forget — errors are logged but do not affect call handling.
    */
   private notifyClientMetadata (conversationId: string, communicationId: string): void {
-    if (!this.sdk._config.experimentalOptions?.reportSoftphoneClientMetadata) {
+    if (!this.sdk._config.experimentalFeatures?.reportSoftphoneClientMetadata) {
       return;
     }
 
