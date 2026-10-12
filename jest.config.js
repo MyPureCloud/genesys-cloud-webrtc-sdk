@@ -15,6 +15,13 @@ module.exports = {
     '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest'
   },
+  moduleNameMapper: {
+    // `@hp-inc/call-control-sdk` (pulled in transitively by
+    // softphone-vendor-headsets) is a WASM-backed, pure-ESM hardware SDK that
+    // uses `import.meta` and exposes no CommonJS `main` entry, so Jest can
+    // neither resolve nor execute it. Redirect it to a stub for tests.
+    '^@hp-inc/call-control-sdk$': '<rootDir>/test/__mocks__/call-control-sdk.ts'
+  },
   transformIgnorePatterns: [
     // Add module name that needs to be transpiled
     // '/node_modules/(?!whatwg-fetch|stanza|xmpp-jid|genesys-cloud-streaming-client).+\\.js$'
