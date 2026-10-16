@@ -567,22 +567,17 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       return;
     }
 
-    /* one participant */
-    if (participantsForUser.length === 1) {
-      participant = participantsForUser[0];
-    }
-
     /* find user participant with desired call state */
-    if (!participant && state) {
-      participant = participantsForUser.filter(p => p.calls.find(c => c.state === state))[0];
+    if (state) {
+      participant = participantsForUser.find(p => p.calls.find(c => c.state === state));
     }
 
     /* find user participant with a call */
     if (!participant) {
-      participant = participantsForUser.find(p => p.calls.length)
+      participant = participantsForUser.find(p => p.calls.length);
     }
 
-    /* find the most recent user participant */
+    /* fall back to the most recent user participant (reversed above, so index 0) */
     if (!participant) {
       participant = participantsForUser[0];
     }
