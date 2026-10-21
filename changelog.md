@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * [STREAM-2689](https://inindca.atlassian.net/browse/STREAM-2689) - Fix the HP Poly call control wasm (used with `useNewPolyImplementation`) failing to load from `dist/es/index.bundle.js` and the CDN bundles. The wasm now ships beside each bundle. `dist/es/index.bundle.js` also now reports the real SDK version.
 
+### Changed
+* [STREAM-2690](https://inindca.atlassian.net/browse/STREAM-2690) - Update CODEOWNERS to reflect the current team.
+
 # [v14.2.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.5...v14.2.6)
 ### Fixed
 * [STREAM-2573](https://inindca.atlassian.net/browse/STREAM-2573) - Fix audio output leaks that could exceed Chrome's limit of 50 audio output streams during long sessions, causing one-way audio (the user can no longer hear the remote party). The `AudioContext` used by `monitorMicVolume` is now closed when its track ends, and the softphone session's audio element now releases its media when the session ends.
