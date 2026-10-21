@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...HEAD)
+### Changed
+* [STREAM-2706](https://inindca.atlassian.net/browse/STREAM-2706) - The `name` field on `IParticipantUpdate` is now the participant's alias, taken from their connected video communication (`videos[].self.name`), instead of their real name. This lets video guests show the agent's alias. There is no fallback to the real name, so `name` is `undefined` when the conversation event does not include an alias.
 
 # [v14.2.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.5...v14.2.6)
 ### Fixed
