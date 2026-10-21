@@ -838,6 +838,7 @@ export interface IParticipantVideo {
   state: CommunicationStates;
   peerCount: number;
   sharingScreen: boolean;
+  self?: { name?: string }; // name is the agent's alias
 }
 
 export interface ICallStateFromParticipant {

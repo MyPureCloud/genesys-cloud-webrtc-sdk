@@ -118,7 +118,7 @@ export class VideoSessionHandler extends BaseSessionHandler {
           participantId: pcParticipant.id,
           userId: pcParticipant.userId,
           communicationId: activeVideo.id,
-          name: pcParticipant.name,
+          name: activeVideo.self?.name,
           purpose: pcParticipant.purpose,
           audioMuted: activeVideo.audioMuted,
           videoMuted: activeVideo.videoMuted,
