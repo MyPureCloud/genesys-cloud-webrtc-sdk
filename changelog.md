@@ -3,11 +3,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
 
-# [v14.2.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.4...v14.2.5)
+# [v14.2.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...v14.2.7)
+### Changed
+
+* [STREAM-2706](https://inindca.atlassian.net/browse/STREAM-2706) - The `name` field on `IParticipantUpdate` is now the participant's alias, taken from their connected video communication (`videos[].self.name`), instead of their real name. This lets video guests show the agent's alias. There is no fallback to the real name, so `name` is `undefined` when the conversation event does not include an alias.
+* [STREAM-2690](https://inindca.atlassian.net/browse/STREAM-2690) - Update CODEOWNERS to reflect the current team.
+
+# [v14.2.6](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.5...v14.2.6)
 ### Fixed
 * [STREAM-2573](https://inindca.atlassian.net/browse/STREAM-2573) - Fix audio output leaks that could exceed Chrome's limit of 50 audio output streams during long sessions, causing one-way audio (the user can no longer hear the remote party). The `AudioContext` used by `monitorMicVolume` is now closed when its track ends, and the softphone session's audio element now releases its media when the session ends.
+
+### Added
+* [STREAM-2576](https://inindca.atlassian.net/browse/STREAM-2576) - Add `experimentalFeatures` to gate functionality that is currently experimental or otherwise in an early stage of development. Fixes https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/issues/1061.
 
 # [v14.2.5](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.4...v14.2.5)
 ### Fixed

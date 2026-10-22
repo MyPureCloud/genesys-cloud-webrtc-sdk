@@ -81,6 +81,40 @@ describe('ConversationUpdate', () => {
       });
     });
 
+    it('should pluck only the name from video self', () => {
+      const video = {
+        id: '5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5',
+        state: 'connected',
+        self: {
+          name: 'Agent Alias',
+          addressNormalized: 'agent-room@conference.example.com',
+          addressRaw: 'agent-room@conference.example.com'
+        }
+      };
+      const update = {
+        participants: [
+          { id: '7b809e10-fb79-4420-9d5f-69d232ddf490', purpose: 'agent', userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf', name: 'Patrick Star', videos: [video] }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].videos[0].self).toStrictEqual({ name: 'Agent Alias' });
+      expect(conversationUpdate.participants[0].name).toBe('Patrick Star');
+    });
+
+    it('should leave video self undefined if the event does not have one', () => {
+      const update = {
+        participants: [
+          { id: '7b809e10-fb79-4420-9d5f-69d232ddf490', purpose: 'agent', userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf', videos: [{ id: '5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5', state: 'connected' }] }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].videos[0].self).toBe(undefined);
+    });
+
     it('should pluck only needed call props', () => {
       const call = {
         id: 'geroge-washington',

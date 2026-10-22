@@ -191,7 +191,8 @@ describe('handleConversationUpdate', () => {
           audioMuted: false,
           videoMuted: true,
           sharingScreen: false,
-          peerCount: 0
+          peerCount: 0,
+          self: { name: 'Agent Alias' }
         }
       ]
     };
@@ -204,7 +205,7 @@ describe('handleConversationUpdate', () => {
     jest.spyOn(handler, 'findLocalParticipantInConversationUpdate').mockReturnValue(null);
   });
 
-  it('should include the participant name and purpose on the emitted update', () => {
+  it('should include the participant alias as the name and purpose on the emitted update', () => {
     const session = {
       emit: jest.fn(),
       conversationId: conversationUpdate.id
@@ -218,19 +219,19 @@ describe('handleConversationUpdate', () => {
     expect(emittedUpdate.activeParticipants[0]).toEqual(expect.objectContaining({
       participantId: participant1.id,
       userId: participant1.userId,
-      name: 'Patrick Star',
+      name: 'Agent Alias',
       purpose: 'agent'
     }));
-    expect(emittedUpdate.addedParticipants[0].name).toEqual('Patrick Star');
+    expect(emittedUpdate.addedParticipants[0].name).toEqual('Agent Alias');
   });
 
-  it('should leave the name undefined if the participant does not have one', () => {
+  it('should leave the name undefined, not fall back to the real name, if the video has no alias', () => {
     const session = {
       emit: jest.fn(),
       conversationId: conversationUpdate.id
     };
 
-    delete participant1.name;
+    delete participant1.videos[0].self;
 
     handler.handleConversationUpdate(conversationUpdate, [session] as any);
 
@@ -272,7 +273,7 @@ describe('handleConversationUpdate', () => {
     expect(emittedUpdate.activeParticipants[0].communicationId).toEqual('5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5');
   });
 
-  it('should include the agent name and communicationId when the local participant cannot be resolved (guest flow)', () => {
+  it('should include the agent alias and communicationId when the local participant cannot be resolved (guest flow)', () => {
     const session = {
       emit: jest.fn(),
       conversationId: conversationUpdate.id
@@ -290,9 +291,52 @@ describe('handleConversationUpdate', () => {
     expect((session as any).pcParticipant).toBe(null);
 
     const agent = emittedUpdate.activeParticipants.find((participant) => participant.purpose === 'agent');
-    expect(agent.name).toEqual('Patrick Star');
+    expect(agent.name).toEqual('Agent Alias');
     expect(agent.communicationId).toEqual('5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5');
     expect(emittedUpdate.conversationId).toEqual(conversationUpdate.id);
+  });
+
+  it('should not fall back to the real name when the alias is empty', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    participant1.videos[0].self = {};
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].name).toBe(undefined);
+  });
+
+  it.each([true, false])('should use the alias regardless of auth type (isJwtAuth: %s)', (isJwtAuth) => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    Object.defineProperty(mockSdk, 'isJwtAuth', { get: () => isJwtAuth });
+    participant1.purpose = 'agent';
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].name).toEqual('Agent Alias');
+  });
+
+  it('should use the alias for non-agent participants', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    participant1.purpose = 'customer';
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].name).toEqual('Agent Alias');
   });
 
   it('should set the localParticipant on the session', () => {
