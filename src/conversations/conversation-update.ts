@@ -15,7 +15,8 @@ export class ConversationUpdate {
         id: video.id,
         state: video.state,
         peerCount: video.peerCount,
-        sharingScreen: video.sharingScreen
+        sharingScreen: video.sharingScreen,
+        self: video.self ? { name: video.self.name } : undefined
       })) : [];
 
       const calls = p.calls ? p.calls.map((call) => ({
