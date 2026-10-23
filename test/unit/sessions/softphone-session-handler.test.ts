@@ -2415,6 +2415,54 @@ describe('getUserParticipantFromConversationEvent()', () => {
     expect(result?.purpose).toBe('user');
     expect(result?.id).toBe('3a843139-760b-41d8-8ac1-723ac2381280');
   });
+
+  it('should prefer the participant with the desired call state over a state-less forwarder leg (same userId)', () => {
+    const forwarderLeg: IConversationParticipantFromEvent = {
+      id: 'forwarder-agent-1',
+      purpose: 'user',
+      userId,
+      videos: [],
+      calls: [{ ...call, state: CommunicationStates.disconnected }]
+    };
+    const answeringLeg: IConversationParticipantFromEvent = {
+      id: 'answering-agent-2',
+      purpose: 'user',
+      userId,
+      videos: [],
+      calls: [{ ...call, state: CommunicationStates.connected }]
+    };
+
+    /* forwarder appears first in the payload, answering leg later */
+    converversationUpdate.participants = [forwarderLeg, answeringLeg];
+
+    const result = handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.connected);
+    expect(result).toEqual(answeringLeg);
+  });
+
+  it('should select the single participant by its call/state ladder even when it is the only one (forwarder not yet in payload)', () => {
+    /* Regression for the removed `length === 1` short-circuit: a lone participant that DOES have a
+       connected call must still be selected via the normal ladder. */
+    participant1.userId = userId;
+    participant1.calls = [{ ...call, state: CommunicationStates.connected }];
+    converversationUpdate.participants = [participant1];
+
+    expect(handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.connected)).toEqual(participant1);
+  });
+
+  it('should not latch onto a lone state-less participant when a desired state is requested and absent', () => {
+    const forwarderLeg: IConversationParticipantFromEvent = {
+      id: 'forwarder-agent-1',
+      purpose: 'user',
+      userId,
+      videos: [],
+      calls: [{ ...call, state: CommunicationStates.alerting }]
+    };
+    converversationUpdate.participants = [forwarderLeg];
+
+    /* no connected-state match available in this update → falls back to the has-a-call participant */
+    const result = handler.getUserParticipantFromConversationEvent(converversationUpdate, CommunicationStates.connected);
+    expect(result).toEqual(forwarderLeg);
+  });
 });
 
 describe('getCallStateFromParticipant()', () => {
