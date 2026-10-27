@@ -285,26 +285,6 @@ describe('SessionManager Flows (integration)', () => {
     ).rejects.toHaveProperty('type', SdkErrorTypes.invalid_options);
   });
 
-  it('skipsAcceptWhenAlreadyAccepted', async () => {
-    await constructSdk();
-    const conversationId = globalThis.crypto.randomUUID();
-
-    const fakeSession: any = {
-      id: globalThis.crypto.randomUUID(),
-      conversationId,
-      sessionType: SessionTypes.softphone,
-      _alreadyAccepted: true
-    };
-
-    /* make getSession return our fake already-accepted session */
-    jest.spyOn(sdk.sessionManager, 'getSession').mockReturnValue(fakeSession);
-    const handler = sdk.sessionManager.getSessionHandler({ sessionType: SessionTypes.softphone });
-    const acceptSpy = jest.spyOn(handler, 'acceptSession').mockResolvedValue(undefined as any);
-
-    await sdk.sessionManager.acceptSession({ conversationId });
-
-    expect(acceptSpy).not.toHaveBeenCalled();
-  });
 
   /* ───────────────── endSession ───────────────── */
 

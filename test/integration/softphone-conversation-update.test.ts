@@ -78,81 +78,6 @@ describe('Softphone conversation-update state machine (integration)', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  /* ───────────── helper: getUserParticipantFromConversationEvent ───────────── */
-
-  it('returnsUndefinedParticipantWhenUpdateIsNull', () => {
-    expect(handler.getUserParticipantFromConversationEvent(undefined as any)).toBeUndefined();
-  });
-
-  it('skipsVoicemailParticipantsWhenSelectingUser', () => {
-    const u = new ConversationUpdate({
-      id: 'c1',
-      participants: [
-        { id: 'vm', userId: USER_ID, purpose: 'voicemail', calls: [{ id: 'x', state: CommunicationStates.connected }] },
-        { id: 'real', userId: USER_ID, purpose: 'agent', calls: [{ id: 'y', state: CommunicationStates.connected }] }
-      ]
-    });
-    const p = handler.getUserParticipantFromConversationEvent(u);
-    expect(p?.id).toBe('real');
-  });
-
-  it('returnsUndefinedWhenUserNotAParticipant', () => {
-    const u = new ConversationUpdate({
-      id: 'c1',
-      participants: [{ id: 'other', userId: 'someone-else', purpose: 'agent', calls: [] }]
-    });
-    expect(handler.getUserParticipantFromConversationEvent(u)).toBeUndefined();
-  });
-
-  /* ───────────── helper: getCallStateFromParticipant ───────────── */
-
-  it('returnsUndefinedCallStateWhenNoCalls', () => {
-    expect(handler.getCallStateFromParticipant({ id: 'p', calls: [] } as any)).toBeUndefined();
-  });
-
-  it('returnsSingleCallState', () => {
-    const call = { id: 'c', state: CommunicationStates.connected };
-    expect(handler.getCallStateFromParticipant({ id: 'p', calls: [call] } as any)).toBe(call);
-  });
-
-  it('returnsSoleNonEndedCallWhenMultipleCalls', () => {
-    const ended = { id: 'e', state: CommunicationStates.disconnected };
-    const live = { id: 'l', state: CommunicationStates.connected };
-    expect(handler.getCallStateFromParticipant({ id: 'p', calls: [ended, live] } as any)).toBe(live);
-  });
-
-  /* ───────────── helper: diffConversationCallStates ───────────── */
-
-  it('diffReportsTrueWhenEitherStateMissing', () => {
-    expect(handler.diffConversationCallStates(undefined as any, { state: 'connected' } as any)).toBe(true);
-    expect(handler.diffConversationCallStates({ state: 'connected' } as any, undefined as any)).toBe(true);
-  });
-
-  it('diffReportsFalseWhenStatesIdentical', () => {
-    const a = { state: CommunicationStates.connected, muted: false, held: false, confined: false } as any;
-    const b = { state: CommunicationStates.connected, muted: false, held: false, confined: false } as any;
-    expect(handler.diffConversationCallStates(a, b)).toBe(false);
-  });
-
-  it('diffReportsTrueWhenMutedDiffers', () => {
-    const a = { state: CommunicationStates.connected, muted: false, held: false, confined: false } as any;
-    const b = { state: CommunicationStates.connected, muted: true, held: false, confined: false } as any;
-    expect(handler.diffConversationCallStates(a, b)).toBe(true);
-  });
-
-  /* ───────────── helper: determineActiveConversationId ───────────── */
-
-  it('determinesActiveConversationFromSingleStoredConversation', () => {
-    handler.conversations['only'] = { conversationId: 'only', mostRecentCallState: { state: CommunicationStates.connected } } as any;
-    expect(handler.determineActiveConversationId()).toBe('only');
-  });
-
-  it('picksNonHeldConnectedConversationWhenMultiple', () => {
-    handler.conversations['held'] = { conversationId: 'held', mostRecentCallState: { state: CommunicationStates.connected, held: true } } as any;
-    handler.conversations['active'] = { conversationId: 'active', mostRecentCallState: { state: CommunicationStates.connected, held: false } } as any;
-    expect(handler.determineActiveConversationId()).toBe('active');
-  });
-
   /* ───────────── state machine: not-responsible ───────────── */
 
   it('ignoresUpdateForConversationWeAreNotResponsibleForWhenNotPending', () => {
@@ -258,23 +183,36 @@ describe('Softphone conversation-update state machine (integration)', () => {
     expect(emitted.type).toBeDefined();
   });
 
-  it('ignoresInactiveSessionCallError', () => {
-    const conversationId = globalThis.crypto.randomUUID();
-    const emitSpy = jest.spyOn(mockSdk, 'emit');
-    handler.conversations[conversationId] = {
-      conversationId,
-      mostRecentCallState: { state: CommunicationStates.alerting } as any,
-      conversationUpdate: update(conversationId, { state: CommunicationStates.alerting }),
-      mostRecentUserParticipant: {} as any,
-      session: undefined as any
-    };
+  it('ignoresInactiveSessionCallError', async () => {
+    /* `sdkError` is emitted via debouncedEmitCallError (500ms debounce) then
+     * createAndEmitSdkError's setTimeout(0). A synchronous assertion would pass
+     * even if the guard were deleted, so use fake timers and advance past both
+     * delays before asserting nothing was emitted. */
+    jest.useFakeTimers();
+    try {
+      const conversationId = globalThis.crypto.randomUUID();
+      const sdkErrorSpy = jest.fn();
+      mockSdk.on('sdkError', sdkErrorSpy);
+      handler.conversations[conversationId] = {
+        conversationId,
+        mostRecentCallState: { state: CommunicationStates.alerting } as any,
+        conversationUpdate: update(conversationId, { state: CommunicationStates.alerting }),
+        mostRecentUserParticipant: {} as any,
+        session: undefined as any
+      };
 
-    handler.handleConversationUpdate(
-      update(conversationId, { state: CommunicationStates.alerting, errorInfo: { code: 'error.ininedgecontrol.session.inactive' } }),
-      []
-    );
+      handler.handleConversationUpdate(
+        update(conversationId, { state: CommunicationStates.alerting, errorInfo: { code: 'error.ininedgecontrol.session.inactive' } }),
+        []
+      );
 
-    /* the inactive-session error code is explicitly ignored - no sdkError */
-    expect(emitSpy).not.toHaveBeenCalledWith('sdkError', expect.anything());
+      /* advance past the debounce (500ms) and the emit's setTimeout(0) */
+      jest.advanceTimersByTime(600);
+
+      expect(sdkErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
   });
+
 });

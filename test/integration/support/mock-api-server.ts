@@ -12,19 +12,18 @@ import { AddressInfo } from 'net';
  * No SDK-internal method is mocked - the only thing faked is the outward network
  * peer, which is what a true black-box IT requires.
  *
- * Files using this MUST run under the node test environment (jsdom's XHR will
- * not reliably reach a real socket). Add this docblock at the top of the spec:
+ * Files using this stay in the default **jsdom** test environment (the SDK needs
+ * `window`). jsdom's XHR will not reach a real socket, so the shared harness
+ * `installHttpMockServer()` forces axios onto its node adapter
+ * (`axios.defaults.adapter = 'http'`) for the duration of the suite. That is how
+ * the real request reaches this server - do NOT add `@jest-environment node`
+ * (it would remove `window` and break SDK construction). See
+ * `support/black-box-harness.ts`, `AGENTS.md`, and `ai/test-standards.md`.
  *
- *   /** @jest-environment node *\/
- *
- * Usage:
- *   const api = new MockApiServer();
- *   beforeAll(() => api.start());
- *   afterAll(() => api.stop());
- *   afterEach(() => api.reset());
- *
+ * Usage (prefer the harness, which wires the adapter + lifecycle):
+ *   const api = installHttpMockServer();   // from support/black-box-harness
  *   api.stub('post', /\/conversations\/calls$/, { status: 200, body: { id: 'x' } });
- *   // ...drive the SDK...
+ *   // ...drive the SDK (sdk._config.environment = api.baseUrl)...
  *   expect(api.received('post')[0].path).toContain('/conversations/calls');
  */
 

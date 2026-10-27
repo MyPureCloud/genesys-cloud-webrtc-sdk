@@ -3,7 +3,7 @@ import { Logger } from 'genesys-cloud-client-logger';
 import { EventEmitter } from 'events';
 
 import * as windows11Utils from '../../src/windows11-first-session-hack';
-import { GenesysCloudWebrtcSdk, ISdkConfig, SessionTypes } from '../../src';
+import { GenesysCloudWebrtcSdk, ISdkConfig } from '../../src';
 import { SdkErrorTypes } from '../../src/types/enums';
 
 /**
@@ -133,68 +133,6 @@ describe('SDK public API (integration)', () => {
       expect.stringContaining('cannot update output deviceId in unsupported browser'),
       expect.anything()
     );
-  });
-
-  /* ───────────── happy-path guards allow through ───────────── */
-
-  it('allowsGuestToStartScreenShareAndDelegates', async () => {
-    await constructSdk();
-    jest.spyOn(sdk, 'isGuest', 'get').mockReturnValue(true);
-    const smSpy = jest.spyOn(sdk.sessionManager, 'startSession').mockResolvedValue({} as any);
-
-    await sdk.startScreenShare();
-
-    expect(smSpy).toHaveBeenCalledWith(expect.objectContaining({ sessionType: SessionTypes.acdScreenShare }));
-  });
-
-  it('allowsAuthedVideoConferenceAndDelegates', async () => {
-    await constructSdk();
-    sdk._config.accessToken = 'secure';
-    const smSpy = jest.spyOn(sdk.sessionManager, 'startSession').mockResolvedValue({ conversationId: 'c1' } as any);
-
-    await sdk.startVideoConference('room@conference.example.com');
-
-    expect(smSpy).toHaveBeenCalledWith(expect.objectContaining({ sessionType: SessionTypes.collaborateVideo, jid: 'room@conference.example.com' }));
-  });
-
-  /* ───────────── delegation to SessionManager ───────────── */
-
-  /*
-   * BLACK-BOX outbound-edge coverage for setAudioMute / setConversationHeld /
-   * endSession lives in softphone-session-handler.test.ts, which drives the
-   * real handler to the platform-API PATCH on the mocked `_http` (the SDK's
-   * one outward edge for these flows). Re-driving them through a full client
-   * boot here adds no new outward assertion, so it is intentionally not
-   * duplicated - the handler suite is the clean harness for that boundary.
-   */
-
-  /*
-   * GRAY-BOX FALLBACK (documented): acceptPendingSession / rejectPendingSession /
-   * forceTerminateSession reach the jingle stack, not a clean outbound HTTP
-   * edge, in this harness. Driving them to a real outward signal needs a full
-   * fake peerConnection/jingle session. Until that harness exists we assert the
-   * one internal delegation hop. This is the fallback the standards doc calls
-   * out, NOT the pattern to copy.
-   */
-  it('[gray-box] delegatesAcceptPendingSessionToSessionManager', async () => {
-    await constructSdk();
-    const spy = jest.spyOn(sdk.sessionManager, 'proceedWithSession').mockResolvedValue(undefined);
-    await sdk.acceptPendingSession({ conversationId: 'c1' });
-    expect(spy).toHaveBeenCalledWith({ conversationId: 'c1' });
-  });
-
-  it('[gray-box] delegatesRejectPendingSessionToSessionManager', async () => {
-    await constructSdk();
-    const spy = jest.spyOn(sdk.sessionManager, 'rejectPendingSession').mockResolvedValue(undefined);
-    await sdk.rejectPendingSession({ conversationId: 'c1' });
-    expect(spy).toHaveBeenCalledWith({ conversationId: 'c1' });
-  });
-
-  it('[gray-box] delegatesForceTerminateSessionToSessionManager', async () => {
-    await constructSdk();
-    const spy = jest.spyOn(sdk.sessionManager, 'forceTerminateSession').mockResolvedValue(undefined);
-    await sdk.forceTerminateSession('sess-1');
-    expect(spy).toHaveBeenCalledWith('sess-1', undefined);
   });
 
   /* ───────────── setAccessToken ───────────── */

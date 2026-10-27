@@ -7,6 +7,7 @@ import { GenesysCloudWebrtcSdk, SessionTypes } from '../../src';
 import { CommunicationStates, SdkErrorTypes } from '../../src/types/enums';
 import { SessionManager } from '../../src/sessions/session-manager';
 import SoftphoneSessionHandler from '../../src/sessions/softphone-session-handler';
+import { ConversationUpdate } from '../../src/conversations/conversation-update';
 import { installHttpMockServer } from './support/black-box-harness';
 
 /**
@@ -39,12 +40,25 @@ describe('Softphone outbound calls (black-box, mock server)', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
+  /* Seed a stored conversation whose conversationUpdate carries the real user
+   * participant, so the handler's real getUserParticipantFromConversationEvent
+   * resolves it (no spying of the handler). userId matches SimpleMockSdk's
+   * _personDetails.id ('USER_GUID'). */
   const storeConversation = (conversationId: string, participantId = 'participant-1', purpose = 'agent') => {
+    const conversationUpdate = new ConversationUpdate({
+      id: conversationId,
+      participants: [{
+        id: participantId,
+        userId: 'USER_GUID',
+        purpose,
+        calls: [{ id: `call-${conversationId}`, state: CommunicationStates.connected, direction: 'inbound' }]
+      }]
+    });
     handler.conversations[conversationId] = {
       conversationId,
       mostRecentUserParticipant: { id: participantId, userId: 'USER_GUID', purpose, calls: [] } as any,
       mostRecentCallState: { state: CommunicationStates.connected } as any,
-      conversationUpdate: {} as any,
+      conversationUpdate,
       session: undefined as any
     };
   };
@@ -94,7 +108,6 @@ describe('Softphone outbound calls (black-box, mock server)', () => {
   it('rejectsAgentPendingSessionViaDisconnectPatch', async () => {
     const conversationId = globalThis.crypto.randomUUID();
     storeConversation(conversationId, 'p-agent', 'agent');
-    jest.spyOn(handler, 'getUserParticipantFromConversationEvent').mockReturnValue({ id: 'p-agent', purpose: 'agent' } as any);
     api.stub('patch', /\/participants\/p-agent$/, { status: 200, body: {} });
 
     await handler.rejectPendingSession({ conversationId } as any);
@@ -105,8 +118,7 @@ describe('Softphone outbound calls (black-box, mock server)', () => {
   });
 
   it('rejectsUcCallViaReplaceWhenParticipantPurposeIsUser', async () => {
-    const conversationId = globalThis.crypto.randomUUID();
-    jest.spyOn(handler, 'getUserParticipantFromConversationEvent').mockReturnValue({ id: 'p-user', purpose: 'user' } as any);
+    const conversationId = globalThis.crypto.randomUUID();    storeConversation(conversationId, 'p-user', 'user');
     api.stub('post', /\/participants\/p-user\/replace$/, { status: 200, body: {} });
 
     await handler.rejectPendingSession({ conversationId } as any);
@@ -123,7 +135,6 @@ describe('Softphone outbound calls (black-box, mock server)', () => {
     session.peerConnection.connectionState = 'connected';
     handler.activeSession = session as any;
     storeConversation(conversationId, 'p-agent', 'agent');
-    jest.spyOn(handler, 'getUserParticipantFromConversationEvent').mockReturnValue({ id: 'p-agent', purpose: 'agent' } as any);
     api.stub('patch', /\/participants\/p-agent$/, { status: 200, body: {} });
 
     await handler.proceedWithSession({ conversationId, id: session.id } as any);
