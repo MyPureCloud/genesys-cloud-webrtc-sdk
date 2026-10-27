@@ -48,6 +48,30 @@ either.
   thing under test, stop — that is a white-box move and belongs in a unit test.
   The only mocks an IT installs are at the outward boundary.
 
+## Four tells an "IT" is really a white-box unit test
+
+Learned the hard way on this repo's PR review. "Boot the real SDK, mock only
+externals" is necessary but NOT sufficient — any of these makes a test white-box
+and, usually, a duplicate of an existing `test/unit/**` case:
+
+1. **Spying a method of the unit under test** — `jest.spyOn(handler, 'x')`,
+   including stubbing `super` via `Object.getPrototypeOf(Object.getPrototypeOf(h))`.
+2. **Stubbing the collaborator that does the asserted thing** — e.g. stubbing
+   `getSessionHandler` then asserting the handler was called never tests routing.
+   Drive the real lookup (a session whose jid/type selects the handler) instead.
+3. **The assertion survives deleting the production guard** — if a stub or an
+   un-awaited async path makes it pass regardless, it asserts nothing. For
+   debounced/`setTimeout` emits (e.g. `createAndEmitSdkError`'s `setTimeout(0)`,
+   `debouncedEmitCallError`'s 500ms), use fake timers and advance past both or
+   the `not.toHaveBeenCalled` is meaningless.
+4. **It duplicates a unit test** — `test/unit/sessions/*` is 100% covered;
+   a spy-based IT over the same branch is overhead. Cover the OUTWARD behavior
+   (real request/event at the boundary) the unit test can't.
+
+If a flow has no reachable outward edge without a fake `RTCPeerConnection`/media
+harness (acd screenshare, live monitoring, screen-recording accept), do NOT fake
+a spy-based IT — file a ticket for the harness instead (see known limits).
+
 ---
 
 ## The mock-server recipe (black-box HTTP ITs)
