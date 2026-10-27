@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...HEAD)
+### Added
+* [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 ### Fixed
 * [STREAM-2689](https://inindca.atlassian.net/browse/STREAM-2689) - Fix the HP Poly call control wasm (used with `useNewPolyImplementation`) failing to load from `dist/es/index.bundle.js` and the CDN bundles. The wasm now ships beside each bundle. `dist/es/index.bundle.js` also now reports the real SDK version.
 
