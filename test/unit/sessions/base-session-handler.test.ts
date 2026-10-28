@@ -669,6 +669,21 @@ describe('handleSessionInit', () => {
     expect(logSpy).toHaveBeenCalledWith('info', 'connection state change', { state: 'connected', conversationId, sid: sessionId });
   });
 
+  it('should emit `sessionConnected` when connectionState becomes connected', async () => {
+    const session: any = new MockSession();
+    const eventSpy = jest.fn();
+    mockSdk.on('sessionConnected', eventSpy);
+
+    session.id = '123abc';
+    session.conversationId = 'convoabc';
+    session.state = 'active';
+
+    await handler.handleSessionInit(session);
+    session.emit('connectionState', 'connected');
+
+    expect(eventSpy).toHaveBeenCalled();
+  });
+
   it('should emit sessionInterrupted when connectionState becomes interrupted.', async () => {
     const session: any = new MockSession();
     const eventSpy = jest.fn();
