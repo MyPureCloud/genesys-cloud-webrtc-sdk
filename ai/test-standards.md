@@ -180,6 +180,7 @@ or a thrown `SdkErrorTypes`).
 | `session-manager-flows` | real SDK, public onPropose/proceed/reject/start/accept/end → emitted events + thrown error types + pending-session state |
 | `softphone-conversation-update` | real handler fed real `ConversationUpdate`s → emitted `pendingSession`/`sessionStarted`/`sessionEnded`; debounced-error guard tested with fake timers |
 | `sdk-public-api` | real SDK public API guards → `not_supported`/`invalid_options` + emitted `sdkError` |
+| `media-handling` | real `onPropose`->`handlePropose`; asserts `pendingSession` emission gated on the real media-handling branch |
 
 **There is no "gray-box fallback" tier in this suite.** If a test would need to
 spy a method of the unit under test (incl. `super`) or stub the collaborator that
