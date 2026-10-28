@@ -1,7 +1,7 @@
 import { Logger } from 'genesys-cloud-client-logger';
 import StreamingClient from 'genesys-cloud-streaming-client';
-import { SessionManager } from '../../src/sessions/session-manager';
-import * as windows11Utils from '../../src/windows11-first-session-hack';
+import { SessionManager } from '../../../src/sessions/session-manager';
+import * as windows11Utils from '../../../src/windows11-first-session-hack';
 import {
   GenesysCloudWebrtcSdk,
   ISdkConfig,
@@ -10,11 +10,11 @@ import {
   IStation,
   ConversationUpdate,
   CommunicationStates
-} from '../../src';
+} from '../../../src';
 import { EventEmitter } from 'events';
-import SoftphoneSessionHandler from '../../src/sessions/softphone-session-handler';
-import { flushPromises } from '../test-utils';
-jest.mock('../../src/media/media');
+import SoftphoneSessionHandler from '../../../src/sessions/softphone-session-handler';
+import { flushPromises } from '../../test-utils';
+jest.mock('../../../src/media/media');
 
 jest.mock('genesys-cloud-streaming-client', () => {
   const actualDep = jest.requireActual('genesys-cloud-streaming-client');
