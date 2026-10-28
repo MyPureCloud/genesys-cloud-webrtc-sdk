@@ -110,6 +110,12 @@ export default abstract class BaseSessionHandler {
 
     session.on('connectionState', (state) => {
       this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
+
+      /* Emit `sessionConnected` so that consuming apps can handle reconnects accordingly. */
+      if (state === 'connected') {
+        this.sdk.emit('sessionConnected', { sessionId: session.id, sessionType: session.sessionType, conversationId: session.conversationId });
+      }
+
       /* Emit sessionInterrupted when the connection is interrupted so that consuming apps can inform users (e.g. Volt). */
       if (state === 'interrupted') {
         this.sdk.emit('sessionInterrupted', { sessionId: session.id, sessionType: session.sessionType, conversationId: session.conversationId });

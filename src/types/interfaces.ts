@@ -1087,8 +1087,9 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
-  // **Genesys internal use only** - non-Genesys consumers may experient unexpected behavior
+  // **Genesys internal use only** - non-Genesys consumers may experience unexpected behavior
   _sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
+  sessionConnected: (event) => { sessionId: string, sessionType: string, conversationId: string };
   sessionInterrupted: (event) => { sessionId: string, sessionType: string, conversationId: string };
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;
