@@ -164,17 +164,29 @@ Reference files: `sdk-init-http-failures.test.ts`, `softphone-http.test.ts`,
 
 ---
 
-## What is black-box vs. a documented fallback
+## The suite is all black-box — no gray-box tier
 
-| Tier | Meaning | Examples here |
-|------|---------|---------------|
-| **Black-box (ideal)** | Drive public surface; mock only the outward edge; assert the outbound request + the SDK's reaction. | `sdk-init-http-failures`, `softphone-http`, `video-http`, and event-in/event-out tests (`softphone-conversation-update`, `session-manager-flows`). |
-| **Gray-box (fallback, labelled)** | Asserts an internal delegation hop because the true outward edge is only reachable through the media / peerConnection / jingle stack this harness does not fake. | `session-manager-routing`, `media-device-loss`, the `[gray-box] delegatesX` tests. |
+Every test under `test/integration/` is genuine black-box: it drives the public
+surface (a public method, or a real inbound event), mocks ONLY the outward edge
+(the `node:http` mock server, the streaming-client / media modules, headset), and
+asserts an outward signal (the real request at the server, an emitted SDK event,
+or a thrown `SdkErrorTypes`).
 
-Gray-box tests are **explicitly banner-labelled** in their files as the fallback,
-not the pattern to copy. They exist so the routing/device-loss branches aren't
-left uncovered. The real fix (a fake `RTCPeerConnection`/media harness) is the
-documented next investment; once it exists, those should move to black-box.
+| File | What it covers |
+|------|----------------|
+| `sdk-init-http-failures` | real `initialize()` → mock server returns 401/403 → asserts `invalid_token` thrown + `ready` NOT emitted + server received the fetch |
+| `softphone-http` | real handler → real PATCH/POST at the mock server (mute/hold/reject/start/proceed) + error-status → `SdkErrorTypes` |
+| `video-http` | real handler → real POST/DELETE (start video/meeting, pin/unpin) + emitted `pinnedParticipant` + error → `SdkErrorTypes` |
+| `session-manager-flows` | real SDK, public onPropose/proceed/reject/start/accept/end → emitted events + thrown error types + pending-session state |
+| `softphone-conversation-update` | real handler fed real `ConversationUpdate`s → emitted `pendingSession`/`sessionStarted`/`sessionEnded`; debounced-error guard tested with fake timers |
+| `sdk-public-api` | real SDK public API guards → `not_supported`/`invalid_options` + emitted `sdkError` |
+
+**There is no "gray-box fallback" tier in this suite.** If a test would need to
+spy a method of the unit under test (incl. `super`) or stub the collaborator that
+does the asserted work, it is a white-box **unit** test and belongs in
+`test/unit/**` (which is gated at 100%), NOT here. Example: the
+persistent-connection race-condition scenario is a white-box regression test and
+lives at `test/unit/sessions/persistent-connection-race-condition.test.ts`.
 
 ### Known limits
 - **5xx / 429 init failures are not IT-tested.** `requestApiWithRetry` retries
@@ -182,10 +194,12 @@ documented next investment; once it exists, those should move to black-box.
   for many seconds — that tests retry *timing*, not classification. Covered
   cases are the deterministic, non-retried **401/403** (→ `invalid_token`).
   Retry/backoff behavior, if needed, belongs in a client-layer **unit** test.
-- **The media/jingle-gated flows** (full `acceptSession`/`handleSessionInit`
-  media path, video `handleConversationUpdateForSession`, screen-share
-  `startSession`, `base-session-handler`) need a fake peerConnection/media
-  harness to reach black-box. Until then they stay gray-box or unit.
+- **Media/jingle-gated accept flows** have no outward edge reachable without a
+  fake `RTCPeerConnection`/media harness: acd screenshare `startSession`/
+  `handleSessionInit`, live-monitoring and screen-recording accept/metadata.
+  Those stay **unit-tested** today; a fake-PC/media harness is the documented
+  next investment to bring them under black-box ITs (tracked for a follow-up
+  ticket). Do NOT fake spy-based "ITs" for them in the meantime.
 
 ---
 
