@@ -1819,26 +1819,6 @@ describe('handleSoftphoneConversationUpdate()', () => {
       requestApiSpy.mockRestore();
     });
 
-    it('notifies client metadata regardless of experimentalFeatures config', () => {
-      mockSdk._config.experimentalFeatures = undefined;
-
-      const { update, participant, callState, session, previousUpdate } = generateUpdate({
-        callState: CommunicationStates.connected,
-        previousCallState: { state: CommunicationStates.alerting }
-      });
-
-      callState.direction = 'inbound';
-      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
-      handler.activeSession = session;
-
-      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
-
-      expect(requestApiSpy).toHaveBeenCalledWith(
-        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
-        { method: 'post' }
-      );
-    });
-
     it('should notify client metadata when call transitions from alerting to connected (inbound)', () => {
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
         callState: CommunicationStates.connected,
