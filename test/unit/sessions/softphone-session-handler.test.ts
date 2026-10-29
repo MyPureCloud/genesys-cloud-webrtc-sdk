@@ -1811,9 +1811,6 @@ describe('handleSoftphoneConversationUpdate()', () => {
     let requestApiSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      mockSdk._config.experimentalFeatures = {
-        reportSoftphoneClientMetadata: true
-      };
       notifyClientMetadataSpy.mockRestore();
       requestApiSpy = jest.spyOn(utils, 'requestApi').mockResolvedValue(null);
     });
@@ -1822,7 +1819,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
       requestApiSpy.mockRestore();
     });
 
-    it('should NOT notify client metadata when feature toggle is off', () => {
+    it('notifies client metadata regardless of experimentalFeatures config', () => {
       mockSdk._config.experimentalFeatures = undefined;
 
       const { update, participant, callState, session, previousUpdate } = generateUpdate({
@@ -1836,7 +1833,7 @@ describe('handleSoftphoneConversationUpdate()', () => {
 
       handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
 
-      expect(requestApiSpy).not.toHaveBeenCalledWith(
+      expect(requestApiSpy).toHaveBeenCalledWith(
         `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
         { method: 'post' }
       );
