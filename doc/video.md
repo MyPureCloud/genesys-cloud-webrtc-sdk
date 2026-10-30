@@ -67,7 +67,7 @@ interface IParticipantUpdate {
   participantId: string; // id corresponding to the participant on the conversation,
   userId: string,
   communicationId: string; // id of the participant's connected video communication,
-  name?: string; // display name of the participant, if the conversation event included one,
+  name?: string; // alias of the participant from their connected video communication, if the conversation event included one,
   purpose?: string; // role the participant plays on the conversation, e.g. 'agent' or 'customer',
   sharingScreen: boolean; // whether or not the onScreenParticipant is sharing their screen,
   videoMuted: boolean,
