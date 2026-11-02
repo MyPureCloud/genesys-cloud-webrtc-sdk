@@ -33,3 +33,39 @@ export function installHttpMockServer (): MockApiServer {
 
   return api;
 }
+
+/**
+ * Seed the mock server with the platform API responses `sdk.initialize()` needs
+ * for an authenticated (non-guest) user, so ITs boot the SDK through its real
+ * HTTP calls instead of stubbing `fetchOrganization` / `fetchAuthenticatedUser`
+ * / `fetchUsersStation`.
+ */
+export function seedAuthenticatedInit (api: MockApiServer, station: Record<string, any> = {}): void {
+  const stationId = station.id || 'stationId';
+  api
+    .stub('get', /\/organizations\/me$/, { status: 200, body: { id: 'myorgid', name: 'my org name' } })
+    .stub('get', /\/users\/me$/, {
+      status: 200,
+      body: {
+        id: 'userId',
+        name: 'user name',
+        chat: { jabberId: 'user@jid.com' },
+        station: { effectiveStation: { id: stationId } }
+      }
+    })
+    .stub('get', new RegExp(`/stations/${stationId}$`), {
+      status: 200,
+      body: {
+        id: stationId,
+        name: 'my webrtc phone',
+        status: 'ASSOCIATED',
+        userId: 'userId',
+        webRtcUserId: 'webrtcUserId',
+        type: 'inin_webrtc_softphone',
+        webRtcPersistentEnabled: false,
+        webRtcForceTurn: false,
+        webRtcCallAppearances: 100,
+        ...station
+      }
+    });
+}

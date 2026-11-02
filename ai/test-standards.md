@@ -36,9 +36,13 @@ either.
 - **All outward calls are mocked at the boundary**, never by spying an SDK
   method. Outward calls are:
   - **HTTP to the platform API** → a real mock HTTP server (see recipe below).
-  - **The streaming-client transport (websocket/events)** → the module mock
-    (`jest.mock('genesys-cloud-streaming-client', ...)`), which is the socket
-    boundary's stand-in.
+  - **The streaming-client transport (websocket/events)** → *for now*, the
+    module mock (`jest.mock('genesys-cloud-streaming-client', ...)`) stands in
+    for the socket boundary. This is a stopgap, not the target: streaming-client
+    is a separate package, but mocking it whole means ITs never exercise the real
+    client. The goal is to run against the **real** `genesys-cloud-streaming-client`
+    and mock only the **websocket** underneath it. Prefer that when adding new
+    transport-level ITs, and dont treat the module mock as the permanent pattern.
   - **Hardware** (media/headset) → `jest.mock('../../src/media/media')` etc., the
     hardware boundary's stand-in.
 - Live in `test/integration/**`. Shared helpers live in
@@ -47,6 +51,15 @@ either.
 - **The rule that falls out of black-box:** if you are spying a method of the
   thing under test, stop — that is a white-box move and belongs in a unit test.
   The only mocks an IT installs are at the outward boundary.
+- **Boot through real init HTTP.** Dont stub `sdk.fetchOrganization` /
+  `fetchAuthenticatedUser` / `fetchUsersStation` (or any other SDK method) to get
+  past `initialize()`. Call `seedAuthenticatedInit(api)` from
+  `test/integration/support/black-box-harness.ts` and point `environment` at
+  `api.baseUrl`, so init runs its real requests against the mock server.
+- **Dont assert on logger text.** Log messages arent a contract with consumers
+  and can change any time. Assert on emitted events, thrown `SdkErrorTypes`,
+  public state, or the request the mock server received. If the only observable
+  effect of a branch is a log line, it belongs in a unit test.
 
 ## Four tells an "IT" is really a white-box unit test
 

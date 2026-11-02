@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 import * as windows11Utils from '../../src/windows11-first-session-hack';
 import { GenesysCloudWebrtcSdk, ISdkConfig } from '../../src';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { installHttpMockServer, seedAuthenticatedInit } from './support/black-box-harness';
 
 /**
  * Integration tests for the GenesysCloudWebrtcSdk public API surface. Boots the
@@ -44,6 +45,7 @@ jest.mock('genesys-cloud-streaming-client', () => {
 });
 
 describe('SDK public API (integration)', () => {
+  const api = installHttpMockServer();
   let sdk: GenesysCloudWebrtcSdk;
 
   const mockLogger: jest.Mocked<Logger> = {
@@ -51,16 +53,12 @@ describe('SDK public API (integration)', () => {
   } as any;
 
   const constructSdk = async (overrides?: ISdkConfig): Promise<GenesysCloudWebrtcSdk> => {
-    const config: ISdkConfig = {
-      logger: mockLogger as any, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true,
+    /* boot through the real init HTTP calls against the mock server */
+    seedAuthenticatedInit(api);
+    sdk = new GenesysCloudWebrtcSdk({
+      logger: mockLogger as any, accessToken: 'secure', environment: api.baseUrl, optOutOfTelemetry: true,
       ...(overrides || {})
-    } as any;
-    sdk = new GenesysCloudWebrtcSdk(config);
-    sdk.fetchOrganization = jest.fn().mockResolvedValue({ id: 'org', name: 'org' });
-    sdk.fetchAuthenticatedUser = jest.fn().mockImplementation(async () => {
-      sdk._personDetails = { id: 'userId', name: 'u', chat: { jabberId: 'u@jid.com' }, station: {} } as any;
-    });
-    sdk.fetchUsersStation = jest.fn().mockResolvedValue(undefined);
+    } as any);
     await sdk.initialize();
     return sdk;
   };
@@ -79,8 +77,7 @@ describe('SDK public API (integration)', () => {
   /* ───────────── not-supported / invalid-options guards ───────────── */
 
   it('throwsNotSupportedWhenAgentStartsScreenShare', async () => {
-    await constructSdk();
-    jest.spyOn(sdk, 'isGuest', 'get').mockReturnValue(false);
+    await constructSdk();   /* accessToken set -> authenticated agent, not a guest */
     const errorPromise = captureSdkError();
 
     await expect(sdk.startScreenShare()).rejects.toHaveProperty('type', SdkErrorTypes.not_supported);
@@ -89,7 +86,9 @@ describe('SDK public API (integration)', () => {
 
   it('throwsNotSupportedWhenGuestStartsVideoMeeting', async () => {
     await constructSdk();
-    jest.spyOn(sdk, 'isGuest', 'get').mockReturnValue(true);
+    /* drop auth after init so the SDK sees a guest (no accessToken, no jwt) */
+    sdk._config.accessToken = undefined;
+    sdk._config.jwt = undefined;
 
     await expect(sdk.startVideoMeeting('meeting-1')).rejects.toHaveProperty('type', SdkErrorTypes.not_supported);
   });
@@ -118,21 +117,6 @@ describe('SDK public API (integration)', () => {
       .toThrow(expect.objectContaining({ type: SdkErrorTypes.not_supported }));
     expect(() => sdk.updateAudioVolume(-1))
       .toThrow(expect.objectContaining({ type: SdkErrorTypes.not_supported }));
-  });
-
-  it('warnsAndSkipsOutputDeviceUpdateInUnsupportedBrowser', async () => {
-    await constructSdk();
-    jest.spyOn(sdk.media, 'getState').mockReturnValue({ hasOutputDeviceSupport: false } as any);
-    jest.spyOn(sdk.sessionManager, 'getAllActiveSessions').mockReturnValue([]);
-    const smSpy = jest.spyOn(sdk.sessionManager, 'updateOutputDeviceForAllSessions');
-
-    await sdk.updateOutputDevice('some-device');
-
-    expect(smSpy).not.toHaveBeenCalled();
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('cannot update output deviceId in unsupported browser'),
-      expect.anything()
-    );
   });
 
   /* ───────────── setAccessToken ───────────── */

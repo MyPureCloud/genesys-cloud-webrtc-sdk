@@ -6,12 +6,11 @@ import * as windows11Utils from '../../src/windows11-first-session-hack';
 import {
   GenesysCloudWebrtcSdk,
   ISdkConfig,
-  SessionTypes,
-  IStation
+  SessionTypes
 } from '../../src';
 import { SdkErrorTypes } from '../../src/types/enums';
 import { SdkError } from '../../src/utils';
-import SoftphoneSessionHandler from '../../src/sessions/softphone-session-handler';
+import { installHttpMockServer, seedAuthenticatedInit } from './support/black-box-harness';
 import { flushPromises } from '../test-utils';
 
 jest.mock('../../src/media/media');
@@ -46,7 +45,8 @@ jest.mock('genesys-cloud-streaming-client', () => {
         new EventEmitter(),
         {
           getAllSessions: jest.fn().mockReturnValue([]),
-          proxyNRStat: jest.fn()
+          proxyNRStat: jest.fn(),
+          acceptRtcSession: jest.fn()
         }
       );
       this._webrtcSessions = this.webrtcSessions;
@@ -71,6 +71,7 @@ jest.mock('genesys-cloud-streaming-client', () => {
 });
 
 describe('SessionManager Flows (integration)', () => {
+  const api = installHttpMockServer();
   let sdk: GenesysCloudWebrtcSdk;
   let constructSdk: (config?: ISdkConfig) => Promise<GenesysCloudWebrtcSdk>;
 
@@ -107,34 +108,15 @@ describe('SessionManager Flows (integration)', () => {
     jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockResolvedValue();
 
     constructSdk = async (overrides?: ISdkConfig) => {
-      const config: ISdkConfig = overrides === undefined
-        ? { logger: mockLogger as any, accessToken: 'secure', environment: 'mypurecloud.com', optOutOfTelemetry: true }
-        : { logger: mockLogger as any, optOutOfTelemetry: true, ...overrides };
-
-      sdk = new GenesysCloudWebrtcSdk(config);
-
-      sdk.fetchOrganization = jest.fn().mockResolvedValue({ id: 'myorgid', name: 'my org name' });
-      sdk.fetchAuthenticatedUser = jest.fn().mockImplementation(async () => {
-        sdk._personDetails = {
-          id: 'userId',
-          name: 'user name',
-          chat: { jabberId: 'user@jid.com' },
-          station: {}
-        } as any;
-      });
-      sdk.fetchUsersStation = jest.fn().mockImplementation(async () => {
-        sdk.station = {
-          id: 'stationId',
-          name: 'my webrtc phone',
-          status: 'ASSOCIATED',
-          userId: 'userId',
-          webRtcUserId: 'webrtcUserId',
-          type: 'inin_webrtc_softphone',
-          webRtcPersistentEnabled: false,
-          webRtcForceTurn: false,
-          webRtcCallAppearances: 100
-        } as IStation;
-      });
+      /* boot through the real init HTTP calls against the mock server */
+      seedAuthenticatedInit(api);
+      sdk = new GenesysCloudWebrtcSdk({
+        logger: mockLogger as any,
+        accessToken: 'secure',
+        environment: api.baseUrl,
+        optOutOfTelemetry: true,
+        ...(overrides || {})
+      } as any);
 
       await sdk.initialize();
       return sdk;
@@ -197,8 +179,7 @@ describe('SessionManager Flows (integration)', () => {
 
   it('reproceedsWhenAcceptedSessionGetsNewSessionId', async () => {
     await constructSdk();
-    const softphoneHandler = sdk.sessionManager.getSessionHandler({ sessionType: SessionTypes.softphone }) as SoftphoneSessionHandler;
-    const proceedSpy = (softphoneHandler as any).proceedWithSession = jest.fn();
+    const acceptRtcSession = (sdk._streamingConnection.webrtcSessions as any).acceptRtcSession as jest.Mock;
 
     const propose = buildPropose();
     await sdk.sessionManager.onPropose(propose);
@@ -213,7 +194,8 @@ describe('SessionManager Flows (integration)', () => {
     await sdk.sessionManager.onPropose({ ...propose, sessionId: newSessionId, id: newSessionId });
     await flushPromises();
 
-    expect(proceedSpy).toHaveBeenCalled();
+    /* the re-proceed goes out over the streaming-client transport with the new sessionId */
+    expect(acceptRtcSession).toHaveBeenCalledWith(newSessionId);
     expect(pending!.sessionId).toBe(newSessionId);
   });
 
