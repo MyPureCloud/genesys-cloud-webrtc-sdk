@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.
 * [STREAM-2706](https://inindca.atlassian.net/browse/STREAM-2706) - The `name` field on `IParticipantUpdate` is now the participant's alias, taken from their connected video communication (`videos[].self.name`), instead of their real name. This lets video guests show the agent's alias. There is no fallback to the real name, so `name` is `undefined` when the conversation event does not include an alias.
 * [STREAM-2690](https://inindca.atlassian.net/browse/STREAM-2690) - Update CODEOWNERS to reflect the current team.
 
