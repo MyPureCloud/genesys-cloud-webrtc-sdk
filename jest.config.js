@@ -7,6 +7,10 @@ module.exports = {
     '<rootDir>/test/unit/**/*.(ts|js)',
     '<rootDir>/test/integration/**/*.(ts|js)'
   ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/test/integration/support/'
+  ],
   testEnvironment: 'jsdom',
   testEnvironmentOptions: {
     customExportConditions: ['node'],
