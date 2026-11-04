@@ -1,0 +1,11 @@
+.video-session-customer {
+  display: block;
+  max-width: 480px;
+  width: 100%;
+  margin-top: 0.5rem;
+  background: #000;
+}
+
+.video-session-customer[hidden] {
+  display: none;
+}
