@@ -5,7 +5,6 @@ import {
   SessionTypes,
   ISessionIdAndConversationId,
   SdkMediaStateWithType,
-  ISdkGumRequest,
   IExtendedMediaSession
 } from 'genesys-cloud-webrtc-sdk';
 import { useDispatch } from 'react-redux';
@@ -28,6 +27,9 @@ import { MinimalSdk } from '../types/sdk';
 // Manually add these in either the src or public folder of the demo app.
 // import licenseText from '../assets/iris.lic?raw';
 // import keyText from '../assets/iris.key?raw';
+// With the imports commented out, these stay undefined and no audio processor is constructed.
+const licenseText: string | undefined = undefined;
+const keyText: string | undefined = undefined;
 import { GenesysIrisClient } from 'genesys-iris-client';
 import { setAudioProcessor } from '../features/audioProcessorSlice';
 import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
@@ -175,7 +177,7 @@ export default function useSdk() {
   function handleMediaStateChange(state: SdkMediaStateWithType): void {
     dispatch(updateMediaState(state));
   }
-  function handleGumRequest(_request: ISdkGumRequest): void {
+  function handleGumRequest(): void {
     dispatch(updateGumRequests());
   }
 

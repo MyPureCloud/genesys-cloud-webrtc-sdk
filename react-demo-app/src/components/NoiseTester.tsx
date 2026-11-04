@@ -91,6 +91,7 @@ export default function NoiseTester() {
     return () => {
       navigator.mediaDevices?.removeEventListener?.('devicechange', listMics);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Live-swap the audio track when audio processor is toggled
@@ -125,6 +126,7 @@ export default function NoiseTester() {
     }
 
     swapTrack();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioProcessor, running]);
 
   async function listMics() {
