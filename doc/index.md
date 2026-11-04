@@ -410,6 +410,9 @@ HTML Audio Element to attach incoming audio streams to.
 > `sdk.acceptSession()` is the sdk will create an
 > HTMLAudioElement and append it to the DOM
 
+If the browser refuses to start playback on this element, the SDK emits a
+`media` `sdkError`. See [Blocked remote audio playback].
+
 #### `defaults.videoElement`
 
 `videoElement?: HTMLVideoElement;` Optional: no default
@@ -2058,6 +2061,28 @@ enum SdkErrorTypes {
 
 The SDK will add the `type` to give more clarity as to why the error was thrown.
 
+### Blocked remote audio playback
+
+When the SDK attaches remote audio for a softphone call, it calls `play()` on
+the audio element. If the browser rejects `play()`, the SDK emits an
+`sdkError` instead of leaving the call silent:
+
+- `type`: `media`
+- `message`: `Remote audio playback was blocked`
+- `details.conversationId`: the call's conversation ID
+- `details.sessionId`: the call's session ID
+- `details.error`: the name of the browser's error. `NotAllowedError` means the
+  browser's autoplay policy blocked playback. `AbortError` means playback was
+  interrupted before it started, for example because the call ended or the
+  element's media was replaced.
+
+The SDK does not retry playback or prompt the user. An auto-answered call in a
+browser that blocks autoplay, such as Safari, may need an application prompt
+or an agent gesture before remote audio plays: on `NotAllowedError`, ask the
+agent to interact with the page and call `play()` on the call's audio element
+from that gesture. To keep a reference to that element, provide it through
+`defaults.audioElement` or `sdk.acceptSession({ audioElement })`.
+
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html
 [GenesysCloudClientLogger]: https://github.com/purecloudlabs/genesys-cloud-client-logger
 [webrtc-stats-gatherer]: https://github.com/MyPureCloud/webrtc-stats-gatherer
@@ -2071,3 +2096,4 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [SDK Media audioTrackVolume event]: media.md#audiotrackvolume
 [GenesysCloudMediaSession]: #genesyscloudmediasession
 [SdkError Class]: #sdkerror-class
+[Blocked remote audio playback]: #blocked-remote-audio-playback

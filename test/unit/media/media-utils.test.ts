@@ -3,6 +3,7 @@ import * as mediaUtils from '../../../src/media/media-utils';
 import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack, MockSession } from '../../test-utils';
 import { IExtendedMediaSession } from '../../../src/types/interfaces';
+import { SdkErrorTypes } from '../../../src/types/enums';
 
 const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1', label: 'Mock Video Device #1' } as MediaDeviceInfo;
 const mockVideoDevice2 = { kind: 'videoinput', deviceId: 'mockVideoDevice2', label: 'Mock Video Device #2' } as MediaDeviceInfo;
@@ -64,6 +65,16 @@ describe('getOrCreateAudioMediaElement()', () => {
 });
 
 describe('attachAudioMedia()', () => {
+  let playSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    playSpy = jest.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    playSpy.mockRestore();
+  });
+
   it('should create element if not provided', () => {
     const element = document.createElement('audio');
     jest.spyOn(mediaUtils, 'getOrCreateAudioMediaElement').mockReturnValue(element);
@@ -111,6 +122,89 @@ describe('attachAudioMedia()', () => {
     mediaUtils.attachAudioMedia(mockSdk, stream, 25);
 
     expect(element.volume).toEqual(.25);
+  });
+
+  describe('playback', () => {
+    const ids = { conversationId: 'convo-1', sessionId: 'session-1' };
+
+    const domError = (name: string): Error => {
+      const error = new Error(`${name} message`);
+      error.name = name;
+      return error;
+    };
+
+    const attachAndCollectErrors = async (): Promise<{ element: HTMLAudioElement, errors: any[], returned: HTMLAudioElement }> => {
+      const errors: any[] = [];
+      mockSdk.on('sdkError', (e) => errors.push(e));
+      const element = document.createElement('audio');
+      const stream: any = {};
+
+      const returned = mediaUtils.attachAudioMedia(mockSdk, stream, 50, element, ids);
+
+      // sdkError is emitted on a setTimeout after the rejection settles
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return { element, errors, returned };
+    };
+
+    it.each(['NotAllowedError', 'AbortError'])('should emit one media sdkError when play() rejects with %s', async (name) => {
+      playSpy.mockRejectedValue(domError(name));
+
+      const { errors } = await attachAndCollectErrors();
+
+      expect(playSpy).toHaveBeenCalledTimes(1);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].type).toBe(SdkErrorTypes.media);
+      expect(errors[0].message).toBe('Remote audio playback was blocked');
+      expect(errors[0].details).toEqual({ conversationId: 'convo-1', sessionId: 'session-1', error: name });
+    });
+
+    it('should emit a media sdkError when play() throws synchronously', async () => {
+      playSpy.mockImplementation(() => { throw domError('NotSupportedError'); });
+
+      const { errors, returned, element } = await attachAndCollectErrors();
+
+      expect(returned).toBe(element);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].details).toEqual({ conversationId: 'convo-1', sessionId: 'session-1', error: 'NotSupportedError' });
+    });
+
+    it('should emit a media sdkError without an error name when the rejection has none', async () => {
+      playSpy.mockRejectedValue(undefined);
+
+      const { errors } = await attachAndCollectErrors();
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].type).toBe(SdkErrorTypes.media);
+      expect(errors[0].details.error).toBeUndefined();
+      expect(errors[0].details.conversationId).toBe('convo-1');
+      expect(errors[0].details.sessionId).toBe('session-1');
+    });
+
+    it('should not emit when play() resolves, and still set volume, autoplay and srcObject', async () => {
+      const { errors, element } = await attachAndCollectErrors();
+
+      expect(playSpy).toHaveBeenCalledTimes(1);
+      expect(errors).toHaveLength(0);
+      expect(element.volume).toEqual(.5);
+      expect(element.autoplay).toBe(true);
+      expect(element.srcObject).toEqual({});
+    });
+
+    it('should not emit when play() returns undefined', async () => {
+      playSpy.mockReturnValue(undefined);
+
+      const { errors } = await attachAndCollectErrors();
+
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should return the element before playback settles', () => {
+      playSpy.mockReturnValue(new Promise(() => undefined));
+      const element = document.createElement('audio');
+
+      expect(mediaUtils.attachAudioMedia(mockSdk, {} as any, 100, element, ids)).toBe(element);
+    });
   });
 });
 
