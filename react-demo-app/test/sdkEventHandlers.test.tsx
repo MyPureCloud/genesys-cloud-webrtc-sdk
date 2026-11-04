@@ -52,6 +52,7 @@ function storedConversation (conversationId: string, session: FakeSession | unde
 }
 
 let sdk: FakeSdk;
+let store: ReturnType<typeof makeStore>;
 
 function emit (event: string, ...args: unknown[]) {
   act(() => {
@@ -85,7 +86,7 @@ function entryFields (entry: HTMLElement) {
 
 beforeEach(() => {
   sdk = new FakeSdk();
-  const store = makeStore();
+  store = makeStore();
   connectSdkEventHandlers(sdk as unknown as SdkEventSource, store.dispatch);
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -209,6 +210,7 @@ describe('interaction log', () => {
     expect(entries().map(entryFields)).toEqual([
       { conversationId: 'conv-1', endReason: 'success', finalState: 'terminated' }
     ]);
+    expect(store.getState().sdkSignals.softphoneEndings).toEqual({});
   });
 
   it('logs one entry for an ended video session', () => {

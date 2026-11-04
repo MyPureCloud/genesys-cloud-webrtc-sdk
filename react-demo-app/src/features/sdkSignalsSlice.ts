@@ -87,6 +87,7 @@ export const sdkSignalsSlice = createSlice({
         );
         if (existing) {
           existing.finalState = removed.finalState ?? existing.finalState;
+          delete state.softphoneEndings[removed.conversationId];
           continue;
         }
         const ending = state.softphoneEndings[removed.conversationId];
