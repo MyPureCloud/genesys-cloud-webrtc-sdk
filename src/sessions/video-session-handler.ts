@@ -168,7 +168,9 @@ export class VideoSessionHandler extends BaseSessionHandler {
         conversationId: decodedJwt.data.conversationId,
         sourceCommunicationId: decodedJwt.data.sourceCommunicationId,
         mediaPurpose: SessionTypes.collaborateVideo,
-        sessionType: this.sessionType
+        sessionType: this.sessionType,
+        // omit entirely when not supplied so the stanza is unchanged
+        ...(startParams.recordingConsent != null && { recordingConsent: startParams.recordingConsent })
       };
       this.log('info', 'starting video session with a jwt', { decodedJwt, opts });
 

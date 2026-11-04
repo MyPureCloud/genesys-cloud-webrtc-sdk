@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
 ### Added
+* [STREAM-2791](https://inindca.atlassian.net/browse/STREAM-2791) - `startVideoConference()` accepts an optional `recordingConsent` (`consented`, `declined`, `notCollected`, `recordingNotAllowed`) which is forwarded unchanged to streaming-client on the guest (JWT) video join. Requires a streaming-client release containing STREAM-2789.
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 
 ### Changed

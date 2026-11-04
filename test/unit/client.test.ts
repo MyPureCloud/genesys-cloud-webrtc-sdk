@@ -34,6 +34,7 @@ import {
   IActiveConversationDescription
 } from '../../src';
 import * as utils from '../../src/utils';
+import { IStartVideoSessionParams } from '../../src/types/interfaces';
 import { RetryPromise } from 'genesys-cloud-streaming-client/dist/es/utils';
 import { HeadsetProxyService } from '../../src/headsets/headset';
 
@@ -224,6 +225,47 @@ describe('Client', () => {
       sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
       await sdk.startVideoConference('123');
       expect(sessionManagerMock.startSession).toBeCalledWith({ jid: '123', sessionType: SessionTypes.collaborateVideo });
+    });
+
+    it.each(['consented', 'declined', 'notCollected', 'recordingNotAllowed'] as const)(
+      'should forward recordingConsent "%s" unchanged to the session manager',
+      async (recordingConsent) => {
+        sdk = constructSdk();
+
+        sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
+        await sdk.startVideoConference('123', undefined, recordingConsent);
+
+        expect(sessionManagerMock.startSession).toBeCalledWith({
+          jid: '123',
+          inviteeJid: undefined,
+          recordingConsent,
+          sessionType: SessionTypes.collaborateVideo
+        });
+      }
+    );
+
+    it('should forward recordingConsent alongside inviteeJid', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
+      await sdk.startVideoConference('123', 'invitee@test.com', 'declined');
+
+      expect(sessionManagerMock.startSession).toBeCalledWith({
+        jid: '123',
+        inviteeJid: 'invitee@test.com',
+        recordingConsent: 'declined',
+        sessionType: SessionTypes.collaborateVideo
+      });
+    });
+
+    it('should not set a recordingConsent value when none is supplied', async () => {
+      sdk = constructSdk();
+
+      sessionManagerMock.startSession.mockResolvedValue({ conversationId: 'test-convo' });
+      await sdk.startVideoConference('123');
+
+      const params = sessionManagerMock.startSession.mock.calls[0][0] as IStartVideoSessionParams;
+      expect(params.recordingConsent).toBeUndefined();
     });
 
     it('should throw if guest user', async () => {
