@@ -120,7 +120,7 @@ describe('isSafari()', () => {
   };
 
   afterEach(() => {
-    delete (window.navigator as any).userAgent;
+    Reflect.deleteProperty(window.navigator, 'userAgent');
   });
 
   it.each([
