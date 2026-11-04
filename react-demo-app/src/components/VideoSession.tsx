@@ -10,23 +10,31 @@ export default function VideoSession() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [roomJid, setRoomJid] = useState('');
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  // Every started video session not yet ended or failed; the view is active while any remains.
+  const [activeSessionIds, setActiveSessionIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!sdk) return;
 
     function handleSessionStarted(session: IExtendedMediaSession) {
       if (!sdk || String(session.sessionType) !== 'collaborateVideo') return;
-      setActiveSessionId(session.id);
+      setActiveSessionIds(current => (current.includes(session.id) ? current : [...current, session.id]));
       sdk.acceptSession({
         conversationId: session.conversationId,
         audioElement: audioRef.current ?? undefined,
         videoElement: videoRef.current ?? undefined
-      }).catch(err => console.error(err));
+      }).catch(err => {
+        console.error(err);
+        removeSession(session.id);
+      });
     }
 
     function handleSessionEnded(session: IExtendedMediaSession) {
-      setActiveSessionId(current => (current === session.id ? null : current));
+      removeSession(session.id);
+    }
+
+    function removeSession(sessionId: string) {
+      setActiveSessionIds(current => current.filter(id => id !== sessionId));
     }
 
     sdk.on('sessionStarted', handleSessionStarted);
@@ -43,7 +51,7 @@ export default function VideoSession() {
     sdk.startVideoConference(roomJid).catch(err => console.error(err));
   }
 
-  const state = activeSessionId ? 'active' : 'none';
+  const state = activeSessionIds.length ? 'active' : 'none';
 
   return (
     <Card className="video-session-card">

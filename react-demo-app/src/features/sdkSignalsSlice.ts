@@ -39,6 +39,10 @@ interface ISdkSignalsState {
   observedVideoSessions: { [sessionId: string]: true };
 }
 
+// The SDK emits a call's own `sessionEnded` and its `removed` in the same synchronous call, so only the latest few
+// endings can still be matched. Older ones (for example eager persistent transports that never carried a call) are dropped.
+export const MAX_PENDING_SOFTPHONE_ENDINGS = 50;
+
 const initialState: ISdkSignalsState = {
   lastError: null,
   connected: false,
@@ -65,7 +69,12 @@ export const sdkSignalsSlice = createSlice({
     sessionEndedReceived: (state, action: PayloadAction<ISessionEndedSignal>) => {
       const { sessionId, conversationId, sessionType, reason } = action.payload;
       if (sessionType === 'softphone') {
+        delete state.softphoneEndings[conversationId];
         state.softphoneEndings[conversationId] = { sessionId, reason };
+        const pending = Object.keys(state.softphoneEndings);
+        for (const oldest of pending.slice(0, Math.max(0, pending.length - MAX_PENDING_SOFTPHONE_ENDINGS))) {
+          delete state.softphoneEndings[oldest];
+        }
         return;
       }
       if (sessionType === 'collaborateVideo' && state.observedVideoSessions[sessionId]) {

@@ -8,7 +8,7 @@ import conversationsReducer from '../src/features/conversationsSlice';
 import devicesReducer from '../src/features/devicesSlice';
 import sdkReducer from '../src/features/sdkSlice';
 import audioProcessorReducer from '../src/features/audioProcessorSlice';
-import sdkSignalsReducer from '../src/features/sdkSignalsSlice';
+import sdkSignalsReducer, { MAX_PENDING_SOFTPHONE_ENDINGS } from '../src/features/sdkSignalsSlice';
 import { connectSdkEventHandlers, SdkEventSource } from '../src/hooks/sdkEventHandlers';
 import InteractionLog from '../src/components/InteractionLog';
 import SdkSignals from '../src/components/SdkSignals';
@@ -167,6 +167,24 @@ describe('interaction log', () => {
     expect(entries()).toHaveLength(0);
   });
 
+  it('keeps only the latest pending softphone endings and still uses a call\'s own reason', () => {
+    for (let i = 0; i < MAX_PENDING_SOFTPHONE_ENDINGS + 25; i++) {
+      emit('sessionEnded', new FakeSession(`eager-${i}`, `conv-eager-${i}`), { condition: 'connectivity-error' });
+    }
+
+    expect(Object.keys(store.getState().sdkSignals.softphoneEndings)).toHaveLength(MAX_PENDING_SOFTPHONE_ENDINGS);
+    expect(store.getState().sdkSignals.softphoneEndings['conv-eager-0']).toBeUndefined();
+
+    const session = new FakeSession('session-1', 'conv-1');
+    emitUpdate({ added: [storedConversation('conv-1', session, 'connected')] });
+    endCall(session, 'conv-1');
+
+    expect(entries().map(entryFields)).toEqual([
+      { conversationId: 'conv-1', endReason: 'success', finalState: 'disconnected' }
+    ]);
+    expect(store.getState().sdkSignals.softphoneEndings['conv-1']).toBeUndefined();
+  });
+
   it('ignores a transport replacement during a call and uses the per-call end reason', () => {
     const oldSession = new FakeSession('session-old', 'conv-1');
     const newSession = new FakeSession('session-new', 'conv-1');
@@ -226,6 +244,23 @@ describe('interaction log', () => {
     expect(entries().map(entryFields)).toEqual([
       { conversationId: 'video-conv-1', endReason: 'success', finalState: 'ended' }
     ]);
+  });
+
+  it('gives two rows with distinct keys for two video sessions in the same conversation', () => {
+    const first = new FakeSession('video-a', 'video-conv-room', 'collaborateVideo');
+    const second = new FakeSession('video-b', 'video-conv-room', 'collaborateVideo');
+    emit('sessionStarted', first);
+    emit('sessionEnded', first, { condition: 'success' });
+    emit('sessionStarted', second);
+    emit('sessionEnded', second, { condition: 'success' });
+
+    expect(entries().map(entryFields)).toEqual([
+      { conversationId: 'video-conv-room', endReason: 'success', finalState: 'ended' },
+      { conversationId: 'video-conv-room', endReason: 'success', finalState: 'ended' }
+    ]);
+    const keyWarnings = (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls
+      .filter(call => String(call[0]).includes('same key'));
+    expect(keyWarnings).toHaveLength(0);
   });
 
   it('logs an ended video session as ended when the SDK still reports it active', () => {

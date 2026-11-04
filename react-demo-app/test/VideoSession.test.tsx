@@ -69,6 +69,34 @@ describe('video session view', () => {
     expect((screen.getByTestId('customer-video') as HTMLVideoElement).hidden).toBe(true);
   });
 
+  it('returns to none when accepting the video session fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    sdk.acceptSession.mockRejectedValueOnce(new Error('media failed'));
+    await act(async () => {
+      sdk.emit('sessionStarted', { id: 'video-session-1', conversationId: 'video-conv-1', sessionType: 'collaborateVideo' });
+    });
+
+    expect(sdk.acceptSession).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('none');
+    expect((screen.getByTestId('customer-video') as HTMLVideoElement).hidden).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it('stays active until every overlapping video session has ended', () => {
+    const first = { id: 'video-session-a', conversationId: 'video-conv-a', sessionType: 'collaborateVideo' };
+    const second = { id: 'video-session-b', conversationId: 'video-conv-b', sessionType: 'collaborateVideo' };
+    emit('sessionStarted', first);
+    emit('sessionStarted', second);
+    emit('sessionEnded', second, { condition: 'success' });
+
+    expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('active');
+    expect((screen.getByTestId('customer-video') as HTMLVideoElement).hidden).toBe(false);
+
+    emit('sessionEnded', first, { condition: 'success' });
+
+    expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('none');
+  });
+
   it('does not accept a softphone session', () => {
     emit('sessionStarted', { id: 'softphone-1', conversationId: 'conv-1', sessionType: 'softphone' });
 

@@ -21,9 +21,10 @@ export default function InteractionLog() {
               </tr>
             </thead>
             <tbody>
-              {entries.map(entry => (
+              {/* The log only grows, so the position is a stable key; a conversation ID can repeat for video. */}
+              {entries.map((entry, index) => (
                 <tr
-                  key={`${entry.sessionType}-${entry.conversationId}`}
+                  key={`${index}-${entry.sessionType}-${entry.conversationId}`}
                   data-testid="interaction-log-entry"
                   data-conversation-id={entry.conversationId}
                 >
