@@ -102,6 +102,9 @@ describe('Softphone remote audio playback (integration)', () => {
     return sdk;
   };
 
+  /* Genesys-internal gate (GCP-1237); absent or false leaves develop behaviour unchanged */
+  const playbackReportingOn: Partial<ISdkConfig> = { experimentalFeatures: { reportRemoteAudioPlaybackBlocked: true } };
+
   const settle = async (): Promise<void> => {
     await flushPromises();
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -184,7 +187,7 @@ describe('Softphone remote audio playback (integration)', () => {
   });
 
   it('reportsBlockedPlaybackOnAutoConnectedCallWithRemoteAudioPresent', async () => {
-    await constructSdk();
+    await constructSdk(playbackReportingOn);
     playSpy.mockRejectedValue(domError('NotAllowedError'));
     const errors = collectMediaErrors();
 
@@ -203,7 +206,7 @@ describe('Softphone remote audio playback (integration)', () => {
   });
 
   it('reportsBlockedPlaybackWhenRemoteAudioArrivesAfterPublicAccept', async () => {
-    await constructSdk({ autoConnectSessions: false });
+    await constructSdk({ ...playbackReportingOn, autoConnectSessions: false });
     playSpy.mockRejectedValue(domError('NotAllowedError'));
     const errors = collectMediaErrors();
     const audioElement = document.createElement('audio');
@@ -227,7 +230,7 @@ describe('Softphone remote audio playback (integration)', () => {
   });
 
   it('reportsInterruptedPlaybackWithTheBrowserErrorName', async () => {
-    await constructSdk();
+    await constructSdk(playbackReportingOn);
     playSpy.mockRejectedValue(domError('AbortError'));
     const errors = collectMediaErrors();
 
@@ -244,7 +247,7 @@ describe('Softphone remote audio playback (integration)', () => {
   });
 
   it('emitsNoMediaErrorWhenPlaybackStarts', async () => {
-    await constructSdk();
+    await constructSdk(playbackReportingOn);
     const errors = collectMediaErrors();
 
     const session = await deliverInboundCall({ remoteAudioPresent: true });
@@ -252,6 +255,24 @@ describe('Softphone remote audio playback (integration)', () => {
 
     expect(session.accept).toHaveBeenCalled();
     expect(playSpy).toHaveBeenCalledTimes(1);
+    expect(session._outputAudioElement).toBeInstanceOf(HTMLAudioElement);
+    expect(session._outputAudioElement.autoplay).toBe(true);
+    expect(errors).toHaveLength(0);
+  });
+
+  it.each([
+    ['absent', {}],
+    ['false', { experimentalFeatures: { reportRemoteAudioPlaybackBlocked: false } }]
+  ])('doesNotStartPlaybackOrReportWhenTheExperimentalFeatureIs %s', async (_label, overrides) => {
+    await constructSdk(overrides as Partial<ISdkConfig>);
+    playSpy.mockRejectedValue(domError('NotAllowedError'));
+    const errors = collectMediaErrors();
+
+    const session = await deliverInboundCall({ remoteAudioPresent: true });
+    await settle();
+
+    expect(session.accept).toHaveBeenCalled();
+    expect(playSpy).not.toHaveBeenCalled();
     expect(session._outputAudioElement).toBeInstanceOf(HTMLAudioElement);
     expect(session._outputAudioElement.autoplay).toBe(true);
     expect(errors).toHaveLength(0);

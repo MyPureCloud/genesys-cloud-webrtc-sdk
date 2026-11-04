@@ -59,7 +59,11 @@ export const attachAudioMedia = function (
   audioElement.volume = volume / 100;
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
-  startAudioPlayback(sdk, audioElement, ids);
+
+  // Genesys internal (GCP-1237): off unless the consuming app enables it from its feature toggle
+  if (sdk._config.experimentalFeatures?.reportRemoteAudioPlaybackBlocked) {
+    startAudioPlayback(sdk, audioElement, ids);
+  }
   return audioElement;
 };
 

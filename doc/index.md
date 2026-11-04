@@ -352,6 +352,31 @@ const sdk = new GenesysCloudWebrtcSdk({
 });
 ```
 
+#### `experimentalFeatures`
+
+`experimentalFeatures?: Record<string, unknown>;` Optional: no default.
+
+Genesys internal use only. These features may change or be removed at any time
+without notice. Each key turns on one feature that is still in development;
+an absent or `false` key leaves SDK behavior unchanged.
+
+| Key | Effect |
+| --- | --- |
+| `reportRemoteAudioPlaybackBlocked` | Start playback of softphone call audio and report a refused playback. See [Blocked remote audio playback]. |
+
+The consuming application decides each value from its own feature toggle and
+passes it when it constructs the SDK. For example, an application gated by the
+`GCP-1237_webrtcSDKVoiceAndVideoOnSafariDesktop` toggle:
+
+```ts
+const sdk = new GenesysCloudWebrtcSdk({
+  experimentalFeatures: {
+    reportRemoteAudioPlaybackBlocked: isToggleEnabled('GCP-1237_webrtcSDKVoiceAndVideoOnSafariDesktop')
+  },
+  // other config options
+});
+```
+
 #### `defaults`
 
 Optional. Defaults for various SDK functionality. See individual options for defaults and usage.
@@ -410,8 +435,9 @@ HTML Audio Element to attach incoming audio streams to.
 > `sdk.acceptSession()` is the sdk will create an
 > HTMLAudioElement and append it to the DOM
 
-If the browser refuses to start playback on this element, the SDK emits a
-`media` `sdkError`. See [Blocked remote audio playback].
+With `experimentalFeatures.reportRemoteAudioPlaybackBlocked` enabled, if the
+browser refuses to start playback on this element, the SDK emits a `media`
+`sdkError`. See [Blocked remote audio playback].
 
 #### `defaults.videoElement`
 
@@ -2063,8 +2089,13 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 
 ### Blocked remote audio playback
 
-When the SDK attaches remote audio for a softphone call, it calls `play()` on
-the audio element. If the browser rejects `play()`, the SDK emits an
+Genesys internal use only: this behavior is off unless
+`experimentalFeatures.reportRemoteAudioPlaybackBlocked` is `true` (see
+[`experimentalFeatures`](#experimentalfeatures)). When it is off, the SDK relies
+on `autoplay` alone, as before, and reports nothing.
+
+With it on, when the SDK attaches remote audio for a softphone call, it calls
+`play()` on the audio element. If the browser rejects `play()`, the SDK emits an
 `sdkError` instead of leaving the call silent:
 
 - `type`: `media`

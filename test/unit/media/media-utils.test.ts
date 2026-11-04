@@ -124,8 +124,37 @@ describe('attachAudioMedia()', () => {
     expect(element.volume).toEqual(.25);
   });
 
-  describe('playback', () => {
+  describe('playback when experimentalFeatures.reportRemoteAudioPlaybackBlocked is off', () => {
+    it.each([
+      ['absent', undefined],
+      ['empty', {}],
+      ['false', { reportRemoteAudioPlaybackBlocked: false }]
+    ])('should not call play() or emit when experimentalFeatures is %s', async (_label, experimentalFeatures) => {
+      mockSdk._config.experimentalFeatures = experimentalFeatures as any;
+      playSpy.mockRejectedValue(new Error('should not be called'));
+      const errors: any[] = [];
+      mockSdk.on('sdkError', (e) => errors.push(e));
+      const element = document.createElement('audio');
+      const stream: any = {};
+
+      expect(mediaUtils.attachAudioMedia(mockSdk, stream, 50, element)).toBe(element);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(playSpy).not.toHaveBeenCalled();
+      expect(errors).toHaveLength(0);
+      expect(element.volume).toEqual(.5);
+      expect(element.autoplay).toBe(true);
+      expect(element.srcObject).toEqual({});
+    });
+  });
+
+  describe('playback when experimentalFeatures.reportRemoteAudioPlaybackBlocked is on', () => {
     const ids = { conversationId: 'convo-1', sessionId: 'session-1' };
+
+    beforeEach(() => {
+      mockSdk._config.experimentalFeatures = { reportRemoteAudioPlaybackBlocked: true };
+    });
 
     const domError = (name: string): Error => {
       const error = new Error(`${name} message`);
