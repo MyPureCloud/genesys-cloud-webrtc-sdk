@@ -21,7 +21,6 @@ export interface ISessionSignal {
 
 export interface ISessionEndedSignal extends ISessionSignal {
   reason: string | null;
-  state: string | null;
 }
 
 export interface IRemovedConversationSignal {
@@ -64,7 +63,7 @@ export const sdkSignalsSlice = createSlice({
       }
     },
     sessionEndedReceived: (state, action: PayloadAction<ISessionEndedSignal>) => {
-      const { sessionId, conversationId, sessionType, reason, state: sessionState } = action.payload;
+      const { sessionId, conversationId, sessionType, reason } = action.payload;
       if (sessionType === 'softphone') {
         state.softphoneEndings[conversationId] = { sessionId, reason };
         return;
@@ -75,7 +74,9 @@ export const sdkSignalsSlice = createSlice({
           conversationId,
           sessionType,
           endReason: reason,
-          finalState: sessionState,
+          // `sessionEnded` is the end of a video session, but some SDK paths emit it while the session still reports
+          // `active` (for example the dead peer connection clean-up, base-session-handler.ts checkPeerConnectionState).
+          finalState: 'ended',
           recordedAt: new Date().toISOString()
         });
       }

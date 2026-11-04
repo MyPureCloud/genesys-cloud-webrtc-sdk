@@ -227,6 +227,18 @@ describe('interaction log', () => {
       { conversationId: 'video-conv-1', endReason: 'success', finalState: 'ended' }
     ]);
   });
+
+  it('logs an ended video session as ended when the SDK still reports it active', () => {
+    // base-session-handler.ts checkPeerConnectionState: a dead peer connection on an `active` session is cleaned up
+    // with `sessionEnded` (`gone`) before the session's own state changes.
+    const video = new FakeSession('video-2', 'video-conv-2', 'collaborateVideo', 'active');
+    emit('sessionStarted', video);
+    emit('sessionEnded', video, { condition: 'gone' });
+
+    expect(entries().map(entryFields)).toEqual([
+      { conversationId: 'video-conv-2', endReason: 'gone', finalState: 'ended' }
+    ]);
+  });
 });
 
 describe('last SDK error', () => {

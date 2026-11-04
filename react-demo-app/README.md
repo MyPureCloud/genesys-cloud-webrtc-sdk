@@ -18,7 +18,7 @@ In progress or missing:
 - Screenshare
 
 ### Selectors for automated tests
-These `data-testid` values are a stable interface for browser tests; they do not depend on CSS or Spark markup.
+These `data-testid` values are a stable interface for browser tests; they do not depend on CSS or Spark markup. The SDK error and connection signals are shown on every screen, including sign-in, so an error from a failed `initialize()` is visible; the video view and interaction log appear after sign-in.
 
 | Signal | Selector | Meaning |
 |---|---|---|
@@ -30,7 +30,7 @@ These `data-testid` values are a stable interface for browser tests; they do not
 | | `video-room-jid`, `video-join` | Room JID input and the button that calls `startVideoConference`. |
 | Interaction log | `interaction-log` | `data-count` is the number of completed calls logged. |
 | | `interaction-log-entry` | One row per completed call; `data-conversation-id` is its conversation ID. |
-| | `interaction-log-conversation-id`, `interaction-log-end-reason`, `interaction-log-final-state` | The call's conversation ID, end reason (the `sessionEnded` reason condition, such as `success`) and final call state (such as `disconnected`); `unknown` when the SDK did not supply it. |
+| | `interaction-log-conversation-id`, `interaction-log-end-reason`, `interaction-log-final-state` | The call's conversation ID, end reason (the `sessionEnded` reason condition, such as `success`) and final state (the call state, such as `disconnected`, for a softphone call; `ended` for a video session); `unknown` when the SDK did not supply it. |
 
 A softphone call is logged when it leaves the SDK's `conversationUpdate` (in `removed`), taking its end reason from the `sessionEnded` of the same session; a video session is logged at its `sessionEnded`. Active calls are not logged, and the log is cleared on reload.
 

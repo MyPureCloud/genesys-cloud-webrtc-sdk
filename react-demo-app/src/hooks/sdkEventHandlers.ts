@@ -58,8 +58,7 @@ export function connectSdkEventHandlers(sdk: SdkEventSource, dispatch: Dispatch)
   sdk.on('sessionEnded', (session: IExtendedMediaSession, reason) => {
     dispatch(sessionEndedReceived({
       ...sessionSignal(session),
-      reason: reason?.condition ?? null,
-      state: session.state ?? null
+      reason: reason?.condition ?? null
     }));
   });
   // sdk.on('trace', trace);
