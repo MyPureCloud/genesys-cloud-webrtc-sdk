@@ -222,8 +222,10 @@ lives at `test/unit/sessions/persistent-connection-race-condition.test.ts`.
 ```bash
 npm install --registry=https://registry.npmjs.org   # GitHub repo — public npm, not Nexus
 npm test                                             # lint + full unit+IT suite (100% gate)
-npx jest test/integration --runInBand --collectCoverage=false          # ITs only
-npx jest test/integration/softphone-http --runInBand --collectCoverage=false   # one file
+npm run test:unit                                    # unit tests only
+npm run test:integration                             # ITs only (own junit file)
+npm run test:ci                                      # lint + unit + ITs as separate runs (CI)
+npx jest --config jest.integration.config.js test/integration/softphone-http --runInBand   # one IT file
 npm run lint                                         # ESLint over src (run on test files explicitly if needed)
 ```
 
