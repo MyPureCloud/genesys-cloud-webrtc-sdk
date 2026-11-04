@@ -83,6 +83,8 @@ describe('SDK in Safari desktop (integration)', () => {
     const sdkErrors: any[] = [];
     sdk.on('sdkError', err => sdkErrors.push(err));
     await sdk.initialize();
+    /* `createAndEmitSdkError` emits on a `setTimeout(0)`; let that turn run before callers assert none arrived */
+    await new Promise(resolve => setTimeout(resolve, 0));
     return { sdk, sdkErrors };
   };
 
