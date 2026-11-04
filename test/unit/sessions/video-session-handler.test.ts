@@ -1230,6 +1230,20 @@ describe('remote video release and report', () => {
       expect(sdkErrors).toEqual([]);
     });
 
+    it('should not attach a late video track after the session ends', async () => {
+      (session.pc.getReceivers as jest.Mock).mockReturnValue([]);
+      const attachSpy = jest.spyOn(handler, 'attachIncomingTrackToElement');
+      await accept();
+
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+      session.emit('peerTrackAdded', videoTrack as any);
+
+      expect(attachSpy).not.toHaveBeenCalled();
+      expect(video.srcObject).toBeFalsy();
+      expireWait();
+      expect(sdkErrors).toEqual([]);
+    });
+
     it('should replace an earlier watch for the same session', async () => {
       await accept();
       await accept();

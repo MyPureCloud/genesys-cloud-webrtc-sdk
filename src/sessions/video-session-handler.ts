@@ -363,6 +363,10 @@ export class VideoSessionHandler extends BaseSessionHandler {
         handleIncomingTracks(session, tracks);
       } else {
         session.on('peerTrackAdded', (track: MediaStreamTrack) => {
+          // a track arriving after termination must not refill the released element
+          if (watchRemoteVideo && session._remoteVideoSessionEnded) {
+            return;
+          }
           handleIncomingTracks(session, track);
         });
       }
