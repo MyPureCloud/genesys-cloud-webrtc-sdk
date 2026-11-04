@@ -908,10 +908,18 @@ export interface IStartSessionParams extends ISdkMediaDeviceIds {
   sessionType: SessionTypes;
 }
 
+/**
+ * Customer's resolved recording consent decision. Forwarded unchanged to
+ * streaming-client. Wire values are case-sensitive.
+ */
+export type RecordingConsent = 'consented' | 'declined' | 'notCollected' | 'recordingNotAllowed';
+
 export interface IStartVideoSessionParams extends IStartSessionParams {
   jid: string;
   /** userJid to be used when inviting a user to a conference */
   inviteeJid?: string;
+  /** resolved recording consent; sent on the guest (JWT) video join. Omit to send nothing. */
+  recordingConsent?: RecordingConsent;
 }
 
 export interface IStartVideoMeetingSessionParams extends IStartSessionParams {
