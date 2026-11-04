@@ -988,6 +988,13 @@ export interface VideoMediaSession extends IExtendedMediaSession {
   pinParticipantVideo?: (participantId: string) => Promise<void>;
   _resurrectVideoOnScreenShareEnd?: boolean;
   _lastParticipantsUpdate?: IParticipantsUpdate;
+  _remoteVideoElement?: HTMLVideoElement;
+  _remoteVideoStream?: MediaStream;
+  _remoteVideoWatch?: {
+    timer: ReturnType<typeof setTimeout>;
+    onPlaying: () => void;
+    playingStream?: MediaProvider | null;
+  };
 }
 
 export interface ScreenRecordingMediaSession extends IExtendedMediaSession {
