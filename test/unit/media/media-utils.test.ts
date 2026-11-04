@@ -176,9 +176,17 @@ describe('attachAudioMedia()', () => {
 
       expect(errors).toHaveLength(1);
       expect(errors[0].type).toBe(SdkErrorTypes.media);
-      expect(errors[0].details.error).toBeUndefined();
-      expect(errors[0].details.conversationId).toBe('convo-1');
-      expect(errors[0].details.sessionId).toBe('session-1');
+      expect(errors[0].details).toStrictEqual({ conversationId: 'convo-1', sessionId: 'session-1' });
+      expect(Object.prototype.hasOwnProperty.call(errors[0].details, 'error')).toBe(false);
+    });
+
+    it('should omit details.error when the rejection is an object without a name', async () => {
+      playSpy.mockRejectedValue({ message: 'no name' });
+
+      const { errors } = await attachAndCollectErrors();
+
+      expect(errors).toHaveLength(1);
+      expect(Object.keys(errors[0].details)).toEqual(['conversationId', 'sessionId']);
     });
 
     it('should not emit when play() resolves, and still set volume, autoplay and srcObject', async () => {

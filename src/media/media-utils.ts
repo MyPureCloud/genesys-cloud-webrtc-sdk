@@ -78,11 +78,15 @@ const startAudioPlayback = function (sdk: GenesysCloudWebrtcSdk, audioElement: H
 
   // older browsers return undefined from play()
   Promise.resolve(playback).catch((error) => {
-    createAndEmitSdkError.call(sdk, SdkErrorTypes.media, 'Remote audio playback was blocked', {
+    const details: { conversationId?: string, sessionId?: string, error?: string } = {
       conversationId: ids?.conversationId,
-      sessionId: ids?.sessionId,
-      error: error?.name
-    });
+      sessionId: ids?.sessionId
+    };
+    // omit details.error when the rejection carries no name
+    if (error?.name) {
+      details.error = error.name;
+    }
+    createAndEmitSdkError.call(sdk, SdkErrorTypes.media, 'Remote audio playback was blocked', details);
   });
 };
 
