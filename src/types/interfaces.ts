@@ -990,6 +990,7 @@ export interface VideoMediaSession extends IExtendedMediaSession {
   _lastParticipantsUpdate?: IParticipantsUpdate;
   _remoteVideoElement?: HTMLVideoElement;
   _remoteVideoStream?: MediaStream;
+  _remoteVideoSessionEnded?: boolean;
   _remoteVideoWatch?: {
     timer: ReturnType<typeof setTimeout>;
     onPlaying: () => void;

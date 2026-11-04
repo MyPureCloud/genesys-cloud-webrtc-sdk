@@ -5,7 +5,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
-import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
+import { IParticipantsUpdate, IParticipantUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
 import VideoSessionHandler from '../../../src/sessions/video-session-handler';
 import { ConversationUpdate, IConversationParticipantFromEvent, IParticipantVideo, IPersonDetails } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
@@ -944,9 +944,9 @@ describe('remote video release and report', () => {
 
   const accept = () => handler.acceptSession(session, { conversationId: session.conversationId, audioElement: audio, videoElement: video });
 
-  const participantsUpdate = (participants: { userId: string, videoMuted: boolean }[]): IParticipantsUpdate => ({
+  const participantsUpdate = (participants: { userId: string, videoMuted?: boolean }[]): IParticipantsUpdate => ({
     conversationId: session.conversationId,
-    activeParticipants: participants.map((p, i) => ({ participantId: `p${i}`, communicationId: `c${i}`, purpose: 'user', audioMuted: false, sharingScreen: false, ...p })),
+    activeParticipants: participants.map((p, i) => ({ participantId: `p${i}`, communicationId: `c${i}`, purpose: 'user', audioMuted: false, sharingScreen: false, ...p }) as IParticipantUpdate),
     addedParticipants: [],
     removedParticipants: []
   });
@@ -1099,6 +1099,15 @@ describe('remote video release and report', () => {
       expect(sdkErrors.length).toBe(1);
     });
 
+    it('should report when a remote participant\'s camera state is missing', async () => {
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: undefined }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
     it('should not report when every remote camera is off', async () => {
       await accept();
       session._lastParticipantsUpdate = participantsUpdate([{ userId, videoMuted: false }, { userId: 'customer', videoMuted: true }]);
@@ -1124,6 +1133,40 @@ describe('remote video release and report', () => {
 
       expireWait();
 
+      expect(sdkErrors).toEqual([]);
+    });
+  });
+
+  describe('failed or ended acceptance', () => {
+    it.each([
+      ['the session accept', () => jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockRejectedValue(new Error('accept failed'))],
+      ['the initial mute', () => jest.spyOn(handler, 'setInitialMuteStates').mockRejectedValue(new Error('accept failed'))],
+      ['attaching media', () => jest.spyOn(handler, 'attachIncomingTrackToElement').mockImplementation(() => { throw new Error('accept failed'); })]
+    ])('should stop watching and rethrow when %s fails', async (_label, fail) => {
+      fail();
+      const removeSpy = jest.spyOn(video, 'removeEventListener');
+
+      await expect(accept()).rejects.toThrow('accept failed');
+      expireWait();
+
+      expect(removeSpy).toHaveBeenCalledWith('playing', expect.any(Function));
+      expect(session._remoteVideoWatch).toBeUndefined();
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not start watching when the session ends while media is pending', async () => {
+      let resolveMedia: (stream: any) => void;
+      (mockSdk.media.startMedia as jest.Mock).mockReturnValue(new Promise(resolve => { resolveMedia = resolve; }));
+      const addListenerSpy = jest.spyOn(video, 'addEventListener');
+
+      const accepting = accept();
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+      resolveMedia(new MockStream());
+      await accepting;
+      expireWait();
+
+      expect(addListenerSpy).not.toHaveBeenCalled();
+      expect(session._remoteVideoWatch).toBeUndefined();
       expect(sdkErrors).toEqual([]);
     });
   });

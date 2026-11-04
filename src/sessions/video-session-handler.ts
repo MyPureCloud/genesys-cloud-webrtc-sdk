@@ -358,16 +358,22 @@ export class VideoSessionHandler extends BaseSessionHandler {
       .filter(receiver => receiver.track)
       .map(receiver => receiver.track);
 
-    if (tracks.length) {
-      handleIncomingTracks(session, tracks);
-    } else {
-      session.on('peerTrackAdded', (track: MediaStreamTrack) => {
-        handleIncomingTracks(session, track);
-      });
-    }
+    try {
+      if (tracks.length) {
+        handleIncomingTracks(session, tracks);
+      } else {
+        session.on('peerTrackAdded', (track: MediaStreamTrack) => {
+          handleIncomingTracks(session, track);
+        });
+      }
 
-    await super.acceptSession(session, params);
-    await this.setInitialMuteStates(session);
+      await super.acceptSession(session, params);
+      await this.setInitialMuteStates(session);
+    } catch (err) {
+      // a session that failed to accept must not report missing video later
+      this.stopRemoteVideoWatch(session);
+      throw err;
+    }
 
     logDeviceChange(this.sdk, session, 'sessionStarted');
 
@@ -384,6 +390,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
   startRemoteVideoWatch (session: VideoMediaSession, videoElement: HTMLVideoElement): void {
     this.stopRemoteVideoWatch(session);
+
+    // acceptSession awaits media first, so the session may already have ended
+    if (session._remoteVideoSessionEnded) {
+      return;
+    }
 
     const onPlaying = () => {
       session._remoteVideoWatch.playingStream = videoElement.srcObject;
@@ -437,19 +448,21 @@ export class VideoSessionHandler extends BaseSessionHandler {
     });
   }
 
-  /* without conversation state the camera may be on; with it, only an unmuted remote participant can send video */
+  /* without conversation state the camera may be on; with it, only a remote participant not muted can send video */
   private isRemoteCameraPossiblyOn (session: VideoMediaSession): boolean {
     const update = session._lastParticipantsUpdate;
     if (!update) {
       return true;
     }
 
+    // conversation data is external: only an explicit videoMuted true counts as camera off
     const userId = this.sdk._personDetails?.id;
-    return update.activeParticipants.some(participant => participant.userId !== userId && participant.videoMuted === false);
+    return update.activeParticipants.some(participant => participant.userId !== userId && participant.videoMuted !== true);
   }
 
   onSessionTerminated (session: VideoMediaSession, reason: JingleReason): void {
     if (this.isRemoteVideoWatchEnabled()) {
+      session._remoteVideoSessionEnded = true;
       this.stopRemoteVideoWatch(session);
 
       // the app may have reused the element for another session since

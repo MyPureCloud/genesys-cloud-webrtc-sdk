@@ -2113,8 +2113,9 @@ With it on, for video sessions:
   This covers remote video that never arrives and video the browser does not
   play, for example because autoplay was refused. The SDK checks once per
   session and does not retry playback. No error is emitted when the session
-  ends first, or when the conversation state shows no other participant with
-  video unmuted (for example, the customer's camera is off). Without any
+  ends first, when `sdk.acceptSession()` fails, or when the conversation state
+  shows every other participant's video as muted, or no other participant with
+  video (for example, the customer's camera is off). Without any
   conversation state, such as some JWT sessions, the error is emitted even if
   the customer's camera is off. Video that stops after it started playing is
   not reported.
