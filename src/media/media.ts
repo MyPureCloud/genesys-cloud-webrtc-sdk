@@ -5,6 +5,7 @@ import browserama from 'browserama';
 
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
+import { isSafari } from './media-utils';
 import { SdkErrorTypes } from '../types/enums';
 import {
   IExtendedMediaSession,
@@ -926,16 +927,19 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
     type ConstraintObj = MediaTrackConstraints & Record<string, unknown>;
     const videoConstraints: ConstraintObj = {};
     const audioConstraints: ConstraintObj = {
-      googAudioMirroring: false,
       autoGainControl: this.sdk._config.defaults.micAutoGainControl,
       echoCancellation: this.sdk._config.defaults.micEchoCancellation,
-      noiseSuppression: this.sdk._config.defaults.micNoiseSuppression,
-      googDucking: false,
-      googHighpassFilter: true
+      noiseSuppression: this.sdk._config.defaults.micNoiseSuppression
     };
 
     if (browserama.isChromeOrChromium) {
+      audioConstraints.googAudioMirroring = false;
+      audioConstraints.googDucking = false;
+      audioConstraints.googHighpassFilter = true;
       videoConstraints.googNoiseReduction = true;
+    } else if (isSafari()) {
+      /* Safari-specific constraint changes belong in this branch */
+      this.sdk.logger.debug('Safari detected; Chrome-only media constraints omitted');
     }
 
     const constraints: { video: ConstraintObj | boolean; audio: ConstraintObj | boolean } = {

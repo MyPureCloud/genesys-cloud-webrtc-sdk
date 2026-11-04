@@ -98,6 +98,21 @@ export const checkHasTransceiverFunctionality = function (): boolean {
   return _hasTransceiverFunctionality;
 };
 
+const NON_SAFARI_UA_TOKENS = ['Chrome/', 'Chromium/', 'CriOS/', 'FxiOS/', 'EdgiOS/', 'Edg/', 'OPR/', 'Android'];
+
+/**
+ * Utility method to check if the browser is Safari, based on
+ *  the user agent. Read on every call (not cached).
+ *
+ * browserama's `isSafari` is not used because it is computed once
+ *  at load from `window.safari`, which WebKit builds such as
+ *  Playwright's do not expose.
+ */
+export const isSafari = function (): boolean {
+  const userAgent = window.navigator.userAgent || '';
+  return userAgent.includes('Safari/') && !NON_SAFARI_UA_TOKENS.some(token => userAgent.includes(token));
+};
+
 /**
  * Utility method to check all tracks on a given stream
  *  to determine if all tracks have ended.

@@ -6,8 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
 ### Added
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
+* [STREAM-2850](https://inindca.atlassian.net/browse/STREAM-2850) - Add a user-agent based Safari check, exported as `mediaUtils.isSafari()`, and a Safari branch in the SDK's media constraints for Safari-specific fixes.
 
 ### Changed
+* [STREAM-2850](https://inindca.atlassian.net/browse/STREAM-2850) - The Chrome-only audio constraints `googAudioMirroring`, `googDucking` and `googHighpassFilter` are now requested only in Chrome and Chromium browsers. Safari, Firefox and other browsers receive only the standard audio constraints.
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.
 
 ### Fixed
