@@ -27,7 +27,8 @@ project; follow them exactly.
 
 ```bash
 npm run lint      # ESLint over src — must pass
-npm test          # lint + full unit + IT suite under the 100% coverage gate
+npm test          # lint + full unit + IT suite under the 100% coverage gate (local)
+npm run test:ci   # lint + unit + ITs as separate runs, each with its own junit (CI)
 ```
 
 - The coverage gate is **100%** (branches/functions/lines/statements) in
@@ -40,6 +41,17 @@ npm test          # lint + full unit + IT suite under the 100% coverage gate
 - GitHub Actions runs on PRs (`.github/workflows`). Check the run after pushing
   and fix failures before requesting review.
 - `pre-push` hook runs `test` (see `package.json`). Don't bypass it.
+- **Test-result reporting to Knex:** this is a **GitHub** repo, so it has NO
+  `Jenkinsfile` / `testResultToKnex` block of its own. Knex reporting is handled
+  in this repo's **Bitbucket wrapper** pipeline
+  (`~/workspace/github-bitbucket/genesys-cloud-webrtc-sdk/Jenkinsfile`), which
+  clones the GitHub repo, runs `npm run test:ci`, and reports the two junit files
+  under distinct `type`s:
+  - `test-results/unit/test-results.xml` → `type = 'unit'`
+  - `test-results/integration/test-results.xml` → `type = 'integration'`
+  The split lives in the SDK's jest configs: `jest.config.js` writes the unit
+  junit, `jest.integration.config.js` writes the integration junit. Don't add a
+  `testResultToKnex` block to this repo.
 
 ## Build & release pipeline
 
