@@ -1108,6 +1108,16 @@ describe('remote video release and report', () => {
       expect(sdkErrors.length).toBe(1);
     });
 
+    it('should report for a guest without a user id even when every listed camera is off', async () => {
+      mockSdk._personDetails = {} as any;
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: true }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
     it('should not report when every remote camera is off', async () => {
       await accept();
       session._lastParticipantsUpdate = participantsUpdate([{ userId, videoMuted: false }, { userId: 'customer', videoMuted: true }]);
@@ -1168,6 +1178,7 @@ describe('remote video release and report', () => {
       expect(addListenerSpy).not.toHaveBeenCalled();
       expect(session._remoteVideoWatch).toBeUndefined();
       expect(sdkErrors).toEqual([]);
+      expect(video.srcObject).toBeFalsy();
     });
   });
 

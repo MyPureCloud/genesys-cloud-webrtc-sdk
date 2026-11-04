@@ -2103,8 +2103,10 @@ With it on, for video sessions:
   later session has since given another stream is left alone. Audio, screen
   share and local media are unchanged.
 - **Remote video not received.** If the video element has not started playing
-  the session's remote video (its `playing` event) within 10 seconds of
-  `sdk.acceptSession()`, the SDK emits one `sdkError`:
+  the session's remote video (its `playing` event) within 10 seconds, the SDK
+  emits one `sdkError`. The 10 seconds start once `sdk.acceptSession()` has
+  local media and begins attaching the remote tracks, so a slow camera or
+  microphone permission prompt delays the report:
   - `type`: `session`
   - `message`: `Remote video was not received`
   - `details.conversationId`: the session's conversation ID
@@ -2116,8 +2118,8 @@ With it on, for video sessions:
   ends first, when `sdk.acceptSession()` fails, or when the conversation state
   shows every other participant's video as muted, or no other participant with
   video (for example, the customer's camera is off). Without any
-  conversation state, such as some JWT sessions, the error is emitted even if
-  the customer's camera is off. Video that stops after it started playing is
+  conversation state, such as some JWT sessions, or without the local user's
+  ID, as for guests, the error is emitted even if the customer's camera is off. Video that stops after it started playing is
   not reported.
 
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html

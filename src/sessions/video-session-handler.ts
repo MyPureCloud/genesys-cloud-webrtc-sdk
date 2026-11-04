@@ -328,6 +328,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
     }
 
     const handleIncomingTracks = (session: VideoMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
+      // a session that ended while accept awaited media, or a track arriving after termination, must not refill the released element
+      if (watchRemoteVideo && session._remoteVideoSessionEnded) {
+        return;
+      }
+
       if (!Array.isArray(tracks)) tracks = [tracks];
 
       for (const track of tracks) {
@@ -363,10 +368,6 @@ export class VideoSessionHandler extends BaseSessionHandler {
         handleIncomingTracks(session, tracks);
       } else {
         session.on('peerTrackAdded', (track: MediaStreamTrack) => {
-          // a track arriving after termination must not refill the released element
-          if (watchRemoteVideo && session._remoteVideoSessionEnded) {
-            return;
-          }
           handleIncomingTracks(session, track);
         });
       }
@@ -461,6 +462,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     // conversation data is external: only an explicit videoMuted true counts as camera off
     const userId = this.sdk._personDetails?.id;
+    // without the local user's id (a guest) no participant can be told apart as remote
+    if (!userId) {
+      return true;
+    }
+
     return update.activeParticipants.some(participant => participant.userId !== userId && participant.videoMuted !== true);
   }
 
