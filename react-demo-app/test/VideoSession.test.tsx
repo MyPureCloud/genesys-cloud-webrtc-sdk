@@ -82,19 +82,39 @@ describe('video session view', () => {
     vi.restoreAllMocks();
   });
 
-  it('stays active until every overlapping video session has ended', () => {
+  it('keeps the first video session on the elements and ignores an overlapping one', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     const first = { id: 'video-session-a', conversationId: 'video-conv-a', sessionType: 'collaborateVideo' };
     const second = { id: 'video-session-b', conversationId: 'video-conv-b', sessionType: 'collaborateVideo' };
     emit('sessionStarted', first);
     emit('sessionStarted', second);
-    emit('sessionEnded', second, { condition: 'success' });
 
+    expect(sdk.acceptSession).toHaveBeenCalledTimes(1);
+    expect((sdk.acceptSession.mock.calls[0][0] as unknown as { conversationId: string }).conversationId).toBe('video-conv-a');
+
+    emit('sessionEnded', second, { condition: 'success' });
     expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('active');
     expect((screen.getByTestId('customer-video') as HTMLVideoElement).hidden).toBe(false);
 
     emit('sessionEnded', first, { condition: 'success' });
-
     expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('none');
+    vi.restoreAllMocks();
+  });
+
+  it('disables Join while a join is pending or a video session is active', () => {
+    fireEvent.change(screen.getByTestId('video-room-jid'), { target: { value: 'room1@conference.example.com' } });
+    fireEvent.click(screen.getByTestId('video-join'));
+    fireEvent.click(screen.getByTestId('video-join'));
+
+    expect(sdk.startVideoConference).toHaveBeenCalledTimes(1);
+    expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(true);
+
+    const session = { id: 'video-session-1', conversationId: 'video-conv-1', sessionType: 'collaborateVideo' };
+    emit('sessionStarted', session);
+    expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(true);
+
+    emit('sessionEnded', session, { condition: 'success' });
+    expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('does not accept a softphone session', () => {

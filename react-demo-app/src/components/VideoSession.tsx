@@ -10,31 +10,41 @@ export default function VideoSession() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [roomJid, setRoomJid] = useState('');
-  // Every started video session not yet ended or failed; the view is active while any remains.
-  const [activeSessionIds, setActiveSessionIds] = useState<string[]>([]);
+  // The view's one video session, which owns the customer-video and audio elements. A ref mirrors it for the SDK
+  // listeners, which are registered once per SDK instance.
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const activeSessionRef = useRef<string | null>(null);
+  const [joining, setJoining] = useState(false);
+
+  function setActive(sessionId: string | null) {
+    activeSessionRef.current = sessionId;
+    setActiveSessionId(sessionId);
+  }
 
   useEffect(() => {
     if (!sdk) return;
 
     function handleSessionStarted(session: IExtendedMediaSession) {
       if (!sdk || String(session.sessionType) !== 'collaborateVideo') return;
-      setActiveSessionIds(current => (current.includes(session.id) ? current : [...current, session.id]));
+      setJoining(false);
+      if (activeSessionRef.current && activeSessionRef.current !== session.id) {
+        // One session per view: accepting another onto the same elements would replace the displayed media.
+        console.warn('Ignoring a second video session while one is active', session.id);
+        return;
+      }
+      setActive(session.id);
       sdk.acceptSession({
         conversationId: session.conversationId,
         audioElement: audioRef.current ?? undefined,
         videoElement: videoRef.current ?? undefined
       }).catch(err => {
         console.error(err);
-        removeSession(session.id);
+        if (activeSessionRef.current === session.id) setActive(null);
       });
     }
 
     function handleSessionEnded(session: IExtendedMediaSession) {
-      removeSession(session.id);
-    }
-
-    function removeSession(sessionId: string) {
-      setActiveSessionIds(current => current.filter(id => id !== sessionId));
+      if (activeSessionRef.current === session.id) setActive(null);
     }
 
     sdk.on('sessionStarted', handleSessionStarted);
@@ -45,13 +55,17 @@ export default function VideoSession() {
     };
   }, [sdk]);
 
+  const state = activeSessionId ? 'active' : 'none';
+
   function joinRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!sdk || !roomJid) return;
-    sdk.startVideoConference(roomJid).catch(err => console.error(err));
+    if (!sdk || !roomJid || joining || state === 'active') return;
+    setJoining(true);
+    sdk.startVideoConference(roomJid).catch(err => {
+      console.error(err);
+      setJoining(false);
+    });
   }
-
-  const state = activeSessionIds.length ? 'active' : 'none';
 
   return (
     <Card className="video-session-card">
@@ -65,7 +79,7 @@ export default function VideoSession() {
             value={roomJid}
             onChange={e => setRoomJid(e.target.value)}
           />
-          <button type="submit" data-testid="video-join" disabled={!roomJid}>
+          <button type="submit" data-testid="video-join" disabled={!roomJid || joining || state === 'active'}>
             Join
           </button>
         </form>

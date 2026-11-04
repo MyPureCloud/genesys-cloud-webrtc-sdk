@@ -27,7 +27,7 @@ These `data-testid` values are a stable interface for browser tests; they do not
 | Connection | `connection-state` | Text `connected` after the SDK `connected` event, `not connected` initially and after `disconnected`; `data-connected` is `"true"` or `"false"`. |
 | Video | `video-session` | `data-state="active"` while a video session (`collaborateVideo`) runs, `"none"` otherwise. |
 | | `customer-video` | The `<video>` element the SDK video session handler attaches the customer's video to (`acceptSession({ videoElement })`); hidden while `video-session` is `none`. |
-| | `video-room-jid`, `video-join` | Room JID input and the button that calls `startVideoConference`. |
+| | `video-room-jid`, `video-join` | Room JID input and the button that calls `startVideoConference`; disabled while a join is pending or a session is active. The view shows one video session; another `collaborateVideo` session started meanwhile is not accepted. |
 | Interaction log | `interaction-log` | `data-count` is the number of completed calls logged. |
 | | `interaction-log-entry` | One row per completed call; `data-conversation-id` is its conversation ID. |
 | | `interaction-log-conversation-id`, `interaction-log-end-reason`, `interaction-log-final-state` | The call's conversation ID, end reason (the `sessionEnded` reason condition, such as `success`) and final state (the call state, such as `disconnected`, for a softphone call; `ended` for a video session); `unknown` when the SDK did not supply it. |
