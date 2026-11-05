@@ -1321,6 +1321,46 @@ describe('SdkMedia', () => {
       });
     });
 
+    describe('non-Chromium browsers', () => {
+      const setUserAgent = (userAgent: string) => {
+        Object.defineProperty(window.navigator, 'userAgent', { get: () => userAgent, configurable: true });
+      };
+      const standardAudioConstraints = {
+        autoGainControl: true,
+        echoCancellation: true,
+        noiseSuppression: true,
+        deviceId: { exact: 'audio-device-id' }
+      };
+
+      beforeEach(() => {
+        Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
+      });
+
+      afterEach(() => {
+        delete (window.navigator as any).userAgent;
+      });
+
+      it('should omit Chrome-only audio constraints in Safari', () => {
+        setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15');
+
+        expect(getStandardConstraintsFn({ audio: 'audio-device-id', video: true })).toEqual({
+          video: { frameRate: { ideal: 30 } },
+          audio: standardAudioConstraints
+        });
+        expect(sdk.logger.debug).toHaveBeenCalledWith('WebKit detected; Chrome-only media constraints omitted');
+      });
+
+      it('should omit Chrome-only audio constraints in Firefox', () => {
+        setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0');
+
+        expect(getStandardConstraintsFn({ audio: 'audio-device-id', video: true })).toEqual({
+          video: { frameRate: { ideal: 30 } },
+          audio: standardAudioConstraints
+        });
+        expect(sdk.logger.debug).not.toHaveBeenCalledWith('WebKit detected; Chrome-only media constraints omitted');
+      });
+    });
+
     it('should return video `frameRate` and `resolution` constraints', () => {
       Object.defineProperty(browserama, 'isChromeOrChromium', { get: () => false });
       const options: IMediaRequestOptions = {

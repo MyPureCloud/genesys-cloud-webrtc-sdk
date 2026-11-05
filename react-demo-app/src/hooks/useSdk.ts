@@ -28,6 +28,9 @@ import { MinimalSdk } from '../types/sdk';
 // Manually add these in either the src or public folder of the demo app.
 // import licenseText from '../assets/iris.lic?raw';
 // import keyText from '../assets/iris.key?raw';
+// Then remove these placeholders, which leave the demo app without an audio processor.
+const licenseText: string | undefined = undefined;
+const keyText: string | undefined = undefined;
 import { GenesysIrisClient } from 'genesys-iris-client';
 import { setAudioProcessor } from '../features/audioProcessorSlice';
 import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
