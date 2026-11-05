@@ -177,8 +177,9 @@ describe('Softphone remote audio playback (integration)', () => {
     jest.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
     originalMediaStream = window.MediaStream;
     Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true, configurable: true });
-    /* the agent's microphone, from the mocked device layer (window.MediaStream is MockStream here) */
-    jest.mocked(SdkMedia.prototype.startMedia).mockImplementation(() => Promise.resolve(new MediaStream()));
+    /* the agent's microphone, from the mocked device layer: window.MediaStream is MockStream here, given one audio track */
+    jest.mocked(SdkMedia.prototype.startMedia).mockImplementation(() =>
+      Promise.resolve(Object.assign(new MediaStream(), { _tracks: [new MockTrack('audio')] })));
     /* jsdom has no RTCPeerConnection; the SDK probes it once for transceiver support */
     originalPeerConnection = window.RTCPeerConnection;
     Object.defineProperty(window, 'RTCPeerConnection', { writable: true, configurable: true, value: class {
@@ -267,6 +268,8 @@ describe('Softphone remote audio playback (integration)', () => {
     await settle();
 
     expect(session.accept).toHaveBeenCalled();
+    /* the agent's microphone track reached the peer connection */
+    expect(session.getTracks().map(track => track.kind)).toEqual(['audio']);
     expect(playSpy).toHaveBeenCalledTimes(1);
     expect(session._outputAudioElement).toBeInstanceOf(HTMLAudioElement);
     expect(session._outputAudioElement.autoplay).toBe(true);
