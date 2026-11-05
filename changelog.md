@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
 ### Added
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
+* [STREAM-2859](https://inindca.atlassian.net/browse/STREAM-2859) - The React demo app now shows customer video for a video conference, the last `sdkError` type and message, the streaming connection state, and an interaction log of completed calls, each behind a stable `data-testid` listed in `react-demo-app/README.md`. It also gains a Vitest suite (`npm test` in `react-demo-app`), lints and type-checks again, and its production build (`npm run build`, served with `npm run preview`) renders again instead of a blank page. Demo app only; no SDK changes.
 
 ### Changed
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.

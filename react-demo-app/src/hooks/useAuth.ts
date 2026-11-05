@@ -136,6 +136,7 @@ export default function useAuth() {
     } else if (urlParams.has('access_token')) {
       authenticateFromUrlToken();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Same helper functions as before

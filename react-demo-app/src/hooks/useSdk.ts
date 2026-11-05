@@ -1,26 +1,15 @@
 import {
   GenesysCloudWebrtcSdk,
   ISdkConfig,
-  ISdkConversationUpdateEvent,
   SessionTypes,
-  ISessionIdAndConversationId,
-  SdkMediaStateWithType,
-  ISdkGumRequest,
   IExtendedMediaSession
 } from 'genesys-cloud-webrtc-sdk';
 import { useDispatch } from 'react-redux';
-import {
-  removePendingSession,
-  updatePendingSessions,
-  updateConversations,
-  storeHandledPendingSession
-} from '../features/conversationsSlice';
 import { setSdk } from '../features/sdkSlice';
-import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
 import { useSelector } from 'react-redux';
-import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
+import { connectSdkEventHandlers } from './sdkEventHandlers';
 
 // Uncomment for audio processor testing.
 // The SDK accepts any audio processor that implements the IAudioProcessor interface.
@@ -28,6 +17,9 @@ import { MinimalSdk } from '../types/sdk';
 // Manually add these in either the src or public folder of the demo app.
 // import licenseText from '../assets/iris.lic?raw';
 // import keyText from '../assets/iris.key?raw';
+// Without the imports these stay undefined and no audio processor is constructed; delete them when uncommenting.
+const licenseText: string | undefined = undefined;
+const keyText: string | undefined = undefined;
 import { GenesysIrisClient } from 'genesys-iris-client';
 import { setAudioProcessor } from '../features/audioProcessorSlice';
 import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
@@ -74,7 +66,7 @@ export default function useSdk() {
     dispatch(setSdk(webrtcSdk as MinimalSdk));
     dispatch(setAudioProcessor(audioProcessor));
 
-    connectEventHandlers();
+    connectSdkEventHandlers(webrtcSdk, dispatch);
 
     await webrtcSdk.initialize();
   }
@@ -103,25 +95,6 @@ export default function useSdk() {
     (sdk as any).audioProcessor.setAudioProcessor(audioProcessor);
   }
 
-  function connectEventHandlers() {
-    webrtcSdk.on('ready', () => console.warn('ready!'));
-    webrtcSdk.on('sdkError', (error) => console.error(error));
-    webrtcSdk.on('pendingSession', handlePendingSession);
-    webrtcSdk.on('cancelPendingSession', handleCancelPendingSession);
-    webrtcSdk.on('handledPendingSession', handledPendingSession);
-    webrtcSdk.on('sessionStarted', handleSessionStarted);
-    webrtcSdk.on('sessionEnded', handleSessionEnded);
-    // webrtcSdk.on('trace', trace);
-    webrtcSdk.on('disconnected', handleDisconnected);
-    webrtcSdk.on('connected', handleConnected);
-    webrtcSdk.on('conversationUpdate', (event: ISdkConversationUpdateEvent) =>
-      handleConversationUpdate(event)
-    );
-
-    webrtcSdk.media.on('state', handleMediaStateChange);
-    webrtcSdk.media.on('gumRequest', handleGumRequest);
-  }
-
   function startSoftphoneSession(phoneNumber: string) {
     if (!phoneNumber) {
       console.error('Must enter a valid phone number.');
@@ -132,31 +105,6 @@ export default function useSdk() {
       return;
     }
     sdk.startSoftphoneSession({ phoneNumber });
-  }
-
-  function handlePendingSession(pendingSession: IPendingSession): void {
-    dispatch(updatePendingSessions({ ...pendingSession }));
-  }
-  // If a pendingSession was cancelled or handled, we can remove it from our state.
-  function handleCancelPendingSession(sessionInfo: ISessionIdAndConversationId): void {
-    dispatch(removePendingSession(sessionInfo));
-  }
-
-  function handledPendingSession(sessionInfo: ISessionIdAndConversationId): void {
-    dispatch(removePendingSession(sessionInfo));
-    dispatch(storeHandledPendingSession(sessionInfo))
-  }
-
-  function handleSessionStarted() {}
-
-  function handleSessionEnded() {}
-
-  function handleDisconnected() {}
-
-  function handleConnected() {}
-
-  function handleConversationUpdate(update: ISdkConversationUpdateEvent): void {
-    dispatch(updateConversations(update));
   }
 
   function endSession(conversationId: string): void {
@@ -170,13 +118,6 @@ export default function useSdk() {
   async function toggleHoldState(held: boolean, conversationId: string): Promise<void> {
     if (!sdk) return;
     await sdk.setConversationHeld({ held, conversationId });
-  }
-
-  function handleMediaStateChange(state: SdkMediaStateWithType): void {
-    dispatch(updateMediaState(state));
-  }
-  function handleGumRequest(_request: ISdkGumRequest): void {
-    dispatch(updateGumRequests());
   }
 
   function updateDefaultDevices(options: { audioDeviceId?: string; videoDeviceId?: string; outputDeviceId?: string }): void {
