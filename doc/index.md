@@ -364,19 +364,6 @@ an absent or `false` key leaves SDK behavior unchanged.
 | --- | --- |
 | `releaseAndReportRemoteVideo` | Release the remote video from the video element when a video session ends, and report remote video that is not received. See [Remote video release and reporting]. |
 
-The consuming application decides each value from its own feature toggle and
-passes it when it constructs the SDK. For example, an application gated by the
-`GCP-1237_webrtcSDKVoiceAndVideoOnSafariDesktop` toggle:
-
-```ts
-const sdk = new GenesysCloudWebrtcSdk({
-  experimentalFeatures: {
-    releaseAndReportRemoteVideo: isToggleEnabled('GCP-1237_webrtcSDKVoiceAndVideoOnSafariDesktop')
-  },
-  // other config options
-});
-```
-
 #### `defaults`
 
 Optional. Defaults for various SDK functionality. See individual options for defaults and usage.

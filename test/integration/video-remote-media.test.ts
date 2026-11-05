@@ -89,7 +89,7 @@ describe('Video conference remote video release and report (integration)', () =>
     setAccessToken: jest.fn()
   } as any;
 
-  /* Genesys-internal gate (GCP-1237); absent or false leaves develop behaviour unchanged */
+  /* Genesys-internal gate; absent or false leaves develop behaviour unchanged */
   const remoteVideoOn: Partial<ISdkConfig> = { experimentalFeatures: { releaseAndReportRemoteVideo: true } };
 
   const constructSdk = async (overrides: Partial<ISdkConfig> = {}): Promise<GenesysCloudWebrtcSdk> => {
