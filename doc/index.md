@@ -2106,8 +2106,9 @@ With it on, for video sessions:
   shows every other participant's video as muted, or no other participant with
   video (for example, the customer's camera is off). Without any
   conversation state, such as some JWT sessions, or without the local user's
-  ID, as for guests, the error is emitted even if the customer's camera is off. Video that stops after it started playing is
-  not reported.
+  ID, as for guests, the error is emitted even if the customer's camera is
+  off, unless the conversation lists no participants with video. Video that
+  stops after it started playing is not reported.
 
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html
 [GenesysCloudClientLogger]: https://github.com/purecloudlabs/genesys-cloud-client-logger

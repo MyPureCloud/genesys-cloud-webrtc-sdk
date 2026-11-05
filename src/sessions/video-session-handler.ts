@@ -462,9 +462,9 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     // conversation data is external: only an explicit videoMuted true counts as camera off
     const userId = this.sdk._personDetails?.id;
-    // without the local user's id (a guest) no participant can be told apart as remote
+    // without the local user's id (a guest) no listed participant can be told apart as remote
     if (!userId) {
-      return true;
+      return update.activeParticipants.length > 0;
     }
 
     return update.activeParticipants.some(participant => participant.userId !== userId && participant.videoMuted !== true);

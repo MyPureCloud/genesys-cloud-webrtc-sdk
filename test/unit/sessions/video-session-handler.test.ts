@@ -1118,6 +1118,16 @@ describe('remote video release and report', () => {
       expect(sdkErrors.length).toBe(1);
     });
 
+    it('should not report for a guest when the conversation has no active video participants', async () => {
+      mockSdk._personDetails = {} as any;
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([]);
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
     it('should not report when every remote camera is off', async () => {
       await accept();
       session._lastParticipantsUpdate = participantsUpdate([{ userId, videoMuted: false }, { userId: 'customer', videoMuted: true }]);
