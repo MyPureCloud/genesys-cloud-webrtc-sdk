@@ -1,5 +1,6 @@
 import { differenceBy } from 'lodash';
 import { Constants } from 'stanza';
+import { JingleReason } from 'stanza/protocol';
 
 import {
   IPendingSession,
@@ -23,6 +24,9 @@ import { createAndEmitSdkError, requestApi, isVideoJid, isPeerVideoJid, logPendi
 import { ConversationUpdate } from '../conversations/conversation-update';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
 import { jwtDecode } from "jwt-decode";
+
+// spans ICE, DTLS and the first decoded frame, with margin for a TURN relay
+const REMOTE_VIDEO_WAIT_MS = 10000;
 
 interface IJwtPayload {
   data: {
@@ -317,7 +321,18 @@ export class VideoSessionHandler extends BaseSessionHandler {
 
     const attachParams = { audioElement, videoElement, volume: this.sdk._config.defaults.audioVolume };
 
-    const handleIncomingTracks = (session: IExtendedMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
+    // registered before any srcObject assignment so an early 'playing' event cannot be missed
+    const watchRemoteVideo = this.isRemoteVideoWatchEnabled();
+    if (watchRemoteVideo) {
+      this.startRemoteVideoWatch(session, videoElement);
+    }
+
+    const handleIncomingTracks = (session: VideoMediaSession, tracks: MediaStreamTrack | MediaStreamTrack[]) => {
+      // a session that ended while accept awaited media, or a track arriving after termination, must not refill the released element
+      if (watchRemoteVideo && session._remoteVideoSessionEnded) {
+        return;
+      }
+
       if (!Array.isArray(tracks)) tracks = [tracks];
 
       for (const track of tracks) {
@@ -334,6 +349,11 @@ export class VideoSessionHandler extends BaseSessionHandler {
         if (el instanceof HTMLAudioElement) {
           session._outputAudioElement = el;
         }
+
+        if (watchRemoteVideo && el instanceof HTMLVideoElement) {
+          session._remoteVideoStream = el.srcObject as MediaStream;
+          this.endRemoteVideoWatchIfPlayed(session);
+        }
       }
 
       session.emit('incomingMedia');
@@ -343,16 +363,22 @@ export class VideoSessionHandler extends BaseSessionHandler {
       .filter(receiver => receiver.track)
       .map(receiver => receiver.track);
 
-    if (tracks.length) {
-      handleIncomingTracks(session, tracks);
-    } else {
-      session.on('peerTrackAdded', (track: MediaStreamTrack) => {
-        handleIncomingTracks(session, track);
-      });
-    }
+    try {
+      if (tracks.length) {
+        handleIncomingTracks(session, tracks);
+      } else {
+        session.on('peerTrackAdded', (track: MediaStreamTrack) => {
+          handleIncomingTracks(session, track);
+        });
+      }
 
-    await super.acceptSession(session, params);
-    await this.setInitialMuteStates(session);
+      await super.acceptSession(session, params);
+      await this.setInitialMuteStates(session);
+    } catch (err) {
+      // a session that failed to accept must not report missing video later
+      this.stopRemoteVideoWatch(session);
+      throw err;
+    }
 
     logDeviceChange(this.sdk, session, 'sessionStarted');
 
@@ -361,6 +387,102 @@ export class VideoSessionHandler extends BaseSessionHandler {
       /* if we haven't received a conversation event in .5 sec, we need to go fetch one */
       setTimeout(this.checkInitialConversationParticipants.bind(this, session), 500);
     }
+  }
+
+  private isRemoteVideoWatchEnabled (): boolean {
+    return !!this.sdk._config.experimentalFeatures?.releaseAndReportRemoteVideo;
+  }
+
+  startRemoteVideoWatch (session: VideoMediaSession, videoElement: HTMLVideoElement): void {
+    this.stopRemoteVideoWatch(session);
+
+    // acceptSession awaits media first, so the session may already have ended
+    if (session._remoteVideoSessionEnded) {
+      return;
+    }
+
+    const onPlaying = () => {
+      session._remoteVideoWatch.playingStream = videoElement.srcObject;
+      this.endRemoteVideoWatchIfPlayed(session);
+    };
+
+    session._remoteVideoElement = videoElement;
+    videoElement.addEventListener('playing', onPlaying);
+    session._remoteVideoWatch = {
+      onPlaying,
+      timer: setTimeout(() => this.checkRemoteVideoReceived(session), REMOTE_VIDEO_WAIT_MS)
+    };
+  }
+
+  stopRemoteVideoWatch (session: VideoMediaSession): void {
+    const watch = session._remoteVideoWatch;
+    if (!watch) {
+      return;
+    }
+
+    clearTimeout(watch.timer);
+    session._remoteVideoElement.removeEventListener('playing', watch.onPlaying);
+    delete session._remoteVideoWatch;
+  }
+
+  private endRemoteVideoWatchIfPlayed (session: VideoMediaSession): void {
+    const stream = session._remoteVideoStream;
+    if (stream && session._remoteVideoWatch?.playingStream === stream) {
+      this.stopRemoteVideoWatch(session);
+    }
+  }
+
+  private hasRemoteVideoPlayed (session: VideoMediaSession): boolean {
+    // a 'playing' event for this session's stream has already ended the watch; this is the backstop for a missed one
+    const stream = session._remoteVideoStream;
+    const element = session._remoteVideoElement;
+    return !!stream && element.srcObject === stream && !element.paused && element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+  }
+
+  checkRemoteVideoReceived (session: VideoMediaSession): void {
+    const played = this.hasRemoteVideoPlayed(session);
+    this.stopRemoteVideoWatch(session);
+
+    if (played || !this.isRemoteCameraPossiblyOn(session)) {
+      return;
+    }
+
+    createAndEmitSdkError.call(this.sdk, SdkErrorTypes.session, 'Remote video was not received', {
+      conversationId: session.conversationId,
+      sessionId: session.id
+    });
+  }
+
+  /* without conversation state the camera may be on; with it, only a remote participant not muted can send video */
+  private isRemoteCameraPossiblyOn (session: VideoMediaSession): boolean {
+    const update = session._lastParticipantsUpdate;
+    if (!update) {
+      return true;
+    }
+
+    // conversation data is external: only an explicit videoMuted true counts as camera off
+    const userId = this.sdk._personDetails?.id;
+    // without the local user's id (a guest) no listed participant can be told apart as remote
+    if (!userId) {
+      return update.activeParticipants.length > 0;
+    }
+
+    return update.activeParticipants.some(participant => participant.userId !== userId && participant.videoMuted !== true);
+  }
+
+  onSessionTerminated (session: VideoMediaSession, reason: JingleReason): void {
+    if (this.isRemoteVideoWatchEnabled()) {
+      session._remoteVideoSessionEnded = true;
+      this.stopRemoteVideoWatch(session);
+
+      // the app may have reused the element for another session since
+      const element = session._remoteVideoElement;
+      if (element && session._remoteVideoStream && element.srcObject === session._remoteVideoStream) {
+        element.srcObject = null;
+      }
+    }
+
+    super.onSessionTerminated(session, reason);
   }
 
   async checkInitialConversationParticipants (session: VideoMediaSession) {

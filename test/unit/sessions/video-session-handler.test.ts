@@ -5,7 +5,7 @@ import BaseSessionHandler from '../../../src/sessions/base-session-handler';
 import { SessionTypes, CommunicationStates, SdkErrorTypes } from '../../../src/types/enums';
 import * as mediaUtils from '../../../src/media/media-utils';
 import * as utils from '../../../src/utils';
-import { IParticipantsUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
+import { IParticipantsUpdate, IParticipantUpdate, IExtendedMediaSession, IConversationParticipant, VideoMediaSession, MemberStatusMessage } from '../../../src/types/interfaces';
 import VideoSessionHandler from '../../../src/sessions/video-session-handler';
 import { ConversationUpdate, IConversationParticipantFromEvent, IParticipantVideo, IPersonDetails } from '../../../src/';
 import { JsonRpcMessage } from 'genesys-cloud-streaming-client';
@@ -928,6 +928,373 @@ describe('acceptSession', () => {
 
     expect(attachIncomingTrackToElementSpy).toHaveBeenCalledWith(incomingTrack, { videoElement: video, audioElement: audio });
     expect(session._outputAudioElement).toBe(undefined);
+  });
+});
+
+describe('remote video release and report', () => {
+  const WAIT_MS = 10000;
+  let session: VideoMediaSession;
+  let audio: HTMLAudioElement;
+  let video: HTMLVideoElement;
+  let videoTrack: MockTrack;
+  let audioTrack: MockTrack;
+  let remoteStream: MediaStream;
+  let sdkErrors: any[];
+  let baseTerminatedSpy: jest.SpyInstance;
+
+  const accept = () => handler.acceptSession(session, { conversationId: session.conversationId, audioElement: audio, videoElement: video });
+
+  const participantsUpdate = (participants: { userId: string, videoMuted?: boolean }[]): IParticipantsUpdate => ({
+    conversationId: session.conversationId,
+    activeParticipants: participants.map((p, i) => ({ participantId: `p${i}`, communicationId: `c${i}`, purpose: 'user', audioMuted: false, sharingScreen: false, ...p }) as IParticipantUpdate),
+    addedParticipants: [],
+    removedParticipants: []
+  });
+
+  const expireWait = () => {
+    jest.advanceTimersByTime(WAIT_MS);
+    /* createAndEmitSdkError emits on a setTimeout(0) */
+    jest.advanceTimersByTime(1);
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    mockSdk._config.experimentalFeatures = { releaseAndReportRemoteVideo: true };
+    mockSdk._config.jwt = 'jwt-to-skip-the-conversation-fetch';
+    mockSdk._config.defaults!.audioVolume = 100;
+
+    jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockResolvedValue(null);
+    jest.spyOn(handler, 'addMediaToSession').mockResolvedValue();
+    jest.spyOn(handler, 'setInitialMuteStates').mockResolvedValue();
+    jest.spyOn(handler, 'setupTransceivers').mockReturnValue();
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(new MockStream() as any);
+    baseTerminatedSpy = jest.spyOn(BaseSessionHandler.prototype, 'onSessionTerminated').mockReturnValue();
+
+    remoteStream = { id: 'remote-video-stream' } as any;
+    jest.spyOn(mediaUtils, 'createNewStreamWithTrack').mockImplementation((track: any) => (track.kind === 'video' ? remoteStream : { id: 'remote-audio-stream' }) as any);
+
+    session = new MockSession() as any;
+    audio = document.createElement('audio');
+    video = document.createElement('video');
+    videoTrack = new MockTrack();
+    videoTrack.kind = 'video';
+    audioTrack = new MockTrack();
+    audioTrack.kind = 'audio';
+    jest.spyOn(session.pc, 'getReceivers').mockReturnValue([{ track: audioTrack }, { track: videoTrack }] as any);
+
+    sdkErrors = [];
+    mockSdk.on('sdkError', (error) => sdkErrors.push(error));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  describe('release on termination', () => {
+    it('should clear the video element when it still holds this session\'s stream', async () => {
+      await accept();
+      expect(video.srcObject).toBe(remoteStream);
+
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+
+      expect(video.srcObject).toBeNull();
+      expect(audio.srcObject).toEqual({ id: 'remote-audio-stream' });
+    });
+
+    it('should not clear the video element when it holds another stream', async () => {
+      await accept();
+      const otherStream = { id: 'next-session' } as any;
+      video.srcObject = otherStream;
+
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+
+      expect(video.srcObject).toBe(otherStream);
+    });
+
+    it('should leave the element alone when no video was attached', async () => {
+      (session.pc.getReceivers as jest.Mock).mockReturnValue([]);
+      await accept();
+
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+
+      expect(video.srcObject).toBeUndefined();
+    });
+
+    it('should call the base termination handler', async () => {
+      await accept();
+      const reason = { condition: 'success' } as any;
+
+      handler.onSessionTerminated(session, reason);
+
+      expect(baseTerminatedSpy).toHaveBeenCalledWith(session, reason);
+    });
+
+    it('should not report after the session terminates before the wait', async () => {
+      await accept();
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+  });
+
+  describe('report when remote video is not received', () => {
+    it('should report once when the wait elapses with a remote camera on', async () => {
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId, videoMuted: false }, { userId: 'customer', videoMuted: false }]);
+
+      expireWait();
+      jest.advanceTimersByTime(WAIT_MS * 3);
+
+      expect(sdkErrors.length).toBe(1);
+      expect(sdkErrors[0].type).toBe(SdkErrorTypes.session);
+      expect(sdkErrors[0].message).toBe('Remote video was not received');
+      expect(sdkErrors[0].details).toEqual({ conversationId: session.conversationId, sessionId: session.id });
+    });
+
+    it('should not report before the wait elapses', async () => {
+      await accept();
+
+      jest.advanceTimersByTime(WAIT_MS - 1);
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should report when there is no participant state', async () => {
+      await accept();
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should report when the local participant is not found but a remote camera is on', async () => {
+      session.pcParticipant = null;
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: false }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should report when no video track was attached', async () => {
+      (session.pc.getReceivers as jest.Mock).mockReturnValue([]);
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: false }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should report when the element played a different stream', async () => {
+      await accept();
+      video.srcObject = { id: 'app-stream' } as any;
+      video.dispatchEvent(new Event('playing'));
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should report when a remote participant\'s camera state is missing', async () => {
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: undefined }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should report for a guest without a user id even when every listed camera is off', async () => {
+      mockSdk._personDetails = {} as any;
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: true }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should not report for a guest when the conversation has no active video participants', async () => {
+      mockSdk._personDetails = {} as any;
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([]);
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not report when every remote camera is off', async () => {
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId, videoMuted: false }, { userId: 'customer', videoMuted: true }]);
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not report when only the local participant is listed', async () => {
+      session.pcParticipant = null;
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId, videoMuted: false }]);
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not report when the conversation has no active video participants', async () => {
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([]);
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+  });
+
+  describe('failed or ended acceptance', () => {
+    it.each([
+      ['the session accept', () => jest.spyOn(BaseSessionHandler.prototype, 'acceptSession').mockRejectedValue(new Error('accept failed'))],
+      ['the initial mute', () => jest.spyOn(handler, 'setInitialMuteStates').mockRejectedValue(new Error('accept failed'))],
+      ['attaching media', () => jest.spyOn(handler, 'attachIncomingTrackToElement').mockImplementation(() => { throw new Error('accept failed'); })]
+    ])('should stop watching and rethrow when %s fails', async (_label, fail) => {
+      fail();
+      const removeSpy = jest.spyOn(video, 'removeEventListener');
+
+      await expect(accept()).rejects.toThrow('accept failed');
+      expireWait();
+
+      expect(removeSpy).toHaveBeenCalledWith('playing', expect.any(Function));
+      expect(session._remoteVideoWatch).toBeUndefined();
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not start watching when the session ends while media is pending', async () => {
+      let resolveMedia: (stream: any) => void;
+      (mockSdk.media.startMedia as jest.Mock).mockReturnValue(new Promise(resolve => { resolveMedia = resolve; }));
+      const addListenerSpy = jest.spyOn(video, 'addEventListener');
+
+      const accepting = accept();
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+      resolveMedia(new MockStream());
+      await accepting;
+      expireWait();
+
+      expect(addListenerSpy).not.toHaveBeenCalled();
+      expect(session._remoteVideoWatch).toBeUndefined();
+      expect(sdkErrors).toEqual([]);
+      expect(video.srcObject).toBeFalsy();
+    });
+  });
+
+  describe('no report when remote video plays', () => {
+    it('should not report when the element plays this session\'s stream', async () => {
+      await accept();
+      video.dispatchEvent(new Event('playing'));
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not report when playing fires while the stream is being attached', async () => {
+      let current: any;
+      Object.defineProperty(video, 'srcObject', {
+        configurable: true,
+        get: () => current,
+        set: (value) => {
+          current = value;
+          video.dispatchEvent(new Event('playing'));
+        }
+      });
+
+      await accept();
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not report when the element is already playing at the end of the wait', async () => {
+      await accept();
+      Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+      Object.defineProperty(video, 'readyState', { configurable: true, get: () => HTMLMediaElement.HAVE_ENOUGH_DATA });
+
+      expireWait();
+
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should report when the element holds the stream but is paused at the end of the wait', async () => {
+      await accept();
+      Object.defineProperty(video, 'readyState', { configurable: true, get: () => HTMLMediaElement.HAVE_ENOUGH_DATA });
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+
+    it('should stop watching once a late video track plays', async () => {
+      (session.pc.getReceivers as jest.Mock).mockReturnValue([]);
+      const removeSpy = jest.spyOn(video, 'removeEventListener');
+      await accept();
+
+      session.emit('peerTrackAdded', videoTrack as any);
+      video.dispatchEvent(new Event('playing'));
+
+      expect(removeSpy).toHaveBeenCalledWith('playing', expect.any(Function));
+      expireWait();
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should not attach a late video track after the session ends', async () => {
+      (session.pc.getReceivers as jest.Mock).mockReturnValue([]);
+      const attachSpy = jest.spyOn(handler, 'attachIncomingTrackToElement');
+      await accept();
+
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+      session.emit('peerTrackAdded', videoTrack as any);
+
+      expect(attachSpy).not.toHaveBeenCalled();
+      expect(video.srcObject).toBeFalsy();
+      expireWait();
+      expect(sdkErrors).toEqual([]);
+    });
+
+    it('should replace an earlier watch for the same session', async () => {
+      await accept();
+      await accept();
+      session._lastParticipantsUpdate = participantsUpdate([{ userId: 'customer', videoMuted: false }]);
+
+      expireWait();
+
+      expect(sdkErrors.length).toBe(1);
+    });
+  });
+
+  describe('flag off', () => {
+    it.each([
+      ['absent', undefined],
+      ['empty', {}],
+      ['false', { releaseAndReportRemoteVideo: false }]
+    ])('should not watch or release when experimentalFeatures is %s', async (_label, experimentalFeatures) => {
+      mockSdk._config.experimentalFeatures = experimentalFeatures as any;
+      const addListenerSpy = jest.spyOn(video, 'addEventListener');
+
+      await accept();
+      expect(jest.getTimerCount()).toBe(0);
+      handler.onSessionTerminated(session, { condition: 'success' } as any);
+      jest.advanceTimersByTime(WAIT_MS * 2);
+
+      expect(addListenerSpy).not.toHaveBeenCalled();
+      expect(video.srcObject).toBe(remoteStream);
+      expect(session._remoteVideoWatch).toBeUndefined();
+      expect(sdkErrors).toEqual([]);
+    });
   });
 });
 

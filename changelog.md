@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
 ### Added
+* [STREAM-2856](https://inindca.atlassian.net/browse/STREAM-2856) - Behind `experimentalFeatures.releaseAndReportRemoteVideo` (Genesys internal): release the remote video from the video element when a video session ends, and emit a `session` `sdkError` ("Remote video was not received") when remote video does not play within 10 seconds of the session attaching it.
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 
 ### Changed
