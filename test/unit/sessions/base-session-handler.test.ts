@@ -832,6 +832,7 @@ describe('acceptSession', () => {
 
   it('should log correctly', async () => {
     const session: any = new MockSession();
+    session.state = 'pending';
     const params = {
       conversationId: session.conversationId,
       audioElement: { iam: 'an audio el' } as any,
@@ -846,6 +847,8 @@ describe('acceptSession', () => {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,
+      alreadyAccepted: false,
+      sessionState: 'pending',
       params: {
         ...params,
         audioElement: {},
@@ -853,6 +856,22 @@ describe('acceptSession', () => {
         mediaStream: undefined
       }
     });
+  });
+
+  it('should warn when accepting a session that is already in the active state (potential dual session-accept)', async () => {
+    const session: any = new MockSession();
+    session.state = 'active';
+    session._alreadyAccepted = true;
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    await handler.acceptSession(session, { conversationId: session.conversationId });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      'warn',
+      'accepting session that is already in the active state; this may result in a dual session-accept',
+      expect.objectContaining({ alreadyAccepted: true, sessionState: 'active' })
+    );
+    expect(session.accept).toHaveBeenCalled();
   });
 
   it('should set the sinkId in supported browsers to the default output device', async () => {
