@@ -4,7 +4,7 @@ import { Logger } from 'genesys-cloud-client-logger';
 import { EventEmitter } from 'events';
 
 import * as windows11Utils from '../../src/windows11-first-session-hack';
-import { GenesysCloudWebrtcSdk, ISdkConfig, mediaUtils } from '../../src';
+import { GenesysCloudWebrtcSdk, ISdkConfig } from '../../src';
 import { installHttpMockServer, seedAuthenticatedInit } from './support/black-box-harness';
 
 /**
@@ -119,22 +119,24 @@ describe('SDK in Safari desktop (integration)', () => {
     }
   });
 
-  it('initializesWithoutSdkErrorAndReportsSafari', async () => {
+  it('initializesWithoutSdkErrorInSafari', async () => {
     presentBrowser(SAFARI_DESKTOP_UA, false);
 
     const { sdkErrors } = await constructSdk();
 
     expect(sdkErrors).toEqual([]);
-    expect(mediaUtils.isSafari()).toBe(true);
   });
 
-  it('reportsNotSafariInChrome', async () => {
+  it('requestsChromeOnlyKeysInChrome', async () => {
     presentBrowser(CHROME_DESKTOP_UA, true);
-
     const { sdkErrors } = await constructSdk();
 
+    await sdk.media.startMedia({ audio: 'mic-2' });
+
     expect(sdkErrors).toEqual([]);
-    expect(mediaUtils.isSafari()).toBe(false);
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    const audio = getUserMedia.mock.calls[0][0].audio;
+    CHROME_ONLY_AUDIO_KEYS.forEach(key => expect(audio).toHaveProperty(key));
   });
 
   it('requestsSelectedMicWithoutChromeOnlyKeysInSafari', async () => {

@@ -5,7 +5,7 @@ import browserama from 'browserama';
 
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
-import { isSafari } from './media-utils';
+import { isWebKit } from './browser-detection';
 import { SdkErrorTypes } from '../types/enums';
 import {
   IExtendedMediaSession,
@@ -937,9 +937,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       audioConstraints.googDucking = false;
       audioConstraints.googHighpassFilter = true;
       videoConstraints.googNoiseReduction = true;
-    } else if (isSafari()) {
-      /* Safari-specific constraint changes belong in this branch */
-      this.sdk.logger.debug('Safari detected; Chrome-only media constraints omitted');
+    } else if (isWebKit()) {
+      this.sdk.logger.debug('WebKit detected; Chrome-only media constraints omitted');
     }
 
     const constraints: { video: ConstraintObj | boolean; audio: ConstraintObj | boolean } = {

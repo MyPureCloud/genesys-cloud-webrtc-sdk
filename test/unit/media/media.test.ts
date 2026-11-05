@@ -1347,7 +1347,7 @@ describe('SdkMedia', () => {
           video: { frameRate: { ideal: 30 } },
           audio: standardAudioConstraints
         });
-        expect(sdk.logger.debug).toHaveBeenCalledWith('Safari detected; Chrome-only media constraints omitted');
+        expect(sdk.logger.debug).toHaveBeenCalledWith('WebKit detected; Chrome-only media constraints omitted');
       });
 
       it('should omit Chrome-only audio constraints in Firefox', () => {
@@ -1357,7 +1357,7 @@ describe('SdkMedia', () => {
           video: { frameRate: { ideal: 30 } },
           audio: standardAudioConstraints
         });
-        expect(sdk.logger.debug).not.toHaveBeenCalledWith('Safari detected; Chrome-only media constraints omitted');
+        expect(sdk.logger.debug).not.toHaveBeenCalledWith('WebKit detected; Chrome-only media constraints omitted');
       });
     });
 
