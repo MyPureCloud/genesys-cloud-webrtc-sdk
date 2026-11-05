@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
 ### Added
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
+* [STREAM-2855](https://inindca.atlassian.net/browse/STREAM-2855) - Report blocked call audio, behind `experimentalFeatures.reportRemoteAudioPlaybackBlocked` (Genesys internal; off by default, so behavior is unchanged unless enabled): the SDK then calls `play()` on the softphone call's audio element and emits a `media` `sdkError` (`details.conversationId`, `details.sessionId` and the browser error name in `details.error`) when the browser rejects playback, such as a Safari autoplay block, instead of leaving the call silent.
 
 ### Changed
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.

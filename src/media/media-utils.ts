@@ -1,5 +1,7 @@
 import { GenesysCloudWebrtcSdk } from '../client';
 import { IExtendedMediaSession, ISessionIdAndConversationId } from '../types/interfaces';
+import { SdkErrorTypes } from '../types/enums';
+import { createAndEmitSdkError } from '../utils';
 
 const GC_AUDIO_EL_CLASS = '__gc-webrtc-inbound';
 
@@ -57,7 +59,39 @@ export const attachAudioMedia = function (
   audioElement.volume = volume / 100;
   audioElement.autoplay = true;
   audioElement.srcObject = stream;
+
+  // Genesys internal (GCP-1237): off unless the consuming app enables it from its feature toggle
+  if (sdk._config.experimentalFeatures?.reportRemoteAudioPlaybackBlocked) {
+    startAudioPlayback(sdk, audioElement, ids);
+  }
   return audioElement;
+};
+
+/**
+ * Autoplay alone gives no signal when the browser refuses to start the element
+ *  (for example, Safari blocking autoplay), so start it explicitly and report
+ *  any rejection. Not awaited: playback may stay blocked indefinitely.
+ */
+const startAudioPlayback = function (sdk: GenesysCloudWebrtcSdk, audioElement: HTMLAudioElement, ids?: ISessionIdAndConversationId): void {
+  let playback: Promise<void> | undefined;
+  try {
+    playback = audioElement.play();
+  } catch (error) {
+    playback = Promise.reject(error);
+  }
+
+  // older browsers return undefined from play()
+  Promise.resolve(playback).catch((error) => {
+    const details: { conversationId?: string, sessionId?: string, error?: string } = {
+      conversationId: ids?.conversationId,
+      sessionId: ids?.sessionId
+    };
+    // omit details.error when the rejection carries no name
+    if (error?.name) {
+      details.error = error.name;
+    }
+    createAndEmitSdkError.call(sdk, SdkErrorTypes.media, 'Remote audio playback was blocked', details);
+  });
 };
 
 /**
