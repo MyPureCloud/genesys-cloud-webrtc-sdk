@@ -4,6 +4,7 @@ import { GenesysCloudWebrtcSdk } from '../../../src/client';
 import { SimpleMockSdk, MockStream, MockTrack, MockSession } from '../../test-utils';
 import { IExtendedMediaSession } from '../../../src/types/interfaces';
 import { SdkErrorTypes } from '../../../src/types/enums';
+import { SdkError } from '../../../src/utils';
 
 const mockVideoDevice1 = { kind: 'videoinput', deviceId: 'mockVideoDevice1', label: 'Mock Video Device #1' } as MediaDeviceInfo;
 const mockVideoDevice2 = { kind: 'videoinput', deviceId: 'mockVideoDevice2', label: 'Mock Video Device #2' } as MediaDeviceInfo;
@@ -125,17 +126,17 @@ describe('attachAudioMedia()', () => {
   });
 
   describe('playback when experimentalFeatures.reportRemoteAudioPlaybackBlocked is off', () => {
-    it.each([
+    it.each<[string, Record<string, unknown> | undefined]>([
       ['absent', undefined],
       ['empty', {}],
       ['false', { reportRemoteAudioPlaybackBlocked: false }]
     ])('should not call play() or emit when experimentalFeatures is %s', async (_label, experimentalFeatures) => {
-      mockSdk._config.experimentalFeatures = experimentalFeatures as any;
+      mockSdk._config.experimentalFeatures = experimentalFeatures;
       playSpy.mockRejectedValue(new Error('should not be called'));
-      const errors: any[] = [];
-      mockSdk.on('sdkError', (e) => errors.push(e));
+      const errors: SdkError[] = [];
+      mockSdk.on('sdkError', (e: SdkError) => errors.push(e));
       const element = document.createElement('audio');
-      const stream: any = {};
+      const stream = {} as MediaStream;
 
       expect(mediaUtils.attachAudioMedia(mockSdk, stream, 50, element)).toBe(element);
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -162,11 +163,11 @@ describe('attachAudioMedia()', () => {
       return error;
     };
 
-    const attachAndCollectErrors = async (): Promise<{ element: HTMLAudioElement, errors: any[], returned: HTMLAudioElement }> => {
-      const errors: any[] = [];
-      mockSdk.on('sdkError', (e) => errors.push(e));
+    const attachAndCollectErrors = async (): Promise<{ element: HTMLAudioElement, errors: SdkError[], returned: HTMLAudioElement }> => {
+      const errors: SdkError[] = [];
+      mockSdk.on('sdkError', (e: SdkError) => errors.push(e));
       const element = document.createElement('audio');
-      const stream: any = {};
+      const stream = {} as MediaStream;
 
       const returned = mediaUtils.attachAudioMedia(mockSdk, stream, 50, element, ids);
 
@@ -240,7 +241,7 @@ describe('attachAudioMedia()', () => {
       playSpy.mockReturnValue(new Promise(() => undefined));
       const element = document.createElement('audio');
 
-      expect(mediaUtils.attachAudioMedia(mockSdk, {} as any, 100, element, ids)).toBe(element);
+      expect(mediaUtils.attachAudioMedia(mockSdk, {} as MediaStream, 100, element, ids)).toBe(element);
     });
   });
 });

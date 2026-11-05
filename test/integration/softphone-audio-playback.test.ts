@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-explicit-any: "off" */
 import { Logger } from 'genesys-cloud-client-logger';
 import { EventEmitter } from 'events';
 
@@ -6,6 +5,7 @@ import * as windows11Utils from '../../src/windows11-first-session-hack';
 import { GenesysCloudWebrtcSdk, ISdkConfig, SessionTypes } from '../../src';
 import { SdkMedia } from '../../src/media/media';
 import { SdkErrorTypes } from '../../src/types/enums';
+import { ISdkMediaState } from '../../src/types/interfaces';
 import { SdkError } from '../../src/utils';
 import { installHttpMockServer, seedAuthenticatedInit } from './support/black-box-harness';
 import { MockSession, MockStream, MockTrack, flushPromises } from '../test-utils';
@@ -70,17 +70,27 @@ describe('Softphone remote audio playback (integration)', () => {
   const api = installHttpMockServer();
   let sdk: GenesysCloudWebrtcSdk;
   let playSpy: jest.SpyInstance;
-  let originalMediaStream: any;
-  let originalPeerConnection: any;
+  let originalMediaStream: typeof window.MediaStream;
+  let originalPeerConnection: typeof window.RTCPeerConnection;
 
-  const mockLogger: jest.Mocked<Logger> = {
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    log: jest.fn(),
-    setAccessToken: jest.fn()
-  } as any;
+  /* a Logger that never runs its constructor; the methods the SDK calls are stubbed in beforeEach */
+  const mockLogger: Logger = Object.create(Logger.prototype);
+
+  /* what the mocked device layer reports: no devices, no output-device support */
+  const mediaState: ISdkMediaState = {
+    devices: [],
+    oldDevices: [],
+    audioDevices: [],
+    videoDevices: [],
+    outputDevices: [],
+    hasOutputDeviceSupport: false,
+    hasMic: false,
+    hasCamera: false,
+    hasMicPermissions: false,
+    hasCameraPermissions: false,
+    micPermissionsRequested: false,
+    cameraPermissionsRequested: false
+  };
 
   const domError = (name: string): Error => {
     const error = new Error(`${name} message`);
@@ -91,12 +101,12 @@ describe('Softphone remote audio playback (integration)', () => {
   const constructSdk = async (overrides: Partial<ISdkConfig> = {}): Promise<GenesysCloudWebrtcSdk> => {
     seedAuthenticatedInit(api);
     sdk = new GenesysCloudWebrtcSdk({
-      logger: mockLogger as any,
+      logger: mockLogger,
       accessToken: 'secure',
       environment: api.baseUrl,
       optOutOfTelemetry: true,
       ...overrides
-    } as any);
+    });
 
     await sdk.initialize();
     return sdk;
@@ -117,7 +127,7 @@ describe('Softphone remote audio playback (integration)', () => {
     const conversationId = globalThis.crypto.randomUUID();
     const fromJid = `call-${globalThis.crypto.randomUUID()}@gjoll.com`;
     /* the SDK binds its webrtc listeners to the streaming connection itself (client-private.ts) */
-    const transport = sdk._streamingConnection as unknown as EventEmitter;
+    const transport: EventEmitter = sdk._streamingConnection;
 
     transport.emit('requestIncomingRtcSession', {
       sessionId,
@@ -159,30 +169,33 @@ describe('Softphone remote audio playback (integration)', () => {
 
   beforeEach(() => {
     jest.spyOn(windows11Utils, 'setupWebrtcForWindows11').mockResolvedValue();
-    jest.mocked(SdkMedia.prototype.getState).mockReturnValue({ hasOutputDeviceSupport: false, devices: [] } as any);
-    /* the agent's microphone, from the mocked device layer */
-    jest.mocked(SdkMedia.prototype.startMedia).mockResolvedValue(new MockStream({ audio: true }) as any);
+    jest.mocked(SdkMedia.prototype.getState).mockReturnValue(mediaState);
+    for (const level of ['debug', 'info', 'warn', 'error', 'log', 'setAccessToken'] as const) {
+      jest.spyOn(mockLogger, level).mockImplementation(() => undefined);
+    }
     playSpy = jest.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
     jest.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
-    originalMediaStream = (window as any).MediaStream;
-    (window as any).MediaStream = MockStream;
+    originalMediaStream = window.MediaStream;
+    Object.defineProperty(window, 'MediaStream', { value: MockStream, writable: true, configurable: true });
+    /* the agent's microphone, from the mocked device layer (window.MediaStream is MockStream here) */
+    jest.mocked(SdkMedia.prototype.startMedia).mockImplementation(() => Promise.resolve(new MediaStream()));
     /* jsdom has no RTCPeerConnection; the SDK probes it once for transceiver support */
-    originalPeerConnection = (window as any).RTCPeerConnection;
-    (window as any).RTCPeerConnection = class {
+    originalPeerConnection = window.RTCPeerConnection;
+    Object.defineProperty(window, 'RTCPeerConnection', { writable: true, configurable: true, value: class {
       getTransceivers () { return []; }
       getStats () { return Promise.resolve({}); }
       close () { /* no-op */ }
-    };
+    } });
   });
 
   afterEach(async () => {
     if (sdk) {
       await sdk.destroy();
-      sdk = undefined as any;
+      sdk = undefined;
     }
     jest.restoreAllMocks();
-    (window as any).MediaStream = originalMediaStream;
-    (window as any).RTCPeerConnection = originalPeerConnection;
+    Object.defineProperty(window, 'MediaStream', { value: originalMediaStream, writable: true, configurable: true });
+    Object.defineProperty(window, 'RTCPeerConnection', { value: originalPeerConnection, writable: true, configurable: true });
     document.querySelectorAll('audio').forEach(el => el.remove());
   });
 
@@ -260,11 +273,11 @@ describe('Softphone remote audio playback (integration)', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it.each([
+  it.each<[string, Partial<ISdkConfig>]>([
     ['absent', {}],
     ['false', { experimentalFeatures: { reportRemoteAudioPlaybackBlocked: false } }]
   ])('doesNotStartPlaybackOrReportWhenTheExperimentalFeatureIs %s', async (_label, overrides) => {
-    await constructSdk(overrides as Partial<ISdkConfig>);
+    await constructSdk(overrides);
     playSpy.mockRejectedValue(domError('NotAllowedError'));
     const errors = collectMediaErrors();
 
