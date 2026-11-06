@@ -22,7 +22,8 @@ const filesToInjectVersion = [
   'dist/cjs/client.d.ts',
   'dist/cjs/client.js',
   'dist/es/client.d.ts',
-  'dist/es/client.js'
+  'dist/es/client.js',
+  'dist/es/index.bundle.js'
 ].concat(bundleFileNames.map(file => `${versionDir}/${file}`));
 
 console.log('Files to inject version into', { filesToInjectVersion, version });
@@ -47,6 +48,11 @@ bundleFileNames.forEach(filename => {
   cdnFilesWithPath.push(fromFile);
   cdnFilesWithPath.push(toFile);
 });
+
+/* the cdn bundles resolve wasm relative to their own script url, so it has to travel with them */
+FS.readdirSync(versionDir)
+  .filter(filename => filename.endsWith('.wasm'))
+  .forEach(filename => cdnFilesWithPath.push(`${versionDir}/${filename}`));
 
 /* create our major version folder */
 if (!FS.existsSync(majorVersionDir)) {
