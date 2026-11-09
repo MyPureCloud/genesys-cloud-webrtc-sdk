@@ -20,23 +20,29 @@ export class StatsAggregator {
   private jitterMeasurements = 0;
 
   private boundStatsHandler?: (stats: StatsEvent) => void;
+  private boundSessionStartedHandler: (session: IExtendedMediaSession) => void;
+  private boundPrivateSessionEndedHandler: (session: IExtendedMediaSession) => void;
+  private boundTerminatedHandler: () => void;
 
   constructor(private session: IExtendedMediaSession, private sdk: GenesysCloudWebrtSdk) {
     if (this.shouldGatherImmediately(session)) {
       this.startGatheringStats();
     }
 
-    const boundSessionStartedHandler = this.onSessionStarted.bind(this);
-    const boundPrivateSessionEndedHandler = this.onPrivateSessionEnded.bind(this);
-    sdk.on('sessionStarted', boundSessionStartedHandler);
+    this.boundSessionStartedHandler = this.onSessionStarted.bind(this);
+    this.boundPrivateSessionEndedHandler = this.onPrivateSessionEnded.bind(this);
+    this.boundTerminatedHandler = this.dispose.bind(this);
+    sdk.on('sessionStarted', this.boundSessionStartedHandler);
     // STREAM-1590: Use a private event to stop gathering in certain concurrent call scenarios
-    sdk.on('_sessionEnded', boundPrivateSessionEndedHandler);
+    sdk.on('_sessionEnded', this.boundPrivateSessionEndedHandler);
+    session.once('terminated', this.boundTerminatedHandler);
+  }
 
-    session.once('terminated', () => {
-      this.stopGatheringStats();
-      sdk.off('sessionStarted', boundSessionStartedHandler);
-      sdk.off('_sessionEnded', boundPrivateSessionEndedHandler);
-    });
+  private dispose() {
+    this.stopGatheringStats();
+    this.sdk.off('sessionStarted', this.boundSessionStartedHandler);
+    this.sdk.off('_sessionEnded', this.boundPrivateSessionEndedHandler);
+    this.session.off('terminated', this.boundTerminatedHandler);
   }
 
   private shouldGatherImmediately(session: IExtendedMediaSession): boolean {

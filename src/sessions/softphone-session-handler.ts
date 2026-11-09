@@ -849,21 +849,25 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
       const patchPromise = this.patchPhoneCall(conversationId, participant.id, {
         state: CommunicationStates.disconnected
       });
+      let sessionEndedListener: (endedSession: IExtendedMediaSession, reason: JingleReason) => void;
       const terminatedPromise = new Promise<JingleReason>((resolve) => {
-        const listener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
+        sessionEndedListener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
           if (endedSession.id === session.id && endedSession.conversationId === conversationId) {
             this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', { endedSessionId: endedSession.id, conversationId}, { skipServer: true });
-            this.sdk.off('sessionEnded', listener);
             return resolve(reason);
           } else {
             this.log('debug', 'received "sessionEnded" event from session that was NOT requested by `sdk.endSession()`', { endedSessionId: endedSession.id, conversationId, sessionId: session.id}, { skipServer: true});
           }
         }
 
-        this.sdk.on('sessionEnded', listener);
+        this.sdk.on('sessionEnded', sessionEndedListener);
       });
 
-      await Promise.all([patchPromise, terminatedPromise]);
+      try {
+        await Promise.all([patchPromise, terminatedPromise]);
+      } finally {
+        this.sdk.off('sessionEnded', sessionEndedListener);
+      }
     } catch (error) {
       this.log('error', 'Failed to end session gracefully', { conversationId, sessionId: session.id, error });
       /* if LA > 1, just end the session */
