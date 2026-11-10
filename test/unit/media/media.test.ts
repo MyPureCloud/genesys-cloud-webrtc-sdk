@@ -841,32 +841,13 @@ describe('SdkMedia', () => {
       expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toBe(undefined);
     });
 
-    it('should return the source track device for a registered processed track', () => {
+    it('should match the track itself, not its registered source track', () => {
       const cameraTrack = new MockTrack('video', mockVideoDevice2.label);
       const processedTrack = new MockTrack('video', 'canvas-capture-track');
 
       sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
 
-      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(processedTrack as unknown as MediaStreamTrack)).toEqual(mockVideoDevice2);
-    });
-
-    it('should not resolve unregistered tracks through another track registration', () => {
-      const cameraTrack = new MockTrack('video', mockVideoDevice1.label);
-      const processedTrack = new MockTrack('video', 'canvas-capture-track');
-      const unregisteredTrack = new MockTrack('video', 'another-canvas-capture-track');
-
-      sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
-
-      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(unregisteredTrack as unknown as MediaStreamTrack)).toBe(undefined);
-      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(cameraTrack as unknown as MediaStreamTrack)).toEqual(mockVideoDevice1);
-    });
-
-    it('should return `undefined` for a registered processed track whose source device is gone', () => {
-      const cameraTrack = new MockTrack('video', 'A video device that does not exist');
-      const processedTrack = new MockTrack('video', mockVideoDevice1.label);
-
-      sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
-
+      /* callers like the same-device check in updateOutgoingMedia need the track actually being sent */
       expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(processedTrack as unknown as MediaStreamTrack)).toBe(undefined);
     });
   });

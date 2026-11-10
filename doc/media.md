@@ -416,9 +416,7 @@ Deprecated. Used `findCachedDeviceByTrackLabelAndKind()` instead.
 
 #### `findCachedDeviceByTrackLabelAndKind()`
 Look through the cached devices and match based on
- the passed in track's `kind` and `label`. If the track was registered
- with [`registerProcessedTrack()`](#registerprocessedtrack), its source
- track is used for the match.
+ the passed in track's `kind` and `label`.
 
 Declaration:
 ``` ts
@@ -439,8 +437,8 @@ Tell the SDK which source track a processed track was created from.
 The SDK maps outgoing tracks to devices by their label. A processed track's
  label does not match any device. Without registering it, the SDK treats
  the device as lost on every `devicechange` (for example, plugging in a headset)
- and replaces the processed track with a raw track from the device. Registered
- tracks are mapped to devices through their source track. If the source track's
+ and replaces the processed track with a raw track from the device. For a
+ registered track, the SDK checks the source track's device instead. If the source track's
  device really is removed, the SDK still switches devices as usual. Effects are
  not re-applied to the new track.
 
