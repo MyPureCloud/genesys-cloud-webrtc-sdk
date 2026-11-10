@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * [STREAM-2689](https://inindca.atlassian.net/browse/STREAM-2689) - Fix the HP Poly call control wasm (used with `useNewPolyImplementation`) failing to load from `dist/es/index.bundle.js` and the CDN bundles. The wasm now ships beside each bundle. `dist/es/index.bundle.js` also now reports the real SDK version.
+* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Fix any `devicechange` (such as plugging in a headset) replacing a consumer's processed outgoing video track (such as a virtual background) with a raw camera track, even though the camera was still connected. The SDK matched outgoing tracks to devices by label, and a processed track's label matches no device. Consumers can now call the new `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` so the SDK matches a processed track through the device track it was created from. The new `sdk.media.getSourceTrack(track)` returns the registered source track. See [doc/media.md](doc/media.md#registerprocessedtrack).
 
 # [v14.2.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...v14.2.7)
 ### Added

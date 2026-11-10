@@ -38,6 +38,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private onDeviceChangeListenerRef: (() => void) | undefined;
   /* stream or track id and function to remove listeners */
   private defaultsBeingMonitored = new Map<string, (() => void)>();
+  /* processed track -> the source track it was created from (see `registerProcessedTrack()`) */
+  private processedTrackSources = new WeakMap<MediaStreamTrack, MediaStreamTrack>();
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super();
@@ -690,6 +692,28 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
+   * Tell the SDK which source track a processed track was created from
+   *  (for example, a virtual background canvas track created from a camera track).
+   *
+   * @param processedTrack the track being sent on the session
+   * @param sourceTrack the device track `processedTrack` was created from
+   */
+  registerProcessedTrack (processedTrack: MediaStreamTrack, sourceTrack: MediaStreamTrack): void {
+    this.processedTrackSources.set(processedTrack, sourceTrack);
+  }
+
+  /**
+   * Get the source track registered for a processed track
+   *  through `registerProcessedTrack()`.
+   *
+   * @param track track to resolve
+   * @returns the registered source track, or `track` itself if none is registered
+   */
+  getSourceTrack (track: MediaStreamTrack): MediaStreamTrack {
+    return this.processedTrackSources.get(track) || track;
+  }
+
+  /**
    * @deprecated use `sdk.media.findCachedDeviceByTrackLabelAndKind(track)`
    */
   findCachedDeviceByTrackLabel (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
@@ -698,7 +722,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
   /**
    * Look through the cached devices and match based on
-   *  the passed in track's `kind` and `label`.
+   *  the passed in track's `kind` and `label`. If the track was
+   *  registered with `registerProcessedTrack()`, its source track
+   *  is used for the match.
    *
    * @param track `MediaStreamTrack` with the label to search for
    * @returns the found device or `undefined` if the
@@ -706,8 +732,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   findCachedDeviceByTrackLabelAndKind (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
     if (!track) return;
+    const sourceTrack = this.getSourceTrack(track);
     return this.getDevices().find(d =>
-      d.label === track.label && `${d.kind.substring(0, 5)}` === track.kind.substring(0, 5)
+      d.label === sourceTrack.label && `${d.kind.substring(0, 5)}` === sourceTrack.kind.substring(0, 5)
     );
   }
 

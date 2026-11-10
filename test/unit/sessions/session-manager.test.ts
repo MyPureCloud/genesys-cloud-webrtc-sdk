@@ -1059,6 +1059,63 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, session });
   });
 
+  it('should not update the session if a registered processed track\'s source device still exists', async () => {
+    const cameraTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    /* e.g. a virtual background canvas track: its label matches no device */
+    const processedTrack = new MockTrack('video', 'canvas-capture-track');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](processedTrack); /* this is a mock PC */
+
+    mockSdk.media.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
+    expect(mockSessionHandler.setVideoMute).not.toHaveBeenCalled();
+  });
+
+  it('should update the session if a registered processed track\'s source device was lost', async () => {
+    const cameraTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    const processedTrack = new MockTrack('video', 'canvas-capture-track');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](processedTrack); /* this is a mock PC */
+
+    mockSdk.media.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+    /* source camera is lost */
+    setMediaStateDevices(testDevices.filter(d => d.label !== cameraTrack.label));
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, session });
+  });
+
+  it('should update the session if an unregistered track\'s label matches no device', async () => {
+    const unregisteredTrack = new MockTrack('video', 'canvas-capture-track');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](unregisteredTrack); /* this is a mock PC */
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, session });
+  });
+
+  it('should only match audio tracks against audio input devices (not output devices)', async () => {
+    const audioTrack = new MockTrack('audio', 'Headset');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](audioTrack); /* this is a mock PC */
+
+    /* the mic is gone but an output device with the same label remains */
+    setMediaStateDevices([
+      ...testDevices,
+      { deviceId: 'device#5', groupId: 'group#5', kind: 'audiooutput', label: 'Headset' } as MediaDeviceInfo
+    ]);
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, session });
+  });
+
   it('should mute the media type if there is no device to switch to', async () => {
     const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const mockAudioTrack = new MockTrack('audio', mediaState.videoDevices[0].label);
