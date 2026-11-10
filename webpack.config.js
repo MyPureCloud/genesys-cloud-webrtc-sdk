@@ -33,7 +33,13 @@ module.exports = (env) => {
   const babelExcludes = [
     /@babel\//,
     /\bcore-js\b/,
-    /\bwebpack\/buildin\b/
+    /\bwebpack\/buildin\b/,
+    /*
+      the vendored HP Poly sdk loads its wasm with `new URL('call_control_sdk.wasm', import.meta.url)`.
+      transform-runtime rewrites `URL` to the core-js polyfill, which hides that pattern from webpack
+      so it inlines a `file://` build-machine path instead of emitting the wasm as an asset.
+    */
+    /call-control-sdk[\\/]call_control_sdk\.js$/
   ];
 
   const babelOptions = {
@@ -80,6 +86,7 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, versionDir),
       filename,
+      assetModuleFilename: '[name].[contenthash:8][ext]',
       library: 'GenesysCloudWebrtcSdk',
       libraryTarget: 'umd'
     },
