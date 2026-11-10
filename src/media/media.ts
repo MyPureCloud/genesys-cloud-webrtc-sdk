@@ -722,7 +722,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
   /**
    * Look through the cached devices and match based on
-   *  the passed in track's `kind` and `label`.
+   *  the passed in track's `kind` and `label`. Only input
+   *  devices (microphones and cameras) are matched.
    *
    * @param track `MediaStreamTrack` with the label to search for
    * @returns the found device or `undefined` if the
@@ -730,8 +731,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   findCachedDeviceByTrackLabelAndKind (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
     if (!track) return;
+    /* tracks only come from input devices, so never match a speaker that shares a mic's label */
     return this.getDevices().find(d =>
-      d.label === track.label && `${d.kind.substring(0, 5)}` === track.kind.substring(0, 5)
+      d.label === track.label && d.kind === `${track.kind}input`
     );
   }
 

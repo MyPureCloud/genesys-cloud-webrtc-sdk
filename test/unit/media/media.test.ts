@@ -841,6 +841,21 @@ describe('SdkMedia', () => {
       expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toBe(undefined);
     });
 
+    it('should match a mic, not a speaker that shares its label', () => {
+      /* headsets often list their mic and speaker under the same label */
+      const headsetSpeaker = { kind: 'audiooutput', deviceId: 'headsetSpeaker', label: 'Headset' } as MediaDeviceInfo;
+      const headsetMic = { kind: 'audioinput', deviceId: 'headsetMic', label: 'Headset' } as MediaDeviceInfo;
+      const micTrack = new MockTrack('audio', 'Headset');
+
+      /* speaker listed first */
+      sdkMedia['setDevices']([headsetSpeaker, headsetMic]);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(micTrack as unknown as MediaStreamTrack)).toEqual(headsetMic);
+
+      /* only the speaker is left */
+      sdkMedia['setDevices']([headsetSpeaker]);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(micTrack as unknown as MediaStreamTrack)).toBe(undefined);
+    });
+
     it('should match the track itself, not its registered source track', () => {
       const cameraTrack = new MockTrack('video', mockVideoDevice2.label);
       const processedTrack = new MockTrack('video', 'canvas-capture-track');

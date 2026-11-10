@@ -1100,22 +1100,6 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, session });
   });
 
-  it('should only match audio tracks against audio input devices (not output devices)', async () => {
-    const audioTrack = new MockTrack('audio', 'Headset');
-    const session = sessions[0];
-    session.peerConnection['_addSender'](audioTrack); /* this is a mock PC */
-
-    /* the mic is gone but an output device with the same label remains */
-    setMediaStateDevices([
-      ...testDevices,
-      { deviceId: 'device#5', groupId: 'group#5', kind: 'audiooutput', label: 'Headset' } as MediaDeviceInfo
-    ]);
-
-    await sessionManager.validateOutgoingMediaTracks();
-
-    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, session });
-  });
-
   it('should mute the media type if there is no device to switch to', async () => {
     const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const mockAudioTrack = new MockTrack('audio', mediaState.videoDevices[0].label);
