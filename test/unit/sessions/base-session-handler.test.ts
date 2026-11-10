@@ -847,7 +847,7 @@ describe('acceptSession', () => {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,
-      alreadyAccepted: false,
+      acceptedViaSessionManager: false,
       sessionState: 'pending',
       params: {
         ...params,
@@ -869,7 +869,7 @@ describe('acceptSession', () => {
     expect(logSpy).toHaveBeenCalledWith(
       'warn',
       'accepting session that is already in the active state; this may result in a dual session-accept',
-      expect.objectContaining({ alreadyAccepted: true, sessionState: 'active' })
+      expect.objectContaining({ acceptedViaSessionManager: true, sessionState: 'active' })
     );
     expect(session.accept).toHaveBeenCalled();
   });

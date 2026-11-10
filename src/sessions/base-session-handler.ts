@@ -175,12 +175,8 @@ export default abstract class BaseSessionHandler {
       sessionType: session.sessionType,
       conversationId: session.conversationId,
       sessionId: session.id,
-      /* Diagnostic context for dual session-accepts (see STREAM-1075).
-       * `_alreadyAccepted` is only set by SessionManager.acceptSession, so
-       * handler-internal auto-accepts (e.g. acd-screenshare handleSessionInit)
-       * can reach here without it being set. `sessionState` lets us see if the
-       * underlying media session has already been moved to 'active'. */
-      alreadyAccepted: !!session._alreadyAccepted,
+      /* Diagnostic context for dual session-accepts: whether the accept came via SessionManager and the current session state. */
+      acceptedViaSessionManager: !!session._alreadyAccepted,
       sessionState: session.state,
       params: logParams
     };
