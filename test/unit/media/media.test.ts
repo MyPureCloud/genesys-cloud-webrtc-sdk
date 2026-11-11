@@ -893,6 +893,32 @@ describe('SdkMedia', () => {
 
       expect(sdkMedia.getSourceTrack(processedTrack as unknown as MediaStreamTrack)).toBe(secondCameraTrack);
     });
+
+    it('should follow chained registrations back to the original source track', () => {
+      const cameraTrack = new MockTrack('video', mockVideoDevice1.label);
+      const backgroundTrack = new MockTrack('video');
+      const filterTrack = new MockTrack('video');
+
+      /* filter is applied on top of the background, which is applied on top of the camera */
+      sdkMedia.registerProcessedTrack(backgroundTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+      sdkMedia.registerProcessedTrack(filterTrack as unknown as MediaStreamTrack, backgroundTrack as unknown as MediaStreamTrack);
+
+      expect(sdkMedia.getSourceTrack(filterTrack as unknown as MediaStreamTrack)).toBe(cameraTrack);
+    });
+
+    it('should stop following registrations that loop', () => {
+      const trackA = new MockTrack('video');
+      const trackB = new MockTrack('video');
+
+      sdkMedia.registerProcessedTrack(trackA as unknown as MediaStreamTrack, trackB as unknown as MediaStreamTrack);
+      sdkMedia.registerProcessedTrack(trackB as unknown as MediaStreamTrack, trackA as unknown as MediaStreamTrack);
+      expect(sdkMedia.getSourceTrack(trackA as unknown as MediaStreamTrack)).toBe(trackB);
+
+      /* a track registered against itself */
+      const trackC = new MockTrack('video');
+      sdkMedia.registerProcessedTrack(trackC as unknown as MediaStreamTrack, trackC as unknown as MediaStreamTrack);
+      expect(sdkMedia.getSourceTrack(trackC as unknown as MediaStreamTrack)).toBe(trackC);
+    });
   });
 
   describe('findCachedDeviceByTrackLabel()', () => {

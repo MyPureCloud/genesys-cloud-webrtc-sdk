@@ -703,14 +703,27 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
-   * Get the source track registered for a processed track
-   *  through `registerProcessedTrack()`.
+   * Get the original track. The passed in track could be a processed
+   * track that has gone through one or more processing steps.
+   * This method follows the links registered with `registerProcessedTrack()`
+   * back to the original source track.
    *
    * @param track track to resolve
-   * @returns the registered source track, or `track` itself if none is registered
+   * @returns the original source track, or `track` itself if none is registered
    */
   getSourceTrack (track: MediaStreamTrack): MediaStreamTrack {
-    return this.processedTrackSources.get(track) || track;
+    /* track what we've visited so registrations that loop back on themselves can't spin forever */
+    const visited = new Set<MediaStreamTrack>([track]);
+    let current = track;
+    let source = this.processedTrackSources.get(current);
+
+    while (source && !visited.has(source)) {
+      visited.add(source);
+      current = source;
+      source = this.processedTrackSources.get(current);
+    }
+
+    return current;
   }
 
   /**

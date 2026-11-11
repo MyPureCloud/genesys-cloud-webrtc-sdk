@@ -472,7 +472,9 @@ await sdk.updateOutgoingMedia({ conversationId, stream: new MediaStream([backgro
 
 #### `getSourceTrack()`
 Get the source track registered for a processed track
- with [`registerProcessedTrack()`](#registerprocessedtrack).
+ with [`registerProcessedTrack()`](#registerprocessedtrack). Chained
+ registrations (an effect made from another effect's track) are followed
+ back to the original source track.
 
 Declaration:
 ``` ts
@@ -482,7 +484,7 @@ getSourceTrack(track: MediaStreamTrack): MediaStreamTrack;
 Params:
 * `track: MediaStreamTrack` – Track to resolve.
 
-Returns: the registered source track, or `track` itself if none is registered.
+Returns: the original source track, or `track` itself if none is registered.
 
 #### `findCachedOutputDeviceById()`
 Look through the cached output devices and match based on
