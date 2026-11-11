@@ -1875,13 +1875,19 @@ describe('handleSoftphoneConversationUpdate()', () => {
         previousCallState: { state: CommunicationStates.contacting }
       });
 
-      participant.callbacks = [
-        { id: 'callback-id', state: CommunicationStates.connected },
-        { id: 'ended-callback-id', state: CommunicationStates.disconnected }
-      ];
+      const [participantWithCallbacks] = new ConversationUpdate({
+        id: update.id,
+        participants: [{
+          ...participant,
+          callbacks: [
+            { id: 'callback-id', state: CommunicationStates.connected, callbackNumbers: ['+13175550100'] },
+            { id: 'ended-callback-id', state: CommunicationStates.disconnected }
+          ]
+        }]
+      }).participants;
       handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
 
-      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+      handler.handleSoftphoneConversationUpdate(update, participantWithCallbacks, callState, session);
 
       expect(requestApiSpy).toHaveBeenCalledWith(
         `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
