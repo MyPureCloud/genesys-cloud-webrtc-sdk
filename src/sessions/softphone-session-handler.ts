@@ -380,6 +380,9 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
            dialing -> connected transitions (since dialing is already a "connected" state). */
         if (callState.state === CommunicationStates.connected && previousCallState?.state !== CommunicationStates.connected && session) {
           this.notifyClientMetadata(conversationId, callState.id);
+          participant.callbacks
+            ?.filter(callback => callback.state === CommunicationStates.connected)
+            .forEach(callback => this.notifyClientMetadata(conversationId, callback.id));
         }
       } else if (this.isEndedState(callState)) {
         if (this.isPendingState(previousCallState) && !isOutbound) {
@@ -1057,13 +1060,13 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
   }
 
   /**
-   * Notify the backend that a call has connected for this client.
+   * Notify the backend that a call or callback communication has connected for this client.
    * The server captures the client's IP address from the HTTP request.
    * This is fire-and-forget — errors are logged but do not affect call handling.
    */
   private notifyClientMetadata (conversationId: string, communicationId: string): void {
     const path = `/conversations/calls/${conversationId}/communications/${communicationId}/metadata`;
-    this.log('info', 'notifying client metadata for connected call', { conversationId, communicationId });
+    this.log('info', 'notifying client metadata for connected communication', { conversationId, communicationId });
 
     requestApi.call(this.sdk, path, { method: 'post' })
       .catch(err => {

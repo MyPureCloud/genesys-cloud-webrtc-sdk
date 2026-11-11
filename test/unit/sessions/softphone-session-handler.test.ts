@@ -1869,6 +1869,35 @@ describe('handleSoftphoneConversationUpdate()', () => {
       );
     });
 
+    it('should also notify client metadata for connected callbacks on the participant', () => {
+      const { update, participant, callState, session, previousUpdate } = generateUpdate({
+        callState: CommunicationStates.connected,
+        previousCallState: { state: CommunicationStates.contacting }
+      });
+
+      participant.callbacks = [
+        { id: 'callback-id', state: CommunicationStates.connected },
+        { id: 'ended-callback-id', state: CommunicationStates.disconnected }
+      ];
+      handler.conversations[update.id] = { conversationUpdate: previousUpdate } as any;
+
+      handler.handleSoftphoneConversationUpdate(update, participant, callState, session);
+
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/calls/${update.id}/communications/${callState.id}/metadata`,
+        { method: 'post' }
+      );
+      expect(requestApiSpy).toHaveBeenCalledWith(
+        `/conversations/calls/${update.id}/communications/callback-id/metadata`,
+        { method: 'post' }
+      );
+      expect(requestApiSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('ended-callback-id'),
+        expect.anything()
+      );
+      expect(requestApiSpy).toHaveBeenCalledTimes(2);
+    });
+
     it('should notify client metadata for persistent connection (new conversation on existing session)', () => {
       const session = new MockSession() as any as IExtendedMediaSession;
       session.conversationId = 'old-conversation-id';

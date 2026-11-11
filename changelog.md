@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.
+* [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
 
 ### Fixed
 * [STREAM-2689](https://inindca.atlassian.net/browse/STREAM-2689) - Fix the HP Poly call control wasm (used with `useNewPolyImplementation`) failing to load from `dist/es/index.bundle.js` and the CDN bundles. The wasm now ships beside each bundle. `dist/es/index.bundle.js` also now reports the real SDK version.
