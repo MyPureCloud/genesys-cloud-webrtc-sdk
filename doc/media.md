@@ -416,7 +416,9 @@ Deprecated. Used `findCachedDeviceByTrackLabelAndKind()` instead.
 
 #### `findCachedDeviceByTrackLabelAndKind()`
 Look through the cached devices and match based on
- the passed in track's `kind` and `label`.
+ the passed in track's `kind` and `label`. Only input devices
+ (microphones and cameras) are matched, so a mic track never matches
+ a speaker that shares its label.
 
 Declaration:
 ``` ts
@@ -469,6 +471,18 @@ sdk.media.registerProcessedTrack(backgroundTrack, cameraTrack);
 
 await sdk.updateOutgoingMedia({ conversationId, stream: new MediaStream([backgroundTrack]) });
 ```
+
+Stacked effects: register each processed track against the track it was made
+ from. The SDK follows the registrations back to the original device track.
+``` ts
+sdk.media.registerProcessedTrack(backgroundTrack, cameraTrack);
+sdk.media.registerProcessedTrack(filterTrack, backgroundTrack); // filter drawn on top of the background
+```
+
+Turning an effect off: call `updateOutgoingMedia()` with a stream containing the
+ camera track, or with the camera's `videoDeviceId` (the SDK starts a new camera
+ track). Only register tracks you created. Don't register a track against itself,
+ for example when the effect is off and you send the camera track directly.
 
 #### `getSourceTrack()`
 Get the source track registered for a processed track

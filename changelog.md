@@ -7,13 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 * [STREAM-2523](https://inindca.atalssian.net/browse/STREAM-2523) - Add `sessionConnected` event for consuming apps, especially so they can know a session has connected after an interruption.
+* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
 
 ### Changed
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.
 
 ### Fixed
 * [STREAM-2689](https://inindca.atlassian.net/browse/STREAM-2689) - Fix the HP Poly call control wasm (used with `useNewPolyImplementation`) failing to load from `dist/es/index.bundle.js` and the CDN bundles. The wasm now ships beside each bundle. `dist/es/index.bundle.js` also now reports the real SDK version.
-* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Fix any `devicechange` (such as plugging in a headset) replacing a consumer's processed outgoing video track (such as a virtual background) with a raw camera track, even though the camera was still connected. The SDK matched outgoing tracks to devices by label, and a processed track's label matches no device. Consumers can now call the new `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` so the SDK matches a processed track through the device track it was created from. The new `sdk.media.getSourceTrack(track)` returns the registered source track. See [doc/media.md](doc/media.md#registerprocessedtrack).
 
 # [v14.2.7](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.6...v14.2.7)
 ### Added

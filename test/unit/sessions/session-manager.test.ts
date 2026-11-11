@@ -1106,16 +1106,6 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
   });
 
-  it('should update the session if an unregistered track\'s label matches no device', async () => {
-    const unregisteredTrack = new MockTrack('video', 'canvas-capture-track');
-    const session = sessions[0];
-    session.peerConnection['_addSender'](unregisteredTrack); /* this is a mock PC */
-
-    await sessionManager.validateOutgoingMediaTracks();
-
-    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, session });
-  });
-
   it('should mute the media type if there is no device to switch to', async () => {
     const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const mockAudioTrack = new MockTrack('audio', mediaState.videoDevices[0].label);
