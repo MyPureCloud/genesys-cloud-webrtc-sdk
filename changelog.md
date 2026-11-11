@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...HEAD)
+
+# [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 * [STREAM-2523](https://inindca.atalssian.net/browse/STREAM-2523) - Add `sessionConnected` event for consuming apps, especially so they can know a session has connected after an interruption.
