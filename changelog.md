@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...HEAD)
+### Changed
+* [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
 
 # [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added

@@ -30,6 +30,11 @@ export class ConversationUpdate {
         errorInfo: call.errorInfo
       })) : [];
 
+      const callbacks = p.callbacks ? p.callbacks.map((callback) => ({
+        id: callback.id,
+        state: callback.state
+      })) : undefined;
+
       return {
         id: p.id,
         purpose: p.purpose,
@@ -41,7 +46,8 @@ export class ConversationUpdate {
         muted: p.muted,
         confined: p.confined,
         videos,
-        calls
+        calls,
+        callbacks
       };
     });
   }
