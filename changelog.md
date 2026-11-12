@@ -3,7 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...HEAD)
+
+# [v14.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...v14.4.0)
+### Added
+* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
+
 ### Changed
 * [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
 
@@ -11,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 * [STREAM-2523](https://inindca.atalssian.net/browse/STREAM-2523) - Add `sessionConnected` event for consuming apps, especially so they can know a session has connected after an interruption.
-* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
 
 ### Changed
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.
