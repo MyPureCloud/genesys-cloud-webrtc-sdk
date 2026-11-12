@@ -481,13 +481,12 @@ export class SessionManager {
         .filter((sender) => sender.track && !trackIdsToIgnore.includes(sender.track.id))
         .map(s => s.track)
         .forEach(track => {
-          /* senders won't be using output devices so we don't need to worry about those */
-          const deviceExists = !!(track.kind === 'video' ? videoDevices : audioDevices).find(
-            d => d.label === track.label && d.kind.slice(0, 5) === track.kind
-          );
+          /* processed tracks (e.g. virtual background) are checked against their registered source track's device */
+          const sourceTrack = this.sdk.media.getSourceTrack(track);
+          const deviceExists = !!this.sdk.media.findCachedDeviceByTrackLabelAndKind(sourceTrack);
           if (deviceExists) {
             this.log('debug', 'sessions outgoing track still has available device',
-              { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, kind: track.kind, deviceLabel: track.label });
+              { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, kind: track.kind, deviceLabel: sourceTrack.label });
             return;
           }
 
@@ -496,7 +495,7 @@ export class SessionManager {
           updates.set(session.id, currVal);
 
           this.log('info', 'session lost media device and will attempt to switch devices',
-            { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, kind: track.kind, deviceLabel: track.label });
+            { conversationId: session.conversationId, sessionId: session.id, sessionType: session.sessionType, kind: track.kind, deviceLabel: sourceTrack.label });
         });
 
       /* check output device */
