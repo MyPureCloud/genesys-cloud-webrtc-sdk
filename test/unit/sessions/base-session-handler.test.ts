@@ -269,6 +269,24 @@ describe('updateOutgoingMedia()', () => {
     expect(mockSdk.media.startMedia).not.toHaveBeenCalled();
   });
 
+  it('should request the camera when a registered processed track from that camera is on the session', async () => {
+    const session = new MockSession();
+    session._outboundStream = new MockStream();
+    const cameraTrack = new MockTrack('video', 'Camera #1');
+    /* e.g. a virtual background canvas track made from the camera track */
+    const processedTrack = new MockTrack('video', 'canvas-capture-track');
+    session.peerConnection._addSender(processedTrack);
+    mockSdk.media.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(new MockStream({ video: true }) as unknown as MediaStream);
+    const device = { deviceId: globalThis.crypto.randomUUID(), label: cameraTrack.label, kind: 'videoinput' };
+    mockSdk.media['setDevices']([device as unknown as MediaDeviceInfo]);
+
+    /* asking for the camera the processed track came from means "send the raw camera" */
+    await handler.updateOutgoingMedia(session as unknown as IExtendedMediaSession, { videoDeviceId: device.deviceId, audioDeviceId: false });
+    expect(mockSdk.media.startMedia).toHaveBeenCalledWith(expect.objectContaining({ video: device.deviceId }));
+  });
+
   it('should skip tracks for "kinds" that were not requested to be updated', async () => {
     const session = new MockSession();
     session._outboundStream = new MockStream();

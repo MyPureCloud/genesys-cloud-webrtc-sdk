@@ -38,6 +38,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   private onDeviceChangeListenerRef: (() => void) | undefined;
   /* stream or track id and function to remove listeners */
   private defaultsBeingMonitored = new Map<string, (() => void)>();
+  /* processed track -> the source track it was created from (see `registerProcessedTrack()`) */
+  private processedTrackSources = new WeakMap<MediaStreamTrack, MediaStreamTrack>();
 
   constructor (sdk: GenesysCloudWebrtcSdk) {
     super();
@@ -690,6 +692,41 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
   }
 
   /**
+   * Tell the SDK which source track a processed track was created from
+   *  (for example, a virtual background canvas track created from a camera track).
+   *
+   * @param processedTrack the track being sent on the session
+   * @param sourceTrack the device track `processedTrack` was created from
+   */
+  registerProcessedTrack (processedTrack: MediaStreamTrack, sourceTrack: MediaStreamTrack): void {
+    this.processedTrackSources.set(processedTrack, sourceTrack);
+  }
+
+  /**
+   * Get the original track. The passed in track could be a processed
+   * track that has gone through one or more processing steps.
+   * This method follows the links registered with `registerProcessedTrack()`
+   * back to the original source track.
+   *
+   * @param track track to resolve
+   * @returns the original source track, or `track` itself if none is registered
+   */
+  getSourceTrack (track: MediaStreamTrack): MediaStreamTrack {
+    /* track what we've visited so registrations that loop back on themselves can't spin forever */
+    const visited = new Set<MediaStreamTrack>([track]);
+    let current = track;
+    let source = this.processedTrackSources.get(current);
+
+    while (source && !visited.has(source)) {
+      visited.add(source);
+      current = source;
+      source = this.processedTrackSources.get(current);
+    }
+
+    return current;
+  }
+
+  /**
    * @deprecated use `sdk.media.findCachedDeviceByTrackLabelAndKind(track)`
    */
   findCachedDeviceByTrackLabel (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
@@ -698,7 +735,8 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
 
   /**
    * Look through the cached devices and match based on
-   *  the passed in track's `kind` and `label`.
+   *  the passed in track's `kind` and `label`. Only input
+   *  devices (microphones and cameras) are matched.
    *
    * @param track `MediaStreamTrack` with the label to search for
    * @returns the found device or `undefined` if the
@@ -706,8 +744,9 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
    */
   findCachedDeviceByTrackLabelAndKind (track?: MediaStreamTrack): MediaDeviceInfo | undefined {
     if (!track) return;
+    /* tracks only come from input devices, so never match a speaker that shares a mic's label */
     return this.getDevices().find(d =>
-      d.label === track.label && `${d.kind.substring(0, 5)}` === track.kind.substring(0, 5)
+      d.label === track.label && d.kind === `${track.kind}input`
     );
   }
 

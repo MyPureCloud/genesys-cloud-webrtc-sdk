@@ -416,7 +416,9 @@ Deprecated. Used `findCachedDeviceByTrackLabelAndKind()` instead.
 
 #### `findCachedDeviceByTrackLabelAndKind()`
 Look through the cached devices and match based on
- the passed in track's `kind` and `label`.
+ the passed in track's `kind` and `label`. Only input devices
+ (microphones and cameras) are matched, so a mic track never matches
+ a speaker that shares its label.
 
 Declaration:
 ``` ts
@@ -428,6 +430,75 @@ Params:
 
 Returns: the found device or `undefined` if the
 device could not be found.
+
+#### `registerProcessedTrack()`
+Tell the SDK which source track a processed track was created from.
+ Call this when you send a track you built from a device track, such as
+ a virtual background canvas track built from the camera track.
+
+The SDK maps outgoing tracks to devices by their label. A processed track's
+ label does not match any device. Without registering it, the SDK treats
+ the device as lost on every `devicechange` (for example, plugging in a headset)
+ and replaces the processed track with a raw track from the device. For a
+ registered track, the SDK checks the source track's device instead. If the source track's
+ device really is removed, the SDK still switches devices as usual. Effects are
+ not re-applied to the new track.
+
+Registering the same processed track again replaces its source track. Tracks
+ are held weakly, so there is nothing to unregister.
+
+Declaration:
+``` ts
+registerProcessedTrack(processedTrack: MediaStreamTrack, sourceTrack: MediaStreamTrack): void;
+```
+
+Params:
+* `processedTrack: MediaStreamTrack` – The track being sent on the session.
+* `sourceTrack: MediaStreamTrack` – The device track `processedTrack` was created from.
+
+Returns: `void`
+
+Example:
+``` ts
+const cameraStream = await sdk.media.startMedia({ video: true });
+const cameraTrack = cameraStream.getVideoTracks()[0];
+
+/* draw the camera with a virtual background onto a canvas */
+const canvas = applyVirtualBackground(cameraTrack); // your own implementation
+const backgroundTrack = canvas.captureStream(30).getVideoTracks()[0];
+
+sdk.media.registerProcessedTrack(backgroundTrack, cameraTrack);
+
+await sdk.updateOutgoingMedia({ conversationId, stream: new MediaStream([backgroundTrack]) });
+```
+
+Stacked effects: register each processed track against the track it was made
+ from. The SDK follows the registrations back to the original device track.
+``` ts
+sdk.media.registerProcessedTrack(backgroundTrack, cameraTrack);
+sdk.media.registerProcessedTrack(filterTrack, backgroundTrack); // filter drawn on top of the background
+```
+
+Turning an effect off: call `updateOutgoingMedia()` with a stream containing the
+ camera track, or with the camera's `videoDeviceId` (the SDK starts a new camera
+ track). Only register tracks you created. Don't register a track against itself,
+ for example when the effect is off and you send the camera track directly.
+
+#### `getSourceTrack()`
+Get the source track registered for a processed track
+ with [`registerProcessedTrack()`](#registerprocessedtrack). Chained
+ registrations (an effect made from another effect's track) are followed
+ back to the original source track.
+
+Declaration:
+``` ts
+getSourceTrack(track: MediaStreamTrack): MediaStreamTrack;
+```
+
+Params:
+* `track: MediaStreamTrack` – Track to resolve.
+
+Returns: the original source track, or `track` itself if none is registered.
 
 #### `findCachedOutputDeviceById()`
 Look through the cached output devices and match based on
