@@ -20,8 +20,6 @@ import {
   SubscriptionEvent,
 } from '../types/interfaces';
 
-const FORCE_END_SESSION_TIMEOUT_MS = 30000;
-
 type ExtendedHTMLAudioElement = HTMLAudioElement & {
   setSinkId (deviceId: string): Promise<undefined>;
 };
@@ -204,19 +202,14 @@ export default abstract class BaseSessionHandler {
   async forceEndSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     this.log('info', 'ending session', { sessionId: session.id, sessionConversationId: session.conversationId, reason, sessionType: session.sessionType });
 
-    return new Promise<void>((resolve) => {
-      const onTerminated = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-      const timeout = setTimeout(() => {
-        session.off('terminated', onTerminated);
-        this.log('warn', 'timed out waiting for session to terminate', { sessionId: session.id, conversationId: session.conversationId });
-        resolve();
-      }, FORCE_END_SESSION_TIMEOUT_MS);
-
+    return new Promise<void>((resolve, reject) => {
+      const onTerminated = () => resolve();
       session.once('terminated', onTerminated);
-      return session.end(reason);
+
+      Promise.resolve(session.end(reason)).catch((error) => {
+        session.off('terminated', onTerminated);
+        reject(error);
+      });
     });
   }
 

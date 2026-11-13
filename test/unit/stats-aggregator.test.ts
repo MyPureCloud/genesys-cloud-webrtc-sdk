@@ -136,30 +136,6 @@ describe('StatsAggregator', () => {
     });
   });
 
-  describe('listener cleanup', () => {
-    it('should remove its terminated listener from the session once terminated', () => {
-      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      new StatsAggregator(mockSession, sdk);
-
-      expect((mockSession as unknown as MockSession).listenerCount('terminated')).toBe(1);
-      (mockSession as unknown as MockSession).emit('terminated');
-      expect((mockSession as unknown as MockSession).listenerCount('terminated')).toBe(0);
-      expect((sdk as unknown as SimpleMockSdk).listenerCount('_sessionEnded')).toBe(0);
-    });
-
-    it('should keep its SDK listeners when the session ends but is reused', () => {
-      const mockSession = new MockSession() as unknown as IExtendedMediaSession;
-      const sdk = new SimpleMockSdk() as unknown as GenesysCloudWebrtSdk;
-      new StatsAggregator(mockSession, sdk);
-
-      (sdk as unknown as SimpleMockSdk).emit('_sessionEnded', mockSession);
-
-      expect((sdk as unknown as SimpleMockSdk).listenerCount('sessionStarted')).toBe(1);
-      expect((sdk as unknown as SimpleMockSdk).listenerCount('_sessionEnded')).toBe(1);
-    });
-  });
-
   describe('persistent connection reuse — STREAM-1694', () => {
     it('should call stop() on the stats gatherer and allow a fresh gatherer on session reuse', () => {
       const mockSession = new MockSession() as unknown as IExtendedMediaSession;

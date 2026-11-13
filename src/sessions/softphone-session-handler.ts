@@ -32,6 +32,8 @@ import { HeadsetProxyService } from '../headsets/headset';
 import { removeAddressFieldFromConversationUpdate } from '../utils';
 import { StatsAggregator } from '../stats-aggregator';
 
+const END_SESSION_TIMEOUT_MS = 10000;
+
 type SdkConversationEvents = 'added' | 'removed' | 'updated';
 
 export class SoftphoneSessionHandler extends BaseSessionHandler {
@@ -850,7 +852,8 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
         state: CommunicationStates.disconnected
       });
       let sessionEndedListener: (endedSession: IExtendedMediaSession, reason: JingleReason) => void;
-      const terminatedPromise = new Promise<JingleReason>((resolve) => {
+      let endTimeout: ReturnType<typeof setTimeout>;
+      const terminatedPromise = new Promise<JingleReason>((resolve, reject) => {
         sessionEndedListener = (endedSession: IExtendedMediaSession, reason: JingleReason) => {
           if (endedSession.id === session.id && endedSession.conversationId === conversationId) {
             this.log('debug', 'received "sessionEnded" event from session requested by `sdk.endSession()`', { endedSessionId: endedSession.id, conversationId}, { skipServer: true });
@@ -860,12 +863,14 @@ export class SoftphoneSessionHandler extends BaseSessionHandler {
           }
         }
 
+        endTimeout = setTimeout(() => reject(new Error('Timed out waiting for "sessionEnded" event')), END_SESSION_TIMEOUT_MS);
         this.sdk.on('sessionEnded', sessionEndedListener);
       });
 
       try {
         await Promise.all([patchPromise, terminatedPromise]);
       } finally {
+        clearTimeout(endTimeout);
         this.sdk.off('sessionEnded', sessionEndedListener);
       }
     } catch (error) {

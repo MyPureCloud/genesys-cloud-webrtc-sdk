@@ -936,10 +936,6 @@ describe('forceEndSession', () => {
 });
 
 describe('forceEndSession listener cleanup', () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   it('should remove the terminated listener once the session terminates', async () => {
     const session: any = new MockSession();
     const promise = handler.forceEndSession(session);
@@ -949,14 +945,12 @@ describe('forceEndSession listener cleanup', () => {
     expect(session.listenerCount('terminated')).toBe(0);
   });
 
-  it('should resolve and remove the terminated listener if the session never terminates', async () => {
-    jest.useFakeTimers();
+  it('should remove the terminated listener and reject if session.end rejects', async () => {
     const session: any = new MockSession();
-    const promise = handler.forceEndSession(session);
-    expect(session.listenerCount('terminated')).toBe(1);
+    const error = new Error('end failed');
+    session.end.mockRejectedValue(error);
 
-    jest.advanceTimersByTime(30000);
-    await promise;
+    await expect(handler.forceEndSession(session)).rejects.toBe(error);
 
     expect(session.listenerCount('terminated')).toBe(0);
   });
