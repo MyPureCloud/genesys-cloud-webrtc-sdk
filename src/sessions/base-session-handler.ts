@@ -181,6 +181,9 @@ export default abstract class BaseSessionHandler {
       sessionType: session.sessionType,
       conversationId: session.conversationId,
       sessionId: session.id,
+      /* Diagnostic context for dual session-accepts: whether the accept came via SessionManager and the current session state. */
+      acceptedViaSessionManager: !!session._alreadyAccepted,
+      sessionState: session.state,
       params: logParams
     };
 
@@ -193,6 +196,10 @@ export default abstract class BaseSessionHandler {
       (session._outputAudioElement as ExtendedHTMLAudioElement).setSinkId(outputDeviceId);
       logExtras.hasOutputDeviceSupport = isSupported;
       logExtras.outputDeviceId = outputDeviceId;
+    }
+
+    if (session.state === 'active') {
+      this.log('warn', 'accepting session that is already in the active state; this may result in a dual session-accept', logExtras);
     }
 
     this.log('info', 'accepting session', logExtras);

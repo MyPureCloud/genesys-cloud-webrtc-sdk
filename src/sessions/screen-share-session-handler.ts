@@ -94,6 +94,14 @@ export class ScreenShareSessionHandler extends BaseSessionHandler {
       this.log('debug', 'Adding stream to the session and setting it to _screenShareStream', sessionInfo);
 
       await this.addMediaToSession(session, stream);
+
+      /* Marks the handler auto-accept path directly, distinct from the session-manager accept. */
+      this.log('info', 'auto-accepting screen share session', {
+        ...sessionInfo,
+        acceptedViaSessionManager: !!session._alreadyAccepted,
+        sessionState: session.state
+      });
+
       await this.acceptSession(session, { conversationId: session.conversationId });
     } catch (err) {
       await super.endSession(session.conversationId, session);
