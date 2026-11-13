@@ -2546,6 +2546,41 @@ describe('endSession()', () => {
     expect(offSpy).toHaveBeenCalledWith('sessionEnded', expect.any(Function));
   });
 
+  it('should remove the sessionEnded listener when ending the session fails', async () => {
+    const session: any = new MockSession();
+    const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+    jest.spyOn(handler, 'getUserParticipantFromConversationId' as any).mockResolvedValue({ id: PARTICIPANT_ID });
+    jest.spyOn(handler, 'patchPhoneCall' as any).mockRejectedValue(new Error('patch failed'));
+    jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+    const listenerCountBefore = mockSdk.listenerCount('sessionEnded');
+
+    await handler.endSession(session.conversationId, session);
+
+    expect(fallbackSpy).toHaveBeenCalled();
+    expect(mockSdk.listenerCount('sessionEnded')).toBe(listenerCountBefore);
+  });
+
+  it('should time out, remove the sessionEnded listener and use the fallback if no matching sessionEnded arrives', async () => {
+    jest.useFakeTimers();
+    try {
+      const session: any = new MockSession();
+      const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();
+      jest.spyOn(handler, 'getUserParticipantFromConversationId' as any).mockResolvedValue({ id: PARTICIPANT_ID });
+      jest.spyOn(handler, 'patchPhoneCall' as any).mockResolvedValue(null);
+      jest.spyOn(mockSdk, 'isConcurrentSoftphoneSessionsEnabled').mockReturnValue(true);
+      const listenerCountBefore = mockSdk.listenerCount('sessionEnded');
+
+      const promise = handler.endSession(session.conversationId, session);
+      await jest.advanceTimersByTimeAsync(10000);
+      await promise;
+
+      expect(fallbackSpy).toHaveBeenCalled();
+      expect(mockSdk.listenerCount('sessionEnded')).toBe(listenerCountBefore);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('should call the fallback if session end fails with LA > 1', async () => {
     const session: any = new MockSession();
     const fallbackSpy = jest.spyOn(handler, 'endSessionFallback').mockResolvedValue();

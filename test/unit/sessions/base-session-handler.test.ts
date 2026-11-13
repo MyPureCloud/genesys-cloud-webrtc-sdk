@@ -935,6 +935,27 @@ describe('forceEndSession', () => {
   });
 });
 
+describe('forceEndSession listener cleanup', () => {
+  it('should remove the terminated listener once the session terminates', async () => {
+    const session: any = new MockSession();
+    const promise = handler.forceEndSession(session);
+    expect(session.listenerCount('terminated')).toBe(1);
+    session.emit('terminated');
+    await promise;
+    expect(session.listenerCount('terminated')).toBe(0);
+  });
+
+  it('should remove the terminated listener and reject if session.end rejects', async () => {
+    const session: any = new MockSession();
+    const error = new Error('end failed');
+    session.end.mockRejectedValue(error);
+
+    await expect(handler.forceEndSession(session)).rejects.toBe(error);
+
+    expect(session.listenerCount('terminated')).toBe(0);
+  });
+});
+
 describe('addMediatoSession', () => {
   it('should add by tracks if has tranceiver functionality', async () => {
     const stream = new MockStream(true);

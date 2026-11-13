@@ -202,11 +202,14 @@ export default abstract class BaseSessionHandler {
   async forceEndSession (session: IExtendedMediaSession, reason?: Constants.JingleReasonCondition): Promise<void> {
     this.log('info', 'ending session', { sessionId: session.id, sessionConversationId: session.conversationId, reason, sessionType: session.sessionType });
 
-    return new Promise<void>((resolve) => {
-      session.once('terminated', () => {
-        resolve();
+    return new Promise<void>((resolve, reject) => {
+      const onTerminated = () => resolve();
+      session.once('terminated', onTerminated);
+
+      Promise.resolve(session.end(reason)).catch((error) => {
+        session.off('terminated', onTerminated);
+        reject(error);
       });
-      return session.end(reason);
     });
   }
 
