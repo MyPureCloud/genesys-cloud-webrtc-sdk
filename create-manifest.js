@@ -14,30 +14,6 @@ const manifest = {
   indexFiles: []
 };
 
-/* add demo */
-try {
-  const files = fs.readdirSync('dist/demo/');
-  files.forEach(file => {
-    if (fs.lstatSync('dist/demo/' + file).isDirectory()) {
-      const dirFiles = fs.readdirSync('dist/demo/' + file);
-      dirFiles.forEach(dirFile => {
-        if (fs.lstatSync('dist/demo/' + file + '/' + dirFile).isDirectory()) {
-          return;
-        }
-        manifest.indexFiles.push({
-          file: 'demo/' + file + '/' + dirFile
-        });
-      });
-      return;
-    }
-    manifest.indexFiles.push({
-      file: 'demo/' + file
-    });
-  });
-} catch (e) {
-  // demo dir (examples don't exist)
-}
-
 /* add versioned bundles for CDN */
 function dirWalk (dir) {
   const files = [];
@@ -53,7 +29,10 @@ function dirWalk (dir) {
   return walk(dir);
 }
 
-[...dirWalk(versionDir), ...dirWalk(majorVersionDir)]
+/* demo apps (optional) – walked fully since vite nests assets (demo/react/assets/*) */
+const demoFiles = fs.existsSync('dist/demo') ? dirWalk('dist/demo') : [];
+
+[...demoFiles, ...dirWalk(versionDir), ...dirWalk(majorVersionDir)]
   .forEach(filename => manifest.indexFiles.push({ file: filename.replace('dist/', '') }));
 
 fs.writeFileSync('./dist/manifest.json', JSON.stringify(manifest, null, 2), { encoding: 'utf8' });

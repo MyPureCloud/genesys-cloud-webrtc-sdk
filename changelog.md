@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...HEAD)
+### Added
+* [STREAM-2890](https://inindca.atlassian.net/browse/STREAM-2890) - The React demo app is now built into `dist/demo/react/` (`npm run build:demo`) and deployed to the CDN at `webrtc-sdk/demo/react/`. The demo no longer depends on the licensed Iris audio processor; it can still be tested locally via a gitignored `src/audioProcessor.local.ts` (see `react-demo-app/README.md`), and the Audio Processor card only shows when one is present. Removed the demo's standalone noise tester, which bypassed the SDK's media and audio processor handling. `dist/demo` is excluded from the npm package.
+
 ### Changed
 * [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
 
