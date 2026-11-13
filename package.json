@@ -14,7 +14,8 @@
   "web": "dist/{version}/genesys-cloud-webrtc-sdk.bundle.js",
   "typings": "dist/es/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "!dist/demo"
   ],
   "pre-push": [
     "test"
@@ -40,6 +41,7 @@
     "build:cdn": "webpack --env cdn && webpack --env cdn --env production",
     "build:rollup": "rollup -c --bundleConfigAsCjs",
     "build:sample": "./test/test-pages/build.sh",
+    "build:demo": "./scripts/build-demo.sh",
     "build:watch": "tsc -p . && webpack --watch",
     "build-run-local": "concurrently \"./test/test-pages/build-dev.sh\" \"npm start\"",
     "build-run-gcba": "concurrently \"./test/test-pages/build-gcba.sh\" \"npm start\"",

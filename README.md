@@ -12,7 +12,7 @@ services. Supported WebRTC Features:
 - WebRTC Video (Authenticated Business User)
 - WebRTC Screen Recording (server initiated)
 
-Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/
+Demo: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/react/ (legacy: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/webpack/)
 - Demo requires Genesys Cloud Credentials for video. Organization id and security key are required for unauthenticated screen share.
 
 Not yet supported:

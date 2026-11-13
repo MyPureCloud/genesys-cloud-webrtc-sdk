@@ -21,16 +21,15 @@ import { useSelector } from 'react-redux';
 import { IPendingSession } from 'genesys-cloud-streaming-client';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
-
-// Uncomment for audio processor testing.
-// The SDK accepts any audio processor that implements the IAudioProcessor interface.
-// GenesysIrisClient is used here as a concrete example implementation.
-// Manually add these in either the src or public folder of the demo app.
-// import licenseText from '../assets/iris.lic?raw';
-// import keyText from '../assets/iris.key?raw';
-import { GenesysIrisClient } from 'genesys-iris-client';
 import { setAudioProcessor } from '../features/audioProcessorSlice';
 import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
+
+// Audio processors are usually licensed and can't ship with the public demo,
+// so they're only loaded from an optional gitignored file. See README.
+const localAudioProcessor = import.meta.glob<{ default: () => Promise<IAudioProcessor | undefined> }>(
+  '../audioProcessor.local.ts'
+);
+export const hasLocalAudioProcessor = Object.keys(localAudioProcessor).length > 0;
 
 interface IAuthData {
   token: string;
@@ -79,21 +78,13 @@ export default function useSdk() {
     await webrtcSdk.initialize();
   }
 
-  // Construct a concrete audio processor. GenesysIrisClient is used here as an
-  // example implementation of the IAudioProcessor interface.
   async function constructAudioProcessor(): Promise<IAudioProcessor | undefined> {
-    if (!keyText || !licenseText) {
+    const load = Object.values(localAudioProcessor)[0];
+    if (!load) {
       return;
     }
-    const irisClient = new GenesysIrisClient({
-      company: 'GENESYS_TEST',
-      key: keyText,
-      license: licenseText,
-      team: 'Dev Team',
-      user: 'The Omnissiah'
-    });
-
-    return irisClient as unknown as IAudioProcessor;
+    const { default: createAudioProcessor } = await load();
+    return createAudioProcessor();
   }
 
   async function initAudioProcessor()  {

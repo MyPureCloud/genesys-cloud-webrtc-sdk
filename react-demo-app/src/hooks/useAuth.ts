@@ -6,6 +6,9 @@ import { setAuthStatus, setAuthLoading, setAuthError } from '../features/authSli
 
 const clientId = '2e10c888-5261-45b9-ac32-860a1e67eff8';
 
+// The app is served from a sub-path on the CDN (e.g. /webrtc-sdk/demo/react/), not the origin root.
+const appBaseUrl = new URL('./', window.location.href).href;
+
 // Your environment configuration remains the same
 export const environments: { [envKey: string]: { uri: string } } = {
   dca: {
@@ -153,7 +156,7 @@ export default function useAuth() {
     const params = new URLSearchParams({
       client_id: clientId,
       response_type: 'code',
-      redirect_uri: window.location.origin + '/',
+      redirect_uri: appBaseUrl,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
     });
@@ -172,7 +175,7 @@ export default function useAuth() {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code,
-          redirect_uri: window.location.origin + '/',
+          redirect_uri: appBaseUrl,
           client_id: clientId,
           code_verifier: requestData.codeVerifier,
         }).toString(),
@@ -189,7 +192,7 @@ export default function useAuth() {
         envKey: requestData.envKey,
       });
 
-      history.replaceState(null, '', '/'); // Remove the code from URL
+      history.replaceState(null, '', appBaseUrl); // Remove the code from URL
       await postAuthentication();
     } catch (error) {
       dispatch(setAuthError((error as {message?: string}).message));
@@ -249,7 +252,7 @@ export default function useAuth() {
 
   function logout() {
     localStorage.removeItem(authDataStorageKey);
-    window.location.href = window.location.origin;
+    window.location.href = appBaseUrl;
   }
 
   async function postAuthentication() {
