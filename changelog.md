@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added
+* [STREAM-1075](https://inindca.atlassian.net/browse/STREAM-1075) - Added diagnostic logging to help debug dual session-accepts. `acceptSession` now records which path accepted the session and its current state, and warns when a session is accepted while already active. The acd-screenshare handler logs its own auto-accept so that path can be identified directly.
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 * [STREAM-2523](https://inindca.atalssian.net/browse/STREAM-2523) - Add `sessionConnected` event for consuming apps, especially so they can know a session has connected after an interruption.
 
