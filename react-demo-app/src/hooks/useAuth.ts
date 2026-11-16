@@ -6,7 +6,7 @@ import { setAuthStatus, setAuthLoading, setAuthError } from '../features/authSli
 
 const clientId = '2e10c888-5261-45b9-ac32-860a1e67eff8';
 
-// The app is served from a sub-path on the CDN (e.g. /webrtc-sdk/demo/react/), not the origin root.
+// The app is served from a sub-path on the CDN (e.g. /webrtc-sdk/demo/), not the origin root.
 const appBaseUrl = new URL('./', window.location.href).href;
 
 // Your environment configuration remains the same

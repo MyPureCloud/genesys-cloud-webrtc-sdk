@@ -50,4 +50,4 @@ npm install --no-save ../../genesys-iris-sdk/genesys-iris-client-<version>.tgz
 ```
 
 ### CDN
-`npm run build:demo` (from the SDK root, after `npm run build`) builds this app into `dist/demo/react/`, which the pipeline deploys to `webrtc-sdk/demo/react/` on the SDK CDN (prod: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/react/).
+`npm run build:demo` (from the SDK root, after `npm run build`) builds this app into `dist/demo/`, which the pipeline deploys to `webrtc-sdk/demo/` on the SDK CDN (prod: https://sdk-cdn.mypurecloud.com/webrtc-sdk/demo/). That URL is registered as a redirect URI on the demo's OAuth client in dca, tca and prod; logging in from any other path will be rejected.

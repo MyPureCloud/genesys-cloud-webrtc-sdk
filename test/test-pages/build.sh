@@ -15,5 +15,3 @@ rm -rf webpack/common
 printf "Webpack sample built successfully\n\n"
 
 popd
-
-mkdir -p dist/demo && cp -r test/test-pages/. dist/demo/
