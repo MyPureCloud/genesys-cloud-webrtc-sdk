@@ -148,5 +148,35 @@ describe('ConversationUpdate', () => {
         calls: [expectedCall]
       });
     });
+
+    it('should pluck only the id and state of callbacks', () => {
+      const callback = {
+        id: '97c90941-0b52-4c1c-9a7e-4f0b0f6c8f11',
+        state: 'connected',
+        callbackNumbers: ['+13175550100'],
+        queueMediaSettings: {}
+      };
+      const update = {
+        participants: [
+          { id: 'asdf', purpose: 'agent', userId: '1...2....3.....CAKE-TIME!', callbacks: [callback] }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].callbacks).toStrictEqual([{ id: callback.id, state: 'connected' }]);
+    });
+
+    it('should leave callbacks undefined if the event does not have any', () => {
+      const update = {
+        participants: [
+          { id: 'asdf', purpose: 'agent', userId: '1...2....3.....CAKE-TIME!' }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].callbacks).toBe(undefined);
+    });
   });
 });

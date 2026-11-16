@@ -828,6 +828,12 @@ export interface IConversationParticipantFromEvent {
   name?: string;
   videos: Array<IParticipantVideo>;
   calls: Array<ICallStateFromParticipant>;
+  callbacks?: Array<ICallbackStateFromParticipant>;
+}
+
+export interface ICallbackStateFromParticipant {
+  id: string;
+  state: CommunicationStates;
 }
 
 export interface IParticipantVideo {
