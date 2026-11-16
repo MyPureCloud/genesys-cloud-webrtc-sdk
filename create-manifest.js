@@ -29,8 +29,8 @@ function dirWalk (dir) {
   return walk(dir);
 }
 
-/* demo apps (optional) – walked fully since vite nests assets (demo/react/assets/*) */
-const demoFiles = fs.existsSync('dist/demo') ? dirWalk('dist/demo') : [];
+/* only the react demo goes to the CDN, walked fully since vite nests assets (demo/react/assets/*). */
+const demoFiles = fs.existsSync('dist/demo/react') ? dirWalk('dist/demo/react') : [];
 
 [...demoFiles, ...dirWalk(versionDir), ...dirWalk(majorVersionDir)]
   .forEach(filename => manifest.indexFiles.push({ file: filename.replace('dist/', '') }));

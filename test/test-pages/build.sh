@@ -16,4 +16,4 @@ printf "Webpack sample built successfully\n\n"
 
 popd
 
-cp -r test/test-pages dist/demo
+mkdir -p dist/demo && cp -r test/test-pages/. dist/demo/
