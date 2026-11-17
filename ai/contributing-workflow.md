@@ -70,9 +70,7 @@ Do not hand-edit `dist/` — it is generated. Change `src` and rebuild.
 
 ## Local demo / manual testing
 
-- `react-demo-app/` is a Vite app for exercising the SDK by hand.
-- `test/test-pages/` has build scripts and sample pages (`npm run build:sample`,
-  `npm run start:sample`).
+- `react-demo-app/` is a Vite app for exercising the SDK by hand (see its README).
 
 ## Docs to read first
 
