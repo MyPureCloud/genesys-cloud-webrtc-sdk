@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
 
+### Removed
+* [STREAM-2891](https://inindca.atlassian.net/browse/STREAM-2891) - Removed the legacy `test/test-pages` sample apps, the root `index.html` that redirected to them, and their scripts (`build:sample`, `start`, `start:sample`, `build-run-local`, `build-run-gcba`) and dev dependencies (`stupid-server`, `concurrently`). Use `react-demo-app` for manual testing.
+
 # [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added
 * [STREAM-1075](https://inindca.atlassian.net/browse/STREAM-1075) - Added diagnostic logging to help debug dual session-accepts. `acceptSession` now records which path accepted the session and its current state, and warns when a session is accepted while already active. The acd-screenshare handler logs its own auto-accept so that path can be identified directly.
