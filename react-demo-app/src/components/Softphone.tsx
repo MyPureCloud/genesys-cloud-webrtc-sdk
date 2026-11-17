@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import Card from "./Card";
 import { GuxButton, GuxToggle } from "genesys-spark-components-react";
 import "./Softphone.css";
-import useSdk from "../hooks/useSdk";
+import useSdk, { hasLocalAudioProcessor } from "../hooks/useSdk";
 import PendingSessionsTable from "./PendingSessionsTable";
 import ActiveConversationsTable from "./ActiveConversationsTable";
 import HandledPendingSessionsTable from "./HandledPendingSessionsTable";
@@ -69,7 +69,7 @@ export default function Softphone() {
               uncheckedLabel="Off Queue"
             ></GuxToggle>
           </Card>
-          <AudioProcessor></AudioProcessor>
+          {hasLocalAudioProcessor && <AudioProcessor></AudioProcessor>}
           <StationDetails></StationDetails>
           <HandledPendingSessionsTable></HandledPendingSessionsTable>
           <PendingSessionsTable></PendingSessionsTable>

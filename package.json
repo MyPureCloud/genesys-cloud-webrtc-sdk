@@ -14,7 +14,8 @@
   "web": "dist/{version}/genesys-cloud-webrtc-sdk.bundle.js",
   "typings": "dist/es/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "!dist/demo"
   ],
   "pre-push": [
     "test"
@@ -39,6 +40,7 @@
     "build:es": "tsc -p . --outDir ./dist/es --target es2015 --module es2015",
     "build:cdn": "webpack --env cdn && webpack --env cdn --env production",
     "build:rollup": "rollup -c --bundleConfigAsCjs",
+    "build:demo": "./scripts/build-demo.sh",
     "build:watch": "tsc -p . && webpack --watch",
     "test": "npm run lint && cross-env NODE_ENV=test jest --runInBand",
     "test:unit": "cross-env NODE_ENV=test jest test/unit --runInBand",
