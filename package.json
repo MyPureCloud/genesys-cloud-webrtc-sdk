@@ -72,6 +72,9 @@
     "strict-event-emitter-types": "^2.0.0",
     "webrtc-stats-gatherer": "^9.2.0"
   },
+  "overrides": {
+    "follow-redirects": "^1.16.2"
+  },
   "devDependencies": {
     "@babel/core": "^7.24.6",
     "@babel/plugin-proposal-class-properties": "^7.12.1",
