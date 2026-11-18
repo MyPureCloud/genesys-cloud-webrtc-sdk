@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...HEAD)
 ### Added
 * [STREAM-2890](https://inindca.atlassian.net/browse/STREAM-2890) - The React demo app is now built into `dist/demo/` (`npm run build:demo`) and deployed to the CDN at `webrtc-sdk/demo/`, replacing the legacy demo landing page. The demo no longer depends on the licensed Iris audio processor; it can still be tested locally via a gitignored `src/audioProcessor.local.ts` (see `react-demo-app/README.md`), and the Audio Processor card only shows when one is present. Removed the demo's standalone noise tester, which bypassed the SDK's media and audio processor handling. `dist/demo` is excluded from the npm package.
+
+# [v14.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...v14.4.0)
+### Added
+* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
+* [STREAM-1075](https://inindca.atlassian.net/browse/STREAM-1075) - Added diagnostic logging to help debug dual session-accepts. `acceptSession` now records which path accepted the session and its current state, and warns when a session is accepted while already active. The acd-screenshare handler logs its own auto-accept so that path can be identified directly.
 
 ### Changed
 * [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
@@ -15,10 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added
-* [STREAM-1075](https://inindca.atlassian.net/browse/STREAM-1075) - Added diagnostic logging to help debug dual session-accepts. `acceptSession` now records which path accepted the session and its current state, and warns when a session is accepted while already active. The acd-screenshare handler logs its own auto-accept so that path can be identified directly.
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 * [STREAM-2523](https://inindca.atalssian.net/browse/STREAM-2523) - Add `sessionConnected` event for consuming apps, especially so they can know a session has connected after an interruption.
-* [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
 
 ### Changed
 * [STREAM-2837](https://inindca.atlassian.net/browse/STREAM-2837) - Softphone client metadata (including the client public IP) is now reported on every connected softphone leg. The `experimentalFeatures.reportSoftphoneClientMetadata` gate has been removed, so consumers no longer need to opt in.
