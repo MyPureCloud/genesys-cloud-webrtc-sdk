@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * [STREAM-2890](https://inindca.atlassian.net/browse/STREAM-2890) - The React demo app is now built into `dist/demo/` (`npm run build:demo`) and deployed to the CDN at `webrtc-sdk/demo/`, replacing the legacy demo landing page. The demo no longer depends on the licensed Iris audio processor; it can still be tested locally via a gitignored `src/audioProcessor.local.ts` (see `react-demo-app/README.md`), and the Audio Processor card only shows when one is present. Removed the demo's standalone noise tester, which bypassed the SDK's media and audio processor handling. `dist/demo` is excluded from the npm package.
 
+### Changed
+* [STREAM-2964](https://inindca.atlassian.net/browse/STREAM-2964) - The demo app links in `README.md` and `react-demo-app/README.md` now point at the apps CDN (`apps.<env>.com/developercenter-cdn/webrtc-sdk/demo/`), where the pipeline deploys it, instead of the legacy `sdk-cdn` host.
+
 # [v14.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...v14.4.0)
 ### Added
 * [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
