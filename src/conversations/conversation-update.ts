@@ -16,7 +16,10 @@ export class ConversationUpdate {
         state: video.state,
         peerCount: video.peerCount,
         sharingScreen: video.sharingScreen,
-        self: video.self ? { name: video.self.name } : undefined
+        self: video.self ? { name: video.self.name } : undefined,
+        agentProfileImage: video.agentProfileImage
+          ? video.agentProfileImage.map((image) => ({ resolution: image.resolution, imageUri: image.imageUri }))
+          : undefined
       })) : [];
 
       const calls = p.calls ? p.calls.map((call) => ({
