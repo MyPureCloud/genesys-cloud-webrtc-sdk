@@ -1059,6 +1059,53 @@ describe('validateOutgoingMediaTracks()', () => {
     expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ audioDeviceId: true, session });
   });
 
+  it('should not update the session if a registered processed track\'s source device still exists', async () => {
+    const cameraTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    /* e.g. a virtual background canvas track: its label matches no device */
+    const processedTrack = new MockTrack('video', 'canvas-capture-track');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](processedTrack); /* this is a mock PC */
+
+    mockSdk.media.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
+    expect(mockSessionHandler.setVideoMute).not.toHaveBeenCalled();
+  });
+
+  it('should update the session if a registered processed track\'s source device was lost', async () => {
+    const cameraTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    const processedTrack = new MockTrack('video', 'canvas-capture-track');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](processedTrack); /* this is a mock PC */
+
+    mockSdk.media.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+    /* source camera is lost */
+    setMediaStateDevices(testDevices.filter(d => d.label !== cameraTrack.label));
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).toHaveBeenCalledWith({ videoDeviceId: true, session });
+  });
+
+  it('should not update the session if a stacked processed track\'s original camera still exists', async () => {
+    const cameraTrack = new MockTrack('video', mediaState.videoDevices[0].label);
+    const backgroundTrack = new MockTrack('video', 'canvas-capture-track');
+    const filterTrack = new MockTrack('video', 'another-canvas-capture-track');
+    const session = sessions[0];
+    session.peerConnection['_addSender'](filterTrack); /* this is a mock PC */
+
+    /* each effect is registered against the track it was made from */
+    mockSdk.media.registerProcessedTrack(backgroundTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+    mockSdk.media.registerProcessedTrack(filterTrack as unknown as MediaStreamTrack, backgroundTrack as unknown as MediaStreamTrack);
+
+    await sessionManager.validateOutgoingMediaTracks();
+
+    expect(mockSdk.updateOutgoingMedia).not.toHaveBeenCalled();
+  });
+
   it('should mute the media type if there is no device to switch to', async () => {
     const mockVideoTrack = new MockTrack('video', mediaState.videoDevices[0].label);
     const mockAudioTrack = new MockTrack('audio', mediaState.videoDevices[0].label);

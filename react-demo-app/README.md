@@ -34,3 +34,26 @@ npm install
 npm run dev
 ```
 
+
+### Audio processor testing
+Audio processors such as Iris are licensed and are not part of the published demo. To test one locally, install it without saving it to `package.json` and create `src/audioProcessor.local.ts` (gitignored), which default-exports a function returning an `IAudioProcessor`:
+```ts
+// src/audioProcessor.local.ts
+import { GenesysIrisClient } from 'genesys-iris-client';
+import licenseText from './assets/iris.lic?raw';
+import keyText from './assets/iris.key?raw';
+
+export default async () => new GenesysIrisClient({ company: 'GENESYS_TEST', key: keyText, license: licenseText, team: 'Dev Team', user: 'Dev' });
+```
+```sh
+npm install --no-save ../../genesys-iris-sdk/genesys-iris-client-<version>.tgz
+```
+
+### CDN
+`npm run build:demo` (from the SDK root, after `npm run build`) builds this app into `dist/demo/`, which the pipeline deploys to `developercenter-cdn/webrtc-sdk/demo/` on the apps CDN:
+
+- dev: https://apps.inindca.com/developercenter-cdn/webrtc-sdk/demo/
+- test: https://apps.inintca.com/developercenter-cdn/webrtc-sdk/demo/
+- prod: https://apps.mypurecloud.com/developercenter-cdn/webrtc-sdk/demo/
+
+These URLs are registered as redirect URIs on the demo's OAuth client; logging in from any other path will be rejected. `sdk-cdn.<env>.com/webrtc-sdk/demo/` is a legacy bucket the pipeline no longer deploys to.
