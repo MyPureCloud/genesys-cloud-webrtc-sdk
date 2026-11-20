@@ -173,6 +173,12 @@ export class VideoSessionHandler extends BaseSessionHandler {
         ...(startParams.recordingConsent != null && { recordingConsent: startParams.recordingConsent })
       };
       this.log('info', 'starting video session with a jwt', { decodedJwt, opts });
+      // stable message + top-level conversationId so webrtc-timeline-parser shows it on the timeline;
+      // recordingConsent is the string 'absent' when the app didn't supply one
+      this.log('info', 'video recording consent', {
+        conversationId: decodedJwt.data.conversationId,
+        recordingConsent: startParams.recordingConsent ?? 'absent'
+      });
 
       // Use the streaming-client to send upgradeMediaPresence stanza.
       await this.sdk._streamingConnection.webrtcSessions.initiateRtcSession(opts);

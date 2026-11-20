@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...HEAD)
 ### Added
+* [STREAM-2791](https://inindca.atlassian.net/browse/STREAM-2791) - `startVideoConference()` accepts an optional `recordingConsent` (`consented`, `declined`, `notCollected`, `recordingNotAllowed`), forwarded unchanged to streaming-client on the guest (JWT) video join.
+* [STREAM-2898](https://inindca.atlassian.net/browse/STREAM-2898) - Guest (JWT) video joins now log a `video recording consent` message with the conversationId and the `recordingConsent` value (`absent` when none was supplied) so it appears on the webrtc timeline.
 * [STREAM-2890](https://inindca.atlassian.net/browse/STREAM-2890) - The React demo app is now built into `dist/demo/` (`npm run build:demo`) and deployed to the CDN at `webrtc-sdk/demo/`, replacing the legacy demo landing page. The demo no longer depends on the licensed Iris audio processor; it can still be tested locally via a gitignored `src/audioProcessor.local.ts` (see `react-demo-app/README.md`), and the Audio Processor card only shows when one is present. Removed the demo's standalone noise tester, which bypassed the SDK's media and audio processor handling. `dist/demo` is excluded from the npm package.
 
 ### Changed
@@ -23,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added
-* [STREAM-2791](https://inindca.atlassian.net/browse/STREAM-2791) - `startVideoConference()` accepts an optional `recordingConsent` (`consented`, `declined`, `notCollected`, `recordingNotAllowed`) which is forwarded unchanged to streaming-client on the guest (JWT) video join. Requires a streaming-client release containing STREAM-2789.
 * [STREAM-2820](https://inindca.atlassian.net/browse/STREAM-2820) - Black-box integration test suite for the SDK logic layer (session manager, session handlers, client public API) driven through a zero-dependency `node:http` mock server, plus repo AI docs (`AGENTS.md`, `ai/` architecture/conventions/test-standards/workflow) and Kiro/Claude pointers. Test infrastructure and documentation only; no production code changes.
 * [STREAM-2523](https://inindca.atalssian.net/browse/STREAM-2523) - Add `sessionConnected` event for consuming apps, especially so they can know a session has connected after an interruption.
 

@@ -647,6 +647,31 @@ describe('startSession', () => {
       }
     );
 
+    it.each(['consented', 'declined', 'notCollected', 'recordingNotAllowed'] as const)(
+      'should log recordingConsent "%s" for the timeline',
+      async (recordingConsent) => {
+        (jwtDecode as jest.Mock).mockReturnValue({
+          data: { jid: mockJid, conversationId: mockConversationId, sourceCommunicationId: mockSourceCommunicationId }
+        });
+        const logSpy = jest.spyOn(handler as any, 'log');
+        await handler.startSession({ jid: mockJid, recordingConsent, sessionType: SessionTypes.collaborateVideo });
+        expect(logSpy).toHaveBeenCalledWith('info', 'video recording consent', {
+          conversationId: mockConversationId,
+          recordingConsent
+        });
+      }
+    );
+    it('should log recordingConsent as "absent" when not supplied', async () => {
+      (jwtDecode as jest.Mock).mockReturnValue({
+        data: { jid: mockJid, conversationId: mockConversationId, sourceCommunicationId: mockSourceCommunicationId }
+      });
+      const logSpy = jest.spyOn(handler as any, 'log');
+      await handler.startSession({ jid: mockJid, sessionType: SessionTypes.collaborateVideo });
+      expect(logSpy).toHaveBeenCalledWith('info', 'video recording consent', {
+        conversationId: mockConversationId,
+        recordingConsent: 'absent'
+      });
+    });
     it('should omit recordingConsent entirely from initiateRtcSession options when not supplied', async () => {
       (jwtDecode as jest.Mock).mockReturnValue({
         data: {

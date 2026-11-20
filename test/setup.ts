@@ -1,5 +1,11 @@
 import { randomUUID } from 'crypto';
 
+// stanza >= 12.22 (via streaming-client >= 20.2) calls `globalThis.fetch.bind(...)` at
+// import time. jsdom does not provide fetch, so stub it to let the module load.
+if (typeof globalThis.fetch === 'undefined') {
+  (globalThis as any).fetch = () => Promise.reject(new Error('fetch is not available in unit tests'));
+}
+
 Object.defineProperty(globalThis, 'crypto', {
   value: { randomUUID }
 });
