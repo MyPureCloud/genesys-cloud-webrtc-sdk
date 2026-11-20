@@ -352,6 +352,18 @@ const sdk = new GenesysCloudWebrtcSdk({
 });
 ```
 
+#### `experimentalFeatures`
+
+`experimentalFeatures?: Record<string, unknown>;` Optional: no default.
+
+Genesys internal use only. These features may change or be removed at any time
+without notice. Each key turns on one feature that is still in development;
+an absent or `false` key leaves SDK behavior unchanged.
+
+| Key | Effect |
+| --- | --- |
+| `releaseAndReportRemoteVideo` | Release the remote video from the video element when a video session ends, and report remote video that is not received. See [Remote video release and reporting]. |
+
 #### `defaults`
 
 Optional. Defaults for various SDK functionality. See individual options for defaults and usage.
@@ -418,6 +430,11 @@ HTML Video Element to attach incoming video streams to.
 A video element is _required_ for accepting incoming video
 calls. If no video element is passed into `sdk.acceptSession()`,
 this default element will be used.
+
+With `experimentalFeatures.releaseAndReportRemoteVideo` enabled, the SDK clears
+this element's `srcObject` when the video session ends, and emits a `session`
+`sdkError` if remote video does not play on it. See
+[Remote video release and reporting].
 
 #### `defaults.videoResolution`
 
@@ -2058,6 +2075,41 @@ enum SdkErrorTypes {
 
 The SDK will add the `type` to give more clarity as to why the error was thrown.
 
+### Remote video release and reporting
+
+Genesys internal use only: this behavior is off unless
+`experimentalFeatures.releaseAndReportRemoteVideo` is `true` (see
+[`experimentalFeatures`](#experimentalfeatures)). When it is off, the video
+element keeps the ended session's stream and the SDK reports nothing, as before.
+
+With it on, for video sessions:
+
+- **Release at session end.** When the session ends, the SDK sets the video
+  element's `srcObject` to `null`, but only if the element still holds the
+  stream the SDK attached for that session. An element the application or a
+  later session has since given another stream is left alone. Audio, screen
+  share and local media are unchanged.
+- **Remote video not received.** If the video element has not started playing
+  the session's remote video (its `playing` event) within 10 seconds, the SDK
+  emits one `sdkError`. The 10 seconds start once `sdk.acceptSession()` has
+  local media and begins attaching the remote tracks, so a slow camera or
+  microphone permission prompt delays the report:
+  - `type`: `session`
+  - `message`: `Remote video was not received`
+  - `details.conversationId`: the session's conversation ID
+  - `details.sessionId`: the session's ID
+
+  This covers remote video that never arrives and video the browser does not
+  play, for example because autoplay was refused. The SDK checks once per
+  session and does not retry playback. No error is emitted when the session
+  ends first, when `sdk.acceptSession()` fails, or when the conversation state
+  shows every other participant's video as muted, or no other participant with
+  video (for example, the customer's camera is off). Without any
+  conversation state, such as some JWT sessions, or without the local user's
+  ID, as for guests, the error is emitted even if the customer's camera is
+  off, unless the conversation lists no participants with video. Video that
+  stops after it started playing is not reported.
+
 [1]: https://developer.mypurecloud.com/api/rest/v2/notifications/index.html
 [GenesysCloudClientLogger]: https://github.com/purecloudlabs/genesys-cloud-client-logger
 [webrtc-stats-gatherer]: https://github.com/MyPureCloud/webrtc-stats-gatherer
@@ -2071,3 +2123,4 @@ The SDK will add the `type` to give more clarity as to why the error was thrown.
 [SDK Media audioTrackVolume event]: media.md#audiotrackvolume
 [GenesysCloudMediaSession]: #genesyscloudmediasession
 [SdkError Class]: #sdkerror-class
+[Remote video release and reporting]: #remote-video-release-and-reporting
