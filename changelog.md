@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...HEAD)
 ### Added
+* [STREAM-2997](https://inindca.atlassian.net/browse/STREAM-2997) - `participantsUpdate` participants can now include `agentProfileImage`: the agent's public profile image (their "Agent Image") as a list of `{ resolution, imageUri }` (x150, x800 and x1024). It's only sent to guests of agent video conferences, and only when the agent has an Agent Image set; otherwise it's `undefined`. See [doc/video.md](doc/video.md).
 * [STREAM-2890](https://inindca.atlassian.net/browse/STREAM-2890) - The React demo app is now built into `dist/demo/` (`npm run build:demo`) and deployed to the CDN at `webrtc-sdk/demo/`, replacing the legacy demo landing page. The demo no longer depends on the licensed Iris audio processor; it can still be tested locally via a gitignored `src/audioProcessor.local.ts` (see `react-demo-app/README.md`), and the Audio Processor card only shows when one is present. Removed the demo's standalone noise tester, which bypassed the SDK's media and audio processor handling. `dist/demo` is excluded from the npm package.
 
 ### Changed
