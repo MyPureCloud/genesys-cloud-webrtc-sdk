@@ -115,6 +115,43 @@ describe('ConversationUpdate', () => {
       expect(conversationUpdate.participants[0].videos[0].self).toBe(undefined);
     });
 
+    it('should pluck only the resolution and imageUri from the video agentProfileImage', () => {
+      const video = {
+        id: '5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5',
+        state: 'connected',
+        agentProfileImage: [
+          { resolution: 'x150', imageUri: 'https://api-downloads.example.com/image-files/150x150.jpg', unexpected: 'dropped' },
+          { resolution: 'x800', imageUri: 'https://api-downloads.example.com/image-files/800x800.jpg' },
+          { resolution: 'x1024', imageUri: 'https://api-downloads.example.com/image-files/1024x1024.jpg' }
+        ]
+      };
+      const update = {
+        participants: [
+          { id: '7b809e10-fb79-4420-9d5f-69d232ddf490', purpose: 'agent', userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf', videos: [video] }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].videos[0].agentProfileImage).toStrictEqual([
+        { resolution: 'x150', imageUri: 'https://api-downloads.example.com/image-files/150x150.jpg' },
+        { resolution: 'x800', imageUri: 'https://api-downloads.example.com/image-files/800x800.jpg' },
+        { resolution: 'x1024', imageUri: 'https://api-downloads.example.com/image-files/1024x1024.jpg' }
+      ]);
+    });
+
+    it('should leave the video agentProfileImage undefined if the event does not have one', () => {
+      const update = {
+        participants: [
+          { id: '7b809e10-fb79-4420-9d5f-69d232ddf490', purpose: 'agent', userId: 'dad93e0d-31fa-4fd2-8fc4-d9d3f214ddcf', videos: [{ id: '5e2bf9b8-c9d5-4975-b89b-756b6bd0b3d5', state: 'connected' }] }
+        ]
+      };
+
+      const conversationUpdate = new ConversationUpdate(update);
+
+      expect(conversationUpdate.participants[0].videos[0].agentProfileImage).toBe(undefined);
+    });
+
     it('should pluck only needed call props', () => {
       const call = {
         id: 'geroge-washington',
