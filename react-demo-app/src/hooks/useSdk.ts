@@ -9,7 +9,7 @@ import { setSdk } from '../features/sdkSlice';
 import { useSelector } from 'react-redux';
 import { RootState } from '../types/store';
 import { MinimalSdk } from '../types/sdk';
-import { connectSdkEventHandlers } from './sdkEventHandlers';
+import { connectSdkEventHandlers } from '../sdkEventHandlers';
 import { setAudioProcessor } from '../features/audioProcessorSlice';
 import { IAudioProcessor } from 'genesys-cloud-webrtc-sdk';
 

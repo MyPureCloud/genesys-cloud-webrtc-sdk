@@ -53,12 +53,6 @@ npm install
 npm run dev
 ```
 
-### Tests
-```sh
-cd react-demo-app
-npm run lint
-npm test     # Vitest with jsdom; drives the SDK event handling with a fake SDK, no Genesys Cloud session needed
-```
 
 ### Audio processor testing
 Audio processors such as Iris are licensed and are not part of the published demo. To test one locally, install it without saving it to `package.json` and create `src/audioProcessor.local.ts` (gitignored), which default-exports a function returning an `IAudioProcessor`:

@@ -13,15 +13,15 @@ import {
   updatePendingSessions,
   updateConversations,
   storeHandledPendingSession
-} from '../features/conversationsSlice';
-import { updateGumRequests, updateMediaState } from '../features/devicesSlice';
+} from './features/conversationsSlice';
+import { updateGumRequests, updateMediaState } from './features/devicesSlice';
 import {
   connectionChanged,
   conversationsRemoved,
   sdkErrorReceived,
   sessionEndedReceived,
   sessionStartedReceived
-} from '../features/sdkSignalsSlice';
+} from './features/sdkSignalsSlice';
 
 export type SdkEventSource = Pick<GenesysCloudWebrtcSdk, 'on'> & {
   media: Pick<GenesysCloudWebrtcSdk['media'], 'on'>;
