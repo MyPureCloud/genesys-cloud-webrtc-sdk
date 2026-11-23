@@ -30,6 +30,9 @@ screen-recording. Built with Jest + ts-jest, runs under jsdom. Hosted on GitHub.
 npm install --registry=https://registry.npmjs.org
 
 npm test                 # lint + full unit + IT suite (100% coverage gate)
+npm run test:unit        # unit tests only (test/unit)
+npm run test:integration # ITs only (test/integration, own junit file)
+npm run test:ci          # lint + unit + ITs as separate runs (what CI runs)
 npm run build            # ts-node scripts/build.ts
 npm run lint             # ESLint over src
 

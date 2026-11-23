@@ -122,7 +122,8 @@ export class VideoSessionHandler extends BaseSessionHandler {
           purpose: pcParticipant.purpose,
           audioMuted: activeVideo.audioMuted,
           videoMuted: activeVideo.videoMuted,
-          sharingScreen: activeVideo.sharingScreen
+          sharingScreen: activeVideo.sharingScreen,
+          agentProfileImage: activeVideo.agentProfileImage
         };
 
         return participantUpdate;

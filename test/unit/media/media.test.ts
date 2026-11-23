@@ -840,6 +840,85 @@ describe('SdkMedia', () => {
       expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(videoTrack as any as MediaStreamTrack)).toBe(undefined);
       expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(audioTrack as any as MediaStreamTrack)).toBe(undefined);
     });
+
+    it('should match a mic, not a speaker that shares its label', () => {
+      /* headsets often list their mic and speaker under the same label */
+      const headsetSpeaker = { kind: 'audiooutput', deviceId: 'headsetSpeaker', label: 'Headset' } as MediaDeviceInfo;
+      const headsetMic = { kind: 'audioinput', deviceId: 'headsetMic', label: 'Headset' } as MediaDeviceInfo;
+      const micTrack = new MockTrack('audio', 'Headset');
+
+      /* speaker listed first */
+      sdkMedia['setDevices']([headsetSpeaker, headsetMic]);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(micTrack as unknown as MediaStreamTrack)).toEqual(headsetMic);
+
+      /* only the speaker is left */
+      sdkMedia['setDevices']([headsetSpeaker]);
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(micTrack as unknown as MediaStreamTrack)).toBe(undefined);
+    });
+
+    it('should match the track itself, not its registered source track', () => {
+      const cameraTrack = new MockTrack('video', mockVideoDevice2.label);
+      const processedTrack = new MockTrack('video', 'canvas-capture-track');
+
+      sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+      /* callers like the same-device check in updateOutgoingMedia need the track actually being sent */
+      expect(sdkMedia.findCachedDeviceByTrackLabelAndKind(processedTrack as unknown as MediaStreamTrack)).toBe(undefined);
+    });
+  });
+
+  describe('registerProcessedTrack() & getSourceTrack()', () => {
+    it('should return the track itself if it is not registered', () => {
+      const track = new MockTrack('video', mockVideoDevice1.label);
+
+      expect(sdkMedia.getSourceTrack(track as unknown as MediaStreamTrack)).toBe(track);
+    });
+
+    it('should return the registered source track for a processed track', () => {
+      const cameraTrack = new MockTrack('video', mockVideoDevice1.label);
+      const processedTrack = new MockTrack('video');
+
+      sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+      expect(sdkMedia.getSourceTrack(processedTrack as unknown as MediaStreamTrack)).toBe(cameraTrack);
+    });
+
+    it('should overwrite the source track when the same processed track is registered again', () => {
+      const firstCameraTrack = new MockTrack('video', mockVideoDevice1.label);
+      const secondCameraTrack = new MockTrack('video', mockVideoDevice2.label);
+      const processedTrack = new MockTrack('video');
+
+      sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, firstCameraTrack as unknown as MediaStreamTrack);
+      sdkMedia.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, secondCameraTrack as unknown as MediaStreamTrack);
+
+      expect(sdkMedia.getSourceTrack(processedTrack as unknown as MediaStreamTrack)).toBe(secondCameraTrack);
+    });
+
+    it('should follow chained registrations back to the original source track', () => {
+      const cameraTrack = new MockTrack('video', mockVideoDevice1.label);
+      const backgroundTrack = new MockTrack('video');
+      const filterTrack = new MockTrack('video');
+
+      /* filter is applied on top of the background, which is applied on top of the camera */
+      sdkMedia.registerProcessedTrack(backgroundTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+      sdkMedia.registerProcessedTrack(filterTrack as unknown as MediaStreamTrack, backgroundTrack as unknown as MediaStreamTrack);
+
+      expect(sdkMedia.getSourceTrack(filterTrack as unknown as MediaStreamTrack)).toBe(cameraTrack);
+    });
+
+    it('should stop following registrations that loop', () => {
+      const trackA = new MockTrack('video');
+      const trackB = new MockTrack('video');
+
+      sdkMedia.registerProcessedTrack(trackA as unknown as MediaStreamTrack, trackB as unknown as MediaStreamTrack);
+      sdkMedia.registerProcessedTrack(trackB as unknown as MediaStreamTrack, trackA as unknown as MediaStreamTrack);
+      expect(sdkMedia.getSourceTrack(trackA as unknown as MediaStreamTrack)).toBe(trackB);
+
+      /* a track registered against itself */
+      const trackC = new MockTrack('video');
+      sdkMedia.registerProcessedTrack(trackC as unknown as MediaStreamTrack, trackC as unknown as MediaStreamTrack);
+      expect(sdkMedia.getSourceTrack(trackC as unknown as MediaStreamTrack)).toBe(trackC);
+    });
   });
 
   describe('findCachedDeviceByTrackLabel()', () => {

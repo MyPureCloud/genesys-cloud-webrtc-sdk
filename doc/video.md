@@ -71,7 +71,13 @@ interface IParticipantUpdate {
   purpose?: string; // role the participant plays on the conversation, e.g. 'agent' or 'customer',
   sharingScreen: boolean; // whether or not the onScreenParticipant is sharing their screen,
   videoMuted: boolean,
-  audioMuted: boolean
+  audioMuted: boolean,
+  agentProfileImage?: IAgentProfileImage[] // the agent's public profile image in every available resolution. Only sent to guests of agent video conferences, and only when the agent has an Agent Image set
+}
+
+interface IAgentProfileImage {
+  resolution: string; // e.g. 'x150', 'x800' or 'x1024'
+  imageUri: string
 }
 ```
 Value of event:
@@ -83,6 +89,9 @@ the agent on the conversation:
 ``` ts
 const agent = update.activeParticipants.find((participant) => participant.purpose === 'agent');
 console.log(agent?.name, agent?.communicationId);
+
+// e.g. show the agent's avatar while their camera is off
+const avatarUri = agent?.agentProfileImage?.find((image) => image.resolution === 'x150')?.imageUri;
 ```
 
 ## Video Session Methods
