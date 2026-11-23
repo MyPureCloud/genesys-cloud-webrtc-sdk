@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import sdkReducer, { setSdk } from '../src/features/sdkSlice';
-import VideoSession from '../src/components/VideoSession';
+import VideoSession, { JOIN_TIMEOUT_MS } from '../src/components/VideoSession';
 import { MinimalSdk } from '../src/types/sdk';
 
 class FakeVideoSdk extends EventEmitter {
@@ -115,6 +115,50 @@ describe('video session view', () => {
 
     emit('sessionEnded', session, { condition: 'success' });
     expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('re-enables Join when no video session starts after a successful join request', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      fireEvent.change(screen.getByTestId('video-room-jid'), { target: { value: 'room1@conference.example.com' } });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('video-join'));
+      });
+      expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(JOIN_TIMEOUT_MS - 1);
+      });
+      expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(false);
+      expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('none');
+    } finally {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('does not let a stale join timeout affect a started video session', () => {
+    vi.useFakeTimers();
+    try {
+      fireEvent.change(screen.getByTestId('video-room-jid'), { target: { value: 'room1@conference.example.com' } });
+      fireEvent.click(screen.getByTestId('video-join'));
+      const session = { id: 'video-session-1', conversationId: 'video-conv-1', sessionType: 'collaborateVideo' };
+      emit('sessionStarted', session);
+      expect(vi.getTimerCount()).toBe(0);
+      act(() => {
+        vi.advanceTimersByTime(JOIN_TIMEOUT_MS);
+      });
+      expect(screen.getByTestId('video-session').getAttribute('data-state')).toBe('active');
+      expect((screen.getByTestId('video-join') as HTMLButtonElement).disabled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not accept a softphone session', () => {

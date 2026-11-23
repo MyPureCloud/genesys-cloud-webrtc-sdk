@@ -5,6 +5,10 @@ import Card from './Card';
 import { RootState } from '../types/store';
 import './VideoSession.css';
 
+// How long Join stays disabled waiting for the video session after startVideoConference. Without a bound, a request
+// that never produces a sessionStarted event would leave Join disabled until the page reloads.
+export const JOIN_TIMEOUT_MS = 30000;
+
 export default function VideoSession() {
   const sdk = useSelector((state: RootState) => state.sdk.sdk);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -15,6 +19,13 @@ export default function VideoSession() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const activeSessionRef = useRef<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const joinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function endJoin() {
+    if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
+    joinTimerRef.current = null;
+    setJoining(false);
+  }
 
   function setActive(sessionId: string | null) {
     activeSessionRef.current = sessionId;
@@ -26,7 +37,7 @@ export default function VideoSession() {
 
     function handleSessionStarted(session: IExtendedMediaSession) {
       if (!sdk || String(session.sessionType) !== 'collaborateVideo') return;
-      setJoining(false);
+      endJoin();
       if (activeSessionRef.current && activeSessionRef.current !== session.id) {
         // One session per view: accepting another onto the same elements would replace the displayed media.
         console.warn('Ignoring a second video session while one is active', session.id);
@@ -52,6 +63,8 @@ export default function VideoSession() {
     return () => {
       sdk.off('sessionStarted', handleSessionStarted);
       sdk.off('sessionEnded', handleSessionEnded);
+      if (joinTimerRef.current) clearTimeout(joinTimerRef.current);
+      joinTimerRef.current = null;
     };
   }, [sdk]);
 
@@ -61,9 +74,13 @@ export default function VideoSession() {
     event.preventDefault();
     if (!sdk || !roomJid || joining || state === 'active') return;
     setJoining(true);
+    joinTimerRef.current = setTimeout(() => {
+      console.warn(`No video session started within ${JOIN_TIMEOUT_MS} ms of joining`, roomJid);
+      endJoin();
+    }, JOIN_TIMEOUT_MS);
     sdk.startVideoConference(roomJid).catch(err => {
       console.error(err);
-      setJoining(false);
+      endJoin();
     });
   }
 
