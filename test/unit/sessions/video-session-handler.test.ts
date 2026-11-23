@@ -242,6 +242,39 @@ describe('handleConversationUpdate', () => {
     expect(emittedUpdate.activeParticipants[0].purpose).toEqual('user');
   });
 
+  it('should include the agent profile image on the emitted update', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    const agentProfileImage = [
+      { resolution: 'x150', imageUri: 'https://api-downloads.example.com/image-files/150x150.jpg' },
+      { resolution: 'x800', imageUri: 'https://api-downloads.example.com/image-files/800x800.jpg' },
+      { resolution: 'x1024', imageUri: 'https://api-downloads.example.com/image-files/1024x1024.jpg' }
+    ];
+    participant1.purpose = 'agent';
+    participant1.videos[0].agentProfileImage = agentProfileImage;
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].agentProfileImage).toEqual(agentProfileImage);
+    expect(emittedUpdate.addedParticipants[0].agentProfileImage).toEqual(agentProfileImage);
+  });
+
+  it('should leave the agent profile image undefined if the video has none', () => {
+    const session = {
+      emit: jest.fn(),
+      conversationId: conversationUpdate.id
+    };
+
+    handler.handleConversationUpdate(conversationUpdate, [session] as any);
+
+    const emittedUpdate: IParticipantsUpdate = session.emit.mock.calls[0][1];
+    expect(emittedUpdate.activeParticipants[0].agentProfileImage).toBe(undefined);
+  });
+
   it('should include the communicationId of the connected video on the emitted update', () => {
     const session = {
       emit: jest.fn(),
