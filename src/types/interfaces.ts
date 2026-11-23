@@ -828,6 +828,12 @@ export interface IConversationParticipantFromEvent {
   name?: string;
   videos: Array<IParticipantVideo>;
   calls: Array<ICallStateFromParticipant>;
+  callbacks?: Array<ICallbackStateFromParticipant>;
+}
+
+export interface ICallbackStateFromParticipant {
+  id: string;
+  state: CommunicationStates;
 }
 
 export interface IParticipantVideo {
@@ -839,6 +845,16 @@ export interface IParticipantVideo {
   peerCount: number;
   sharingScreen: boolean;
   self?: { name?: string }; // name is the agent's alias
+  agentProfileImage?: IAgentProfileImage[]; // only on guest notifications, for the agent's video in an agent video conference
+}
+
+/**
+ * One resolution of an agent's public profile image (the "Agent Image" set in their profile, which is shown to customers)
+ * Not to be confused with the internal "Profile Picture" or "Informal Photos".
+ */
+export interface IAgentProfileImage {
+  resolution: string; // e.g. 'x150', 'x800' or 'x1024'
+  imageUri: string;
 }
 
 export interface ICallStateFromParticipant {
@@ -1063,6 +1079,7 @@ export interface IParticipantUpdate {
   sharingScreen: boolean;
   videoMuted: boolean;
   audioMuted: boolean;
+  agentProfileImage?: IAgentProfileImage[];
 }
 export interface ISpeakersUpdate {
   speakers: Array<
@@ -1087,8 +1104,9 @@ export interface SdkEvents {
   pendingSession: IPendingSession;
   sessionStarted: IExtendedMediaSession;
   sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
-  // **Genesys internal use only** - non-Genesys consumers may experient unexpected behavior
+  // **Genesys internal use only** - non-Genesys consumers may experience unexpected behavior
   _sessionEnded: (session: IExtendedMediaSession, reason: JingleReason) => void;
+  sessionConnected: (event) => { sessionId: string, sessionType: string, conversationId: string };
   sessionInterrupted: (event) => { sessionId: string, sessionType: string, conversationId: string };
   handledPendingSession: ISessionIdAndConversationId;
   cancelPendingSession: ISessionIdAndConversationId;

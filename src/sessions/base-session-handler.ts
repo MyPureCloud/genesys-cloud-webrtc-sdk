@@ -110,6 +110,12 @@ export default abstract class BaseSessionHandler {
 
     session.on('connectionState', (state) => {
       this.log('info', 'connection state change', { state, conversationId: session.conversationId, sid: session.id, sessionType: session.sessionType });
+
+      /* Emit `sessionConnected` so consuming apps know, particularly after a connection interruption. */
+      if (state === 'connected') {
+        this.sdk.emit('sessionConnected', { sessionId: session.id, sessionType: session.sessionType, conversationId: session.conversationId });
+      }
+
       /* Emit sessionInterrupted when the connection is interrupted so that consuming apps can inform users (e.g. Volt). */
       if (state === 'interrupted') {
         this.sdk.emit('sessionInterrupted', { sessionId: session.id, sessionType: session.sessionType, conversationId: session.conversationId });
@@ -175,6 +181,9 @@ export default abstract class BaseSessionHandler {
       sessionType: session.sessionType,
       conversationId: session.conversationId,
       sessionId: session.id,
+      /* Diagnostic context for dual session-accepts: whether the accept came via SessionManager and the current session state. */
+      acceptedViaSessionManager: !!session._alreadyAccepted,
+      sessionState: session.state,
       params: logParams
     };
 
@@ -187,6 +196,10 @@ export default abstract class BaseSessionHandler {
       (session._outputAudioElement as ExtendedHTMLAudioElement).setSinkId(outputDeviceId);
       logExtras.hasOutputDeviceSupport = isSupported;
       logExtras.outputDeviceId = outputDeviceId;
+    }
+
+    if (session.state === 'active') {
+      this.log('warn', 'accepting session that is already in the active state; this may result in a dual session-accept', logExtras);
     }
 
     this.log('info', 'accepting session', logExtras);

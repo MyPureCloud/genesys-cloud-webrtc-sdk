@@ -269,6 +269,24 @@ describe('updateOutgoingMedia()', () => {
     expect(mockSdk.media.startMedia).not.toHaveBeenCalled();
   });
 
+  it('should request the camera when a registered processed track from that camera is on the session', async () => {
+    const session = new MockSession();
+    session._outboundStream = new MockStream();
+    const cameraTrack = new MockTrack('video', 'Camera #1');
+    /* e.g. a virtual background canvas track made from the camera track */
+    const processedTrack = new MockTrack('video', 'canvas-capture-track');
+    session.peerConnection._addSender(processedTrack);
+    mockSdk.media.registerProcessedTrack(processedTrack as unknown as MediaStreamTrack, cameraTrack as unknown as MediaStreamTrack);
+
+    jest.spyOn(mockSdk.media, 'startMedia').mockResolvedValue(new MockStream({ video: true }) as unknown as MediaStream);
+    const device = { deviceId: globalThis.crypto.randomUUID(), label: cameraTrack.label, kind: 'videoinput' };
+    mockSdk.media['setDevices']([device as unknown as MediaDeviceInfo]);
+
+    /* asking for the camera the processed track came from means "send the raw camera" */
+    await handler.updateOutgoingMedia(session as unknown as IExtendedMediaSession, { videoDeviceId: device.deviceId, audioDeviceId: false });
+    expect(mockSdk.media.startMedia).toHaveBeenCalledWith(expect.objectContaining({ video: device.deviceId }));
+  });
+
   it('should skip tracks for "kinds" that were not requested to be updated', async () => {
     const session = new MockSession();
     session._outboundStream = new MockStream();
@@ -669,6 +687,21 @@ describe('handleSessionInit', () => {
     expect(logSpy).toHaveBeenCalledWith('info', 'connection state change', { state: 'connected', conversationId, sid: sessionId });
   });
 
+  it('should emit `sessionConnected` when connectionState becomes connected', async () => {
+    const session: any = new MockSession();
+    const eventSpy = jest.fn();
+    mockSdk.on('sessionConnected', eventSpy);
+
+    session.id = '123abc';
+    session.conversationId = 'convoabc';
+    session.state = 'active';
+
+    await handler.handleSessionInit(session);
+    session.emit('connectionState', 'connected');
+
+    expect(eventSpy).toHaveBeenCalled();
+  });
+
   it('should emit sessionInterrupted when connectionState becomes interrupted.', async () => {
     const session: any = new MockSession();
     const eventSpy = jest.fn();
@@ -832,6 +865,7 @@ describe('acceptSession', () => {
 
   it('should log correctly', async () => {
     const session: any = new MockSession();
+    session.state = 'pending';
     const params = {
       conversationId: session.conversationId,
       audioElement: { iam: 'an audio el' } as any,
@@ -846,6 +880,8 @@ describe('acceptSession', () => {
       sessionType: undefined,
       conversationId: session.conversationId,
       sessionId: session.id,
+      acceptedViaSessionManager: false,
+      sessionState: 'pending',
       params: {
         ...params,
         audioElement: {},
@@ -853,6 +889,22 @@ describe('acceptSession', () => {
         mediaStream: undefined
       }
     });
+  });
+
+  it('should warn when accepting a session that is already in the active state (potential dual session-accept)', async () => {
+    const session: any = new MockSession();
+    session.state = 'active';
+    session._alreadyAccepted = true;
+    const logSpy = jest.spyOn(handler, 'log' as any);
+
+    await handler.acceptSession(session, { conversationId: session.conversationId });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      'warn',
+      'accepting session that is already in the active state; this may result in a dual session-accept',
+      expect.objectContaining({ acceptedViaSessionManager: true, sessionState: 'active' })
+    );
+    expect(session.accept).toHaveBeenCalled();
   });
 
   it('should set the sinkId in supported browsers to the default output device', async () => {
