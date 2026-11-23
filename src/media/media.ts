@@ -5,7 +5,7 @@ import browserama from 'browserama';
 
 import GenesysCloudWebrtcSdk from '../client';
 import { createAndEmitSdkError } from '../utils';
-import { isWebKit } from './browser-detection';
+import { isGecko, isWebKit } from './browser-detection';
 import { SdkErrorTypes } from '../types/enums';
 import {
   IExtendedMediaSession,
@@ -978,6 +978,10 @@ export class SdkMedia extends (EventEmitter as { new(): StrictEventEmitter<Event
       videoConstraints.googNoiseReduction = true;
     } else if (isWebKit()) {
       this.sdk.logger.debug('WebKit detected; Chrome-only media constraints omitted');
+    } else if (isGecko()) {
+      this.sdk.logger.debug('Gecko (Firefox) detected; Chrome-only media constraints omitted');
+    } else {
+      this.sdk.logger.debug('Non-Chromium browser detected; Chrome-only media constraints omitted');
     }
 
     const constraints: { video: ConstraintObj | boolean; audio: ConstraintObj | boolean } = {

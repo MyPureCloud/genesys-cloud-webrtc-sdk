@@ -1436,7 +1436,18 @@ describe('SdkMedia', () => {
           video: { frameRate: { ideal: 30 } },
           audio: standardAudioConstraints
         });
+        expect(sdk.logger.debug).toHaveBeenCalledWith('Gecko (Firefox) detected; Chrome-only media constraints omitted');
         expect(sdk.logger.debug).not.toHaveBeenCalledWith('WebKit detected; Chrome-only media constraints omitted');
+      });
+
+      it('should omit Chrome-only audio constraints in other browsers', () => {
+        setUserAgent('');
+
+        expect(getStandardConstraintsFn({ audio: 'audio-device-id', video: true })).toEqual({
+          video: { frameRate: { ideal: 30 } },
+          audio: standardAudioConstraints
+        });
+        expect(sdk.logger.debug).toHaveBeenCalledWith('Non-Chromium browser detected; Chrome-only media constraints omitted');
       });
     });
 

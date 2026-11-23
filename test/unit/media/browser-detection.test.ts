@@ -1,4 +1,4 @@
-import { isWebKit } from '../../../src/media/browser-detection';
+import { isGecko, isWebKit } from '../../../src/media/browser-detection';
 
 describe('isWebKit()', () => {
   const setUserAgent = (userAgent: string | undefined) => {
@@ -42,5 +42,30 @@ describe('isWebKit()', () => {
     expect(isWebKit()).toBe(true);
     setUserAgent('Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
     expect(isWebKit()).toBe(false);
+  });
+});
+
+describe('isGecko()', () => {
+  const setUserAgent = (userAgent: string | undefined) => {
+    Object.defineProperty(window.navigator, 'userAgent', { get: () => userAgent, configurable: true });
+  };
+
+  afterEach(() => {
+    Reflect.deleteProperty(window.navigator, 'userAgent');
+  });
+
+  it('should be true for Firefox', () => {
+    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0');
+    expect(isGecko()).toBe(true);
+  });
+
+  it.each([
+    ['Chrome', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'],
+    ['Safari', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'],
+    ['Firefox on iOS', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.0 Mobile/15E148 Safari/605.1.15'],
+    ['no user agent', undefined]
+  ])('should be false for %s', (_name, userAgent) => {
+    setUserAgent(userAgent);
+    expect(isGecko()).toBe(false);
   });
 });

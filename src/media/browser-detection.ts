@@ -14,3 +14,12 @@ export const isWebKit = function (): boolean {
   const userAgent = window.navigator.userAgent || '';
   return userAgent.includes('AppleWebKit/') && !BLINK_UA_TOKENS.some(token => userAgent.includes(token));
 };
+
+/**
+ * Internal utility to check if the browser runs on Gecko (Firefox and
+ *  its forks), based on the user agent. Other engines' user agents
+ *  only say "like Gecko", without the `Gecko/` version token.
+ */
+export const isGecko = function (): boolean {
+  return (window.navigator.userAgent || '').includes('Gecko/');
+};
