@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * [STREAM-2964](https://inindca.atlassian.net/browse/STREAM-2964) - The demo app links in `README.md` and `react-demo-app/README.md` now point at the apps CDN (`apps.<env>.com/developercenter-cdn/webrtc-sdk/demo/`), where the pipeline deploys it, instead of the legacy `sdk-cdn` host.
 
+### Removed
+* [STREAM-2891](https://inindca.atlassian.net/browse/STREAM-2891) - Removed the legacy `test/test-pages` sample apps, the root `index.html` that redirected to them, and their scripts (`build:sample`, `start`, `start:sample`, `build-run-local`, `build-run-gcba`) and dev dependencies (`stupid-server`, `concurrently`). Use `react-demo-app` for manual testing.
+
 # [v14.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...v14.4.0)
 ### Added
 * [STREAM-2917](https://inindca.atlassian.net/browse/STREAM-2917) - Add `sdk.media.registerProcessedTrack(processedTrack, sourceTrack)` and `sdk.media.getSourceTrack(track)`. Registering a processed outgoing track (such as a virtual background) with the device track it was made from stops any `devicechange` (such as plugging in a headset) from replacing it with a raw camera track while the camera is still connected. Stacked effects are followed back to the original track. Also fixes `sdk.media.findCachedDeviceByTrackLabelAndKind()` matching a speaker instead of a mic when they share a label. See [doc/media.md](doc/media.md#registerprocessedtrack).
@@ -22,9 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * [STREAM-2936](https://inindca.atlassian.net/browse/STREAM-2936) - Softphone client metadata (including the client public IP) is now also reported for the user's connected callback communications, so `callbacks[].clientIpAddress` is populated alongside the call.
-
-### Removed
-* [STREAM-2891](https://inindca.atlassian.net/browse/STREAM-2891) - Removed the legacy `test/test-pages` sample apps, the root `index.html` that redirected to them, and their scripts (`build:sample`, `start`, `start:sample`, `build-run-local`, `build-run-gcba`) and dev dependencies (`stupid-server`, `concurrently`). Use `react-demo-app` for manual testing.
 
 # [v14.3.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.2.7...v14.3.0)
 ### Added
