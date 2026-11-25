@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.1...HEAD)
+
+# [v14.4.1](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...v14.4.1)
 ### Added
 * [STREAM-2791](https://inindca.atlassian.net/browse/STREAM-2791) - `startVideoConference()` accepts an optional `recordingConsent` (`consented`, `declined`, `notCollected`, `recordingNotAllowed`), forwarded unchanged to streaming-client on the guest (JWT) video join.
 * [STREAM-2898](https://inindca.atlassian.net/browse/STREAM-2898) - Guest (JWT) video joins now log a `video recording consent` message with the conversationId and the `recordingConsent` value (`absent` when none was supplied) so it appears on the webrtc timeline.
