@@ -1,5 +1,5 @@
 // Minimal SDK interface for type safety
-import { IExtendedMediaSession } from 'genesys-cloud-webrtc-sdk';
+import { IAcceptSessionRequest, IExtendedMediaSession, JingleReason } from 'genesys-cloud-webrtc-sdk';
 export interface MinimalSdk {
   startSoftphoneSession: (params: { phoneNumber: string }) => void;
   endSession: (params: { conversationId: string }) => void;
@@ -11,6 +11,12 @@ export interface MinimalSdk {
   acceptPendingSession: (params: { conversationId: string }) => void;
   rejectPendingSession: (params: { conversationId: string }) => void;
   forceTerminateSession: (sessionId: string) => void;
+  startVideoConference: (roomJid: string) => Promise<{ conversationId: string }>;
+  acceptSession: (params: IAcceptSessionRequest) => Promise<void>;
+  on(event: 'sessionStarted', listener: (session: IExtendedMediaSession) => void): unknown;
+  on(event: 'sessionEnded', listener: (session: IExtendedMediaSession, reason: JingleReason) => void): unknown;
+  off(event: 'sessionStarted', listener: (session: IExtendedMediaSession) => void): unknown;
+  off(event: 'sessionEnded', listener: (session: IExtendedMediaSession, reason: JingleReason) => void): unknown;
   media: {
     enumerateDevices: (force?: boolean) => void;
     requestMediaPermissions: (type: 'audio' | 'video' | 'both') => void;

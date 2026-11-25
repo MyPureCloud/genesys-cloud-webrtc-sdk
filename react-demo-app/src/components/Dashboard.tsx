@@ -2,6 +2,8 @@ import './Dashboard.css';
 import Softphone from './Softphone';
 import Devices from './Devices';
 import Header from './Header';
+import VideoSession from './VideoSession';
+import InteractionLog from './InteractionLog';
 
 
 export default function Dashboard() {
@@ -10,6 +12,8 @@ export default function Dashboard() {
       <Header></Header>
       <Devices></Devices>
       <Softphone></Softphone>
+      <VideoSession></VideoSession>
+      <InteractionLog></InteractionLog>
     </div>
   )
 }
