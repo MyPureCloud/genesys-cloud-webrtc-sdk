@@ -3,7 +3,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...HEAD)
+# [Unreleased](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.5.0...HEAD)
+
+# [v14.5.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.4.0...v14.5.0)
+### Added
+* [STREAM-2791](https://inindca.atlassian.net/browse/STREAM-2791) - `startVideoConference()` accepts an optional `recordingConsent` (`consented`, `declined`, `notCollected`, `recordingNotAllowed`), forwarded unchanged to streaming-client on the guest (JWT) video join.
+* [STREAM-2898](https://inindca.atlassian.net/browse/STREAM-2898) - Guest (JWT) video joins now log a `video recording consent` message with the conversationId and the `recordingConsent` value (`absent` when none was supplied) so it appears on the webrtc timeline.
+* [STREAM-2997](https://inindca.atlassian.net/browse/STREAM-2997) - `participantsUpdate` participants can now include `agentProfileImage`: the agent's public profile image (their "Agent Image") as a list of `{ resolution, imageUri }` (x150, x800 and x1024). It's only sent to guests of agent video conferences, and only when the agent has an Agent Image set; otherwise it's `undefined`. See [doc/video.md](doc/video.md).
+* [STREAM-2890](https://inindca.atlassian.net/browse/STREAM-2890) - The React demo app is now built into `dist/demo/` (`npm run build:demo`) and deployed to the CDN at `webrtc-sdk/demo/`, replacing the legacy demo landing page. The demo no longer depends on the licensed Iris audio processor; it can still be tested locally via a gitignored `src/audioProcessor.local.ts` (see `react-demo-app/README.md`), and the Audio Processor card only shows when one is present. Removed the demo's standalone noise tester, which bypassed the SDK's media and audio processor handling. `dist/demo` is excluded from the npm package.
+
+### Changed
+* [STREAM-2964](https://inindca.atlassian.net/browse/STREAM-2964) - The demo app links in `README.md` and `react-demo-app/README.md` now point at the apps CDN (`apps.<env>.com/developercenter-cdn/webrtc-sdk/demo/`), where the pipeline deploys it, instead of the legacy `sdk-cdn` host.
+
+### Removed
+* [STREAM-2891](https://inindca.atlassian.net/browse/STREAM-2891) - Removed the legacy `test/test-pages` sample apps, the root `index.html` that redirected to them, and their scripts (`build:sample`, `start`, `start:sample`, `build-run-local`, `build-run-gcba`) and dev dependencies (`stupid-server`, `concurrently`). Use `react-demo-app` for manual testing.
 
 # [v14.4.0](https://github.com/MyPureCloud/genesys-cloud-webrtc-sdk/compare/v14.3.0...v14.4.0)
 ### Added

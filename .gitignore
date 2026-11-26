@@ -5,12 +5,6 @@
 
 dist
 docs
-test/test-pages/**/common/
-test/test-pages/*/*sdk-sample.*s*
-test/test-pages/*/index.html
-!test/test-pages/gcba/index.html
-!test/test-pages/auto-call-test/index.html
-!test/test-pages/common/
 
 *.tgz
 .ignore

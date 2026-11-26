@@ -29,7 +29,8 @@ import {
   IVideoResolution,
   JWTDetails,
   ISdkFullConfig,
-  LiveScreenMonitoringSession
+  LiveScreenMonitoringSession,
+  RecordingConsent
 } from './types/interfaces';
 import {
   setupStreamingClient,
@@ -392,15 +393,17 @@ export class GenesysCloudWebrtcSdk extends (EventEmitter as { new(): StrictEvent
    *  starting a new conference but must adhere to the format:
    *  <lowercase string>@conference.<lowercase string>
    * @param inviteeJid jid of a user to invite to this conference.
+   * @param recordingConsent optional resolved recording consent, forwarded unchanged
+   *  on the JWT (guest) video join.
    *
    * @returns a promise with an object with the newly created `conversationId`
    */
-  async startVideoConference (roomJid: string, inviteeJid?: string): Promise<{ conversationId: string }> {
+  async startVideoConference (roomJid: string, inviteeJid?: string, recordingConsent?: RecordingConsent): Promise<{ conversationId: string }> {
     if (!this._config.jwt && !this._config.accessToken) {
       throw createAndEmitSdkError.call(this, SdkErrorTypes.not_supported, 'Video conferencing requires authentication via JWT or access token.');
     }
 
-    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, sessionType: SessionTypes.collaborateVideo }) as Promise<{ conversationId: string }>;
+    return this.sessionManager.startSession({ jid: roomJid, inviteeJid, recordingConsent, sessionType: SessionTypes.collaborateVideo }) as Promise<{ conversationId: string }>;
   }
 
   /**

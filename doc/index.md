@@ -701,7 +701,7 @@ they can accept and join the conference.
 Declaration:
 
 ```ts
-startVideoConference(roomJid: string, inviteeJid?: string): Promise<{
+startVideoConference(roomJid: string, inviteeJid?: string, recordingConsent?: RecordingConsent): Promise<{
     conversationId: string;
 }>;
 ```
@@ -712,6 +712,9 @@ Params:
   starting a new conference but must adhere to the format:
   `<lowercase string>@conference.<lowercase string>`
 - `inviteeJid?: string` Optional: jid of a user to invite to this conference.
+- `recordingConsent?: RecordingConsent` Optional: the customer's already-resolved recording
+  consent: `'consented' | 'declined' | 'notCollected' | 'recordingNotAllowed'`. Forwarded
+  unchanged to streaming-client on the JWT (guest) video join. When omitted, nothing is sent.
 
 Returns: a promise with an object with the newly created `conversationId`
 
